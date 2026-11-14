@@ -28,6 +28,7 @@ describe('SpotDetails', () => {
     isAccommodation: boolean;
     payerLabel?: string | null;
     hasMultipleMembers?: boolean;
+    accommodationDistance?: any;
   }) {
     const app = createApp({
       render: () => h(SpotDetails, props),
@@ -125,5 +126,26 @@ describe('SpotDetails', () => {
     expect(html).toContain('louvre.fr…');
     expect(html).toContain('https://www.louvre.fr/tickets');
     expect(html).toContain('Link kopieren');
+  });
+
+  it('renders accommodation distance row with duration and accommodation title', async () => {
+    const html = await mountComponent({
+      spot: { ...baseSpot, category: 'Aussicht', address: null },
+      expanded: true,
+      isAccommodation: false,
+      accommodationDistance: {
+        accommodationId: 10,
+        accommodationTitle: 'Hotel Alpenblick',
+        distanceMeters: 4500,
+        durationSeconds: 480,
+        profile: 'driving-car',
+        isFallback: false,
+      },
+    });
+
+    expect(html).toContain('Entfernung');
+    expect(html).toContain('4,5\u00A0km');
+    expect(html).toContain('ca. 8\u00A0Min.');
+    expect(html).toContain('Hotel Alpenblick');
   });
 });

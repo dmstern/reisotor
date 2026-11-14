@@ -1,4 +1,4 @@
-import { ref, computed, watch, nextTick, type Ref } from 'vue';
+import { ref, computed, watch, nextTick, type Ref, type ComputedRef } from 'vue';
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router';
 import type { Excursion, IdeaRole, Spot } from '../api/types';
 import {
@@ -19,6 +19,7 @@ import { useScheduleStore } from '../stores/schedule';
 import { useDiaryStore } from '../stores/diary';
 import { useIconStyleStore } from '../stores/iconStyle';
 import { useLiveSyncStore } from '../stores/liveSync';
+import type { SpotAccommodationDistanceInfo } from '../utils/spotAccommodationDistance';
 
 export type SpotsGroupItem = { kind: 'spot'; spot: Spot };
 
@@ -40,10 +41,15 @@ export interface UseExcursionsFilterOptions {
   route: RouteLocationNormalizedLoaded;
   router: Router;
   highlightedIds?: Ref<Set<number>>;
+  spotAccommodationDistances?:
+    | Ref<Map<number, SpotAccommodationDistanceInfo>>
+    | ComputedRef<Map<number, SpotAccommodationDistanceInfo>>;
 }
 
 export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
   const { route, router, highlightedIds } = options;
+  const internalDistances = ref<Map<number, SpotAccommodationDistanceInfo>>(new Map());
+  const spotAccommodationDistances = options.spotAccommodationDistances ?? internalDistances;
 
   const spotsStore = useSpotsStore();
   const excursionsStore = useExcursionsStore();
@@ -52,7 +58,7 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
   const iconStyle = useIconStyleStore();
   const liveSync = useLiveSyncStore();
 
-  const sortMode = usePersistedRef<'alpha' | 'likes' | 'date'>(
+  const sortMode = usePersistedRef<'alpha' | 'likes' | 'date' | 'distance'>(
     'reisotor-excursions-sort-mode',
     'date'
   );
@@ -473,6 +479,13 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
 
           if (sortMode.value === 'likes') {
             return itemLikeCount(b) - itemLikeCount(a) || itemTitle(a).localeCompare(itemTitle(b));
+          }
+
+          if (sortMode.value === 'distance') {
+            const distMap = spotAccommodationDistances?.value;
+            const distA = distMap?.get(a.spot.id)?.distanceMeters ?? Infinity;
+            const distB = distMap?.get(b.spot.id)?.distanceMeters ?? Infinity;
+            return distA - distB || itemTitle(a).localeCompare(itemTitle(b));
           }
 
           return itemTitle(a).localeCompare(itemTitle(b));

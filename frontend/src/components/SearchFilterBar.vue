@@ -14,7 +14,7 @@ import { TOUR_ROLE_META, TOUR_ROLE_OPTIONS, type TourRoleFilterOption } from '..
 import { observePopoverPosition, type PopoverPositionResult } from '../utils/popoverPosition';
 
 export interface SortOption {
-  value: 'alpha' | 'likes' | 'date';
+  value: 'alpha' | 'likes' | 'date' | 'distance';
   label: string;
 }
 
@@ -25,17 +25,18 @@ const DEFAULT_FILTER_MENU_HEIGHT_PX = 260;
 const FILTER_MENU_OFFSET_PX = 6;
 const FILTER_MENU_VIEWPORT_PADDING_PX = 8;
 
-const SORT_SHORT_LABELS: Record<'alpha' | 'likes' | 'date', string> = {
+const SORT_SHORT_LABELS: Record<'alpha' | 'likes' | 'date' | 'distance', string> = {
   date: 'Datum',
   alpha: 'A–Z',
   likes: 'Likes',
+  distance: 'Distanz',
 };
 
 const props = withDefaults(
   defineProps<{
     searchQuery?: string;
     searchPlaceholder?: string;
-    sortMode?: 'alpha' | 'likes' | 'date';
+    sortMode?: 'alpha' | 'likes' | 'date' | 'distance';
     categoryFilter?: string[];
     categoryOptions?: string[];
     statusFilter?: ('planned' | 'unplanned' | 'done')[] | undefined;
@@ -54,7 +55,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: 'update:searchQuery', value: string): void;
-  (e: 'update:sortMode', value: 'alpha' | 'likes' | 'date'): void;
+  (e: 'update:sortMode', value: 'alpha' | 'likes' | 'date' | 'distance'): void;
   (e: 'update:categoryFilter', value: string[]): void;
   (e: 'update:statusFilter', value: ('planned' | 'unplanned' | 'done')[]): void;
   (e: 'update:tourRoleFilter', value: TourRoleFilterOption[]): void;
@@ -241,7 +242,7 @@ function toggleTourRole(role: TourRoleFilterOption) {
   emit('update:tourRoleFilter', current);
 }
 
-function selectSort(mode: 'alpha' | 'likes' | 'date') {
+function selectSort(mode: 'alpha' | 'likes' | 'date' | 'distance') {
   emit('update:sortMode', mode);
 }
 
@@ -365,6 +366,14 @@ function clearFilters() {
                   trailing-icon-group="actions"
                   :trailing-icon-size="14"
                   @click="selectSort('likes')"
+                />
+                <DropdownMenuItem
+                  label="Nach Entfernung"
+                  :active="sortMode === 'distance'"
+                  :trailing-icon="sortMode === 'distance' ? ACTION_ICONS.done : undefined"
+                  trailing-icon-group="actions"
+                  :trailing-icon-size="14"
+                  @click="selectSort('distance')"
                 />
               </Accordion>
             </div>

@@ -39,6 +39,7 @@ describe('SpotCard', () => {
     groupMode: 'category' | 'tours';
     layoverMinutes?: number | null;
     iconOnlyCategory?: boolean;
+    accommodationDistance?: any;
   }) {
     const app = createApp({
       render: () => h(SpotCard, props),
@@ -175,5 +176,30 @@ describe('SpotCard', () => {
     expect(html).toContain('set-location-btn');
     expect(html).toContain('Standort festlegen');
     expect(html).not.toContain('show-on-map-btn');
+  });
+
+  it('renders accommodation distance badge when accommodationDistance is provided in collapsed state', async () => {
+    const html = await mountComponent({
+      spot: mockSpot,
+      creatorLabel: 'Daniel',
+      likeCount: 0,
+      liked: false,
+      comments: [],
+      expanded: false,
+      scheduledDate: null,
+      groupMode: 'category',
+      accommodationDistance: {
+        accommodationId: 10,
+        accommodationTitle: 'Hotel Central',
+        distanceMeters: 1200,
+        durationSeconds: 900,
+        profile: 'foot-walking',
+        isFallback: false,
+      },
+    });
+
+    expect(html).toContain('spot-distance-badge');
+    expect(html).toContain('1,2\u00A0km');
+    expect(html).toContain('Hotel Central');
   });
 });
