@@ -423,7 +423,7 @@ const isNewHighlight = computed(() => {
 
 @media (hover: hover) {
   .card--polaroid:not(.card--expanded):not(.expanded):hover {
-    transform: translateY(-4px) rotate(calc(var(--card-rotate, -0.75deg) * 0.4)) scale(1.02);
+    transform: translateY(-4px) rotate(var(--card-rotate, -0.75deg)) scale(1.02);
     box-shadow: var(--shadow-card-polaroid-hover);
     --surface-grad-top: var(--gradient-surface-hover-top);
     --surface-grad-bottom: var(--gradient-surface-hover-bottom);
