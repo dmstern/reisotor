@@ -397,5 +397,39 @@ describe('recordWeatherSnapshots', () => {
       expect(calledUrl).toContain('longitude=-9.14');
       expect(res.json().hourly.temperature_2m).toEqual([26.5]);
     });
+
+    it('dedupliziert gleichzeitige In-Flight-Anfragen für dieselben gerundeten Koordinaten', async () => {
+      let resolveFetch!: () => void;
+      const fetchMock = vi.fn(
+        () =>
+          new Promise((resolve) => {
+            resolveFetch = () =>
+              resolve(
+                mockOpenMeteoResponse([{ date: '2026-08-14', code: 0, max: 28, min: 19, rain: 5 }])
+              );
+          })
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      const req1 = app.inject({
+        method: 'GET',
+        url: '/api/weather?lat=38.7223&lng=-9.1393&past_days=1&forecast_days=16&models=ecmwf_ifs025',
+        headers: { cookie },
+      });
+      const req2 = app.inject({
+        method: 'GET',
+        url: '/api/weather?lat=38.7241&lng=-9.136&past_days=1&forecast_days=16&models=ecmwf_ifs025',
+        headers: { cookie },
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+
+      resolveFetch();
+      const [res1, res2] = await Promise.all([req1, req2]);
+      expect(res1.statusCode).toBe(200);
+      expect(res2.statusCode).toBe(200);
+      expect(res1.json()).toEqual(res2.json());
+    });
   });
 });

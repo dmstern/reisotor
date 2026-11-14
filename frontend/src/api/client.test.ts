@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { api, rawRequest } from './client';
-import { writeCache } from './offline';
+import { setConfirmedOffline, writeCache } from './offline';
 
 function createMemoryStorage() {
   const store = new Map<string, string>();
@@ -24,6 +24,7 @@ function createMemoryStorage() {
 describe('api client error handling & network resilience', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
+    setConfirmedOffline(false);
     vi.stubGlobal('localStorage', createMemoryStorage());
     vi.stubGlobal('navigator', { onLine: true });
     vi.stubGlobal('window', {
@@ -88,5 +89,32 @@ describe('api client error handling & network resilience', () => {
     await expect(api.get('/uncached-path')).rejects.toThrow(
       'Offline und keine zwischengespeicherten Daten'
     );
+  });
+
+  it('marks NOT confirmed offline when skipOfflineDetection is true', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        statusText: '',
+        json: async () => {
+          throw new Error('not json');
+        },
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      api.get('/weather?lat=38.72&lng=-9.14', { skipOfflineDetection: true })
+    ).rejects.toThrow('Offline und keine zwischengespeicherten Daten');
+
+    const followUp = await api.get<{ ok: boolean }>('/ideas?trip_id=1');
+    expect(followUp).toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

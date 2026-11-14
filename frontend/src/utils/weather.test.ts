@@ -399,4 +399,69 @@ describe('fetchWeatherForecast & fetchHourlyForecast (Backend-Proxy #538)', () =
     expect(result).toHaveLength(1);
     expect(result[0].temp).toBe(25);
   });
+
+  it('cacht mehrere Orte gleichzeitig und begrenzt parallele /api/weather-Requests auf maximal 2', async () => {
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const resolvers: Array<() => void> = [];
+
+    const fetchMock = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          inFlight++;
+          maxInFlight = Math.max(maxInFlight, inFlight);
+          resolvers.push(() => {
+            inFlight--;
+            resolve({
+              ok: true,
+              status: 200,
+              json: async () => ({
+                daily: {
+                  time: ['2026-08-14'],
+                  weathercode: [0],
+                  temperature_2m_max: [28],
+                  temperature_2m_min: [19],
+                  precipitation_probability_max: [5],
+                },
+              }),
+            });
+          });
+        })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { fetchWeatherForecast } = await import('./weather');
+    const coords = [
+      [38.72, -9.14],
+      [38.72, -9.12],
+      [38.71, -9.13],
+      [38.74, -9.13],
+      [38.69, -9.22],
+    ] as const;
+
+    const pending = coords.map(([lat, lng]) => fetchWeatherForecast(lat, lng, 'ecmwf_ifs025'));
+
+    // Nur 2 Requests dürfen sofort starten; die übrigen 3 warten in der Queue
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(maxInFlight).toBe(2);
+
+    while (resolvers.length > 0 || inFlight > 0) {
+      const next = resolvers.shift();
+
+      if (next) {
+        next();
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    await Promise.all(pending);
+    expect(fetchMock).toHaveBeenCalledTimes(5);
+    expect(maxInFlight).toBe(2);
+
+    // Alle 5 Orte bleiben gleichzeitig im Multi-Key-Session-Cache
+    await Promise.all(coords.map(([lat, lng]) => fetchWeatherForecast(lat, lng, 'ecmwf_ifs025')));
+    expect(fetchMock).toHaveBeenCalledTimes(5);
+  });
 });

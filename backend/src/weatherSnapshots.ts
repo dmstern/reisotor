@@ -55,7 +55,11 @@ function dateRange(startStr: string, endStr: string): string[] {
 
 const FORECAST_CACHE_TTL_MS = 30 * 60 * 1000;
 const ARCHIVE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+// Kürzer als das Frontend-Request-Timeout (6s / 8s), damit das Backend bei hängendem Open-Meteo
+// sauber abbricht statt dass der Browser-Fetch in einen AbortError läuft.
+const WEATHER_UPSTREAM_TIMEOUT_MS = 5000;
 const weatherProxyCache = new Map<string, { expiresAt: number; data: unknown }>();
+const weatherProxyInFlight = new Map<string, Promise<unknown>>();
 
 /** Rundet Koordinaten auf 2 Nachkommastellen (~1,1 km) – erhöht die Cache-Trefferquote und
  *  reduziert die Präzision der an Open-Meteo übermittelten Standortdaten (Issue #538). */
@@ -65,6 +69,7 @@ export function roundWeatherCoord(val: number): number {
 
 export function clearWeatherProxyCache() {
   weatherProxyCache.clear();
+  weatherProxyInFlight.clear();
 }
 
 export interface WeatherProxyQuery {
@@ -132,26 +137,41 @@ export async function fetchWeatherProxy(query: WeatherProxyQuery): Promise<unkno
     return cached.data;
   }
 
+  const existingInFlight = weatherProxyInFlight.get(cacheKey);
+
+  if (existingInFlight) {
+    return existingInFlight;
+  }
+
   const baseUrl =
     source === 'archive'
       ? 'https://archive-api.open-meteo.com/v1/archive'
       : 'https://api.open-meteo.com/v1/forecast';
 
-  const res = await fetch(`${baseUrl}?${params}`, {
-    signal: AbortSignal.timeout(8000),
+  const requestPromise = (async () => {
+    const res = await fetch(`${baseUrl}?${params}`, {
+      signal: AbortSignal.timeout(WEATHER_UPSTREAM_TIMEOUT_MS),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Open-Meteo request failed (${res.status})`);
+    }
+
+    const data = await res.json();
+    const ttl = source === 'archive' ? ARCHIVE_CACHE_TTL_MS : FORECAST_CACHE_TTL_MS;
+    weatherProxyCache.set(cacheKey, {
+      expiresAt: Date.now() + ttl,
+      data,
+    });
+    return data;
+  })().finally(() => {
+    if (weatherProxyInFlight.get(cacheKey) === requestPromise) {
+      weatherProxyInFlight.delete(cacheKey);
+    }
   });
 
-  if (!res.ok) {
-    throw new Error(`Open-Meteo request failed (${res.status})`);
-  }
-
-  const data = await res.json();
-  const ttl = source === 'archive' ? ARCHIVE_CACHE_TTL_MS : FORECAST_CACHE_TTL_MS;
-  weatherProxyCache.set(cacheKey, {
-    expiresAt: Date.now() + ttl,
-    data,
-  });
-  return data;
+  weatherProxyInFlight.set(cacheKey, requestPromise);
+  return requestPromise;
 }
 
 const upsertSnapshot = db.prepare(`
