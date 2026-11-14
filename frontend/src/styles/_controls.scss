@@ -378,3 +378,53 @@
 @mixin glass-interactive($mode: 'floating', $active-selector: '&:active:not(:disabled)') {
   @include control-glass-interactive($mode, $active-selector);
 }
+
+/// Kapselt die Oberflächen- und Interaktions-Styles für frei schwebende Glas-Eingabe-Container
+/// und Suchleisten (z. B. LocationSearchBar auf der Karte, Issue #759).
+///
+/// Besitzt initial den Liquid-Glass-Look mit --shadow-floating-island, semi-transparentem
+/// Hintergrund (var(--color-surface-glass)), Unschärfe-Filter (backdrop-blur-md) und solidem Glas-Rahmen.
+/// Bei Hover hebt sich die Fläche dezent an (--shadow-floating-island-hover).
+/// Bei Fokus (:focus-within) leuchtet der Fokusring mit solidem Kanten-Akzent und Schwebeschatten.
+///
+/// @param {Boolean} $pill [true] - Ob eine Pillen-Form (--radius-pill / round) oder Squircle genutzt werden soll.
+@mixin control-glass-field($pill: true) {
+  position: relative;
+  background-color: var(--color-surface-glass);
+  backdrop-filter: var(--backdrop-blur-md);
+  border: 1px solid var(--color-surface-glass-border);
+  box-shadow: var(--shadow-floating-island);
+  color: var(--color-text);
+  transition: var(--transition-glass);
+
+  @if $pill {
+    border-radius: var(--radius-pill);
+    corner-shape: round;
+  } @else {
+    border-radius: var(--radius-md-squircle);
+    corner-shape: squircle;
+  }
+
+  &:hover {
+    background-color: var(--color-surface-glass-hover);
+    border-color: var(--color-surface-glass-hover-border);
+    box-shadow: var(--shadow-floating-island-hover);
+  }
+
+  &:focus-within {
+    background-color: var(--color-surface-glass-active);
+    border-color: var(--color-primary);
+    outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+    outline-offset: var(--focus-ring-offset, 2px);
+    box-shadow:
+      var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-floating-island-hover);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition:
+      background-color 0.15s ease,
+      border-color 0.15s ease,
+      box-shadow 0.15s ease,
+      color 0.15s ease !important;
+  }
+}
