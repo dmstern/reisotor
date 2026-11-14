@@ -78,73 +78,75 @@ function onDropdownScroll(e: Event) {
 
 <template>
   <div class="location-search-row location-search-floating">
-    <div
-      class="location-search-wrap"
-      :class="{ 'is-loading': isSearching, loading: isSearching }"
-      :aria-busy="isSearching"
-    >
-      <AppIcon
-        :icon="ACTION_ICONS.search"
-        :size="16"
-        group="actions"
-        class="location-search-icon"
-        aria-hidden="true"
-      />
-      <Input
-        :model-value="modelValue"
-        class="location-picker-input"
-        type="search"
-        name="location-search"
-        data-testid="location-search-input"
-        :placeholder="activePlaceholder"
-        aria-label="Ort suchen oder Maps-Link einfügen"
-        autocomplete="off"
-        @update:model-value="emit('update:modelValue', $event)"
-        @keydown="emit('keydown', $event)"
-        @focus="handleFocus"
-        @blur="handleBlur"
-      />
-      <div class="search-right-actions">
-        <div v-if="isSearching" class="input-spinner-wrap" aria-hidden="true">
-          <LoadingSpinner size="sm" class="spinner input-spinner" />
+    <div class="location-search-field">
+      <div
+        class="location-search-wrap"
+        :class="{ 'is-loading': isSearching, loading: isSearching }"
+        :aria-busy="isSearching"
+      >
+        <AppIcon
+          :icon="ACTION_ICONS.search"
+          :size="16"
+          group="actions"
+          class="location-search-icon"
+          aria-hidden="true"
+        />
+        <Input
+          :model-value="modelValue"
+          class="location-picker-input"
+          type="search"
+          name="location-search"
+          data-testid="location-search-input"
+          :placeholder="activePlaceholder"
+          aria-label="Ort suchen oder Maps-Link einfügen"
+          autocomplete="off"
+          @update:model-value="emit('update:modelValue', $event)"
+          @keydown="emit('keydown', $event)"
+          @focus="handleFocus"
+          @blur="handleBlur"
+        />
+        <div class="search-right-actions">
+          <div v-if="isSearching" class="input-spinner-wrap" aria-hidden="true">
+            <LoadingSpinner size="sm" class="spinner input-spinner" />
+          </div>
+          <InfoPopover
+            title="Suchtipps, Maps- & Buchungs-Links"
+            aria-label="Suchtipps und Maps-Links anzeigen"
+            align="right"
+            placement="bottom"
+            :menu-width="290"
+            class="search-info-popover"
+          >
+            <p>
+              <strong>Ortssuche:</strong> Du kannst nach Adressen, Cafés, Sehenswürdigkeiten oder
+              Orten weltweit suchen.
+            </p>
+            <p>
+              <strong>Karten-Links:</strong> Kopiere einfach einen Link von Google Maps, Apple Maps
+              oder OpenStreetMap (OSM) hier hinein.
+            </p>
+            <p>
+              <strong>Buchungs-Links:</strong> Füge einen Link von Booking.com, Airbnb oder Trivago
+              ein – Name, Fotos, Adresse, Preis und Reisedaten werden automatisch übernommen.
+            </p>
+            <p class="popover-tip">
+              <AppIcon
+                :icon="FORM_FIELD_ICONS.location"
+                :size="14"
+                group="formFields"
+                class="popover-tip-icon"
+                aria-hidden="true"
+              />
+              <span
+                >Du kannst auch direkt auf die Karte tippen, um die Stecknadel manuell zu
+                platzieren.</span
+              >
+            </p>
+          </InfoPopover>
         </div>
-        <InfoPopover
-          title="Suchtipps, Maps- & Buchungs-Links"
-          aria-label="Suchtipps und Maps-Links anzeigen"
-          align="right"
-          placement="bottom"
-          :menu-width="290"
-          class="search-info-popover"
-        >
-          <p>
-            <strong>Ortssuche:</strong> Du kannst nach Adressen, Cafés, Sehenswürdigkeiten oder
-            Orten weltweit suchen.
-          </p>
-          <p>
-            <strong>Karten-Links:</strong> Kopiere einfach einen Link von Google Maps, Apple Maps
-            oder OpenStreetMap (OSM) hier hinein.
-          </p>
-          <p>
-            <strong>Buchungs-Links:</strong> Füge einen Link von Booking.com, Airbnb oder Trivago
-            ein – Name, Fotos, Adresse, Preis und Reisedaten werden automatisch übernommen.
-          </p>
-          <p class="popover-tip">
-            <AppIcon
-              :icon="FORM_FIELD_ICONS.location"
-              :size="14"
-              group="formFields"
-              class="popover-tip-icon"
-              aria-hidden="true"
-            />
-            <span
-              >Du kannst auch direkt auf die Karte tippen, um die Stecknadel manuell zu
-              platzieren.</span
-            >
-          </p>
-        </InfoPopover>
       </div>
 
-      <!-- Autocomplete Dropdown List -->
+      <!-- Autocomplete Dropdown List (außerhalb von .location-search-wrap, damit backdrop-filter nicht durch den Eltern-Backdrop-Root blockiert wird) -->
       <Transition name="dropdown-unfold">
         <ul
           v-if="isOpen && (results.length > 0 || (!isSearching && modelValue.trim().length >= 2))"
@@ -296,6 +298,11 @@ function onDropdownScroll(e: Event) {
   }
 }
 
+.location-search-field {
+  position: relative;
+  width: 100%;
+}
+
 .location-search-wrap {
   @include control-glass-field(true);
   width: 100%;
@@ -386,8 +393,8 @@ function onDropdownScroll(e: Event) {
   left: 0;
   right: 0;
   z-index: var(--z-popover, 1100);
-  background: var(--color-surface-glass);
-  backdrop-filter: var(--backdrop-blur-md);
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  backdrop-filter: blur(max(12px, var(--glass-blur, 6px))) saturate(180%);
   border: 1px solid var(--color-surface-glass-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
@@ -410,7 +417,7 @@ function onDropdownScroll(e: Event) {
   &:hover,
   &.is-active,
   &[aria-selected='true'] {
-    background: var(--color-surface-glass-hover);
+    background: var(--color-hover);
   }
 }
 
@@ -502,7 +509,7 @@ function onDropdownScroll(e: Event) {
 
 .location-load-more:hover,
 .location-load-more:focus-visible {
-  background: var(--color-surface-glass-hover);
+  background: var(--color-hover);
   outline: none;
 }
 

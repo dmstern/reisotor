@@ -100,6 +100,9 @@ describe('LocationSearchBar - solid glass feeling (#759)', () => {
     const dropdown = container.querySelector('.location-dropdown');
     expect(dropdown).not.toBeNull();
 
+    const wrap = container.querySelector('.location-search-wrap');
+    expect(wrap?.contains(dropdown)).toBe(false);
+
     const item = container.querySelector('.location-result-item');
     expect(item).not.toBeNull();
     expect(item?.textContent).toContain('Lissabon');

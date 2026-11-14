@@ -385,7 +385,7 @@
 /// Besitzt initial den Liquid-Glass-Look mit --shadow-floating-island, semi-transparentem
 /// Hintergrund (var(--color-surface-glass)), Unschärfe-Filter (backdrop-blur-md) und solidem Glas-Rahmen.
 /// Bei Hover hebt sich die Fläche dezent an (--shadow-floating-island-hover).
-/// Bei Fokus (:focus-within) leuchtet der Fokusring mit solidem Kanten-Akzent und Schwebeschatten.
+/// Bei Fokus (:focus-within) leuchtet der Fokusring mit Schwebeschatten ohne doppelten Rahmen.
 ///
 /// @param {Boolean} $pill [true] - Ob eine Pillen-Form (--radius-pill / round) oder Squircle genutzt werden soll.
 @mixin control-glass-field($pill: true) {
@@ -413,7 +413,6 @@
 
   &:focus-within {
     background-color: var(--color-surface-glass-active);
-    border-color: var(--color-primary);
     outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
     outline-offset: var(--focus-ring-offset, 2px);
     box-shadow:
