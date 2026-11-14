@@ -92,7 +92,7 @@ const emit = defineEmits<{
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 /* Zero-height Sentinel direkt vor .category-nav, per IntersectionObserver beobachtet */
 .category-nav-sentinel {
   height: 0;
@@ -156,8 +156,10 @@ const emit = defineEmits<{
   color: var(--color-text-muted);
 }
 
-.category-nav-arrow:hover {
-  color: var(--color-primary-dark);
+@include can-hover {
+  .category-nav-arrow:hover {
+    color: var(--color-primary-dark);
+  }
 }
 
 .category-nav-arrow:focus-visible {
@@ -199,8 +201,10 @@ const emit = defineEmits<{
   white-space: nowrap;
 }
 
-.category-nav-item:hover {
-  color: var(--color-primary-dark);
+@include can-hover {
+  .category-nav-item:hover {
+    color: var(--color-primary-dark);
+  }
 }
 
 .category-nav-item:focus-visible {

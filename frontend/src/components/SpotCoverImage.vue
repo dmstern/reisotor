@@ -94,7 +94,7 @@ function formatAccommodationDate(dateStr: string | null) {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .image {
   height: 120px;
   background: var(--color-primary-tint) center/cover no-repeat;
@@ -116,10 +116,12 @@ function formatAccommodationDate(dateStr: string | null) {
   cursor: pointer;
 }
 
-.image.is-expanded:hover:not(:has(a:hover)) {
-  box-shadow:
-    inset 0 0 0 2px var(--color-primary),
-    0 4px 12px rgba(0, 0, 0, 0.18);
+@include can-hover {
+  .image.is-expanded:hover:not(:has(a:hover)) {
+    box-shadow:
+      inset 0 0 0 2px var(--color-primary),
+      0 4px 12px rgba(0, 0, 0, 0.18);
+  }
 }
 
 .overlay-fade-enter-active {
@@ -198,8 +200,10 @@ function formatAccommodationDate(dateStr: string | null) {
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.image.is-expanded:hover:not(:has(a:hover)) .overlay-bottom-text {
-  transform: translateY(-1px);
+@include can-hover {
+  .image.is-expanded:hover:not(:has(a:hover)) .overlay-bottom-text {
+    transform: translateY(-1px);
+  }
 }
 
 .spot-collapse-pill {
@@ -231,15 +235,17 @@ function formatAccommodationDate(dateStr: string | null) {
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.image.is-expanded:hover:not(:has(a:hover)) .spot-collapse-pill {
-  background: var(--color-primary);
-  border-color: rgba(255, 255, 255, 0.65);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  transform: translateY(-1px);
-}
+@include can-hover {
+  .image.is-expanded:hover:not(:has(a:hover)) .spot-collapse-pill {
+    background: var(--color-primary);
+    border-color: rgba(255, 255, 255, 0.65);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transform: translateY(-1px);
+  }
 
-.image.is-expanded:hover:not(:has(a:hover)) .spot-collapse-chevron {
-  transform: translateY(-2px);
+  .image.is-expanded:hover:not(:has(a:hover)) .spot-collapse-chevron {
+    transform: translateY(-2px);
+  }
 }
 
 .overlay-bottom-content .card-title-block.is-expanded {

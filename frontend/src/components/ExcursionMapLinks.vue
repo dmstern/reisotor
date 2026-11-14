@@ -64,14 +64,6 @@ const drawers = useDrawersStore();
   margin-top: var(--space-1);
 }
 
-.show-on-map-btn {
-  transition:
-    width 0.28s cubic-bezier(0.32, 0.72, 0, 1),
-    height 0.28s cubic-bezier(0.32, 0.72, 0, 1),
-    border-radius 0.28s ease,
-    padding 0.28s ease;
-}
-
 .show-on-map-btn .btn-label {
   display: inline-block;
   max-width: 140px;
@@ -96,7 +88,11 @@ const drawers = useDrawersStore();
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .show-on-map-btn,
+  .show-on-map-btn {
+    transform: none !important;
+    translate: none !important;
+  }
+
   .show-on-map-btn .btn-label {
     transform: none !important;
     transition: opacity 0.15s ease !important;

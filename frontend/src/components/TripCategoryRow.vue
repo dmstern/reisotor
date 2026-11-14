@@ -42,6 +42,7 @@ const usageLabel = computed(() => {
 
 <template>
   <Card
+    variant="flat"
     class="category-row"
     :class="{
       'is-hidden': category.isHidden,

@@ -334,12 +334,14 @@ const isNewHighlight = computed(() => {
   animation: cardMapFocusPulse 0.9s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.card.is-map-focused:hover {
-  border-color: var(--color-primary) !important;
-  box-shadow:
-    0 0 0 2.5px var(--color-primary),
-    0 12px 28px -4px color-mix(in srgb, var(--color-primary) 40%, transparent),
-    0 4px 12px -1px color-mix(in srgb, var(--color-primary) 25%, transparent) !important;
+@media (hover: hover) {
+  .card.is-map-focused:hover {
+    border-color: var(--color-primary) !important;
+    box-shadow:
+      0 0 0 2.5px var(--color-primary),
+      0 12px 28px -4px color-mix(in srgb, var(--color-primary) 40%, transparent),
+      0 4px 12px -1px color-mix(in srgb, var(--color-primary) 25%, transparent) !important;
+  }
 }
 
 @keyframes cardMapFocusPulse {
@@ -391,7 +393,6 @@ const isNewHighlight = computed(() => {
   corner-shape: squircle;
   box-shadow: var(--shadow-card-polaroid);
   padding: 8px 8px 14px 8px;
-  transform: rotate(var(--card-rotate, -0.75deg));
   transform-origin: center center;
   transition:
     transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
@@ -402,33 +403,18 @@ const isNewHighlight = computed(() => {
     --surface-grad-bottom 0.2s ease;
 }
 
-/* Subtile Fächer-Drehung für Geschwister-Polaroids ohne explizites --card-rotate (z. B. in Storybook/Listen) */
-.card--polaroid:nth-child(2n) {
-  --card-rotate: 0.75deg;
-}
-.card--polaroid:nth-child(3n) {
-  --card-rotate: -0.6deg;
-}
-.card--polaroid:nth-child(4n) {
-  --card-rotate: 0.95deg;
-}
-.card--polaroid:nth-child(5n) {
-  --card-rotate: -1.1deg;
-}
-.card--polaroid:nth-child(6n) {
-  --card-rotate: 0.65deg;
-}
-
-.card--polaroid:not(.card--expanded):not(.expanded):hover {
-  transform: translateY(-4px) rotate(calc(var(--card-rotate, -0.75deg) * 0.4)) scale(1.02);
-  box-shadow: var(--shadow-card-polaroid-hover);
-  --surface-grad-top: var(--gradient-surface-hover-top);
-  --surface-grad-bottom: var(--gradient-surface-hover-bottom);
-  z-index: 5;
+@media (hover: hover) {
+  .card--polaroid:not(.card--expanded):not(.expanded):hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: var(--shadow-card-polaroid-hover);
+    --surface-grad-top: var(--gradient-surface-hover-top);
+    --surface-grad-bottom: var(--gradient-surface-hover-bottom);
+    z-index: 5;
+  }
 }
 
 .card--polaroid:not(.card--expanded):not(.expanded):active {
-  transform: translateY(1px) rotate(var(--card-rotate, -0.75deg)) scale(0.985);
+  transform: translateY(1px) scale(0.985);
   box-shadow: var(--shadow-card-polaroid-active);
   --surface-grad-top: rgba(0, 0, 0, 0.04);
   --surface-grad-bottom: transparent;
@@ -436,7 +422,7 @@ const isNewHighlight = computed(() => {
 
 .card--polaroid.card--expanded,
 .card--polaroid.expanded {
-  transform: translateY(0) rotate(0deg) scale(1);
+  transform: translateY(0) scale(1);
 }
 
 :root[data-theme='dark'] .card--polaroid {
@@ -444,9 +430,11 @@ const isNewHighlight = computed(() => {
   box-shadow: var(--shadow-card-polaroid);
 }
 
-:root[data-theme='dark'] .card--polaroid:not(.card--expanded):not(.expanded):hover {
-  box-shadow: var(--shadow-card-polaroid-hover);
-  background-color: #2e2b28;
+@media (hover: hover) {
+  :root[data-theme='dark'] .card--polaroid:not(.card--expanded):not(.expanded):hover {
+    box-shadow: var(--shadow-card-polaroid-hover);
+    background-color: #2e2b28;
+  }
 }
 
 :root[data-theme='dark'] .card--polaroid:not(.card--expanded):not(.expanded):active {
@@ -462,9 +450,11 @@ const isNewHighlight = computed(() => {
     box-shadow: var(--shadow-card-polaroid);
   }
 
-  :root:not([data-theme='light']) .card--polaroid:not(.card--expanded):not(.expanded):hover {
-    box-shadow: var(--shadow-card-polaroid-hover);
-    background-color: #2e2b28;
+  @media (hover: hover) {
+    :root:not([data-theme='light']) .card--polaroid:not(.card--expanded):not(.expanded):hover {
+      box-shadow: var(--shadow-card-polaroid-hover);
+      background-color: #2e2b28;
+    }
   }
 
   :root:not([data-theme='light']) .card--polaroid:not(.card--expanded):not(.expanded):active {
@@ -491,14 +481,16 @@ const isNewHighlight = computed(() => {
   margin-top: 18px;
 }
 
-.card--tile:hover {
-  transform: translateY(-4px) scale(1.015);
-  box-shadow:
-    inset 0 1px 0 var(--shadow-control-highlight-strong),
-    0 10px 28px var(--tile-shadow, var(--shadow-md));
-  --surface-grad-top: var(--gradient-surface-hover-top);
-  --surface-grad-bottom: var(--gradient-surface-hover-bottom);
-  z-index: 5;
+@media (hover: hover) {
+  .card--tile:hover {
+    transform: translateY(-4px) scale(1.015);
+    box-shadow:
+      inset 0 1px 0 var(--shadow-control-highlight-strong),
+      0 10px 28px var(--tile-shadow, var(--shadow-md));
+    --surface-grad-top: var(--gradient-surface-hover-top);
+    --surface-grad-bottom: var(--gradient-surface-hover-bottom);
+    z-index: 5;
+  }
 }
 
 .card--tile:active {
@@ -545,13 +537,15 @@ const isNewHighlight = computed(() => {
   box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
-.card--expandable:not(.card--expanded):hover,
-.card--interactive:not(.card--expanded):hover {
-  transform: translateY(-3px) scale(1.012);
-  border-color: var(--color-primary-dark);
-  box-shadow: var(--shadow-card-hover);
-  background-color: color-mix(in srgb, white 2.5%, var(--color-surface));
-  z-index: 5;
+@media (hover: hover) {
+  .card--expandable:not(.card--expanded):hover,
+  .card--interactive:not(.card--expanded):hover {
+    transform: translateY(-3px) scale(1.012);
+    border-color: var(--color-primary-dark);
+    box-shadow: var(--shadow-card-hover);
+    background-color: color-mix(in srgb, white 2.5%, var(--color-surface));
+    z-index: 5;
+  }
 }
 
 .card--expandable:not(.card--expanded):active,
