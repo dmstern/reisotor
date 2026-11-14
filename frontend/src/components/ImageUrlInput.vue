@@ -6,11 +6,14 @@ import { useAuthStore } from '../stores/auth';
 import { useAccountTierModal } from '../composables/useAccountTierModal';
 import PremiumBadge from './PremiumBadge.vue';
 import AppIcon from './AppIcon.vue';
+import Alert from './primitives/Alert.vue';
 import Input from './primitives/Input.vue';
 import UploadProgressBar from './UploadProgressBar.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { useErrorNotifier } from '../composables/useErrorNotifier';
 
 const auth = useAuthStore();
+const { notifyError } = useErrorNotifier();
 
 // Ergänzt das reine Bild-URL-Textfeld (extern gehostetes Bild) um einen direkten Datei-Upload -
 // beide schreiben am Ende in dasselbe image_url-Feld (Trip-/Spot-/Tour-Titelbild), es gibt keinen
@@ -118,12 +121,17 @@ async function onFileSelected(event: Event) {
     clearProgressTimer();
     progressPercent.value = 100;
     emit('update:modelValue', url);
-  } catch {
+  } catch (err) {
     if (abortController?.signal.aborted) {
       return;
     }
 
     uploadError.value = 'Bild-Upload fehlgeschlagen. Bitte erneut versuchen.';
+    notifyError(err, {
+      context: 'Bild-Upload',
+      componentInfo: 'ImageUrlInput',
+      silent: true,
+    });
   } finally {
     clearProgressTimer();
     setUploading(false);
@@ -185,7 +193,15 @@ defineExpose({
       <span>Oder Bild hochladen</span>
     </label>
 
-    <p v-if="uploadError" class="hint error">{{ uploadError }}</p>
+    <Alert
+      v-if="uploadError"
+      variant="danger"
+      size="sm"
+      reportable
+      :description="uploadError"
+      error-context="Bild-Upload"
+      class="hint error"
+    />
   </div>
 </template>
 
@@ -223,14 +239,5 @@ button.upload-label {
 
 .upload-label input {
   display: none;
-}
-
-.hint {
-  margin: 0;
-  font-size: 0.78rem;
-}
-
-.hint.error {
-  color: var(--color-danger);
 }
 </style>

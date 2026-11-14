@@ -1,5 +1,5 @@
 import { ref, readonly } from 'vue';
-import { ApiError } from '../api/client';
+import { clearLastApiError, getLastApiError } from '../utils/apiErrorTracker';
 import type { OutboxEntry } from '../api/offline';
 import { useToast } from './useToast';
 import { useBuildInfoStore } from '../stores/buildInfo';
@@ -25,17 +25,25 @@ export interface NotifyErrorOptions {
   context?: string;
   silent?: boolean;
   kind?: 'api' | 'runtime' | 'sync';
+  status?: number;
   method?: string;
   path?: string;
   componentInfo?: string;
+  summaryOverride?: string;
 }
 
 const MAX_RECENT_ERRORS = 10;
 const DEDUPE_WINDOW_MS = 2000;
+const RECENT_ERROR_MATCH_WINDOW_MS = 60_000;
+const MIN_MATCH_SUBSTRING_LENGTH = 4;
+const MAX_FEEDBACK_TITLE_LENGTH = 200;
+const TOAST_ERROR_DURATION_MS = 8000;
+const GIT_SHA_PREVIEW_LENGTH = 7;
 
 const recentErrors = ref<CapturedError[]>([]);
 const activeError = ref<CapturedError | null>(null);
 const isErrorModalOpen = ref(false);
+const isFeedbackModalOpen = ref(false);
 
 let nextErrorId = 1;
 const dedupeMap = new Map<string, number>();
@@ -83,11 +91,7 @@ export function shouldIgnoreError(err: unknown): boolean {
   }
 
   // ApiError mit Status 401 (Session abgelaufen -> reisotor:session-expired) oder Status 0 (Offline-Cache-Miss beim initialen Laden)
-  if (err instanceof ApiError) {
-    if (err.status === 401 || err.status === 0) {
-      return true;
-    }
-  } else if (typeof err === 'object' && err !== null && 'status' in err) {
+  if (typeof err === 'object' && err !== null && 'status' in err) {
     const status = (err as { status?: unknown }).status;
 
     if (status === 401 || status === 0) {
@@ -114,7 +118,7 @@ function getAppVersionString(): string | undefined {
     }
 
     if (info.ref) {
-      parts.push(`(${info.ref.slice(0, 7)})`);
+      parts.push(`(${info.ref.slice(0, GIT_SHA_PREVIEW_LENGTH)})`);
     }
 
     return parts.length > 0 ? parts.join(' ') : undefined;
@@ -197,23 +201,319 @@ export function formatDiagnosticMarkdown(err: CapturedError): string {
   return lines.join('\n');
 }
 
+export function buildFeedbackPrefill(err: CapturedError): { title: string; description: string } {
+  const diag = formatDiagnosticMarkdown(err);
+  return {
+    title: err.summary.slice(0, MAX_FEEDBACK_TITLE_LENGTH),
+    description: [
+      '**Was hast du gerade gemacht, als der Fehler auftrat?**',
+      '',
+      '',
+      '<details>',
+      '<summary>Technische Fehlerdiagnose</summary>',
+      '',
+      diag,
+      '</details>',
+    ].join('\n'),
+  };
+}
+
+function extractApiDataDetails(err: unknown): string | undefined {
+  if (typeof err !== 'object' || err === null || !('data' in err)) {
+    return undefined;
+  }
+
+  const data = (err as { data?: unknown }).data;
+
+  if (data == null) {
+    return undefined;
+  }
+
+  if (typeof data === 'string') {
+    return data.trim() || undefined;
+  }
+
+  if (typeof data === 'object' && 'details' in data) {
+    const detailsVal = (data as { details?: unknown }).details;
+
+    if (typeof detailsVal === 'string' && detailsVal.trim()) {
+      return detailsVal.trim();
+    }
+  }
+
+  try {
+    return JSON.stringify(data, null, 2);
+  } catch {
+    return undefined;
+  }
+}
+
+function extractErrorName(err: unknown, isApi: boolean): string {
+  if (err instanceof Error) {
+    return err.name || (isApi ? 'ApiError' : 'Error');
+  }
+
+  if (isApi) {
+    return 'ApiError';
+  }
+
+  if (typeof err === 'object' && err !== null && 'name' in err) {
+    return String((err as { name: unknown }).name);
+  }
+
+  return 'Error';
+}
+
+function extractRawMessage(err: unknown): string {
+  if (err instanceof Error) {
+    return err.message;
+  }
+
+  if (typeof err === 'string') {
+    return err;
+  }
+
+  if (typeof err === 'object' && err !== null && 'message' in err) {
+    return String((err as { message: unknown }).message);
+  }
+
+  return JSON.stringify(err) || 'Unbekannter Fehler';
+}
+
+function isApiErrorLike(err: unknown): boolean {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'status' in err &&
+    typeof (err as { status: unknown }).status === 'number'
+  );
+}
+
+function resolveErrorDetails(
+  err: unknown,
+  opts: NotifyErrorOptions
+): {
+  status?: number;
+  method?: string;
+  path?: string;
+  kind: 'api' | 'runtime' | 'sync';
+  errorName: string;
+  rawMessage: string;
+  stack?: string;
+} {
+  const isApi = isApiErrorLike(err);
+  const errObj = typeof err === 'object' && err !== null ? (err as Record<string, unknown>) : null;
+  const status = opts.status ?? (isApi ? (errObj?.status as number) : undefined);
+  const method =
+    opts.method ?? (isApi && typeof errObj?.method === 'string' ? errObj.method : undefined);
+  const path = opts.path ?? (isApi && typeof errObj?.path === 'string' ? errObj.path : undefined);
+  const kind: 'api' | 'runtime' | 'sync' =
+    opts.kind ?? (isApi || status !== undefined ? 'api' : 'runtime');
+
+  let stack = err instanceof Error ? err.stack : undefined;
+  const dataDetails = extractApiDataDetails(err);
+
+  if (dataDetails && (!stack || !stack.includes(dataDetails))) {
+    stack = stack
+      ? `${stack}\n\nResponse Details:\n${dataDetails}`
+      : `Response Details:\n${dataDetails}`;
+  }
+
+  return {
+    status,
+    method,
+    path,
+    kind,
+    errorName: extractErrorName(err, isApi),
+    rawMessage: extractRawMessage(err),
+    stack,
+  };
+}
+
+export function isCapturedError(val: unknown): val is CapturedError {
+  if (typeof val !== 'object' || val === null) {
+    return false;
+  }
+
+  const candidate = val as Partial<CapturedError>;
+
+  return (
+    typeof candidate.id === 'number' &&
+    typeof candidate.summary === 'string' &&
+    typeof candidate.rawMessage === 'string' &&
+    typeof candidate.timestamp === 'string'
+  );
+}
+
+function normalizeOptions(contextOrOptions?: string | NotifyErrorOptions): NotifyErrorOptions {
+  return typeof contextOrOptions === 'string'
+    ? { context: contextOrOptions }
+    : (contextOrOptions ?? {});
+}
+
+function buildSummaryWithStatus(message: string, context?: string, status?: number): string {
+  const base = context ? `${context}: ${message}` : message;
+
+  if (status && !base.includes(String(status))) {
+    return `${base} (HTTP ${status})`;
+  }
+
+  return base;
+}
+
+function findMatchingRecentError(message: string, opts: NotifyErrorOptions): CapturedError | null {
+  const now = Date.now();
+
+  for (const entry of recentErrors.value) {
+    const ageMs = now - Date.parse(entry.timestamp);
+
+    if (Number.isNaN(ageMs) || ageMs > RECENT_ERROR_MATCH_WINDOW_MS) {
+      continue;
+    }
+
+    if (opts.context && entry.summary.startsWith(opts.context)) {
+      return entry;
+    }
+
+    if (
+      entry.summary === message ||
+      entry.rawMessage === message ||
+      (entry.rawMessage.length >= MIN_MATCH_SUBSTRING_LENGTH && message.includes(entry.rawMessage))
+    ) {
+      return entry;
+    }
+  }
+
+  return null;
+}
+
+function resolveFromStringMessage(message: string, opts: NotifyErrorOptions): CapturedError | null {
+  const trimmed = message.trim();
+
+  if (!trimmed) {
+    return activeError.value ?? recentErrors.value[0] ?? null;
+  }
+
+  const matchedRecent = findMatchingRecentError(trimmed, opts);
+
+  if (matchedRecent) {
+    return matchedRecent;
+  }
+
+  const lastApi = typeof getLastApiError === 'function' ? getLastApiError() : null;
+  const isFreshApiError =
+    lastApi !== null && Date.now() - lastApi.timestamp <= RECENT_ERROR_MATCH_WINDOW_MS;
+
+  if (isFreshApiError && opts.kind !== 'runtime') {
+    const apiErr = lastApi.error;
+
+    return createCapturedError(apiErr, {
+      ...opts,
+      summaryOverride:
+        opts.summaryOverride ?? buildSummaryWithStatus(trimmed, opts.context, apiErr.status),
+    });
+  }
+
+  return createCapturedError(new Error(trimmed), {
+    ...opts,
+    summaryOverride:
+      opts.summaryOverride ?? buildSummaryWithStatus(trimmed, opts.context, opts.status),
+  });
+}
+
+export function resolveOrCreateCapturedError(
+  errorOrMessage?: CapturedError | unknown,
+  contextOrOptions?: string | NotifyErrorOptions
+): CapturedError | null {
+  if (errorOrMessage === undefined || errorOrMessage === null) {
+    return activeError.value ?? recentErrors.value[0] ?? null;
+  }
+
+  if (isCapturedError(errorOrMessage)) {
+    return errorOrMessage;
+  }
+
+  const opts = normalizeOptions(contextOrOptions);
+
+  if (typeof errorOrMessage === 'string') {
+    return resolveFromStringMessage(errorOrMessage, opts);
+  }
+
+  return createCapturedError(errorOrMessage, opts);
+}
+
+export function createCapturedError(
+  err: unknown,
+  contextOrOptions?: string | NotifyErrorOptions
+): CapturedError {
+  const opts = normalizeOptions(contextOrOptions);
+  const { status, method, path, kind, errorName, rawMessage, stack } = resolveErrorDetails(
+    err,
+    opts
+  );
+  const summary =
+    opts.summaryOverride?.trim() || buildSummary(kind, rawMessage, opts.context, status);
+  const route =
+    typeof window !== 'undefined' ? window.location.pathname + window.location.search : undefined;
+  const online = typeof navigator !== 'undefined' ? navigator.onLine : true;
+
+  return {
+    id: nextErrorId++,
+    summary,
+    kind,
+    errorName,
+    rawMessage,
+    status,
+    method,
+    path,
+    route,
+    componentInfo: opts.componentInfo,
+    stack,
+    timestamp: new Date().toISOString(),
+    appVersion: getAppVersionString(),
+    online,
+  };
+}
+
 export function useErrorNotifier() {
   const { showToast } = useToast();
 
-  function openErrorModal(error?: CapturedError) {
-    if (error) {
-      activeError.value = error;
-    } else if (!activeError.value && recentErrors.value.length > 0) {
-      activeError.value = recentErrors.value[0];
+  function openErrorModal(
+    errorOrMessage?: CapturedError | unknown,
+    contextOrOptions?: string | NotifyErrorOptions
+  ) {
+    const resolved = resolveOrCreateCapturedError(errorOrMessage, contextOrOptions);
+
+    if (!resolved) {
+      return;
     }
 
-    if (activeError.value) {
-      isErrorModalOpen.value = true;
-    }
+    activeError.value = resolved;
+    isFeedbackModalOpen.value = false;
+    isErrorModalOpen.value = true;
   }
 
   function closeErrorModal() {
     isErrorModalOpen.value = false;
+  }
+
+  function openErrorFeedback(
+    errorOrMessage?: CapturedError | unknown,
+    contextOrOptions?: string | NotifyErrorOptions
+  ) {
+    const resolved = resolveOrCreateCapturedError(errorOrMessage, contextOrOptions);
+
+    if (!resolved) {
+      return;
+    }
+
+    activeError.value = resolved;
+    isErrorModalOpen.value = false;
+    isFeedbackModalOpen.value = true;
+  }
+
+  function closeFeedbackModal() {
+    isFeedbackModalOpen.value = false;
   }
 
   function notifyError(
@@ -226,54 +526,11 @@ export function useErrorNotifier() {
 
     markErrorHandled(err);
 
-    const opts: NotifyErrorOptions =
-      typeof contextOrOptions === 'string'
-        ? { context: contextOrOptions }
-        : (contextOrOptions ?? {});
-
-    const isApi =
-      err instanceof ApiError ||
-      (typeof err === 'object' &&
-        err !== null &&
-        'status' in err &&
-        typeof (err as { status: unknown }).status === 'number');
-
-    const status = isApi ? (err as { status: number }).status : undefined;
-    const method =
-      opts.method ??
-      (isApi && 'method' in (err as object) ? (err as { method?: string }).method : undefined);
-    const path =
-      opts.path ??
-      (isApi && 'path' in (err as object) ? (err as { path?: string }).path : undefined);
-
-    const kind: 'api' | 'runtime' | 'sync' = opts.kind ?? (isApi ? 'api' : 'runtime');
-
-    let errorName = 'Error';
-
-    if (err instanceof Error) {
-      errorName = err.name || (isApi ? 'ApiError' : 'Error');
-    } else if (isApi) {
-      errorName = 'ApiError';
-    } else if (typeof err === 'object' && err !== null && 'name' in err) {
-      errorName = String((err as { name: unknown }).name);
-    }
-
-    let rawMessage = 'Unbekannter Fehler';
-
-    if (err instanceof Error) {
-      rawMessage = err.message;
-    } else if (typeof err === 'string') {
-      rawMessage = err;
-    } else if (typeof err === 'object' && err !== null && 'message' in err) {
-      rawMessage = String((err as { message: unknown }).message);
-    } else {
-      rawMessage = JSON.stringify(err) || 'Unbekannter Fehler';
-    }
-
-    const stack = err instanceof Error ? err.stack : undefined;
+    const opts = normalizeOptions(contextOrOptions);
+    const captured = createCapturedError(err, opts);
 
     // Deduplizierung (Flood-Schutz innerhalb von 2000ms)
-    const dedupeKey = `${errorName}|${rawMessage}|${path ?? ''}`;
+    const dedupeKey = `${captured.errorName}|${captured.rawMessage}|${captured.path ?? ''}`;
     const now = Date.now();
     const lastSeen = dedupeMap.get(dedupeKey);
 
@@ -283,35 +540,13 @@ export function useErrorNotifier() {
 
     dedupeMap.set(dedupeKey, now);
 
-    const summary = buildSummary(kind, rawMessage, opts.context, status);
-    const route =
-      typeof window !== 'undefined' ? window.location.pathname + window.location.search : undefined;
-    const online = typeof navigator !== 'undefined' ? navigator.onLine : true;
-
-    const captured: CapturedError = {
-      id: nextErrorId++,
-      summary,
-      kind,
-      errorName,
-      rawMessage,
-      status,
-      method,
-      path,
-      route,
-      componentInfo: opts.componentInfo,
-      stack,
-      timestamp: new Date().toISOString(),
-      appVersion: getAppVersionString(),
-      online,
-    };
-
     recentErrors.value = [captured, ...recentErrors.value].slice(0, MAX_RECENT_ERRORS);
 
     if (!opts.silent) {
       showToast({
-        message: summary,
+        message: captured.summary,
         type: 'error',
-        duration: 8000,
+        duration: TOAST_ERROR_DURATION_MS,
         action: {
           label: 'Details anzeigen',
           onClick: () => openErrorModal(captured),
@@ -343,18 +578,27 @@ export function useErrorNotifier() {
     recentErrors.value = [];
     activeError.value = null;
     isErrorModalOpen.value = false;
+    isFeedbackModalOpen.value = false;
     dedupeMap.clear();
+
+    if (typeof clearLastApiError === 'function') {
+      clearLastApiError();
+    }
   }
 
   return {
     recentErrors: readonly(recentErrors),
     activeError: readonly(activeError),
     isErrorModalOpen,
+    isFeedbackModalOpen,
     notifyError,
     notifyOutboxRejected,
     notifyOutboxFailed,
     openErrorModal,
     closeErrorModal,
+    openErrorFeedback,
+    closeFeedbackModal,
+    resolveOrCreateCapturedError,
     clearErrors,
     formatDiagnosticMarkdown,
   };

@@ -67,6 +67,7 @@ const tripId = computed(() => props.fromSpot?.trip_id || props.toSpot?.trip_id);
 const {
   isCalculatingRoute,
   routeCalculationError,
+  routeCalculationErrorDetails,
   calculatedDistanceMeters,
   calculatedDurationSeconds,
   routeGeometry,
@@ -190,6 +191,7 @@ watch(
     }
 
     routeCalculationError.value = null;
+    routeCalculationErrorDetails.value = null;
 
     if (props.leg) {
       populateFromLeg(props.leg);
@@ -289,6 +291,7 @@ function onDelete() {
         :is-calculating-route="isCalculatingRoute"
         :has-exact-route="hasExactRoute"
         :route-calculation-error="routeCalculationError"
+        :route-calculation-error-details="routeCalculationErrorDetails"
         :transport-type="form.transport_type"
         :from-spot="fromSpot"
         :to-spot="toSpot"

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import type { RouteResult, Spot } from '../api/types';
 import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
+import Alert from './primitives/Alert.vue';
 import Badge from './primitives/Badge.vue';
 import Button from './primitives/Button.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
@@ -13,20 +14,24 @@ import type { IconDef } from '../utils/icon';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { ROUTE_MODE_OPTIONS, ROUTE_PREFERENCE_OPTIONS } from '../utils/legTransportConfig';
 import type { MiniMapHandle } from '../composables/useLegRoutingAccordion';
+import { createCapturedError, type CapturedError } from '../composables/useErrorNotifier';
 
 export type RoutePreference = 'fastest' | 'shortest';
 export type RouteDisplayMode = 'exact' | 'direct';
+
+const MINIMAP_REFRESH_DELAY_MS = 150;
 
 const isOpen = defineModel<boolean>('isOpen', { default: true });
 const routePreference = defineModel<RoutePreference>('routePreference', { default: 'fastest' });
 const routeDisplayMode = defineModel<RouteDisplayMode>('routeDisplayMode', { default: 'exact' });
 
-defineProps<{
+const props = defineProps<{
   isDisabled: boolean;
   disabledTitle?: string;
   isCalculatingRoute: boolean;
   hasExactRoute: boolean;
   routeCalculationError: string | null;
+  routeCalculationErrorDetails?: CapturedError | null;
   transportType: string;
   fromSpot?: Spot | null;
   toSpot?: Spot | null;
@@ -46,13 +51,28 @@ const emit = defineEmits<{
 
 const miniMapRef = ref<MiniMapHandle | null>(null);
 
+const resolvedRouteErrorDetails = computed<CapturedError | undefined>(() => {
+  if (!props.routeCalculationError) {
+    return undefined;
+  }
+
+  return (
+    props.routeCalculationErrorDetails ??
+    createCapturedError(new Error(props.routeCalculationError), {
+      kind: 'api',
+      componentInfo: `LegRouteSection (transport=${props.transportType}, preference=${routePreference.value})`,
+      summaryOverride: `Routenberechnung (${props.transportType}): ${props.routeCalculationError}`,
+    })
+  );
+});
+
 watch(isOpen, async (open) => {
   if (open) {
     await nextTick();
     setTimeout(() => {
       miniMapRef.value?.invalidateSize?.();
       miniMapRef.value?.render?.();
-    }, 150);
+    }, MINIMAP_REFRESH_DELAY_MS);
   }
 });
 
@@ -86,36 +106,44 @@ const routeHeadingIconDef: IconDef = {
     </template>
 
     <!-- Zustand 1: Noch keine Route berechnet -> Aufforderung zur Berechnung -->
-    <div v-if="!hasExactRoute" class="route-calc-header">
-      <div class="route-calc-info">
-        <span class="route-calc-hint">
-          Exakte Route, Distanz und Fahrzeit für {{ transportType }} berechnen.
-        </span>
-      </div>
-      <div class="route-calc-init-controls">
-        <SegmentedToggle
-          class="route-preference-toggle"
-          :model-value="routePreference"
-          :options="ROUTE_PREFERENCE_OPTIONS"
-          aria-label="Routenpräferenz"
-          @update:model-value="(val) => (routePreference = val as RoutePreference)"
-        />
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          class="btn-calc-route"
-          :loading="isCalculatingRoute"
-          @click="emit('calculateRoute')"
-        >
-          Route berechnen
-        </Button>
+    <div v-if="!hasExactRoute" class="route-calc-empty">
+      <div class="route-calc-header">
+        <div class="route-calc-info">
+          <span class="route-calc-hint">
+            Exakte Route, Distanz und Fahrzeit für {{ transportType }} berechnen.
+          </span>
+        </div>
+        <div class="route-calc-init-controls">
+          <SegmentedToggle
+            class="route-preference-toggle"
+            :model-value="routePreference"
+            :options="ROUTE_PREFERENCE_OPTIONS"
+            aria-label="Routenpräferenz"
+            @update:model-value="(val) => (routePreference = val as RoutePreference)"
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            class="btn-calc-route"
+            :loading="isCalculatingRoute"
+            @click="emit('calculateRoute')"
+          >
+            Route berechnen
+          </Button>
+        </div>
       </div>
 
-      <p v-if="routeCalculationError" class="route-calc-error">
-        <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
-        <span>{{ routeCalculationError }}</span>
-      </p>
+      <Alert
+        v-if="routeCalculationError"
+        variant="danger"
+        size="sm"
+        reportable
+        :description="routeCalculationError"
+        :error-details="resolvedRouteErrorDetails"
+        :error-context="`Routenberechnung (${transportType})`"
+        class="route-calc-error-alert"
+      />
     </div>
 
     <!-- Zustand 2: Route liegt vor -> Vollflächige Mini-Map mit schwebender Mini-Card -->
@@ -184,10 +212,17 @@ const routeHeadingIconDef: IconDef = {
             </div>
           </div>
 
-          <p v-if="routeCalculationError" class="route-calc-error">
-            <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
-            <span>{{ routeCalculationError }}</span>
-          </p>
+          <Alert
+            v-if="routeCalculationError"
+            variant="danger"
+            size="sm"
+            reportable
+            :description="routeCalculationError"
+            :error-details="resolvedRouteErrorDetails"
+            :error-context="`Routenberechnung (${transportType})`"
+            report-label="Fehler melden"
+            class="route-calc-error-alert"
+          />
         </div>
       </div>
     </div>
@@ -195,17 +230,28 @@ const routeHeadingIconDef: IconDef = {
 </template>
 
 <style scoped>
+.route-calc-empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
 .route-calc-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: var(--space-3);
+  min-width: 0;
 }
 
 .route-calc-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  flex: 1 1 200px;
+  min-width: 0;
   min-height: 40px;
   justify-content: center;
 }
@@ -318,6 +364,8 @@ const routeHeadingIconDef: IconDef = {
   right: auto;
   width: 260px;
   max-width: calc(100% - 24px);
+  max-height: calc(100% - 34px);
+  overflow-y: auto;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md-squircle);
@@ -357,6 +405,7 @@ const routeHeadingIconDef: IconDef = {
   gap: var(--space-2);
   flex-wrap: wrap;
   justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 .route-mini-map-container {
@@ -421,20 +470,8 @@ const routeHeadingIconDef: IconDef = {
     opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.route-calc-error {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-1);
-  margin: 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-danger);
+.route-calc-error-alert {
   animation: route-content-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.route-floating-card .route-calc-error {
-  margin: 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-danger);
 }
 
 @keyframes route-content-in {
@@ -452,7 +489,7 @@ const routeHeadingIconDef: IconDef = {
   .route-mode-pane,
   .route-mode-pane-inner,
   .route-calc-hint,
-  .route-calc-error {
+  .route-calc-error-alert {
     transition: none !important;
     animation: none !important;
     transform: none !important;

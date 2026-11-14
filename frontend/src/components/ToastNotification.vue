@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { getActivePinia } from 'pinia';
 import { useToast, type ToastItem } from '../composables/useToast';
+import { useErrorNotifier } from '../composables/useErrorNotifier';
 import { useTripStore } from '../stores/trip';
 
 const { toasts, removeToast } = useToast();
@@ -39,6 +40,11 @@ function parseMessageSegments(message: string): MessageSegment[] {
       text: part,
       isTrashLink: part === 'Papierkorb',
     }));
+}
+
+function handleErrorDetailsClick(toast: ToastItem) {
+  useErrorNotifier().openErrorModal(toast.message);
+  removeToast(toast.id);
 }
 
 async function handleActionClick(toast: ToastItem) {
@@ -95,6 +101,14 @@ async function handleActionClick(toast: ToastItem) {
               @click="handleActionClick(toast)"
             >
               {{ toast.action.label }}
+            </button>
+            <button
+              v-else-if="toast.type === 'error'"
+              type="button"
+              class="toast-action toast-action-btn"
+              @click="handleErrorDetailsClick(toast)"
+            >
+              Details anzeigen
             </button>
           </div>
           <button

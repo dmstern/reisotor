@@ -19,6 +19,7 @@ import {
   formatWeekdayDate as formatWeekdayDateShared,
   toLocalDateString,
 } from '../utils/dateFormat';
+import { useErrorNotifier } from './useErrorNotifier';
 
 export interface UseDashboardWeatherOptions {
   trip: Ref<Trip | null | undefined> | ComputedRef<Trip | null | undefined>;
@@ -73,6 +74,7 @@ export function useDashboardWeather(
   const spotsStore = useSpotsStore();
   const weatherProvider = useWeatherProviderStore();
   const uiSettings = useUiSettingsStore();
+  const { notifyError } = useErrorNotifier();
 
   const weatherDays = ref<DailyWeather[] | null>(null);
   const weatherError = ref<string | null>(null);
@@ -115,8 +117,13 @@ export function useDashboardWeather(
       if (home.value && !homeWeatherDays.value && !homeWeatherLoading.value) {
         void loadHomeWeather();
       }
-    } catch {
+    } catch (err) {
       weatherError.value = 'Wetterdaten konnten nicht geladen werden.';
+      notifyError(err, {
+        context: 'Wetterdaten laden',
+        componentInfo: 'DashboardWeatherCard',
+        silent: true,
+      });
     } finally {
       weatherLoading.value = false;
     }
@@ -136,8 +143,13 @@ export function useDashboardWeather(
         home.value.lng,
         weatherProvider.model
       );
-    } catch {
+    } catch (err) {
       homeWeatherError.value = 'Wetterdaten konnten nicht geladen werden.';
+      notifyError(err, {
+        context: 'Wetterdaten (Zuhause) laden',
+        componentInfo: 'DashboardWeatherCard',
+        silent: true,
+      });
     } finally {
       homeWeatherLoading.value = false;
     }

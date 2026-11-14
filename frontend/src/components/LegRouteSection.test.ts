@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest';
+import { beforeEach, describe, it, expect } from 'vitest';
 import { createApp, h, nextTick, type Component } from 'vue';
-import { createPinia } from 'pinia';
+import { createPinia, setActivePinia } from 'pinia';
 import LegRouteSection from './LegRouteSection.vue';
+import ErrorDetailModal from './ErrorDetailModal.vue';
+import { useErrorNotifier } from '../composables/useErrorNotifier';
 import type { RouteResult, Spot } from '../api/types';
 
 (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = class ResizeObserver {
@@ -48,6 +50,11 @@ const mockRoutes: RouteResult[] = [
 ];
 
 describe('LegRouteSection', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    useErrorNotifier().clearErrors();
+  });
+
   it('renders initial calculation controls when no exact route exists', async () => {
     let calcTriggered = false;
     const { cleanUp } = mountTestApp(LegRouteSection, {
@@ -146,5 +153,87 @@ describe('LegRouteSection', () => {
     expect(floatingCard).not.toBeNull();
 
     cleanUp();
+  });
+
+  it('renders clickable reportable Alert outside header and opens central error detail and feedback flow', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const app = createApp({
+      render: () =>
+        h('div', [
+          h(LegRouteSection, {
+            isOpen: true,
+            isDisabled: false,
+            isCalculatingRoute: false,
+            hasExactRoute: false,
+            routeCalculationError:
+              'Für „Auto“ wurde in der Nähe von Start oder Ziel keine befahrbare Straße gefunden.',
+            routeCalculationErrorDetails: {
+              id: 1,
+              summary:
+                'Routenberechnung (Auto): Für „Auto“ wurde in der Nähe von Start oder Ziel keine befahrbare Straße gefunden.',
+              kind: 'api',
+              errorName: 'Error',
+              rawMessage: 'OpenRouteService HTTP 404: {"error":{"code":2010}}',
+              method: 'POST',
+              path: '/trips/1/routes/directions',
+              componentInfo: 'LegRouteSection (transport=Auto, preference=fastest)',
+              timestamp: '2026-11-14T15:00:00.000Z',
+              online: true,
+            },
+            transportType: 'Auto',
+            routePreference: 'fastest',
+            routeDisplayMode: 'exact',
+            fromSpot: mockFromSpot,
+            toSpot: mockToSpot,
+            calculatedRoutes: [],
+            selectedRouteIndex: 0,
+            fastestRouteIndex: 0,
+            shortestRouteIndex: 0,
+            suggestedRouteIndex: 0,
+            calculatedDistanceMeters: null,
+            calculatedDurationSeconds: null,
+          }),
+          h(ErrorDetailModal),
+        ]),
+    });
+    app.use(pinia);
+    app.mount(container);
+    await nextTick();
+
+    const header = document.querySelector('.route-calc-header');
+    const errorBtn = document.querySelector('.route-calc-error-alert') as HTMLButtonElement | null;
+    expect(errorBtn).not.toBeNull();
+    expect(header?.contains(errorBtn)).toBe(false);
+    expect(errorBtn?.textContent).toContain('keine befahrbare Straße gefunden');
+    expect(errorBtn?.textContent).toContain('Fehlerdetails anzeigen & melden');
+
+    errorBtn!.click();
+    await nextTick();
+
+    const { isErrorModalOpen, activeError } = useErrorNotifier();
+    expect(isErrorModalOpen.value).toBe(true);
+    expect(activeError.value?.rawMessage).toContain('OpenRouteService HTTP 404');
+
+    const reportBtn = Array.from(document.body.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Als Bug melden')
+    );
+    expect(reportBtn).toBeDefined();
+    reportBtn!.click();
+    await nextTick();
+    await nextTick();
+
+    expect(document.body.innerHTML).toContain('Feedback geben');
+    const titleInput = document.body.querySelector('input[type="text"]') as HTMLInputElement | null;
+    const descTextarea = document.body.querySelector('textarea') as HTMLTextAreaElement | null;
+    expect(titleInput?.value).toContain('Routenberechnung (Auto)');
+    expect(descTextarea?.value).toContain('<details>');
+    expect(descTextarea?.value).toContain('OpenRouteService HTTP 404');
+
+    app.unmount();
+    container.remove();
+    document.body.innerHTML = '';
   });
 });

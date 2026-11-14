@@ -4,6 +4,7 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { buildGoogleMapsLink, buildOsmLink } from '../utils/googleMaps';
 import AppIcon from './AppIcon.vue';
+import Alert from './primitives/Alert.vue';
 import IconButton from './primitives/IconButton.vue';
 import LocationSearchBar from './LocationSearchBar.vue';
 import LocationPolaroidCard from './LocationPolaroidCard.vue';
@@ -679,10 +680,15 @@ defineExpose({
     </p>
 
     <!-- Standort-Ermittlungsfehler -->
-    <p v-if="locateError" class="hint error">
-      <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" />
-      Standort konnte nicht ermittelt werden.
-    </p>
+    <Alert
+      v-if="locateError"
+      variant="danger"
+      size="sm"
+      reportable
+      description="Standort konnte nicht ermittelt werden."
+      error-context="Standortermittlung (Geolocation)"
+      class="hint error"
+    />
   </div>
 </template>
 
@@ -912,7 +918,7 @@ defineExpose({
 }
 
 .hint.error {
-  color: var(--color-danger);
+  color: var(--color-danger-dark);
 }
 
 :root[data-theme='dark'] .location-picker-map :deep(.leaflet-tile-pane) {

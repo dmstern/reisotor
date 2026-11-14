@@ -1,8 +1,12 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
-import { ApiError } from '../api/client';
-import { useErrorNotifier, formatDiagnosticMarkdown } from './useErrorNotifier';
+import { ApiError, rawRequest } from '../api/client';
+import {
+  useErrorNotifier,
+  formatDiagnosticMarkdown,
+  createCapturedError,
+} from './useErrorNotifier';
 import { useToast } from './useToast';
 import { useBuildInfoStore } from '../stores/buildInfo';
 
@@ -157,5 +161,60 @@ describe('useErrorNotifier', () => {
     expect(captured?.kind).toBe('sync');
     expect(captured?.summary).toContain('Synchronisierung fehlgeschlagen');
     expect(captured?.status).toBe(500);
+  });
+
+  it('includes ApiError data details in diagnostic stack output', () => {
+    const err = new ApiError(404, 'Keine Route', {
+      method: 'POST',
+      path: '/trips/1/routes/directions',
+      data: { details: 'OpenRouteService HTTP 404: code 2010' },
+    });
+
+    const captured = createCapturedError(err, 'Routenberechnung');
+
+    expect(captured.stack).toContain('Response Details:');
+    expect(captured.stack).toContain('OpenRouteService HTTP 404: code 2010');
+  });
+
+  it('enriches string-based openErrorModal calls with recent rawRequest ApiError metadata', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ error: 'Upstream quota exceeded' }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    try {
+      await expect(
+        rawRequest('/trips/1/routes/directions', { method: 'POST', body: '{}' })
+      ).rejects.toThrow('Upstream quota exceeded');
+
+      const { openErrorModal, activeError, isErrorModalOpen } = useErrorNotifier();
+      openErrorModal('Routenberechnung fehlgeschlagen', { context: 'Routenberechnung' });
+
+      expect(isErrorModalOpen.value).toBe(true);
+      expect(activeError.value?.kind).toBe('api');
+      expect(activeError.value?.status).toBe(429);
+      expect(activeError.value?.method).toBe('POST');
+      expect(activeError.value?.path).toBe('/trips/1/routes/directions');
+      expect(activeError.value?.summary).toContain(
+        'Routenberechnung: Routenberechnung fehlgeschlagen'
+      );
+      expect(activeError.value?.summary).toContain('(HTTP 429)');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('opens FeedbackDialog state directly via openErrorFeedback', () => {
+    const { openErrorFeedback, isFeedbackModalOpen, isErrorModalOpen, activeError } =
+      useErrorNotifier();
+
+    openErrorFeedback(new Error('Verbindung unterbrochen'), 'Wetterdaten laden');
+
+    expect(isErrorModalOpen.value).toBe(false);
+    expect(isFeedbackModalOpen.value).toBe(true);
+    expect(activeError.value?.summary).toContain('Wetterdaten laden');
   });
 });

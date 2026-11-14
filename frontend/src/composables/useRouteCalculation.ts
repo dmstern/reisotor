@@ -2,6 +2,10 @@ import { computed, ref, watch, type ComputedRef, type Ref } from 'vue';
 import type { DirectionsResponse, RouteResult } from '../api/types';
 import { api } from '../api/client';
 import { parseRouteGeometry } from '../utils/mapRoute';
+import { createCapturedError, type CapturedError } from './useErrorNotifier';
+
+const ROUTE_REQUEST_TIMEOUT_MS = 25_000;
+const MAX_ROUTES = 3;
 
 export interface UseRouteCalculationOptions {
   tripId: ComputedRef<number | undefined | null> | Ref<number | undefined | null>;
@@ -66,6 +70,7 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
 
   const isCalculatingRoute = ref(false);
   const routeCalculationError = ref<string | null>(null);
+  const routeCalculationErrorDetails = ref<CapturedError | null>(null);
   const calculatedDistanceMeters = ref<number | null>(null);
   const calculatedDurationSeconds = ref<number | null>(null);
   const routeGeometry = ref<string | null>(null);
@@ -165,6 +170,7 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
     routePreference.value = cached.preference;
     routeDisplayMode.value = 'exact';
     routeCalculationError.value = null;
+    routeCalculationErrorDetails.value = null;
 
     cachedExactRoute.value = {
       geometry: cached.routeGeometry,
@@ -235,6 +241,7 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
   function onRouteModeChange(val: string) {
     routeDisplayMode.value = val as 'exact' | 'direct';
     routeCalculationError.value = null;
+    routeCalculationErrorDetails.value = null;
 
     if (val !== 'exact') {
       return;
@@ -260,6 +267,7 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
     selectedRouteIndex.value = 0;
     routeDisplayMode.value = 'exact';
     routeCalculationError.value = null;
+    routeCalculationErrorDetails.value = null;
     routeCacheByTransport.value = {};
   }
 
@@ -275,6 +283,7 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
     routeGeometry.value = geometry ?? null;
     routingProfile.value = profile ?? null;
     routeCalculationError.value = null;
+    routeCalculationErrorDetails.value = null;
 
     if (geometry) {
       cachedExactRoute.value = {
@@ -334,12 +343,14 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
     const reqId = ++activeCalcRequestId;
     isCalculatingRoute.value = true;
     routeCalculationError.value = null;
+    routeCalculationErrorDetails.value = null;
+
+    const id = tripId.value;
 
     try {
-      const id = tripId.value;
-
       if (!id) {
         routeCalculationError.value = 'Keine Reise-ID vorhanden';
+        routeCalculationErrorDetails.value = null;
         return false;
       }
 
@@ -353,7 +364,7 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
           transport_type: transportType.value,
           preference: routePreference.value,
         },
-        { timeoutMs: 25_000, noQueue: true }
+        { timeoutMs: ROUTE_REQUEST_TIMEOUT_MS, noQueue: true }
       );
 
       if (reqId !== activeCalcRequestId) {
@@ -361,11 +372,22 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
       }
 
       if (!res.supported || !res.routes?.length) {
-        routeCalculationError.value = res.reason || 'Keine Route gefunden';
+        const message = res.reason || 'Keine Route gefunden';
+        const diagnosticPayload = res.details
+          ? `${message}\n\n${res.details}`
+          : `${message}\nKoordinaten: [${from.lat}, ${from.lng}] -> [${to.lat}, ${to.lng}]`;
+        routeCalculationError.value = message;
+        routeCalculationErrorDetails.value = createCapturedError(new Error(diagnosticPayload), {
+          kind: 'api',
+          method: 'POST',
+          path: `/trips/${id}/routes/directions`,
+          componentInfo: `LegRouteSection (transport=${transportType.value}, preference=${routePreference.value})`,
+          summaryOverride: `Routenberechnung (${transportType.value}): ${message}`,
+        });
         return false;
       }
 
-      calculatedRoutes.value = res.routes.slice(0, 3);
+      calculatedRoutes.value = res.routes.slice(0, MAX_ROUTES);
       const suggestedIdx = suggestedRouteIndex.value >= 0 ? suggestedRouteIndex.value : 0;
       selectRoute(suggestedIdx);
       return true;
@@ -374,8 +396,15 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
         return false;
       }
 
-      routeCalculationError.value =
-        err instanceof Error ? err.message : 'Fehler beim Abrufen der Route';
+      const message = err instanceof Error ? err.message : 'Fehler beim Abrufen der Route';
+      routeCalculationError.value = message;
+      routeCalculationErrorDetails.value = createCapturedError(err, {
+        kind: 'api',
+        method: 'POST',
+        path: id ? `/trips/${id}/routes/directions` : '/routes/directions',
+        componentInfo: `LegRouteSection (transport=${transportType.value}, preference=${routePreference.value})`,
+        summaryOverride: `Routenberechnung (${transportType.value}): ${message}`,
+      });
       return false;
     } finally {
       if (reqId === activeCalcRequestId) {
@@ -391,6 +420,9 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
       if (!newType || newType === oldType) {
         return;
       }
+
+      routeCalculationError.value = null;
+      routeCalculationErrorDetails.value = null;
 
       const modeKey = normalizeRoutingTransport(newType);
 
@@ -420,11 +452,13 @@ export function useRouteCalculation(options: UseRouteCalculationOptions) {
     selectedRouteIndex.value = 0;
     cachedExactRoute.value = null;
     routeCalculationError.value = null;
+    routeCalculationErrorDetails.value = null;
   }
 
   return {
     isCalculatingRoute,
     routeCalculationError,
+    routeCalculationErrorDetails,
     calculatedDistanceMeters,
     calculatedDurationSeconds,
     routeGeometry,

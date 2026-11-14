@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Card from '../primitives/Card.vue';
 import Button from '../primitives/Button.vue';
+import Alert from '../primitives/Alert.vue';
 import AppIcon from '../AppIcon.vue';
 import SettingsCardHeader from './SettingsCardHeader.vue';
 import { useBackupExport } from '../../composables/useBackupExport';
@@ -36,7 +37,15 @@ const { exporting, exportError, exportBackup } = useBackupExport();
       </Button>
     </div>
 
-    <p v-if="exportError" class="hint error">{{ exportError }}</p>
+    <Alert
+      v-if="exportError"
+      variant="danger"
+      size="sm"
+      reportable
+      :description="exportError"
+      error-context="Datensicherung Export"
+      class="hint error"
+    />
     <p class="hint info-hint">
       <AppIcon :icon="ACTION_ICONS.info" :size="14" group="actions" /> Die Wiederherstellung
       (Import) erfolgt ab sofort manuell auf dem Server, um einen sicheren Austausch der Datenbank
@@ -74,6 +83,6 @@ const { exporting, exportError, exportBackup } = useBackupExport();
 }
 
 .hint.error {
-  color: var(--color-danger);
+  color: var(--color-danger-dark);
 }
 </style>
