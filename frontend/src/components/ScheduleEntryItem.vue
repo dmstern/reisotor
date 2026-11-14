@@ -7,6 +7,7 @@ import RichTextDisplay from './RichTextDisplay.vue';
 import CalendarExportDropdown from './CalendarExportDropdown.vue';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
 import { isEmptyRichText } from '../utils/richText';
 
 const props = withDefaults(
@@ -35,7 +36,10 @@ const categoryMeta = computed(
   <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions, vuejs-accessibility/click-events-have-key-events -->
   <li
     class="item clickable animate-cascade"
+    :class="{ 'item--todo': entry.kind === 'todo' }"
     tabindex="0"
+    :title="entry.kind === 'todo' ? 'Zur To-do-Liste springen' : undefined"
+    :aria-label="entry.kind === 'todo' ? `${entry.title} – Zur To-do-Liste springen` : undefined"
     :style="{
       '--stagger-delay': index != null ? `${index * 40}ms` : undefined,
       '--entry-cat-color': categoryMeta.color,
@@ -49,7 +53,8 @@ const categoryMeta = computed(
       <Checkbox
         v-if="entry.kind === 'todo'"
         class="todo-checkbox"
-        aria-label="Erledigt"
+        :aria-label="isDone ? 'Als unerledigt markieren' : 'Als erledigt markieren'"
+        :title="isDone ? 'Als unerledigt markieren' : 'Als erledigt markieren'"
         :checked="isDone"
         @click.stop="$emit('toggleTodo')"
       />
@@ -84,6 +89,14 @@ const categoryMeta = computed(
     </div>
 
     <div class="item-actions">
+      <span
+        v-if="entry.kind === 'todo'"
+        class="todo-nav-indicator"
+        title="Zur To-do-Liste springen"
+        aria-hidden="true"
+      >
+        <AppIcon :icon="ACTION_ICONS.arrowRight" :size="16" group="actions" />
+      </span>
       <CalendarExportDropdown :entry="entry" variant="ghost" />
     </div>
   </li>
@@ -217,5 +230,22 @@ const categoryMeta = computed(
   flex-shrink: 0;
   align-items: center;
   padding-top: calc(var(--space-1) / 2);
+}
+
+.todo-nav-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  padding: 2px;
+  border-radius: var(--radius-xs-squircle);
+  transition:
+    color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.item.clickable:hover .todo-nav-indicator {
+  color: var(--color-primary);
+  transform: translateX(3px);
 }
 </style>

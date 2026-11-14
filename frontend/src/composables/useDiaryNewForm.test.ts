@@ -135,7 +135,7 @@ describe('useDiaryNewForm', () => {
       })
     );
     expect(entryCreatedSpy).toHaveBeenCalledWith(createdEntry);
-    expect(linkDoneSpy).toHaveBeenCalledWith([5], [10], '2026-07-01');
+    expect(linkDoneSpy).toHaveBeenCalledWith([5], [10], '2026-07-01', []);
     expect(newForm.showForm.value).toBe(false);
   });
 

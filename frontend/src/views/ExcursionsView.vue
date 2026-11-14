@@ -19,6 +19,7 @@ import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useExcursionsStore } from '../stores/excursions';
+import { useDiaryStore } from '../stores/diary';
 import { useTracksStore } from '../stores/tracks';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { hashHighlightId } from '../utils/hashHighlight';
@@ -72,6 +73,7 @@ const scheduleStore = useScheduleStore();
 const drawers = useDrawersStore();
 const liveSync = useLiveSyncStore();
 const excursionsStore = useExcursionsStore();
+const diaryStore = useDiaryStore();
 const tracksStore = useTracksStore();
 const isDesktop = useIsDesktop();
 
@@ -759,46 +761,48 @@ function onExcursionShowOnMap(excursionId: number) {
   }
 }
 
-function onFocusSpotFromMap(spotId: number) {
-  const spot = spotsStore.spots.find((candidate) => candidate.id === spotId);
-  const isAccommodation = spot?.category === 'Unterkunft';
+async function onFocusSpotFromMap(spotId: number) {
+  groupMode.value = 'category';
 
-  if (groupMode.value === 'tracks' || isAccommodation) {
-    groupMode.value = 'category';
+  const spot = spotsStore.spots.find((candidate) => candidate.id === spotId);
+
+  if (
+    spot &&
+    categoryFilter.value.length > 0 &&
+    !categoryFilter.value.includes(spot.category ?? 'Sonstiges')
+  ) {
+    categoryFilter.value = [];
+  }
+
+  if (searchQuery.value) {
+    searchQuery.value = '';
   }
 
   if (sheetState.value === 'collapsed' || sheetState.value === 'full') {
     sheetState.value = 'partial';
   }
 
-  if (groupMode.value === 'tours' && !isAccommodation) {
-    const parentExcursion =
-      (drawers.mapFocusDate
-        ? excursionsStore.excursions.find(
-            (e) => e.spot_ids.includes(spotId) && e.date === drawers.mapFocusDate
-          )
-        : null) ??
-      excursionsStore.excursions.find((e) => e.spot_ids.includes(spotId) && e.date) ??
-      excursionsStore.excursions.find((e) => e.spot_ids.includes(spotId));
+  highlightedIds.value = new Set([spotId]);
 
-    if (parentExcursion) {
-      expandedExcursionId.value = parentExcursion.id;
-    }
-  } else if (isAccommodation) {
-    expandedExcursionId.value = null;
-  }
-
-  openSpotWithScroll(spotId);
+  await nextTick();
+  await openSpotWithScroll(spotId);
 }
 
-function onFocusExcursionFromMap(excursionId: number) {
+async function onFocusExcursionFromMap(excursionId: number) {
   groupMode.value = 'tours';
+
+  if (searchQuery.value) {
+    searchQuery.value = '';
+  }
 
   if (sheetState.value === 'collapsed' || sheetState.value === 'full') {
     sheetState.value = 'partial';
   }
 
-  openExcursionWithScroll(excursionId);
+  highlightedIds.value = new Set([excursionId]);
+
+  await nextTick();
+  await openExcursionWithScroll(excursionId);
 }
 
 // Drawer & Map Focus Watchers
@@ -832,10 +836,9 @@ watch(
 watch(
   () => [drawers.mapFocusExcursionId, drawers.focusVersion],
   ([excId]) => {
-    if (excId != null && isSheetOverlayMode.value) {
-      groupMode.value = 'tours';
+    if (excId != null) {
       nextTick(() => {
-        scrollToExcursion(excId);
+        onFocusExcursionFromMap(excId);
       });
     }
   }
@@ -844,13 +847,23 @@ watch(
 watch(
   () => [drawers.mapFocusKey, drawers.focusVersion],
   ([key]) => {
-    if (typeof key === 'string' && key.startsWith('spot-')) {
-      const spotId = Number(key.replace('spot-', ''));
+    if (typeof key === 'string') {
+      if (key.startsWith('spot-')) {
+        const spotId = Number(key.replace('spot-', ''));
 
-      if (!Number.isNaN(spotId)) {
-        nextTick(() => {
-          onFocusSpotFromMap(spotId);
-        });
+        if (!Number.isNaN(spotId)) {
+          nextTick(() => {
+            onFocusSpotFromMap(spotId);
+          });
+        }
+      } else if (key.startsWith('excursion-')) {
+        const excursionId = Number(key.replace('excursion-', ''));
+
+        if (!Number.isNaN(excursionId)) {
+          nextTick(() => {
+            onFocusExcursionFromMap(excursionId);
+          });
+        }
       }
     }
   }
@@ -871,6 +884,9 @@ watch(
     const matchingSpotIds = scheduleStore.items
       .filter((item) => item.date === date && item.spot_id != null)
       .map((item) => item.spot_id as number);
+    const matchingDiarySpotIds = diaryStore.entries
+      .filter((entry) => entry.date === date && Array.isArray(entry.spot_ids))
+      .flatMap((entry) => entry.spot_ids);
 
     const next = new Set<number>();
 
@@ -879,6 +895,10 @@ watch(
     }
 
     for (const sid of matchingSpotIds) {
+      next.add(sid);
+    }
+
+    for (const sid of matchingDiarySpotIds) {
       next.add(sid);
     }
 
@@ -965,6 +985,7 @@ onMounted(async () => {
       api.get<ExcursionComment[]>(`/ideas/comments?trip_id=${tripId}`),
       spotsStore.load(),
       excursionsStore.load(),
+      diaryStore.load(),
     ]);
     users.value = usersRes;
     social.excursionLikes.value = likesRes;
@@ -978,16 +999,31 @@ onMounted(async () => {
   if (hashId != null) {
     await nextTick();
     drawers.openMapAt(`spot-${hashId}`);
-    onFocusSpotFromMap(hashId);
-  }
+    await onFocusSpotFromMap(hashId);
+  } else if (excursionHashId != null) {
+    await nextTick();
+    drawers.openMapForExcursion(excursionHashId);
+    await onFocusExcursionFromMap(excursionHashId);
+  } else if (drawers.mapFocusKey) {
+    if (drawers.mapFocusKey.startsWith('spot-')) {
+      const spotId = Number(drawers.mapFocusKey.replace('spot-', ''));
 
-  if (excursionHashId == null) {
-    return;
-  }
+      if (!Number.isNaN(spotId)) {
+        await nextTick();
+        await onFocusSpotFromMap(spotId);
+      }
+    } else if (drawers.mapFocusKey.startsWith('excursion-')) {
+      const excId = Number(drawers.mapFocusKey.replace('excursion-', ''));
 
-  await nextTick();
-  drawers.openMapForExcursion(excursionHashId);
-  onFocusExcursionFromMap(excursionHashId);
+      if (!Number.isNaN(excId)) {
+        await nextTick();
+        await onFocusExcursionFromMap(excId);
+      }
+    }
+  } else if (drawers.mapFocusExcursionId != null) {
+    await nextTick();
+    await onFocusExcursionFromMap(drawers.mapFocusExcursionId);
+  }
 });
 
 onUnmounted(() => {

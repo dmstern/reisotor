@@ -16,6 +16,7 @@ import { usePersistedRef } from './usePersistedRef';
 import { useSpotsStore } from '../stores/spots';
 import { useExcursionsStore } from '../stores/excursions';
 import { useScheduleStore } from '../stores/schedule';
+import { useDiaryStore } from '../stores/diary';
 import { useIconStyleStore } from '../stores/iconStyle';
 import { useLiveSyncStore } from '../stores/liveSync';
 
@@ -47,6 +48,7 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
   const spotsStore = useSpotsStore();
   const excursionsStore = useExcursionsStore();
   const scheduleStore = useScheduleStore();
+  const diaryStore = useDiaryStore();
   const iconStyle = useIconStyleStore();
   const liveSync = useLiveSyncStore();
 
@@ -107,6 +109,20 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
 
         if (!existing || excursion.date < existing) {
           map.set(spotId, excursion.date);
+        }
+      }
+    }
+
+    for (const entry of diaryStore.entries) {
+      if (!entry.date) {
+        continue;
+      }
+
+      for (const spotId of entry.spot_ids ?? []) {
+        const existing = map.get(spotId);
+
+        if (!existing || entry.date < existing) {
+          map.set(spotId, entry.date);
         }
       }
     }

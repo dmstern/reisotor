@@ -91,20 +91,6 @@ function excursionDateMismatch(ex: Excursion): boolean {
   return links.excursionDateMismatch(ex, props.entry.date);
 }
 
-function spotDateMismatch(spotId: number): boolean {
-  return links.spotDateMismatch(spotId, props.entry.date);
-}
-
-function formatSpotMismatchText(spotId: number): string {
-  const dates = links.getSpotScheduledDates(spotId);
-
-  if (dates.length === 1) {
-    return formatDate(dates[0], { includeYear: false });
-  }
-
-  return 'abweichend';
-}
-
 function formatSpotMismatchTooltip(spot: Spot): string {
   const dates = links.getSpotScheduledDates(spot.id);
 
@@ -241,7 +227,6 @@ function excursionTooltip(ex: Excursion): string {
           type="button"
           variant="ghost"
           class="excursion-chip"
-          :class="{ 'excursion-chip--mismatch': spotDateMismatch(spot.id) }"
           :title="formatSpotMismatchTooltip(spot)"
           :aria-label="formatSpotMismatchTooltip(spot)"
           @click="drawers.openMapAt(`spot-${spot.id}`)"
@@ -260,14 +245,6 @@ function excursionTooltip(ex: Excursion): string {
             />
           </span>
           <span class="excursion-chip-title">{{ spot.title }}</span>
-          <span
-            v-if="spotDateMismatch(spot.id)"
-            class="chip-mismatch-badge"
-            :title="formatSpotMismatchTooltip(spot)"
-          >
-            <AppIcon :icon="ACTION_ICONS.warning" :size="12" group="actions" />
-            <span class="chip-mismatch-text">{{ formatSpotMismatchText(spot.id) }}</span>
-          </span>
         </Button>
       </div>
 

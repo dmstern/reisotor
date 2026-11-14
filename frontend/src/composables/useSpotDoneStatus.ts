@@ -12,6 +12,7 @@ import type { IdeaRole, Spot } from '../api/types';
 import { useScheduleStore } from '../stores/schedule';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
+import { useDiaryStore } from '../stores/diary';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import { toLocalDateString } from '../utils/dateFormat';
@@ -27,7 +28,7 @@ export interface ScheduledSpotItem {
   id: string | number;
   date: string;
   done: boolean | number;
-  type: 'schedule' | 'tour' | 'prop';
+  type: 'schedule' | 'tour' | 'prop' | 'diary';
   sourceId: number;
   title?: string;
   /** Nur bei type 'tour': Reiserolle (Anreise/Abreise/Weiterreise) bzw. null für Ausflüge. */
@@ -61,6 +62,7 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
   const scheduleStore = useScheduleStore();
   const excursionsStore = useExcursionsStore();
   const spotsStore = useSpotsStore();
+  const diaryStore = useDiaryStore();
   const tripStore = useTripStore();
   const drawers = useDrawersStore();
 
@@ -91,6 +93,19 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
           sourceId: excursion.id,
           title: excursion.title,
           role: excursion.role,
+        });
+      }
+    }
+
+    for (const entry of diaryStore.entries) {
+      if (entry.date && (entry.spot_ids ?? []).includes(spot.id)) {
+        result.push({
+          id: `diary-${entry.id}`,
+          date: entry.date,
+          done: true,
+          type: 'diary',
+          sourceId: entry.id,
+          title: entry.title || 'Tagebucheintrag',
         });
       }
     }

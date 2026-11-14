@@ -119,5 +119,47 @@ describe('DiaryEntityPicker', () => {
     expect(html).toContain('Geplant am 20.06.2026');
     expect(html).toContain('data-testid="diary-date-mismatch-alert"');
     expect(html).toContain('Eiffelturm');
+    expect(html).toContain('Geplantes Datum im Reiseplan auf den 16.06.2026 verschieben');
+    expect(html).toContain('id="diary-move-spot-10"');
+  });
+
+  it('markiert die Opt-in-Checkbox für Terminverschiebung als aktiviert, wenn Spot in moveSpotIds ist', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const spotsStore = useSpotsStore();
+    const scheduleStore = useScheduleStore();
+
+    spotsStore.spots = [
+      {
+        id: 10,
+        trip_id: 1,
+        title: 'Eiffelturm',
+        category: 'viewpoint',
+      } as unknown as Spot,
+    ];
+    scheduleStore.items = [
+      {
+        id: 101,
+        trip_id: 1,
+        spot_id: 10,
+        date: '2026-06-20',
+      } as any,
+    ];
+
+    const app = createApp({
+      render: () =>
+        h(DiaryEntityPicker, {
+          date: '2026-06-16',
+          excursionIds: [],
+          spotIds: [10],
+          moveSpotIds: [10],
+        }),
+    });
+    app.use(pinia);
+    const html = await renderToString(app);
+
+    expect(html).toContain('id="diary-move-spot-10"');
+    // Checkbox input hat checked-Attribut
+    expect(html).toMatch(/id="diary-move-spot-10"[^>]*checked/);
   });
 });

@@ -387,6 +387,18 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
       el = elGetter();
     }
 
+    if (!el && typeof window !== 'undefined') {
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve());
+      });
+
+      if (token !== activeScrollToken) {
+        return;
+      }
+
+      el = elGetter();
+    }
+
     if (!el) {
       return;
     }

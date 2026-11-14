@@ -20,6 +20,7 @@ const props = defineProps<{
 
 const excursionIds = defineModel<number[]>('excursionIds', { default: () => [] });
 const spotIds = defineModel<number[]>('spotIds', { default: () => [] });
+const moveSpotIds = defineModel<number[]>('moveSpotIds', { default: () => [] });
 
 const excursionsStore = useExcursionsStore();
 const spotsStore = useSpotsStore();
@@ -42,6 +43,14 @@ watch(
   (len) => {
     if (len > 0) {
       showSpotPicker.value = true;
+    }
+  }
+);
+watch(
+  () => spotIds.value,
+  (currentSpotIds) => {
+    if (moveSpotIds.value.some((id) => !currentSpotIds.includes(id))) {
+      moveSpotIds.value = moveSpotIds.value.filter((id) => currentSpotIds.includes(id));
     }
   }
 );
@@ -202,8 +211,22 @@ const hasDateMismatch = computed(() => {
           <li v-for="ex in mismatchedExcursions" :key="`ex-${ex.id}`">
             <strong>{{ ex.title }}</strong> (geplant am {{ formatDate(ex.date!) }})
           </li>
-          <li v-for="spot in mismatchedSpots" :key="`spot-${spot.id}`">
-            <strong>{{ spot.title }}</strong> ({{ formatSpotScheduledFull(spot.id) }})
+          <li v-for="spot in mismatchedSpots" :key="`spot-${spot.id}`" class="mismatch-spot-item">
+            <div class="mismatch-spot-info">
+              <strong>{{ spot.title }}</strong> ({{ formatSpotScheduledFull(spot.id) }})
+            </div>
+            <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+            <label :for="`diary-move-spot-${spot.id}`" class="mismatch-opt-in-label">
+              <Checkbox
+                :id="`diary-move-spot-${spot.id}`"
+                :value="spot.id"
+                v-model="moveSpotIds"
+                size="sm"
+              />
+              <span class="mismatch-opt-in-text">
+                Geplantes Datum im Reiseplan auf den {{ formatDate(date) }} verschieben
+              </span>
+            </label>
           </li>
         </ul>
       </div>
@@ -335,6 +358,31 @@ const hasDateMismatch = computed(() => {
   padding-left: var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2);
+}
+
+.mismatch-spot-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.mismatch-opt-in-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  user-select: none;
+  margin-top: 2px;
+}
+
+.mismatch-opt-in-label:hover {
+  color: var(--color-text);
+}
+
+.mismatch-opt-in-text {
+  line-height: 1.3;
 }
 </style>

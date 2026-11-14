@@ -6,6 +6,7 @@ import { useSpotDoneStatus } from './useSpotDoneStatus';
 import { useScheduleStore } from '../stores/schedule';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
+import { useDiaryStore } from '../stores/diary';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import type { Excursion, ScheduleItem, Spot } from '../api/types';
@@ -321,5 +322,32 @@ describe('useSpotDoneStatus', () => {
     // Togglen der Tour
     await toggleScheduledItemDone(scheduledItemsForSpot.value[1]);
     expect(excSetDoneSpy).toHaveBeenCalledWith(201, true);
+  });
+
+  it('leitet Termine dynamisch aus Tagebucheinträgen ab', () => {
+    const diaryStore = useDiaryStore();
+    diaryStore.entries = [
+      {
+        id: 77,
+        trip_id: 10,
+        author_id: 1,
+        title: 'Toller Strandtag',
+        date: '2026-08-15',
+        spot_ids: [1],
+      } as any,
+    ];
+
+    const spot = ref(createMockSpot({ id: 1, done: 0 }));
+    const scheduledDate = ref<string | null>(null);
+
+    const { scheduledItemsForSpot, totalItemsCount, isSpotDone } = useSpotDoneStatus({
+      spot,
+      scheduledDate,
+    });
+
+    expect(totalItemsCount.value).toBe(1);
+    expect(scheduledItemsForSpot.value[0].date).toBe('2026-08-15');
+    expect(scheduledItemsForSpot.value[0].type).toBe('diary');
+    expect(isSpotDone.value).toBe(true);
   });
 });

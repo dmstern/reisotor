@@ -4,6 +4,7 @@ import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useScheduleStore } from '../stores/schedule';
+import { useDiaryStore } from '../stores/diary';
 import { useDrawersStore } from '../stores/drawers';
 import { deriveTravelItems } from '../utils/deriveTravelItems';
 import { buildDayStations } from '../utils/dayStations';
@@ -14,6 +15,7 @@ export function useDiaryEntityLinks() {
   const excursionsStore = useExcursionsStore();
   const spotsStore = useSpotsStore();
   const scheduleStore = useScheduleStore();
+  const diaryStore = useDiaryStore();
   const drawers = useDrawersStore();
 
   const travelItems = computed(() =>
@@ -29,7 +31,10 @@ export function useDiaryEntityLinks() {
   function spotAlreadyPlanned(spotId: number, dateStr: string): boolean {
     return (
       scheduleStore.items.some((i) => i.spot_id === spotId && i.date === dateStr) ||
-      excursionsStore.excursions.some((e) => e.date === dateStr && e.spot_ids.includes(spotId))
+      excursionsStore.excursions.some((e) => e.date === dateStr && e.spot_ids.includes(spotId)) ||
+      diaryStore.entries.some(
+        (entry) => entry.date === dateStr && (entry.spot_ids ?? []).includes(spotId)
+      )
     );
   }
 
@@ -55,6 +60,12 @@ export function useDiaryEntityLinks() {
     for (const excursion of excursionsStore.excursions) {
       if (excursion.date && (excursion.spot_ids ?? []).includes(spotId)) {
         dates.add(excursion.date);
+      }
+    }
+
+    for (const entry of diaryStore.entries) {
+      if (entry.date && (entry.spot_ids ?? []).includes(spotId)) {
+        dates.add(entry.date);
       }
     }
 
@@ -106,7 +117,12 @@ export function useDiaryEntityLinks() {
     }
   }
 
-  async function markLinkedAsDone(excursionIds: number[], spotIds: number[], date: string) {
+  async function markLinkedAsDone(
+    excursionIds: number[],
+    spotIds: number[],
+    date: string,
+    moveSpotIds: number[] = []
+  ) {
     const tripId = tripStore.currentTripId;
 
     try {
@@ -121,7 +137,7 @@ export function useDiaryEntityLinks() {
           await excursionsStore.setDone(id, true);
         }),
         ...spotIds.map(async (id) => {
-          if (tripId != null && !spotAlreadyPlanned(id, date)) {
+          if (tripId != null && moveSpotIds.includes(id)) {
             const spot = spotsStore.spots.find((targetSpot) => targetSpot.id === id);
 
             if (spot) {

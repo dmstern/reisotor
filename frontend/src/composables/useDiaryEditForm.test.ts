@@ -83,7 +83,7 @@ describe('useDiaryEditForm', () => {
       })
     );
     expect(updatedSpy).toHaveBeenCalledWith(updatedEntry);
-    expect(linkDoneSpy).toHaveBeenCalledWith([10], [20], '2026-07-02');
+    expect(linkDoneSpy).toHaveBeenCalledWith([10], [20], '2026-07-02', []);
     expect(editForm.editingEntry.value).toBeNull();
   });
 

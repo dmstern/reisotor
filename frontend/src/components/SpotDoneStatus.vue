@@ -5,6 +5,7 @@ import type { Spot } from '../api/types';
 import { useSpotWeather } from '../composables/useSpotWeather';
 import { useSpotDoneStatus, type ScheduledSpotItem } from '../composables/useSpotDoneStatus';
 import { useDrawersStore } from '../stores/drawers';
+import { useTripStore } from '../stores/trip';
 import DoneToggle from './primitives/DoneToggle.vue';
 import Button from './primitives/Button.vue';
 import Input from './primitives/Input.vue';
@@ -13,6 +14,7 @@ import WeatherIcon from './WeatherIcon.vue';
 import AppIcon from './AppIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { getTourRoleIconDef } from '../utils/travelRole';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 
@@ -27,6 +29,7 @@ const emit = defineEmits<{
 }>();
 
 const drawers = useDrawersStore();
+const tripStore = useTripStore();
 const router = useRouter();
 
 const {
@@ -74,12 +77,24 @@ const hasDropdown = computed(() => props.expanded && totalItemsCount.value > 1);
 const checkAriaLabel = computed(() =>
   isSpotDone.value ? 'Nicht mehr als gemacht markieren' : 'Als gemacht markieren'
 );
-const actionAriaLabel = computed(() =>
-  plannedDateLabel.value ? `${plannedDateLabel.value} im Kalender öffnen` : undefined
-);
-const actionTitle = computed(() =>
-  plannedDateLabel.value ? `Zum ${plannedDateLabel.value} im Kalender springen` : undefined
-);
+const actionAriaLabel = computed(() => {
+  const single = scheduledItemsForSpot.value[0];
+
+  if (single?.type === 'diary') {
+    return 'Zum Tagebucheintrag springen';
+  }
+
+  return plannedDateLabel.value ? `${plannedDateLabel.value} im Kalender öffnen` : undefined;
+});
+const actionTitle = computed(() => {
+  const single = scheduledItemsForSpot.value[0];
+
+  if (single?.type === 'diary') {
+    return 'Zum Tagebucheintrag springen';
+  }
+
+  return plannedDateLabel.value ? `Zum ${plannedDateLabel.value} im Kalender springen` : undefined;
+});
 const dropdownTitle = computed(() =>
   hasDropdown.value ? 'Besuche für einzelne Tage verwalten' : undefined
 );
@@ -103,9 +118,21 @@ function handleSingleItemToggle() {
 function handleCalendarJump(event: MouseEvent) {
   event.stopPropagation();
 
-  if (targetCalendarDate.value) {
-    openCalendarAtDate(targetCalendarDate.value);
+  if (!targetCalendarDate.value) {
+    return;
   }
+
+  const single = scheduledItemsForSpot.value[0];
+
+  if (single?.type === 'diary') {
+    const tripId = tripStore.currentTripId;
+    router.push(
+      tripId ? `/trip/${tripId}/diary#entry-${single.sourceId}` : `/diary#entry-${single.sourceId}`
+    );
+    return;
+  }
+
+  openCalendarAtDate(targetCalendarDate.value);
 }
 
 function openCalendarAtDate(date: string) {
@@ -113,8 +140,12 @@ function openCalendarAtDate(date: string) {
   drawers.openCalendar(date);
 }
 
-/** Herkunft eines Termins: Kalender, Ausflug (Tour-Farbe) oder Reise-Etappe (Reise-Farbe). */
+/** Herkunft eines Termins: Kalender, Ausflug (Tour-Farbe), Tagebuch (Lila) oder Reise-Etappe (Reise-Farbe). */
 function dateSourceClass(item: ScheduledSpotItem): string {
+  if (item.type === 'diary') {
+    return 'is-diary';
+  }
+
   if (item.type !== 'tour') {
     return 'is-calendar';
   }
@@ -126,6 +157,15 @@ function handleItemJump(item: ScheduledSpotItem) {
   if (item.type === 'tour') {
     datesPopoverOpen.value = false;
     router.push(`/excursions#excursion-${item.sourceId}`);
+    return;
+  }
+
+  if (item.type === 'diary') {
+    datesPopoverOpen.value = false;
+    const tripId = tripStore.currentTripId;
+    router.push(
+      tripId ? `/trip/${tripId}/diary#entry-${item.sourceId}` : `/diary#entry-${item.sourceId}`
+    );
     return;
   }
 
@@ -315,11 +355,19 @@ function handleItemJump(item: ScheduledSpotItem) {
               size="sm"
               icon-only
               class="date-calendar-jump-btn"
-              :title="item.type === 'tour' ? 'Zur Tour springen' : 'Diesen Tag im Kalender öffnen'"
+              :title="
+                item.type === 'tour'
+                  ? 'Zur Tour springen'
+                  : item.type === 'diary'
+                    ? 'Zum Tagebucheintrag springen'
+                    : 'Diesen Tag im Kalender öffnen'
+              "
               :aria-label="
                 item.type === 'tour'
                   ? `Tour ${item.title ?? ''} öffnen`
-                  : `${formatDateShared(item.date)} im Kalender öffnen`
+                  : item.type === 'diary'
+                    ? `Tagebucheintrag ${item.title ?? ''} öffnen`
+                    : `${formatDateShared(item.date)} im Kalender öffnen`
               "
               @click.stop="handleItemJump(item)"
             >
@@ -328,6 +376,12 @@ function handleItemJump(item: ScheduledSpotItem) {
                 :icon="getTourRoleIconDef(item.role)"
                 :size="16"
                 group="categories"
+              />
+              <AppIcon
+                v-else-if="item.type === 'diary'"
+                :icon="SECTION_ICON_DEFS.diary"
+                :size="16"
+                group="navigation"
               />
               <AppIcon v-else :icon="FORM_FIELD_ICONS.date" :size="16" group="formFields" />
             </Button>
@@ -543,6 +597,22 @@ function handleItemJump(item: ScheduledSpotItem) {
 
 .is-calendar .date-calendar-jump-btn {
   color: var(--color-scheduled);
+}
+
+.is-diary .date-check-item:not(.checked) {
+  border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+}
+
+.is-diary .date-check-item:not(.checked):hover {
+  border-color: var(--color-primary);
+}
+
+.is-diary .date-calendar-jump-btn {
+  color: var(--color-primary);
+}
+
+.is-diary .date-calendar-jump-btn:hover {
+  color: var(--color-primary-dark);
 }
 
 .is-tour .date-check-item:not(.checked) {
