@@ -15,7 +15,12 @@ import type RichTextEditor from '../components/RichTextEditor.vue';
 export interface UseDiaryEditFormOptions {
   onEntryUpdated: (entry: DiaryEntry) => void;
   onEntryRemoved: (id: number) => Promise<void>;
-  onLinkDone: (excursionIds: number[], spotIds: number[], date: string) => void;
+  onLinkDone: (
+    excursionIds: number[],
+    spotIds: number[],
+    date: string,
+    moveSpotIds?: number[]
+  ) => void;
 }
 
 export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
@@ -26,6 +31,7 @@ export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
   const editForm = ref<DiaryFormData>(createEmptyDiaryForm());
   const editShowExcursionPicker = ref(false);
   const editShowSpotPicker = ref(false);
+  const moveSpotIds = ref<number[]>([]);
 
   const editorRef = ref<InstanceType<typeof RichTextEditor> | null>(null);
   const contentTouched = ref(false);
@@ -107,6 +113,7 @@ export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
     };
     editShowExcursionPicker.value = editForm.value.excursion_ids.length > 0;
     editShowSpotPicker.value = editForm.value.spot_ids.length > 0;
+    moveSpotIds.value = [];
     editingEntry.value = entry;
   }
 
@@ -147,7 +154,8 @@ export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
     editDraft.clear();
     editingEntry.value = null;
     onEntryUpdated(updated);
-    onLinkDone(excursionIds, spotIds, date);
+    onLinkDone(excursionIds, spotIds, date, moveSpotIds.value);
+    moveSpotIds.value = [];
   }
 
   async function saveDraftOnly() {
@@ -179,7 +187,8 @@ export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
     editDraft.clear();
     editingEntry.value = null;
     onEntryUpdated(updated);
-    onLinkDone(excursionIds, spotIds, date);
+    onLinkDone(excursionIds, spotIds, date, moveSpotIds.value);
+    moveSpotIds.value = [];
     showToast({
       message: 'Entwurf gespeichert.',
       type: 'info',
@@ -247,6 +256,7 @@ export function useDiaryEditForm(options: UseDiaryEditFormOptions) {
     editForm,
     editShowExcursionPicker,
     editShowSpotPicker,
+    moveSpotIds,
     editorRef,
     contentTouched,
     dateTouched,

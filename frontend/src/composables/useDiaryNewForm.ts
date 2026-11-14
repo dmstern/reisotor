@@ -18,7 +18,12 @@ export interface UseDiaryNewFormOptions {
   myDraft?: ComputedRef<DiaryEntry | null> | Ref<DiaryEntry | null>;
   onStartEditDraft?: (draft: DiaryEntry) => void;
   onEntryCreated: (entry: DiaryEntry) => void;
-  onLinkDone: (excursionIds: number[], spotIds: number[], date: string) => void;
+  onLinkDone: (
+    excursionIds: number[],
+    spotIds: number[],
+    date: string,
+    moveSpotIds?: number[]
+  ) => void;
 }
 
 export function useDiaryNewForm(options: UseDiaryNewFormOptions) {
@@ -30,6 +35,7 @@ export function useDiaryNewForm(options: UseDiaryNewFormOptions) {
   const form = ref<DiaryFormData>(createEmptyDiaryForm());
   const showExcursionPicker = ref(false);
   const showSpotPicker = ref(false);
+  const moveSpotIds = ref<number[]>([]);
 
   const editorRef = ref<InstanceType<typeof RichTextEditor> | null>(null);
   const contentTouched = ref(false);
@@ -68,6 +74,7 @@ export function useDiaryNewForm(options: UseDiaryNewFormOptions) {
     contentTouched.value = false;
     dateTouched.value = false;
     form.value = createEmptyDiaryForm();
+    moveSpotIds.value = [];
     showSpotPicker.value = false;
     form.value.excursion_ids = excursionsStore.excursions
       .filter((e) => e.date === form.value.date)
@@ -107,8 +114,9 @@ export function useDiaryNewForm(options: UseDiaryNewFormOptions) {
     };
     const created = await api.post<DiaryEntry>('/diary', body);
     onEntryCreated(created);
-    onLinkDone(form.value.excursion_ids, form.value.spot_ids, form.value.date);
+    onLinkDone(form.value.excursion_ids, form.value.spot_ids, form.value.date, moveSpotIds.value);
     form.value = createEmptyDiaryForm();
+    moveSpotIds.value = [];
     showForm.value = false;
     newDraft.clear();
   }
@@ -151,6 +159,7 @@ export function useDiaryNewForm(options: UseDiaryNewFormOptions) {
     form,
     showExcursionPicker,
     showSpotPicker,
+    moveSpotIds,
     editorRef,
     contentTouched,
     dateTouched,

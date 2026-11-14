@@ -19,6 +19,7 @@ import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useExcursionsStore } from '../stores/excursions';
+import { useDiaryStore } from '../stores/diary';
 import { useTracksStore } from '../stores/tracks';
 import { useIsDesktop } from '../composables/useIsDesktop';
 import { hashHighlightId } from '../utils/hashHighlight';
@@ -72,6 +73,7 @@ const scheduleStore = useScheduleStore();
 const drawers = useDrawersStore();
 const liveSync = useLiveSyncStore();
 const excursionsStore = useExcursionsStore();
+const diaryStore = useDiaryStore();
 const tracksStore = useTracksStore();
 const isDesktop = useIsDesktop();
 
@@ -871,6 +873,9 @@ watch(
     const matchingSpotIds = scheduleStore.items
       .filter((item) => item.date === date && item.spot_id != null)
       .map((item) => item.spot_id as number);
+    const matchingDiarySpotIds = diaryStore.entries
+      .filter((entry) => entry.date === date && Array.isArray(entry.spot_ids))
+      .flatMap((entry) => entry.spot_ids);
 
     const next = new Set<number>();
 
@@ -879,6 +884,10 @@ watch(
     }
 
     for (const sid of matchingSpotIds) {
+      next.add(sid);
+    }
+
+    for (const sid of matchingDiarySpotIds) {
       next.add(sid);
     }
 
@@ -965,6 +974,7 @@ onMounted(async () => {
       api.get<ExcursionComment[]>(`/ideas/comments?trip_id=${tripId}`),
       spotsStore.load(),
       excursionsStore.load(),
+      diaryStore.load(),
     ]);
     users.value = usersRes;
     social.excursionLikes.value = likesRes;

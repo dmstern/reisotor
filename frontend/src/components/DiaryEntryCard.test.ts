@@ -124,7 +124,7 @@ describe('DiaryEntryCard', () => {
     expect(html).toContain('15.08');
   });
 
-  it('rendert Warn-Badge an Spot-Chip, wenn Spot-Termin vom Tagebuch-Datum abweicht', async () => {
+  it('zeigt neutralen Tooltip ohne Warn-Badge an Spot-Chip, wenn Spot-Termin vom Tagebuch-Datum abweicht', async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const scheduleStore = useScheduleStore();
@@ -157,8 +157,8 @@ describe('DiaryEntryCard', () => {
     const html = await renderToString(app);
 
     expect(html).toContain('Aussichtspunkt');
-    expect(html).toContain('excursion-chip--mismatch');
-    expect(html).toContain('chip-mismatch-badge');
-    expect(html).toContain('20.08');
+    expect(html).toContain('title="Aussichtspunkt (geplant am 20.08.2026)"');
+    expect(html).not.toContain('excursion-chip--mismatch');
+    expect(html).not.toContain('chip-mismatch-badge');
   });
 });

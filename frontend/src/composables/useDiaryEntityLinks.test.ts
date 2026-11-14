@@ -7,6 +7,7 @@ import { useSpotsStore } from '../stores/spots';
 import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
 import { useTripStore } from '../stores/trip';
+import { useDiaryStore } from '../stores/diary';
 import type { Excursion, ScheduleItem, Spot, DiaryEntry } from '../api/types';
 
 vi.mock('../api/client', () => ({
@@ -185,5 +186,53 @@ describe('useDiaryEntityLinks', () => {
     expect(links.spotDateMismatch(20, '2026-07-01')).toBe(false);
     expect(links.spotDateMismatch(30, '2026-07-01')).toBe(true);
     expect(links.spotDateMismatch(30, '2026-07-08')).toBe(false);
+  });
+
+  it('markLinkedAsDone marks spots as done without creating/mutating schedule item unless in moveSpotIds', async () => {
+    const spotsStore = useSpotsStore();
+    const scheduleStore = useScheduleStore();
+
+    await vi.waitFor(() => {
+      expect(spotsStore.loaded).toBe(true);
+    });
+    spotsStore.spots = [{ id: 10, title: 'Spot A' } as Spot, { id: 20, title: 'Spot B' } as Spot];
+
+    const setDoneSpy = vi.spyOn(spotsStore, 'setDone').mockResolvedValue({} as any);
+    const setSpotDateSpy = vi.spyOn(scheduleStore, 'setSpotDate').mockResolvedValue({} as any);
+
+    const links = useDiaryEntityLinks();
+
+    // Ohne moveSpotIds: nur setDone, kein setSpotDate
+    await links.markLinkedAsDone([], [10], '2026-07-15');
+    expect(setDoneSpy).toHaveBeenCalledWith(10, true);
+    expect(setSpotDateSpy).not.toHaveBeenCalled();
+
+    // Mit moveSpotIds: setDone UND setSpotDate für die gewünschte ID
+    await links.markLinkedAsDone([], [20], '2026-07-15', [20]);
+    expect(setDoneSpy).toHaveBeenCalledWith(20, true);
+    expect(setSpotDateSpy).toHaveBeenCalledWith({
+      spotId: 20,
+      tripId: 1,
+      title: 'Spot B',
+      date: '2026-07-15',
+    });
+  });
+
+  it('erkennt dynamisch Termine aus Tagebucheinträgen', () => {
+    const diaryStore = useDiaryStore();
+
+    diaryStore.entries = [
+      {
+        id: 1,
+        date: '2026-07-12',
+        spot_ids: [50],
+      } as DiaryEntry,
+    ];
+
+    const links = useDiaryEntityLinks();
+    expect(links.spotAlreadyPlanned(50, '2026-07-12')).toBe(true);
+    expect(links.getSpotScheduledDates(50)).toContain('2026-07-12');
+    expect(links.spotDateMismatch(50, '2026-07-12')).toBe(false);
+    expect(links.spotDateMismatch(50, '2026-07-15')).toBe(true);
   });
 });

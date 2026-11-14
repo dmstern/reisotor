@@ -26,7 +26,13 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
   (e: 'created', entry: DiaryEntry): void;
   (e: 'startEditDraft', draft: DiaryEntry): void;
-  (e: 'linkDone', excursionIds: number[], spotIds: number[], date: string): void;
+  (
+    e: 'linkDone',
+    excursionIds: number[],
+    spotIds: number[],
+    date: string,
+    moveSpotIds?: number[]
+  ): void;
   (e: 'previewImage', images: DiaryImage[], index: number, onRemove: (idx: number) => void): void;
 }>();
 
@@ -38,14 +44,15 @@ const newFormLogic = useDiaryNewForm({
     emit('created', created);
     emit('update:modelValue', false);
   },
-  onLinkDone: (excursionIds, spotIds, date) => {
-    emit('linkDone', excursionIds, spotIds, date);
+  onLinkDone: (excursionIds, spotIds, date, moveSpotIds) => {
+    emit('linkDone', excursionIds, spotIds, date, moveSpotIds);
   },
 });
 
 const {
   showForm,
   form,
+  moveSpotIds,
   editorRef,
   contentTouched,
   dateTouched,
@@ -217,6 +224,7 @@ function handleUploadClick() {
         :date="form.date"
         v-model:excursion-ids="form.excursion_ids"
         v-model:spot-ids="form.spot_ids"
+        v-model:move-spot-ids="moveSpotIds"
       />
 
       <DraftStatusBar

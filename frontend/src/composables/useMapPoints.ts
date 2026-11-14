@@ -13,6 +13,7 @@ import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import { useSpotsStore } from '../stores/spots';
 import { useExcursionsStore } from '../stores/excursions';
+import { useDiaryStore } from '../stores/diary';
 import { useTracksStore } from '../stores/tracks';
 import { useAuthStore } from '../stores/auth';
 import { buildDayStations } from '../utils/dayStations';
@@ -57,6 +58,7 @@ export function useMapPoints(options: UseMapPointsOptions) {
   const drawers = useDrawersStore();
   const spotsStore = useSpotsStore();
   const excursionsStore = useExcursionsStore();
+  const diaryStore = useDiaryStore();
   const tracksStore = useTracksStore();
   const auth = useAuthStore();
 
@@ -219,6 +221,20 @@ export function useMapPoints(options: UseMapPointsOptions) {
 
         if (!existing || excursion.date < existing) {
           map.set(spotId, excursion.date);
+        }
+      }
+    }
+
+    for (const entry of diaryStore.entries) {
+      if (!entry.date) {
+        continue;
+      }
+
+      for (const spotId of entry.spot_ids ?? []) {
+        const existing = map.get(spotId);
+
+        if (!existing || entry.date < existing) {
+          map.set(spotId, entry.date);
         }
       }
     }

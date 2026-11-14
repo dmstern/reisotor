@@ -10,6 +10,7 @@ import {
 import type { Spot } from '../api/types';
 import { useScheduleStore } from '../stores/schedule';
 import { useExcursionsStore } from '../stores/excursions';
+import { useDiaryStore } from '../stores/diary';
 import { useWeatherProviderStore } from '../stores/weatherProvider';
 import { fetchMergedWeather, type DailyWeather } from '../utils/weather';
 import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
@@ -31,6 +32,7 @@ export interface UseSpotWeatherReturn {
 export function useSpotWeather(options: UseSpotWeatherOptions): UseSpotWeatherReturn {
   const scheduleStore = useScheduleStore();
   const excursionsStore = useExcursionsStore();
+  const diaryStore = useDiaryStore();
   const weatherProvider = useWeatherProviderStore();
 
   const scheduledDatesForSpot = computed(() => {
@@ -56,6 +58,12 @@ export function useSpotWeather(options: UseSpotWeatherOptions): UseSpotWeatherRe
     for (const excursion of excursionsStore.excursions) {
       if (excursion.date && excursion.spot_ids.includes(spot.id)) {
         dates.add(excursion.date);
+      }
+    }
+
+    for (const entry of diaryStore.entries) {
+      if (entry.date && (entry.spot_ids ?? []).includes(spot.id)) {
+        dates.add(entry.date);
       }
     }
 

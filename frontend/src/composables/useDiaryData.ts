@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/auth';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useScheduleStore } from '../stores/schedule';
+import { useDiaryStore } from '../stores/diary';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useToast } from './useToast';
 import { restoreTrashItem } from '../api/trash';
@@ -21,6 +22,7 @@ export function useDiaryData(options: UseDiaryDataOptions) {
   const excursionsStore = useExcursionsStore();
   const spotsStore = useSpotsStore();
   const scheduleStore = useScheduleStore();
+  const diaryStore = useDiaryStore();
   const liveSync = useLiveSyncStore();
   const { showToast } = useToast();
   const { notifyError } = useErrorNotifier();
@@ -76,6 +78,7 @@ export function useDiaryData(options: UseDiaryDataOptions) {
         spot_ids: Array.isArray(e.spot_ids) ? e.spot_ids : [],
         editor_ids: Array.isArray(e.editor_ids) ? e.editor_ids : [],
       }));
+      diaryStore.setEntries(entries.value);
       users.value = usersRes;
 
       if (onSocialLoaded) {
@@ -93,6 +96,7 @@ export function useDiaryData(options: UseDiaryDataOptions) {
     const isDraft = Boolean(entry?.is_draft);
     await api.delete(`/diary/${id}`);
     entries.value = entries.value.filter((e) => e.id !== id);
+    diaryStore.setEntries(entries.value);
     showToast({
       message: isDraft
         ? 'Entwurf verworfen.'
@@ -131,6 +135,7 @@ export function useDiaryData(options: UseDiaryDataOptions) {
 
       if (idx !== -1) {
         entries.value[idx] = updated;
+        diaryStore.setEntries(entries.value);
       }
 
       sortEntries();
