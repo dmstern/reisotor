@@ -383,9 +383,41 @@ export function getWeatherUnknownExplanation(date?: string | null): string {
   return 'Wetterdaten konnten vom Wetterdienst zurzeit nicht abgerufen werden.';
 }
 
-// Einfacher Modul-Cache statt Store: pro (gerundeter) Koordinate+Modell reicht ein Fetch pro
-// Session, die Vorhersage ändert sich nicht innerhalb eines Dashboard-Aufrufs.
-let cache: { key: string; promise: Promise<DailyWeather[]> } | null = null;
+// Session-Cache pro (gerundeter) Koordinate+Modell sowie Concurrency-Limit für /api/weather:
+// Browser erlauben unter HTTP/1.1 nur 6 gleichzeitige Verbindungen pro Origin (davon belegt der
+// SSE-Stream bereits 1 dauerhaft). Ohne Limitierung und Multi-Key-Cache würden beim Öffnen einer
+// Ansicht mit 5+ Orten bei langsamem/hängendem Open-Meteo alle übrigen Verbindungen blockiert,
+// sodass interaktive Anfragen (z. B. Speichern von Touren/Spots) in der Queue verhungern.
+const MAX_CONCURRENT_WEATHER_REQUESTS = 2;
+const WEATHER_REQUEST_TIMEOUT_MS = 6_000;
+
+const forecastCache = new Map<string, Promise<DailyWeather[]>>();
+let activeWeatherRequests = 0;
+const weatherRequestQueue: Array<() => void> = [];
+
+function runWithWeatherConcurrency<T>(task: () => Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const start = () => {
+      activeWeatherRequests++;
+      task()
+        .then(resolve, reject)
+        .finally(() => {
+          activeWeatherRequests--;
+          const next = weatherRequestQueue.shift();
+
+          if (next) {
+            next();
+          }
+        });
+    };
+
+    if (activeWeatherRequests < MAX_CONCURRENT_WEATHER_REQUESTS) {
+      start();
+    } else {
+      weatherRequestQueue.push(start);
+    }
+  });
+}
 
 // model: welches der von Open-Meteo gebündelten Wettermodelle (siehe stores/weatherProvider.ts)
 // abgefragt wird – ECMWF IFS als Default, da es sich in der Praxis am ehesten mit dem deckt, was
@@ -425,7 +457,7 @@ export function roundWeatherCoord(val: number): number {
 }
 
 export function resetWeatherCache() {
-  cache = null;
+  forecastCache.clear();
 }
 
 export function fetchWeatherForecast(
@@ -436,14 +468,15 @@ export function fetchWeatherForecast(
   const roundedLat = roundWeatherCoord(lat);
   const roundedLng = roundWeatherCoord(lng);
   const key = `${roundedLat.toFixed(2)},${roundedLng.toFixed(2)},${model}`;
+  const cached = forecastCache.get(key);
 
-  if (cache?.key === key) {
-    return cache.promise;
+  if (cached) {
+    return cached;
   }
 
   if (DEMO_MODE) {
     const promise = Promise.resolve(demoWeatherForecast());
-    cache = { key, promise };
+    forecastCache.set(key, promise);
     return promise;
   }
 
@@ -456,7 +489,12 @@ export function fetchWeatherForecast(
     forecast_days: '16',
     models: model,
   });
-  const promise = api.get<OpenMeteoResponse>(`/weather?${params}`).then((data) =>
+  const promise = runWithWeatherConcurrency(() =>
+    api.get<OpenMeteoResponse>(`/weather?${params}`, {
+      timeoutMs: WEATHER_REQUEST_TIMEOUT_MS,
+      skipOfflineDetection: true,
+    })
+  ).then((data) =>
     data.daily.time.map((date, i) => ({
       date,
       weatherCode: data.daily.weathercode[i],
@@ -465,12 +503,12 @@ export function fetchWeatherForecast(
       precipitationProbability: data.daily.precipitation_probability_max?.[i] ?? null,
     }))
   );
-  cache = { key, promise };
+  forecastCache.set(key, promise);
   // Bei einem Fehlschlag darf der Cache nicht "vergiftet" bleiben – sonst würde ein erneuter
   // Versuch (z. B. nächster Dashboard-Besuch) nie wieder einen neuen Fetch auslösen.
   promise.catch(() => {
-    if (cache?.key === key) {
-      cache = null;
+    if (forecastCache.get(key) === promise) {
+      forecastCache.delete(key);
     }
   });
   return promise;
@@ -788,7 +826,12 @@ export async function fetchHourlyForecast(
       params.set('models', model);
     }
 
-    const data = await api.get<OpenMeteoHourlyResponse>(`/weather?${params}`);
+    const data = await runWithWeatherConcurrency(() =>
+      api.get<OpenMeteoHourlyResponse>(`/weather?${params}`, {
+        timeoutMs: WEATHER_REQUEST_TIMEOUT_MS,
+        skipOfflineDetection: true,
+      })
+    );
     return parseHourlyResponse(data);
   }
 

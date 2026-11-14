@@ -18,6 +18,9 @@ export interface RequestOptions extends RequestInit {
   timeoutMs?: number;
   noQueue?: boolean;
   silent?: boolean;
+  /** Externe Proxy-Endpunkte (z. B. /weather) dürfen bei eigenem Timeout/5xx nicht die gesamte
+   *  App fälschlich in den Offline-Modus versetzen. */
+  skipOfflineDetection?: boolean;
 }
 
 export class ApiError extends Error {
@@ -223,7 +226,9 @@ async function get<T>(path: string, options?: RequestOptions): Promise<T> {
         // Cache zurückfallen statt den Fehler direkt hochzureichen. Merken, damit nachfolgende
         // Requests nicht jedes Mal erneut den vollen Timeout abwarten müssen (siehe
         // stores/connectivity.ts, das dieses Flag per Health-Check wieder zurücksetzt).
-        setConfirmedOffline(true);
+        if (!options?.skipOfflineDetection) {
+          setConfirmedOffline(true);
+        }
       }
     }
 
@@ -317,7 +322,10 @@ async function mutate<T>(
           throw err;
         }
 
-        setConfirmedOffline(true);
+        if (!options?.skipOfflineDetection) {
+          setConfirmedOffline(true);
+        }
+
         // durchfallen zur Offline-Warteschlange unten
       }
     }
