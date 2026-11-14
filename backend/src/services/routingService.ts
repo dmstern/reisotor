@@ -99,6 +99,23 @@ export async function getBatchRouteSummaries(
     return results;
   }
 
+  const apiKey = getEffectiveSetting('ors_api_key', 'ORS_API_KEY').trim();
+
+  if (!apiKey) {
+    for (const item of missingQueue) {
+      const profile = item.profile ?? 'driving-car';
+      const airKm = haversineDistanceKm(item.from, item.to);
+      results[item.key] = {
+        distance_meters: Math.round(airKm * 1000),
+        duration_seconds: null,
+        profile,
+        is_fallback: true,
+      };
+    }
+
+    return results;
+  }
+
   // Max. 3 gleichzeitige Anfragen an getDirections, um Rate-Limits zu schonen
   const CONCURRENCY = 3;
 

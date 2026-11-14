@@ -1,4 +1,4 @@
-import { computed, shallowRef, watch, type ComputedRef } from 'vue';
+import { computed, onUnmounted, shallowRef, watch, type ComputedRef } from 'vue';
 import { api } from '../api/client';
 import { useSpotsStore } from '../stores/spots';
 import { useTripStore } from '../stores/trip';
@@ -33,7 +33,11 @@ const routingMemoryCache = new Map<
   { distance_meters: number; duration_seconds: number | null; is_fallback: boolean }
 >();
 
+// Verhindert doppelte parallele Netzwerk-Anfragen für dieselben Koordinatenpaare
+const inFlightKeys = new Set<string>();
+
 const COORD_DECIMALS = 5;
+const ROUTING_DEBOUNCE_MS = 250;
 
 function buildCacheKey(
   origin: { lat: number; lng: number },
@@ -113,8 +117,6 @@ export function useAccommodationDistances(options?: UseAccommodationDistancesOpt
     return map;
   });
 
-  let activeFetchAbort: AbortController | null = null;
-
   async function fetchMissingRoutes() {
     const tripId = tripStore.currentTripId;
     const accommodations = validAccommodations.value;
@@ -132,7 +134,7 @@ export function useAccommodationDistances(options?: UseAccommodationDistancesOpt
       to_lng: number;
       profile: 'foot-walking' | 'driving-car';
     }> = [];
-    const seenKeys = new Set<string>();
+    const requestedKeys: string[] = [];
 
     for (const spot of spotsStore.spots) {
       if (!shouldShowAccommodationDistance(spot)) {
@@ -157,8 +159,9 @@ export function useAccommodationDistances(options?: UseAccommodationDistancesOpt
         profile
       );
 
-      if (!routingMemoryCache.has(cacheKey) && !seenKeys.has(cacheKey)) {
-        seenKeys.add(cacheKey);
+      if (!routingMemoryCache.has(cacheKey) && !inFlightKeys.has(cacheKey)) {
+        inFlightKeys.add(cacheKey);
+        requestedKeys.push(cacheKey);
         missingItems.push({
           key: cacheKey,
           from_lat: refAccommodation.lat,
@@ -174,15 +177,10 @@ export function useAccommodationDistances(options?: UseAccommodationDistancesOpt
       return;
     }
 
-    activeFetchAbort?.abort();
-    activeFetchAbort = new AbortController();
-
     try {
-      const res = await api.post<BatchSummaryResponse>(
-        `/trips/${tripId}/routes/batch-summary`,
-        { items: missingItems },
-        { signal: activeFetchAbort.signal }
-      );
+      const res = await api.post<BatchSummaryResponse>(`/trips/${tripId}/routes/batch-summary`, {
+        items: missingItems,
+      });
 
       let hasNew = false;
 
@@ -195,17 +193,72 @@ export function useAccommodationDistances(options?: UseAccommodationDistancesOpt
         fetchedRoutingResults.value = new Map(routingMemoryCache);
       }
     } catch {
-      // Offline oder abgebrochen -> Haversine-Fallback bleibt aktiv
+      // Offline oder Fehler -> Haversine-Fallback bleibt aktiv
+    } finally {
+      for (const key of requestedKeys) {
+        inFlightKeys.delete(key);
+      }
     }
   }
 
-  watch(
-    [() => spotsStore.spots, () => options?.spotScheduledDates?.value],
-    () => {
+  // Stabiler String-Fingerprint: löst nur dann eine Neuberechnung aus, wenn sich koordinaten-
+  // oder unterkunftsrelevante Daten tatsächlich geändert haben (ignoriert Likes, Kommentare etc.).
+  const routingInputSignature = computed(() => {
+    const tripId = tripStore.currentTripId;
+    const accommodations = validAccommodations.value;
+
+    if (!tripId || !accommodations.length) {
+      return '';
+    }
+
+    const scheduledMap = options?.spotScheduledDates?.value;
+    const signatureParts: string[] = [`trip:${tripId}`];
+
+    for (const accommodation of accommodations) {
+      signatureParts.push(
+        `acc:${accommodation.id}:${accommodation.lat}:${accommodation.lng}:${accommodation.start_date ?? ''}:${accommodation.end_date ?? ''}`
+      );
+    }
+
+    for (const spot of spotsStore.spots) {
+      if (shouldShowAccommodationDistance(spot)) {
+        const date = scheduledMap?.get(spot.id) ?? '';
+        signatureParts.push(`spot:${spot.id}:${spot.lat}:${spot.lng}:${date}`);
+      }
+    }
+
+    return signatureParts.join('|');
+  });
+
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function scheduleFetch() {
+    if (debounceTimer != null) {
+      clearTimeout(debounceTimer);
+    }
+
+    debounceTimer = setTimeout(() => {
+      debounceTimer = null;
       fetchMissingRoutes();
+    }, ROUTING_DEBOUNCE_MS);
+  }
+
+  watch(
+    routingInputSignature,
+    (signature) => {
+      if (signature) {
+        scheduleFetch();
+      }
     },
-    { immediate: true, deep: true }
+    { immediate: true }
   );
+
+  onUnmounted(() => {
+    if (debounceTimer != null) {
+      clearTimeout(debounceTimer);
+      debounceTimer = null;
+    }
+  });
 
   return {
     spotAccommodationDistances,
