@@ -99,6 +99,7 @@ import {
   IconMessageCircle,
   IconMessageCircleFilled,
   IconArrowBackUp,
+  IconArrowRight,
   IconChevronLeft,
   IconChevronRight,
   IconChevronDown,
@@ -223,6 +224,7 @@ export type ActionIconKey =
   | 'upload'
   | 'scrollLeft'
   | 'scrollRight'
+  | 'arrowRight'
   | 'chevronDown'
   | 'chevronUp'
   | 'foldDown'
@@ -418,6 +420,7 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   upload: { id: 'upload', emoji: '⬆️', outline: IconUpload },
   scrollLeft: { id: 'chevron-left', emoji: '◀️', outline: IconChevronLeft },
   scrollRight: { id: 'chevron-right', emoji: '▶️', outline: IconChevronRight },
+  arrowRight: { id: 'arrow-right', emoji: '➡️', outline: IconArrowRight },
   // Ein Chevron statt getrennter Auf-/Zu-/Rechts-Glyphen für alle Auf-/Zuklapp-Umschalter im Code
   // (Picker-Umschalter, Dropdown-Pfeile, Sortierrichtung, Verschieben-Buttons) - Ausrichtung per
   // CSS-Rotation an der jeweiligen Aufrufstelle statt separater Icon-Varianten pro Winkel.
