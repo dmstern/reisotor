@@ -114,4 +114,24 @@ describe('ErrorDetailModal', () => {
 
     cleanUp();
   });
+
+  it('opens FeedbackDialog directly when openErrorFeedback is triggered without opening ErrorDetailModal', async () => {
+    const { openErrorFeedback, isErrorModalOpen, isFeedbackModalOpen } = useErrorNotifier();
+    openErrorFeedback(new Error('Open-Meteo timeout'), 'Wetterdaten laden');
+
+    const { cleanUp } = mountComponent();
+    await nextTick();
+    await nextTick();
+
+    expect(isErrorModalOpen.value).toBe(false);
+    expect(isFeedbackModalOpen.value).toBe(true);
+    expect(document.body.innerHTML).toContain('Feedback geben');
+
+    const titleInput = document.body.querySelector('input[type="text"]') as HTMLInputElement | null;
+    const descTextarea = document.body.querySelector('textarea') as HTMLTextAreaElement | null;
+    expect(titleInput?.value).toContain('Wetterdaten laden');
+    expect(descTextarea?.value).toContain('Open-Meteo timeout');
+
+    cleanUp();
+  });
 });

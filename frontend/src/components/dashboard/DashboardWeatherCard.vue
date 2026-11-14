@@ -9,6 +9,7 @@ import { useRegionInfo } from '../../composables/useRegionInfo';
 import { ACTION_ICONS } from '../../utils/actionIcons';
 import { DEMO_MODE } from '../../demo/isDemoMode';
 import AppIcon from '../AppIcon.vue';
+import Alert from '../primitives/Alert.vue';
 import DetailRow from '../primitives/DetailRow.vue';
 import WeatherDayDetailDialog from '../WeatherDayDetailDialog.vue';
 import DashboardWeatherTodayRow from './DashboardWeatherTodayRow.vue';
@@ -87,7 +88,15 @@ onMounted(() => {
     <h3><AppIcon :icon="ACTION_ICONS.sun" :size="16" group="actions" /> Wetter</h3>
     <template v-if="trip.lat != null && trip.lng != null">
       <p v-if="weatherLoading && !weatherDays" class="hint">Lädt …</p>
-      <p v-else-if="weatherError" class="hint error">{{ weatherError }}</p>
+      <Alert
+        v-else-if="weatherError"
+        variant="danger"
+        size="sm"
+        reportable
+        :description="weatherError"
+        error-context="Wetterdaten laden"
+        class="weather-error-alert"
+      />
       <template v-else>
         <!-- Nach Urlaubsende (isTripOver): Falls ein Heimatort mit Koordinaten
              hinterlegt ist, wird das heutige Wetter zuhause angezeigt (Nutzer:innen sind wieder
@@ -172,7 +181,15 @@ onMounted(() => {
         <AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" /> Wetter zuhause
       </p>
       <p v-if="homeWeatherLoading && !homeWeatherDays" class="hint">Lädt …</p>
-      <p v-else-if="homeWeatherError" class="hint error">{{ homeWeatherError }}</p>
+      <Alert
+        v-else-if="homeWeatherError"
+        variant="danger"
+        size="sm"
+        reportable
+        :description="homeWeatherError"
+        error-context="Wetterdaten (Zuhause) laden"
+        class="weather-error-alert"
+      />
       <p v-else-if="!homeForecastDays.length" class="hint">
         Für
         {{ uiSettings.showHomeWeatherFullTrip ? 'den Urlaubszeitraum' : 'die letzten Urlaubstage' }}
@@ -213,7 +230,14 @@ onMounted(() => {
       <p class="weather-section-label">
         <AppIcon :icon="ACTION_ICONS.region" :size="14" group="actions" /> Reiseregion
       </p>
-      <p class="hint error">{{ regionError }}</p>
+      <Alert
+        variant="danger"
+        size="sm"
+        reportable
+        :description="regionError"
+        error-context="Regionsinfos laden"
+        class="weather-error-alert"
+      />
     </template>
     <template
       v-else-if="
@@ -310,8 +334,8 @@ onMounted(() => {
   font-size: var(--font-size-sm);
 }
 
-.weather-card .hint.error {
-  color: var(--color-danger);
+.weather-error-alert {
+  margin-bottom: var(--space-2);
 }
 
 .weather-days {

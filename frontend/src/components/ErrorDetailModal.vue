@@ -8,14 +8,16 @@ import FeedbackDialog from './FeedbackDialog.vue';
 import {
   useErrorNotifier,
   formatDiagnosticMarkdown,
+  buildFeedbackPrefill,
   type CapturedError,
 } from '../composables/useErrorNotifier';
 import { useToast } from '../composables/useToast';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
-const { activeError, isErrorModalOpen, closeErrorModal } = useErrorNotifier();
+const { activeError, isErrorModalOpen, isFeedbackModalOpen, closeErrorModal, openErrorFeedback } =
+  useErrorNotifier();
 const { showToast } = useToast();
 
-const showFeedbackDialog = ref(false);
 const copied = ref(false);
 
 const errorTypeLabel = computed(() => {
@@ -119,35 +121,19 @@ const technicalDetailsText = computed(() => {
   return lines.join('\n');
 });
 
-const feedbackInitialTitle = computed(() => {
+const feedbackPrefill = computed(() => {
   const err = activeError.value;
 
   if (!err) {
-    return '';
+    return { title: '', description: '' };
   }
 
-  return err.summary.slice(0, 200);
+  return buildFeedbackPrefill(err as CapturedError);
 });
 
-const feedbackInitialDescription = computed(() => {
-  const err = activeError.value;
+const feedbackInitialTitle = computed(() => feedbackPrefill.value.title);
 
-  if (!err) {
-    return '';
-  }
-
-  const diag = formatDiagnosticMarkdown(err as CapturedError);
-  return [
-    '**Was hast du gerade gemacht, als der Fehler auftrat?**',
-    '',
-    '',
-    '<details>',
-    '<summary>Technische Fehlerdiagnose</summary>',
-    '',
-    diag,
-    '</details>',
-  ].join('\n');
-});
+const feedbackInitialDescription = computed(() => feedbackPrefill.value.description);
 
 async function copyDiagnostics() {
   const err = activeError.value;
@@ -171,8 +157,7 @@ async function copyDiagnostics() {
 }
 
 function openBugReport() {
-  closeErrorModal();
-  showFeedbackDialog.value = true;
+  openErrorFeedback(activeError.value ?? undefined);
 }
 </script>
 
@@ -206,11 +191,21 @@ function openBugReport() {
       </CollapsibleFieldset>
 
       <div class="actions-row">
-        <Button type="button" variant="secondary" @click="copyDiagnostics">
-          {{ copied ? '✓ Kopiert' : '📋 Diagnose kopieren' }}
+        <Button
+          type="button"
+          variant="secondary"
+          :icon="copied ? ACTION_ICONS.done : ACTION_ICONS.copy"
+          @click="copyDiagnostics"
+        >
+          {{ copied ? 'Kopiert' : 'Diagnose kopieren' }}
         </Button>
-        <Button type="button" variant="secondary" @click="openBugReport">
-          🐛 Als Bug melden
+        <Button
+          type="button"
+          variant="secondary"
+          :icon="ACTION_ICONS.comment"
+          @click="openBugReport"
+        >
+          Als Bug melden
         </Button>
         <div class="spacer"></div>
         <Button type="button" @click="closeErrorModal">Schließen</Button>
@@ -219,7 +214,7 @@ function openBugReport() {
   </Modal>
 
   <FeedbackDialog
-    v-model="showFeedbackDialog"
+    v-model="isFeedbackModalOpen"
     initial-type="bug"
     :initial-title="feedbackInitialTitle"
     :initial-description="feedbackInitialDescription"

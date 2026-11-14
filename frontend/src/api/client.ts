@@ -13,6 +13,9 @@ import {
 import { useRequestActivityStore } from '../stores/requestActivity';
 import { DEMO_MODE } from '../demo/isDemoMode';
 import { demoRequest } from '../demo/demoClient';
+import { clearLastApiError, getLastApiError, recordLastApiError } from '../utils/apiErrorTracker';
+
+export { clearLastApiError, getLastApiError };
 
 export interface RequestOptions extends RequestInit {
   timeoutMs?: number;
@@ -139,7 +142,8 @@ export async function rawRequest<T>(path: string, options: RequestOptions = {}):
 
     try {
       body = await res.json();
-      message = (body as { error?: string })?.error ?? message;
+      const parsedBody = body as { error?: string; message?: string; reason?: string } | null;
+      message = parsedBody?.error ?? parsedBody?.message ?? parsedBody?.reason ?? message;
     } catch {
       // ignore, kein JSON-Body
     }
@@ -154,11 +158,17 @@ export async function rawRequest<T>(path: string, options: RequestOptions = {}):
       }
     }
 
-    throw new ApiError(res.status, message, {
+    const apiError = new ApiError(res.status, message, {
       method: (options.method ?? 'GET').toUpperCase(),
       path,
       data: body,
     });
+
+    if (res.status !== 401) {
+      recordLastApiError(apiError);
+    }
+
+    throw apiError;
   }
 
   if (res.status === 204) {

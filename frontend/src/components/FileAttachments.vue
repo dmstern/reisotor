@@ -5,6 +5,7 @@ import type { Attachment, AttachmentDomain } from '../api/types';
 import { compressImage, isHeicFile } from '../utils/imageCompression';
 import { readAsDataUrl, isImageFile } from '../utils/fileUpload';
 import Button from './primitives/Button.vue';
+import Alert from './primitives/Alert.vue';
 import PolaroidStack from './primitives/PolaroidStack.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -14,8 +15,10 @@ import PremiumBadge from './PremiumBadge.vue';
 import AttachmentPreviewModal from './AttachmentPreviewModal.vue';
 import AttachmentThumbnails from './AttachmentThumbnails.vue';
 import UploadProgressBar from './UploadProgressBar.vue';
+import { useErrorNotifier } from '../composables/useErrorNotifier';
 
 const auth = useAuthStore();
+const { notifyError } = useErrorNotifier();
 
 const emit = defineEmits<{
   (e: 'update:uploading', value: boolean): void;
@@ -217,12 +220,17 @@ async function onFilesSelected(event: Event) {
         })
       );
     }
-  } catch {
+  } catch (err) {
     if (abortController?.signal.aborted) {
       return;
     }
 
     error.value = 'Datei-Upload fehlgeschlagen. Bitte erneut versuchen.';
+    notifyError(err, {
+      context: 'Datei-Anhang',
+      componentInfo: `FileAttachments (${props.domain}:${props.entityId})`,
+      silent: true,
+    });
   } finally {
     setUploading(false);
     abortController = null;
@@ -247,9 +255,14 @@ async function remove(attachment: Attachment) {
         })
       );
     }
-  } catch {
+  } catch (err) {
     attachments.value = previous;
     error.value = 'Fehler beim Löschen des Anhangs.';
+    notifyError(err, {
+      context: 'Datei-Anhang',
+      componentInfo: `FileAttachments (${props.domain}:${props.entityId})`,
+      silent: true,
+    });
   }
 }
 
@@ -337,7 +350,15 @@ function handleUploadClick() {
           <PremiumBadge v-if="auth.user?.restricted" feature="uploads" as="span" :stop="false" />
         </Button>
       </div>
-      <p v-if="error" class="error">{{ error }}</p>
+      <Alert
+        v-if="error"
+        variant="danger"
+        size="sm"
+        reportable
+        :description="error"
+        error-context="Datei-Anhang"
+        class="error"
+      />
     </template>
 
     <AttachmentPreviewModal
@@ -428,8 +449,6 @@ function handleUploadClick() {
 }
 
 .error {
-  color: var(--color-danger);
-  font-size: 0.8rem;
   margin-top: var(--space-1);
 }
 </style>

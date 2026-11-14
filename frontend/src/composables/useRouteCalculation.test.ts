@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
+import { createPinia, setActivePinia } from 'pinia';
 import { normalizeRoutingTransport, useRouteCalculation } from './useRouteCalculation';
+import { api } from '../api/client';
 
 describe('useRouteCalculation helpers', () => {
   it('normalizes transport modes correctly', () => {
@@ -17,6 +19,11 @@ describe('useRouteCalculation helpers', () => {
 });
 
 describe('useRouteCalculation composable', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    vi.restoreAllMocks();
+  });
+
   it('initializes with default routing state', () => {
     const tripId = ref(1);
     const fromCoords = ref({ lat: 48.1, lng: 11.5 });
@@ -126,5 +133,42 @@ describe('useRouteCalculation composable', () => {
     // Full reset clears cache as well
     setInitialRoute(null, null, null, null);
     expect(hasExactRoute.value).toBe(false);
+  });
+
+  it('populates routeCalculationErrorDetails on routing failure and clears on reset', async () => {
+    vi.spyOn(api, 'post').mockResolvedValueOnce({
+      supported: false,
+      reason: 'Für „Auto“ wurde in der Nähe von Start oder Ziel keine befahrbare Straße gefunden.',
+      details: 'OpenRouteService HTTP 404: {"error":{"code":2010}}',
+      routes: [],
+    });
+
+    const tripId = ref(7);
+    const fromCoords = ref({ lat: 52.535603, lng: 13.4905235 });
+    const toCoords = ref({ lat: 52.4200284, lng: 13.6318564 });
+    const transportType = ref('Auto');
+
+    const {
+      routeCalculationError,
+      routeCalculationErrorDetails,
+      calculateRoute,
+      resetToDirectLine,
+    } = useRouteCalculation({
+      tripId,
+      fromCoords,
+      toCoords,
+      transportType,
+    });
+
+    const ok = await calculateRoute();
+    expect(ok).toBe(false);
+    expect(routeCalculationError.value).toContain('keine befahrbare Straße gefunden');
+    expect(routeCalculationErrorDetails.value).not.toBeNull();
+    expect(routeCalculationErrorDetails.value?.summary).toContain('Routenberechnung (Auto)');
+    expect(routeCalculationErrorDetails.value?.rawMessage).toContain('OpenRouteService HTTP 404');
+
+    resetToDirectLine();
+    expect(routeCalculationError.value).toBeNull();
+    expect(routeCalculationErrorDetails.value).toBeNull();
   });
 });

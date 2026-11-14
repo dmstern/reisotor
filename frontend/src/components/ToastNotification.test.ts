@@ -5,6 +5,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { createRouter, createMemoryHistory } from 'vue-router';
 import ToastNotification from './ToastNotification.vue';
 import { useToast } from '../composables/useToast';
+import { useErrorNotifier } from '../composables/useErrorNotifier';
 import { useTripStore } from '../stores/trip';
 
 describe('ToastNotification', () => {
@@ -30,6 +31,7 @@ describe('ToastNotification', () => {
     await router.isReady();
 
     useToast().clearToasts();
+    useErrorNotifier().clearErrors();
 
     container = document.createElement('div');
     document.body.appendChild(container);
@@ -196,6 +198,28 @@ describe('ToastNotification', () => {
     await nextTick();
 
     expect(resolved).toBe(true);
+    expect(toasts.value.length).toBe(0);
+  });
+
+  it('automatically attaches Details anzeigen action on error toasts without custom action', async () => {
+    const { showToast, toasts } = useToast();
+    const { isErrorModalOpen, activeError } = useErrorNotifier();
+
+    showToast({
+      message: 'Synchronisierung fehlgeschlagen: Gateway Timeout',
+      type: 'error',
+    });
+    await nextTick();
+
+    const actionBtn = document.querySelector('button.toast-action-btn') as HTMLButtonElement | null;
+    expect(actionBtn).not.toBeNull();
+    expect(actionBtn?.textContent?.trim()).toBe('Details anzeigen');
+
+    actionBtn!.click();
+    await nextTick();
+
+    expect(isErrorModalOpen.value).toBe(true);
+    expect(activeError.value?.summary).toContain('Synchronisierung fehlgeschlagen');
     expect(toasts.value.length).toBe(0);
   });
 });

@@ -380,6 +380,7 @@ export interface RouteResult {
 export interface DirectionsResponse {
   supported: boolean;
   reason?: string;
+  details?: string;
   routes: RouteResult[];
 }
 

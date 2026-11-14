@@ -22,6 +22,7 @@ import { rawRequest } from '../../api/client';
 import { useConnectivityStore } from '../../stores/connectivity';
 import { useLiveSyncStore } from '../../stores/liveSync';
 import { useToast } from '../../composables/useToast';
+import { createCapturedError } from '../../composables/useErrorNotifier';
 import { migrateLocalData } from '../../utils/localMigrations';
 
 const connectivity = useConnectivityStore();
@@ -156,6 +157,16 @@ function getEntryInfo(entry: OutboxEntry): { category: string; title: string } {
     category: path.replace(/^\//, '').split('/')[0] || 'Element',
     title: titleStr || path,
   };
+}
+
+function buildEntryCapturedError(entry: OutboxEntry) {
+  return createCapturedError(new Error(entry.lastError?.message || 'Fehler bei Übertragung'), {
+    kind: 'sync',
+    status: entry.lastError?.status,
+    method: entry.method,
+    path: entry.path,
+    context: 'Offline-Synchronisierung',
+  });
 }
 
 function formatDate(iso: string): string {
@@ -465,21 +476,28 @@ function handleMigrateData() {
         </div>
 
         <!-- Fehleranzeige, falls vorhanden -->
-        <Alert v-if="entry.lastError" variant="danger" class="item-error-alert">
-          <div class="error-content">
+        <Alert
+          v-if="entry.lastError"
+          variant="danger"
+          reportable
+          :error-details="buildEntryCapturedError(entry)"
+          error-context="Offline-Synchronisierung"
+          class="item-error-alert"
+        >
+          <span class="error-content">
             <strong>
               Fehler bei Übertragung{{
                 entry.lastError.status ? ` (HTTP ${entry.lastError.status})` : ''
               }}:
             </strong>
             <span class="error-msg">{{ entry.lastError.message }}</span>
-            <div class="error-meta hint">
+            <span class="error-meta hint">
               Zuletzt versucht: {{ formatDate(entry.lastError.timestamp) }}
               <template v-if="entry.retryCount">
                 · {{ entry.retryCount }} Fehlversuch{{ entry.retryCount > 1 ? 'e' : '' }}
               </template>
-            </div>
-          </div>
+            </span>
+          </span>
         </Alert>
 
         <!-- Ausklappbare Rohdaten / JSON -->
@@ -661,6 +679,7 @@ function handleMigrateData() {
 }
 
 .error-meta {
+  display: block;
   margin: 0;
   font-size: var(--font-size-xs);
 }

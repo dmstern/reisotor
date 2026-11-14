@@ -1,15 +1,19 @@
+// @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createApp, h } from 'vue';
+import { createApp, h, nextTick } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { renderToString } from 'vue/server-renderer';
 import Alert from './Alert.vue';
 import Button from './Button.vue';
 import { ACTION_ICONS } from '../../utils/actionIcons';
+import { useErrorNotifier } from '../../composables/useErrorNotifier';
 
 describe('Alert primitive', () => {
   beforeEach(() => {
+    document.body.innerHTML = '';
     const pinia = createPinia();
     setActivePinia(pinia);
+    useErrorNotifier().clearErrors();
   });
 
   function renderAlert(props: Record<string, unknown> = {}, slots: Record<string, unknown> = {}) {
@@ -74,5 +78,58 @@ describe('Alert primitive', () => {
     );
     expect(html).toContain('alert__icon');
     expect(html).toContain('Glitzer-Meldung');
+  });
+
+  it('renders reportable alert as a button and opens ErrorDetailModal on click', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const app = createApp({
+      render: () =>
+        h(Alert, {
+          variant: 'danger',
+          size: 'sm',
+          reportable: true,
+          description: 'Drittanbieter antwortet nicht',
+          errorContext: 'Wetterdienst',
+        }),
+    });
+    app.use(pinia);
+    app.mount(container);
+    await nextTick();
+
+    const btn = container.querySelector('button.alert--reportable') as HTMLButtonElement | null;
+    expect(btn).not.toBeNull();
+    expect(btn?.textContent).toContain('Drittanbieter antwortet nicht');
+    expect(btn?.textContent).toContain('Fehlerdetails anzeigen & melden');
+
+    btn!.click();
+    await nextTick();
+
+    const { isErrorModalOpen, activeError } = useErrorNotifier();
+    expect(isErrorModalOpen.value).toBe(true);
+    expect(activeError.value?.summary).toContain('Wetterdienst');
+    expect(activeError.value?.rawMessage).toContain('Drittanbieter antwortet nicht');
+
+    app.unmount();
+    container.remove();
+  });
+
+  it('renders separate report trigger inside content when actions slot is also present', async () => {
+    const html = await renderAlert(
+      {
+        variant: 'danger',
+        reportable: true,
+        description: 'Sync fehlgeschlagen',
+      },
+      {
+        actions: () => h(Button, { size: 'sm' }, () => 'Erneut versuchen'),
+      }
+    );
+
+    expect(html.startsWith('<div')).toBe(true);
+    expect(html).toContain('alert__report-btn');
+    expect(html).toContain('Erneut versuchen');
   });
 });

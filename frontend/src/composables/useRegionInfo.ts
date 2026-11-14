@@ -2,6 +2,7 @@ import { computed, ref, watch, type ComputedRef, type Ref } from 'vue';
 import type { Trip } from '../api/types';
 import { fetchRegionInfo, type RegionInfo } from '../utils/regionInfo';
 import { useHomeCurrencyStore } from '../stores/homeCurrency';
+import { useErrorNotifier } from './useErrorNotifier';
 
 export interface UseRegionInfoReturn {
   regionInfo: Ref<RegionInfo | null>;
@@ -16,6 +17,7 @@ export function useRegionInfo(
   trip: Ref<Trip | null | undefined> | ComputedRef<Trip | null | undefined>
 ): UseRegionInfoReturn {
   const homeCurrency = useHomeCurrencyStore();
+  const { notifyError } = useErrorNotifier();
 
   const regionInfo = ref<RegionInfo | null>(null);
   const regionError = ref<string | null>(null);
@@ -32,8 +34,13 @@ export function useRegionInfo(
 
     try {
       regionInfo.value = await fetchRegionInfo(trip.value.id);
-    } catch {
+    } catch (err) {
       regionError.value = 'Regionsinfos konnten nicht geladen werden.';
+      notifyError(err, {
+        context: 'Regionsinfos laden',
+        componentInfo: 'DashboardWeatherCard',
+        silent: true,
+      });
     } finally {
       regionLoading.value = false;
     }
