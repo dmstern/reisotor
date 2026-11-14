@@ -137,4 +137,36 @@ describe('drawers store', () => {
       expect(store.calendarTargetDate).toBe('2026-11-05');
     });
   });
+
+  describe('openMapAt and openMapForExcursion', () => {
+    it('sets mapFocusKey for spot keys and routes to /excursions', () => {
+      const pushSpy = vi.spyOn(router, 'push').mockResolvedValue(undefined as never);
+      const store = useDrawersStore();
+
+      store.openMapAt('spot-42');
+      expect(store.mapFocusKey).toBe('spot-42');
+      expect(store.mapFocusExcursionId).toBeNull();
+      expect(pushSpy).toHaveBeenCalledWith('/excursions');
+    });
+
+    it('delegates excursion- prefix in openMapAt to openMapForExcursion', () => {
+      const pushSpy = vi.spyOn(router, 'push').mockResolvedValue(undefined as never);
+      const store = useDrawersStore();
+
+      store.openMapAt('excursion-15');
+      expect(store.mapFocusExcursionId).toBe(15);
+      expect(store.mapFocusKey).toBeNull();
+      expect(pushSpy).toHaveBeenCalledWith('/excursions');
+    });
+
+    it('sets mapFocusExcursionId in openMapForExcursion and routes to /excursions', () => {
+      const pushSpy = vi.spyOn(router, 'push').mockResolvedValue(undefined as never);
+      const store = useDrawersStore();
+
+      store.openMapForExcursion(88);
+      expect(store.mapFocusExcursionId).toBe(88);
+      expect(store.mapFocusKey).toBeNull();
+      expect(pushSpy).toHaveBeenCalledWith('/excursions');
+    });
+  });
 });

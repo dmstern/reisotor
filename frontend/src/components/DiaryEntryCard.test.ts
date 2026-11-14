@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest';
-import { createApp, h } from 'vue';
+import { describe, it, expect, vi } from 'vitest';
+import { createApp, h, nextTick } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { renderToString } from 'vue/server-renderer';
 import DiaryEntryCard from './DiaryEntryCard.vue';
 import { useScheduleStore } from '../stores/schedule';
-import type { DiaryEntry, Spot } from '../api/types';
+import { useDrawersStore } from '../stores/drawers';
+import type { DiaryEntry, Spot, Excursion } from '../api/types';
 
 describe('DiaryEntryCard', () => {
   const dummyEntry: DiaryEntry = {
@@ -160,5 +161,79 @@ describe('DiaryEntryCard', () => {
     expect(html).toContain('title="Aussichtspunkt (geplant am 20.08.2026)"');
     expect(html).not.toContain('excursion-chip--mismatch');
     expect(html).not.toContain('chip-mismatch-badge');
+  });
+
+  it('ruft openMapForExcursion beim Klick auf einen Tour-Chip auf', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const drawersStore = useDrawersStore();
+    const openSpy = vi.spyOn(drawersStore, 'openMapForExcursion');
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const app = createApp({
+      render: () =>
+        h(DiaryEntryCard, {
+          entry: dummyEntry,
+          authorName: 'Daniel',
+          authorAvatar: '🦊',
+          excursions: [
+            {
+              id: 7,
+              trip_id: 1,
+              title: 'Bootstour',
+              spot_ids: [],
+            } as unknown as Excursion,
+          ],
+        }),
+    });
+    app.use(pinia);
+    app.mount(container);
+    await nextTick();
+
+    const button = container.querySelector('.excursion-chip') as HTMLButtonElement | null;
+    expect(button).not.toBeNull();
+    button?.click();
+    expect(openSpy).toHaveBeenCalledWith(7);
+
+    app.unmount();
+    container.remove();
+  });
+
+  it('ruft openMapAt mit spot-ID beim Klick auf einen Spot-Chip auf', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const drawersStore = useDrawersStore();
+    const openSpy = vi.spyOn(drawersStore, 'openMapAt');
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const app = createApp({
+      render: () =>
+        h(DiaryEntryCard, {
+          entry: dummyEntry,
+          authorName: 'Daniel',
+          authorAvatar: '🦊',
+          spots: [
+            {
+              id: 99,
+              trip_id: 1,
+              title: 'Aussichtsturm',
+              category: 'viewpoint',
+            } as unknown as Spot,
+          ],
+        }),
+    });
+    app.use(pinia);
+    app.mount(container);
+    await nextTick();
+
+    const button = container.querySelector('.excursion-chip') as HTMLButtonElement | null;
+    expect(button).not.toBeNull();
+    button?.click();
+    expect(openSpy).toHaveBeenCalledWith('spot-99');
+
+    app.unmount();
+    container.remove();
   });
 });

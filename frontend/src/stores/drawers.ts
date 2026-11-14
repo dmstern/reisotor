@@ -204,6 +204,16 @@ export const useDrawersStore = defineStore('drawers', () => {
   }
 
   function openMapAt(key: string) {
+    if (key.startsWith('excursion-')) {
+      const excursionId = Number(key.replace('excursion-', ''));
+
+      if (!Number.isNaN(excursionId)) {
+        openMapForExcursion(excursionId);
+
+        return;
+      }
+    }
+
     mapFocusKey.value = key;
     mapFocusExcursionId.value = null;
     mapFocusDate.value = null;
