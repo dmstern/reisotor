@@ -201,6 +201,8 @@ provide(
     background-color 0.15s ease,
     color 0.15s ease,
     border-color 0.15s ease,
+    --control-grad-top 0.15s ease,
+    --control-grad-bottom 0.15s ease,
     transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1),
     translate 0.12s cubic-bezier(0.2, 0.8, 0.4, 1),
     box-shadow 0.15s ease,
@@ -388,8 +390,14 @@ a.btn.is-loading {
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background-origin: border-box;
+  --control-grad-top: transparent;
+  --control-grad-bottom: transparent;
   background-color: var(--color-primary-tint);
-  background-image: none;
+  background-image: linear-gradient(
+    180deg,
+    var(--control-grad-top) 0%,
+    var(--control-grad-bottom) 100%
+  );
   color: var(--color-primary-dark);
   font-size: var(--font-size-sm);
   font-weight: 600;
@@ -403,6 +411,8 @@ a.btn.is-loading {
     color 0.15s ease,
     border-color 0.15s ease,
     box-shadow 0.15s ease,
+    --control-grad-top 0.15s ease,
+    --control-grad-bottom 0.15s ease,
     transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1),
     translate 0.12s cubic-bezier(0.2, 0.8, 0.4, 1);
 }
@@ -410,7 +420,8 @@ a.btn.is-loading {
 .btn--card-action:hover:not(:disabled) {
   translate: 0 -1px;
   background-color: color-mix(in srgb, var(--color-primary) 22%, var(--color-surface));
-  background-image: var(--gradient-control-3d);
+  --control-grad-top: var(--gradient-control-top);
+  --control-grad-bottom: var(--gradient-control-bottom);
   border-color: var(--color-primary);
   box-shadow: var(--shadow-control-hover);
 }
@@ -419,12 +430,20 @@ a.btn.is-loading {
   transform: translateY(1px) scale(0.985);
   translate: 0 0;
   background-color: color-mix(in srgb, var(--color-primary) 26%, var(--color-surface));
-  background-image: var(--gradient-control-3d);
+  --control-grad-top: var(--gradient-control-top);
+  --control-grad-bottom: var(--gradient-control-bottom);
   box-shadow: var(--shadow-control-active);
 }
 
 .btn--ghost {
-  background: transparent;
+  --control-grad-top: transparent;
+  --control-grad-bottom: transparent;
+  background-color: transparent;
+  background-image: linear-gradient(
+    180deg,
+    var(--control-grad-top) 0%,
+    var(--control-grad-bottom) 100%
+  );
   border: 1px solid transparent;
   color: var(--color-text);
   box-shadow: none;
@@ -433,14 +452,16 @@ a.btn.is-loading {
 /* Ghost: erst bei Hover/Active entsteht der 3D-Look mit sanftem Wölbungsverlauf (Rahmen, Verlauf, Schatten) */
 .btn--ghost:hover:not(:disabled) {
   background-color: var(--color-hover);
-  background-image: var(--gradient-control-3d);
+  --control-grad-top: var(--gradient-control-top);
+  --control-grad-bottom: var(--gradient-control-bottom);
   background-origin: border-box;
   box-shadow: var(--shadow-control-hover);
 }
 
 .btn--ghost:active:not(:disabled) {
   background-color: var(--color-hover);
-  background-image: var(--gradient-control-3d);
+  --control-grad-top: var(--gradient-control-top);
+  --control-grad-bottom: var(--gradient-control-bottom);
   box-shadow: var(--shadow-control-active);
 }
 
