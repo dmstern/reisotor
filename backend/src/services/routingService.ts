@@ -14,6 +14,13 @@ export interface DirectionsParams {
   preference?: 'fastest' | 'shortest';
 }
 
+export interface RouteResult {
+  coordinates: [number, number][]; // [lat, lng] für Leaflet
+  distance_meters: number;
+  duration_seconds: number;
+  profile: string;
+}
+
 export interface RouteSummaryResult {
   distance_meters: number;
   duration_seconds: number | null;
