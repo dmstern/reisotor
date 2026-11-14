@@ -78,73 +78,75 @@ function onDropdownScroll(e: Event) {
 
 <template>
   <div class="location-search-row location-search-floating">
-    <div
-      class="location-search-wrap"
-      :class="{ 'is-loading': isSearching, loading: isSearching }"
-      :aria-busy="isSearching"
-    >
-      <AppIcon
-        :icon="ACTION_ICONS.search"
-        :size="16"
-        group="actions"
-        class="location-search-icon"
-        aria-hidden="true"
-      />
-      <Input
-        :model-value="modelValue"
-        class="location-picker-input"
-        type="search"
-        name="location-search"
-        data-testid="location-search-input"
-        :placeholder="activePlaceholder"
-        aria-label="Ort suchen oder Maps-Link einfügen"
-        autocomplete="off"
-        @update:model-value="emit('update:modelValue', $event)"
-        @keydown="emit('keydown', $event)"
-        @focus="handleFocus"
-        @blur="handleBlur"
-      />
-      <div class="search-right-actions">
-        <div v-if="isSearching" class="input-spinner-wrap" aria-hidden="true">
-          <LoadingSpinner size="sm" class="spinner input-spinner" />
+    <div class="location-search-field">
+      <div
+        class="location-search-wrap"
+        :class="{ 'is-loading': isSearching, loading: isSearching }"
+        :aria-busy="isSearching"
+      >
+        <AppIcon
+          :icon="ACTION_ICONS.search"
+          :size="16"
+          group="actions"
+          class="location-search-icon"
+          aria-hidden="true"
+        />
+        <Input
+          :model-value="modelValue"
+          class="location-picker-input"
+          type="search"
+          name="location-search"
+          data-testid="location-search-input"
+          :placeholder="activePlaceholder"
+          aria-label="Ort suchen oder Maps-Link einfügen"
+          autocomplete="off"
+          @update:model-value="emit('update:modelValue', $event)"
+          @keydown="emit('keydown', $event)"
+          @focus="handleFocus"
+          @blur="handleBlur"
+        />
+        <div class="search-right-actions">
+          <div v-if="isSearching" class="input-spinner-wrap" aria-hidden="true">
+            <LoadingSpinner size="sm" class="spinner input-spinner" />
+          </div>
+          <InfoPopover
+            title="Suchtipps, Maps- & Buchungs-Links"
+            aria-label="Suchtipps und Maps-Links anzeigen"
+            align="right"
+            placement="bottom"
+            :menu-width="290"
+            class="search-info-popover"
+          >
+            <p>
+              <strong>Ortssuche:</strong> Du kannst nach Adressen, Cafés, Sehenswürdigkeiten oder
+              Orten weltweit suchen.
+            </p>
+            <p>
+              <strong>Karten-Links:</strong> Kopiere einfach einen Link von Google Maps, Apple Maps
+              oder OpenStreetMap (OSM) hier hinein.
+            </p>
+            <p>
+              <strong>Buchungs-Links:</strong> Füge einen Link von Booking.com, Airbnb oder Trivago
+              ein – Name, Fotos, Adresse, Preis und Reisedaten werden automatisch übernommen.
+            </p>
+            <p class="popover-tip">
+              <AppIcon
+                :icon="FORM_FIELD_ICONS.location"
+                :size="14"
+                group="formFields"
+                class="popover-tip-icon"
+                aria-hidden="true"
+              />
+              <span
+                >Du kannst auch direkt auf die Karte tippen, um die Stecknadel manuell zu
+                platzieren.</span
+              >
+            </p>
+          </InfoPopover>
         </div>
-        <InfoPopover
-          title="Suchtipps, Maps- & Buchungs-Links"
-          aria-label="Suchtipps und Maps-Links anzeigen"
-          align="right"
-          placement="bottom"
-          :menu-width="290"
-          class="search-info-popover"
-        >
-          <p>
-            <strong>Ortssuche:</strong> Du kannst nach Adressen, Cafés, Sehenswürdigkeiten oder
-            Orten weltweit suchen.
-          </p>
-          <p>
-            <strong>Karten-Links:</strong> Kopiere einfach einen Link von Google Maps, Apple Maps
-            oder OpenStreetMap (OSM) hier hinein.
-          </p>
-          <p>
-            <strong>Buchungs-Links:</strong> Füge einen Link von Booking.com, Airbnb oder Trivago
-            ein – Name, Fotos, Adresse, Preis und Reisedaten werden automatisch übernommen.
-          </p>
-          <p class="popover-tip">
-            <AppIcon
-              :icon="FORM_FIELD_ICONS.location"
-              :size="14"
-              group="formFields"
-              class="popover-tip-icon"
-              aria-hidden="true"
-            />
-            <span
-              >Du kannst auch direkt auf die Karte tippen, um die Stecknadel manuell zu
-              platzieren.</span
-            >
-          </p>
-        </InfoPopover>
       </div>
 
-      <!-- Autocomplete Dropdown List -->
+      <!-- Autocomplete Dropdown List (außerhalb von .location-search-wrap, damit backdrop-filter nicht durch den Eltern-Backdrop-Root blockiert wird) -->
       <Transition name="dropdown-unfold">
         <ul
           v-if="isOpen && (results.length > 0 || (!isSearching && modelValue.trim().length >= 2))"
@@ -246,7 +248,7 @@ function onDropdownScroll(e: Event) {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .location-search-row {
   width: 100%;
   min-width: 0;
@@ -279,18 +281,32 @@ function onDropdownScroll(e: Event) {
 .manual-details-btn {
   font-size: var(--font-size-xs);
   color: var(--color-text);
-  background: var(--color-surface);
+  background: var(--color-surface-glass);
+  backdrop-filter: var(--backdrop-blur-md);
   box-shadow: var(--shadow-sm);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-surface-glass-border);
   border-radius: var(--radius-pill);
   height: 28px;
   padding: 2px var(--space-2);
   cursor: pointer;
+  transition: var(--transition-glass);
+
+  &:hover {
+    background: var(--color-surface-glass-hover);
+    border-color: var(--color-surface-glass-hover-border);
+    box-shadow: var(--shadow-md);
+  }
+}
+
+.location-search-field {
+  position: relative;
+  width: 100%;
 }
 
 .location-search-wrap {
-  position: relative;
+  @include control-glass-field(true);
   width: 100%;
+  box-sizing: border-box;
 }
 
 .location-search-icon {
@@ -301,16 +317,36 @@ function onDropdownScroll(e: Event) {
   color: var(--color-text-muted);
   pointer-events: none;
   z-index: 2;
+  transition: color 0.15s ease;
+
+  .location-search-wrap:focus-within & {
+    color: var(--color-primary);
+  }
 }
 
 .location-picker-input,
 .location-search-wrap :deep(.location-picker-input) {
   width: 100%;
   box-sizing: border-box;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
   padding-left: 38px;
   padding-right: 42px;
   border-radius: var(--radius-pill);
   corner-shape: round;
+  color: var(--color-text);
+
+  &:hover,
+  &:focus,
+  &:focus-visible,
+  &:active {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
 }
 
 .location-search-wrap.is-loading :deep(.location-picker-input) {
@@ -334,6 +370,10 @@ function onDropdownScroll(e: Event) {
   z-index: 3;
 }
 
+.search-info-popover :deep(.info-popover-btn) {
+  @include control-glass-interactive('embedded');
+}
+
 .search-right-actions .input-spinner-wrap {
   position: static;
   transform: none;
@@ -353,11 +393,12 @@ function onDropdownScroll(e: Event) {
   left: 0;
   right: 0;
   z-index: var(--z-popover, 1100);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  backdrop-filter: blur(max(12px, var(--glass-blur, 6px))) saturate(180%);
+  border: 1px solid var(--color-surface-glass-border);
+  border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-floating-island);
   list-style: none;
   padding: var(--space-1) 0;
   margin: 0;
@@ -372,12 +413,12 @@ function onDropdownScroll(e: Event) {
   padding: var(--space-2) 12px;
   cursor: pointer;
   transition: background 0.15s ease;
-}
 
-.location-result-item:hover,
-.location-result-item.is-active,
-.location-result-item[aria-selected='true'] {
-  background: var(--color-hover);
+  &:hover,
+  &.is-active,
+  &[aria-selected='true'] {
+    background: var(--color-hover);
+  }
 }
 
 .item-icon {
@@ -455,7 +496,7 @@ function onDropdownScroll(e: Event) {
   gap: var(--space-2);
   padding: var(--space-2) 12px;
   margin-top: var(--space-1);
-  border-top: 1px dashed var(--color-border);
+  border-top: 1px dashed var(--color-surface-glass-border);
   cursor: pointer;
   color: var(--color-primary);
   font-size: var(--font-size-xs);

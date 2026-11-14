@@ -138,6 +138,9 @@ export function useExcursionsLayout(options: UseExcursionsLayoutOptions) {
 
   const FLICK_SAMPLE_WINDOW_MS = 80;
   const FLICK_VELOCITY_PX_MS = 0.35;
+  const SHEET_DRAG_THRESHOLD_PX = 8;
+  const CLICK_SUPPRESSION_TIMEOUT_MS = 250;
+
   let dragSamples: { y: number; t: number }[] = [];
 
   function resetDragSamples() {
@@ -164,43 +167,34 @@ export function useExcursionsLayout(options: UseExcursionsLayoutOptions) {
     return dt > 0 ? (last.y - first.y) / dt : 0;
   }
 
+  let activePointerId: number | null = null;
+  let activePointerSource: 'handle' | 'body' | null = null;
+  let activePointerTarget: HTMLElement | null = null;
   let sheetStartY = 0;
   let sheetStartHeight = 0;
 
-  function onSheetDragStart(event: PointerEvent) {
-    if (event.pointerType === 'mouse' && !isSheetOverlayMode.value) {
-      return;
-    }
-
-    if (
-      (event.target as HTMLElement).closest(
-        'button, a, input, textarea, select, [draggable="true"]'
-      )
-    ) {
-      return;
-    }
-
-    sheetDragging.value = true;
-    sheetStartY = event.clientY;
-    sheetStartHeight = sheetDragHeightPx.value ?? sheetHeightPx(sheetState.value);
-    resetDragSamples();
-    recordDragSample(event.clientY);
-    window.addEventListener('pointermove', onSheetDragMove);
-    window.addEventListener('pointerup', onSheetDragEnd);
-    event.preventDefault();
+  function isInteractiveTarget(target: HTMLElement | null): boolean {
+    return Boolean(target?.closest('button, a, [role="button"], [role="link"], [role="tab"]'));
   }
 
-  function onSheetDragMove(event: PointerEvent) {
-    if (!sheetDragging.value) {
-      return;
-    }
+  function suppressNextClick() {
+    let timer: ReturnType<typeof setTimeout> | null = null;
 
-    const delta = sheetStartY - event.clientY;
-    const next = sheetStartHeight + delta;
-    const clamped = Math.min(sheetHeightPx('full'), Math.max(sheetHeightPx('collapsed'), next));
-    sheetDragHeightPx.value = clamped;
-    applySheetHeight(clamped);
-    recordDragSample(event.clientY);
+    const handler = (event: MouseEvent) => {
+      event.stopPropagation();
+      event.preventDefault();
+
+      if (timer != null) {
+        clearTimeout(timer);
+        timer = null;
+      }
+    };
+
+    window.addEventListener('click', handler, { capture: true, once: true });
+    timer = setTimeout(() => {
+      window.removeEventListener('click', handler, { capture: true });
+      timer = null;
+    }, CLICK_SUPPRESSION_TIMEOUT_MS);
   }
 
   function closestSheetState(heightPx: number): SheetState {
@@ -234,70 +228,68 @@ export function useExcursionsLayout(options: UseExcursionsLayoutOptions) {
     return closestSheetState(heightPx);
   }
 
-  function onSheetDragEnd() {
+  function cleanUpPointerListeners() {
+    activePointerId = null;
+    activePointerSource = null;
+    activePointerTarget = null;
     sheetDragging.value = false;
-    window.removeEventListener('pointermove', onSheetDragMove);
-    window.removeEventListener('pointerup', onSheetDragEnd);
-    const current = sheetDragHeightPx.value;
-    const movedFar = current != null && Math.abs(current - sheetStartHeight) > 8;
-
-    if (!movedFar) {
-      sheetState.value =
-        SHEET_ORDER[(SHEET_ORDER.indexOf(sheetState.value) + 1) % SHEET_ORDER.length];
-    } else {
-      sheetState.value = resolveSheetTargetState(sheetState.value, current as number);
-    }
-
-    nextTick(() => {
-      sheetDragHeightPx.value = null;
-      clearSheetHeightOverride();
-    });
+    window.removeEventListener('pointermove', onSheetPointerMove);
+    window.removeEventListener('pointerup', onSheetPointerUp);
+    window.removeEventListener('pointercancel', onSheetPointerCancel);
   }
 
-  const SHEET_BODY_DRAG_THRESHOLD = 8;
-  let sheetBodyDragging = false;
-  let sheetBodyStartY = 0;
-  let sheetBodyStartHeight = 0;
+  function handlePointerDown(event: PointerEvent, source: 'handle' | 'body') {
+    if (event.button !== 0) {
+      return;
+    }
 
-  function onSheetBodyPointerDown(event: PointerEvent) {
     if (event.pointerType === 'mouse' && !isSheetOverlayMode.value) {
       return;
     }
 
-    if (sheetState.value === 'full') {
+    if (source === 'body' && sheetState.value === 'full') {
       return;
     }
 
+    const target = event.target as HTMLElement | null;
+
     if (
-      (event.target as HTMLElement).closest(
-        'button, a, input, textarea, select, [draggable="true"]'
-      )
+      target?.closest('input, textarea, select, [contenteditable="true"], [contenteditable=""]')
     ) {
       return;
     }
 
-    sheetBodyDragging = false;
-    sheetBodyStartY = event.clientY;
-    sheetBodyStartHeight = sheetDragHeightPx.value ?? sheetHeightPx(sheetState.value);
+    activePointerId = event.pointerId;
+    activePointerSource = source;
+    activePointerTarget = target;
+    sheetStartY = event.clientY;
+    sheetStartHeight = sheetDragHeightPx.value ?? sheetHeightPx(sheetState.value);
+    sheetDragging.value = false;
+
     resetDragSamples();
     recordDragSample(event.clientY);
-    window.addEventListener('pointermove', onSheetBodyPointerMove);
-    window.addEventListener('pointerup', onSheetBodyPointerUp);
+
+    window.addEventListener('pointermove', onSheetPointerMove);
+    window.addEventListener('pointerup', onSheetPointerUp);
+    window.addEventListener('pointercancel', onSheetPointerCancel);
   }
 
-  function onSheetBodyPointerMove(event: PointerEvent) {
-    const delta = sheetBodyStartY - event.clientY;
+  function onSheetPointerMove(event: PointerEvent) {
+    if (activePointerId != null && event.pointerId !== activePointerId) {
+      return;
+    }
 
-    if (!sheetBodyDragging) {
-      if (Math.abs(delta) < SHEET_BODY_DRAG_THRESHOLD) {
+    const delta = sheetStartY - event.clientY;
+
+    if (!sheetDragging.value) {
+      if (Math.abs(delta) < SHEET_DRAG_THRESHOLD_PX) {
         return;
       }
 
-      sheetBodyDragging = true;
       sheetDragging.value = true;
     }
 
-    const next = sheetBodyStartHeight + delta;
+    const next = sheetStartHeight + delta;
     const clamped = Math.min(sheetHeightPx('full'), Math.max(sheetHeightPx('collapsed'), next));
     sheetDragHeightPx.value = clamped;
     applySheetHeight(clamped);
@@ -305,26 +297,54 @@ export function useExcursionsLayout(options: UseExcursionsLayoutOptions) {
     event.preventDefault();
   }
 
-  function onSheetBodyPointerUp() {
-    window.removeEventListener('pointermove', onSheetBodyPointerMove);
-    window.removeEventListener('pointerup', onSheetBodyPointerUp);
-
-    if (!sheetBodyDragging) {
+  function onSheetPointerUp(event: PointerEvent) {
+    if (activePointerId != null && event.pointerId !== activePointerId) {
       return;
     }
 
-    sheetBodyDragging = false;
-    sheetDragging.value = false;
-    const current = sheetDragHeightPx.value;
+    const wasDragging = sheetDragging.value;
+    const source = activePointerSource;
+    const target = activePointerTarget;
 
-    if (current != null) {
-      sheetState.value = resolveSheetTargetState(sheetState.value, current);
+    cleanUpPointerListeners();
+
+    if (wasDragging) {
+      suppressNextClick();
+      const current = sheetDragHeightPx.value;
+
+      if (current != null) {
+        sheetState.value = resolveSheetTargetState(sheetState.value, current);
+      }
+    } else if (source === 'handle' && !isInteractiveTarget(target)) {
+      sheetState.value =
+        SHEET_ORDER[(SHEET_ORDER.indexOf(sheetState.value) + 1) % SHEET_ORDER.length];
     }
 
     nextTick(() => {
       sheetDragHeightPx.value = null;
       clearSheetHeightOverride();
     });
+  }
+
+  function onSheetPointerCancel(event: PointerEvent) {
+    if (activePointerId != null && event.pointerId !== activePointerId) {
+      return;
+    }
+
+    cleanUpPointerListeners();
+
+    nextTick(() => {
+      sheetDragHeightPx.value = null;
+      clearSheetHeightOverride();
+    });
+  }
+
+  function onSheetDragStart(event: PointerEvent) {
+    handlePointerDown(event, 'handle');
+  }
+
+  function onSheetBodyPointerDown(event: PointerEvent) {
+    handlePointerDown(event, 'body');
   }
 
   function stepSheet(direction: 1 | -1) {
@@ -436,6 +456,7 @@ export function useExcursionsLayout(options: UseExcursionsLayoutOptions) {
       appMainResizeObserver?.disconnect();
       spotsColResizeObserver?.disconnect();
       window.removeEventListener('resize', onWindowResize);
+      cleanUpPointerListeners();
     });
   }
 

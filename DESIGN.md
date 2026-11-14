@@ -319,6 +319,10 @@ Buttons, Eingabefelder (Input, Textarea), Selects, Dropdown-Trigger, Toggle-Swit
     - `mode: 'embedded'`: Für interaktive Buttons innerhalb von Glas-Pills (z. B. Header-Aktionen). Im Ruhezustand transparent, blenden sie bei Hover eine transluzente 3D-Glaskapsel mit feinem Lichtsaum (`--color-glass-control-hover`, `--shadow-glass-control-hover`, `translate: 0 -0.5px`) ein.
   - **Geschmeidige Animation (`--transition-glass`)**: Flüssige cubic-bezier-Übergänge (`cubic-bezier(0.16, 1, 0.3, 1)`) für Translate, Transform, Schatten und Lichtreflexion.
   - Aktive Werkzeuge (Standort-Freigabe, Aufzeichnung) leuchten in satter Primärfarbe mit `var(--shadow-floating-island)`.
+- **Floating Glass Search & Input Containers (`LocationSearchBar.vue`, `@mixin control-glass-field`)**:
+  - Frei schwebende Eingabe- und Suchleisten über Kartenflächen nutzen `@mixin control-glass-field` (`_controls.scss`).
+  - Sie besitzen eine solide Glaskante (`var(--color-surface-glass-border)`), Liquid-Glass-Hintergrund (`var(--color-surface-glass)`), Unschärfefilter (`backdrop-filter: var(--backdrop-blur-md)`) und Schwebeschatten (`--shadow-floating-island`).
+  - Bei Hover heben sie sich dezent mit `--shadow-floating-island-hover` ab; bei `:focus-within` leuchtet der Fokusring (`--focus-ring-halo` + Schwebeschatten) ohne doppelten Rahmen, während integrierte Steuerelemente (wie Info-Popovers) den embedded-Glass-Look nutzen.
 - **Versenkte Eingabefelder (`Input.vue`, `Textarea.vue`, `RichTextEditor.vue`, `SearchFilterBar.vue`)**:
   - Im Ruhezustand flach (`box-shadow: none`), verwandeln sich bei Hover in eine leicht vertiefte Rinne (`--shadow-control-inset-hover`) und bei Fokus in einen präzisen 3D-Schacht (`--shadow-control-inset` kombiniert mit `--focus-ring-halo`).
 - **Umschalter & Toggles (`ToggleSwitch.vue`, `SegmentedToggle.vue`)**:

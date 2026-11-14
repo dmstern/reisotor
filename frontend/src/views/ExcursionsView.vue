@@ -1057,14 +1057,13 @@ onUnmounted(() => {
         class="spots-col"
         :class="[isSheetOverlayMode ? sheetState : null, { dragging: sheetDragging }]"
       >
-        <div class="sheet-handle-row">
+        <div class="sheet-handle-row" @pointerdown="onSheetDragStart">
           <div class="sheet-title-group">
             <div
               class="sheet-handle"
               role="separator"
               aria-orientation="horizontal"
               aria-label="Spots-Liste ein-/ausklappen"
-              @pointerdown="onSheetDragStart"
             >
               <h2 class="sheet-title">
                 <AnimatedText
@@ -2002,6 +2001,12 @@ onUnmounted(() => {
   align-items: center;
   gap: var(--space-2);
   flex-shrink: 0;
+  touch-action: none;
+
+  :deep(button),
+  :deep(.btn) {
+    touch-action: none;
+  }
 }
 
 .sheet-stepper {
@@ -2066,6 +2071,13 @@ onUnmounted(() => {
 .spots-col.partial .spots-col-body {
   overflow-y: hidden;
   touch-action: none;
+
+  :deep(button),
+  :deep(.btn),
+  :deep(.segmented-control),
+  :deep(.segmented-option) {
+    touch-action: none;
+  }
 }
 
 /* Leer (kein Fokus aktiv bzw. Desktop, siehe TripMap.vue), wenn nichts hineingeteleportet wurde –
