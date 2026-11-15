@@ -783,7 +783,9 @@ const DIALOGS: DialogSpec[] = [
     path: '/excursions?group=category',
     open: async (page) => {
       const addBtn = page
-        .locator('button[aria-label="Neuer Spot"], button[title="Neuer Spot"]')
+        .locator(
+          'button[aria-label="Neuer Spot"]:visible, button[title="Neuer Spot"]:visible, button:has-text("Neuer Spot"):visible'
+        )
         .first();
       await addBtn.waitFor({ state: 'visible', timeout: 15000 });
       await addBtn.click();
