@@ -44,6 +44,7 @@ export default defineConfig({
     // Login. Global statt nur hier betroffene Specs, da jeder Test nach einem frischen Login/
     // Urlaubswechsel denselben Splash treffen kann.
     reducedMotion: 'reduce',
+    ignoreHTTPSErrors: true,
     // Opt-in für Sandboxes mit einer vorinstallierten, von diesem Playwright-Paket abweichenden
     // Chromium-Revision (z. B. Claude-Code-Remote-Umgebungen ohne Internetzugriff für
     // `playwright install`) — no-op, solange die Env-Var nicht gesetzt ist.
@@ -51,7 +52,7 @@ export default defineConfig({
       ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
         ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
         : {}),
-      args: ['--proxy-bypass-list=<-loopback>'],
+      args: ['--proxy-bypass-list=<-loopback>', '--ignore-certificate-errors'],
     },
   },
 
@@ -113,6 +114,7 @@ export default defineConfig({
         SEED_USER3: E2E_USERNAME_3,
         SEED_PASS3: E2E_PASSWORD_3,
         SCREENSHOT_MODE: process.env.SCREENSHOT_MODE ?? '',
+        NODE_TLS_REJECT_UNAUTHORIZED: '0',
       },
     },
     {

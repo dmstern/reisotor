@@ -221,8 +221,10 @@ async function get<T>(path: string, options?: RequestOptions): Promise<T> {
   try {
     // isConfirmedOffline(): erst NACH einem echten Fehlschlag gesetzt (siehe api/offline.ts) - beim
     // allerersten Request eines Ladens gilt navigator.onLine also noch allein, damit der Normalfall
-    // (echtes Online) unverändert sofort einen Netzversuch macht.
-    if (navigator.onLine && !isConfirmedOffline()) {
+    // (echtes Online) unverändert sofort einen Netzversuch macht. Ist der Pfad noch gar nicht
+    // im Cache vorhanden (z. B. /auth/config oder lokales Hosting/Loopback ohne WAN-Interface),
+    // wird ebenfalls ein Netzversuch unternommen, statt fälschlich sofort offline zu melden.
+    if ((navigator.onLine || !readCache(path)) && !isConfirmedOffline()) {
       try {
         const data = await rawRequest<T>(path, { method: 'GET', ...options });
         writeCache(path, data);
@@ -314,7 +316,11 @@ async function mutate<T>(
   try {
     const queueable = !options?.noQueue && isQueueablePath(path);
 
-    if (navigator.onLine && !isConfirmedOffline()) {
+    // Nicht in die Outbox schiebbare Mutationen (z. B. /auth/login, /auth/register) müssen vor
+    // dem Fehlschlag immer einen echten Netzversuch unternehmen, solange noch kein echter
+    // Verbindungsabbruch bestätigt ist – sonst wären Logins in Loopback-, Docker- oder
+    // lokalen Testumgebungen ohne aktives WAN-Interface unmöglich.
+    if ((navigator.onLine || !queueable) && !isConfirmedOffline()) {
       try {
         return await rawRequest<T>(path, {
           method,
