@@ -171,16 +171,29 @@ defineExpose({
 .input[type='datetime-local'],
 .input[type='month'],
 .input[type='week'] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  align-items: center;
   height: var(--input-height, 46px);
   width: 100%;
+  min-width: 0;
+  min-inline-size: 0;
   max-width: 100%;
   box-sizing: border-box;
+  line-height: normal;
+  text-align: left;
+  overflow: hidden;
 }
 
 .input[type='date']::-webkit-date-and-time-value,
 .input[type='time']::-webkit-date-and-time-value,
-.input[type='datetime-local']::-webkit-date-and-time-value {
+.input[type='datetime-local']::-webkit-date-and-time-value,
+.input[type='month']::-webkit-date-and-time-value,
+.input[type='week']::-webkit-date-and-time-value {
   text-align: inherit;
+  margin: 0;
+  min-height: 1.2em;
 }
 
 .input--sm[type='date'],
