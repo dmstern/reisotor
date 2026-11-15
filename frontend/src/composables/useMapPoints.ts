@@ -43,6 +43,11 @@ export interface MapPoint {
 
 export const TRAVEL_COLOR = '#4a3aa7';
 
+export interface ExcursionTrackWithPoints {
+  track: LocationTrack;
+  points: TrackPoint[];
+}
+
 export interface UseMapPointsOptions {
   travelItems: ComputedRef<TravelItem[]>;
   scheduleItems: Ref<ScheduleItem[]>;
@@ -116,6 +121,21 @@ export function useMapPoints(options: UseMapPointsOptions) {
 
     return tracksStore.getPointsForTrack(focusedTrack.value.id);
   });
+
+  const focusedExcursionTracks = computed<LocationTrack[]>(() => {
+    if (!focusedExcursion.value) {
+      return [];
+    }
+
+    return tracksStore.tracks.filter((track) => track.excursion_id === focusedExcursion.value!.id);
+  });
+
+  const focusedExcursionTracksWithPoints = computed<ExcursionTrackWithPoints[]>(() =>
+    focusedExcursionTracks.value.map((track) => ({
+      track,
+      points: tracksStore.getPointsForTrack(track.id),
+    }))
+  );
 
   const focusedDateStations = computed<ExcursionStation[]>(() => {
     if (focusedExcursion.value || !drawers.mapFocusDate) {
@@ -394,6 +414,8 @@ export function useMapPoints(options: UseMapPointsOptions) {
     focusedSpot,
     focusedTrack,
     focusedTrackPoints,
+    focusedExcursionTracks,
+    focusedExcursionTracksWithPoints,
     focusedDateStations,
     points,
     spotScheduledDates,

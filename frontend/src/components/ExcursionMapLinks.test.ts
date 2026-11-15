@@ -37,11 +37,12 @@ describe('ExcursionMapLinks', () => {
     expect(html).toContain('Auf Karte anzeigen');
   });
 
-  it('renders linked track buttons with title and avatar', async () => {
+  it('renders linked track buttons and show on map button when tracks exist without mapped stations', async () => {
     const html = await mountComponent({
       hasMappedStations: false,
       linkedTracks: mockTracks,
     });
+    expect(html).toContain('Auf Karte anzeigen');
     expect(html).toContain('GPS Wanderung');
     expect(html).toContain('🦊');
   });
@@ -62,9 +63,9 @@ describe('ExcursionMapLinks', () => {
     app.use(pinia);
     app.mount(container);
 
-    const btn = container.querySelector<HTMLButtonElement>('.show-on-map-btn');
-    expect(btn).not.toBeNull();
-    btn?.click();
+    const buttons = container.querySelectorAll<HTMLButtonElement>('.show-on-map-btn');
+    expect(buttons.length).toBe(2);
+    buttons[1].click();
 
     expect(drawers.mapFocusTrackId).toBe(1);
     app.unmount();

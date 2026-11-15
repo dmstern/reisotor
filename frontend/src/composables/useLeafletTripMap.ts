@@ -25,7 +25,7 @@ import { useAuthStore } from '../stores/auth';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useTripStore } from '../stores/trip';
 import { FALLBACK_CENTER, FALLBACK_ZOOM } from './useLocationPickerMap';
-import type { MapPoint } from './useMapPoints';
+import type { ExcursionTrackWithPoints, MapPoint } from './useMapPoints';
 import { TRAVEL_COLOR } from './useMapPoints';
 
 export { FALLBACK_CENTER, FALLBACK_ZOOM };
@@ -101,6 +101,9 @@ export interface UseLeafletTripMapOptions {
   focusedExcursion: ComputedRef<Excursion | null>;
   focusedTrack: ComputedRef<LocationTrack | null>;
   focusedTrackPoints: ComputedRef<TrackPoint[]>;
+  focusedExcursionTracks: ComputedRef<ExcursionTrackWithPoints[]>;
+  activePlaybackTrack: ComputedRef<LocationTrack | null>;
+  activePlaybackTrackPoints: ComputedRef<TrackPoint[]>;
   focusedDateStations: ComputedRef<ExcursionStation[]>;
   excursionPhotoPoints: Ref<MapPoint[]>;
   allTripPhotoPoints: Ref<MapPoint[]>;
@@ -110,6 +113,7 @@ export interface UseLeafletTripMapOptions {
   users: Ref<User[]>;
   trackPlaybackProgress: Ref<number>;
   onPointClick: (point: MapPoint) => void;
+  onSelectExcursionTrack?: (trackId: number) => void;
 }
 
 export interface FitBoundsPaddingOptions {
@@ -305,6 +309,12 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       if (options.excursionPhotoPoints.value.length) {
         for (const photoPoint of options.excursionPhotoPoints.value) {
           focusedLatLngs.push([photoPoint.lat, photoPoint.lng]);
+        }
+      }
+
+      for (const item of options.focusedExcursionTracks.value) {
+        for (const pt of item.points) {
+          focusedLatLngs.push([pt.lat, pt.lng]);
         }
       }
     } else if (drawers.mapFocusDate) {
@@ -519,6 +529,14 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       }
     }
 
+    if (excursion) {
+      for (const item of options.focusedExcursionTracks.value) {
+        for (const pt of item.points) {
+          excursionLatLngs.push([pt.lat, pt.lng]);
+        }
+      }
+    }
+
     const dateLatLngs: leaflet.LatLngExpression[] =
       !excursion && drawers.mapFocusDate
         ? options.focusedDateStations.value
@@ -704,25 +722,10 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     }
   }
 
-  function renderTracks() {
-    if (!map || !tracksLayer) {
+  function addTrackStartGoalMarkers(trackPts: TrackPoint[]) {
+    if (!tracksLayer || trackPts.length < 2) {
       return;
     }
-
-    tracksLayer.clearLayers();
-    const trackPts = options.focusedTrackPoints.value;
-
-    if (trackPts.length < 2) {
-      if (trackPlaybackLayer) {
-        trackPlaybackLayer.clearLayers();
-        playbackMarker = null;
-      }
-
-      return;
-    }
-
-    const coords: leaflet.LatLngExpression[] = trackPts.map((point) => [point.lat, point.lng]);
-    leaflet.polyline(coords, { color: '#2f6fed', weight: 4, opacity: 0.85 }).addTo(tracksLayer);
 
     const startPt = trackPts[0];
     leaflet
@@ -759,8 +762,79 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
         options.trackPlaybackProgress.value = 1;
       })
       .addTo(tracksLayer);
+  }
 
-    fitBoundsWithCoveredBottom(leaflet.latLngBounds(coords));
+  function renderTracks() {
+    if (!map || !tracksLayer) {
+      return;
+    }
+
+    tracksLayer.clearLayers();
+
+    if (options.focusedTrack.value) {
+      const trackPts = options.focusedTrackPoints.value;
+
+      if (trackPts.length < 2) {
+        if (trackPlaybackLayer) {
+          trackPlaybackLayer.clearLayers();
+          playbackMarker = null;
+        }
+
+        return;
+      }
+
+      const coords: leaflet.LatLngExpression[] = trackPts.map((point) => [point.lat, point.lng]);
+      leaflet.polyline(coords, { color: '#2f6fed', weight: 4, opacity: 0.85 }).addTo(tracksLayer);
+      addTrackStartGoalMarkers(trackPts);
+      fitBoundsWithCoveredBottom(leaflet.latLngBounds(coords));
+      updateTrackPlaybackMarker();
+      return;
+    }
+
+    const playableTracks = options.focusedExcursionTracks.value.filter(
+      (item) => item.points.length >= 2
+    );
+
+    if (!options.focusedExcursion.value || !playableTracks.length) {
+      if (trackPlaybackLayer) {
+        trackPlaybackLayer.clearLayers();
+        playbackMarker = null;
+      }
+
+      return;
+    }
+
+    const ACTIVE_TRACK_WEIGHT = 4;
+    const INACTIVE_TRACK_WEIGHT = 3;
+    const ACTIVE_TRACK_OPACITY = 0.9;
+    const INACTIVE_TRACK_OPACITY = 0.6;
+
+    for (const item of playableTracks) {
+      const isActive =
+        playableTracks.length === 1 || options.activePlaybackTrack.value?.id === item.track.id;
+      const coords: leaflet.LatLngExpression[] = item.points.map((point) => [point.lat, point.lng]);
+      const polyline = leaflet
+        .polyline(coords, {
+          color: isActive ? '#2f6fed' : '#5b8def',
+          weight: isActive ? ACTIVE_TRACK_WEIGHT : INACTIVE_TRACK_WEIGHT,
+          opacity: isActive ? ACTIVE_TRACK_OPACITY : INACTIVE_TRACK_OPACITY,
+        })
+        .addTo(tracksLayer);
+
+      polyline.bindTooltip(item.track.title || 'Aufzeichnung', {
+        sticky: true,
+        opacity: 0.95,
+        className: 'map-marker-tooltip',
+      });
+      polyline.on('click', () => {
+        options.onSelectExcursionTrack?.(item.track.id);
+      });
+
+      if (isActive) {
+        addTrackStartGoalMarkers(item.points);
+      }
+    }
+
     updateTrackPlaybackMarker();
   }
 
@@ -769,7 +843,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       return;
     }
 
-    const trackPts = options.focusedTrackPoints.value;
+    const trackPts = options.activePlaybackTrackPoints.value;
 
     if (trackPts.length < 2) {
       trackPlaybackLayer.clearLayers();
