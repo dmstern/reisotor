@@ -194,4 +194,66 @@ describe('useMapPoints', () => {
     expect(vacationPoints.value.map((p) => p.title)).toEqual(['Strandhotel']);
     expect(homePoints.value.map((p) => p.title)).toEqual(['Heimatflughafen']);
   });
+
+  it('returns linked tracks and their points for the focused excursion', async () => {
+    const { useExcursionsStore } = await import('../stores/excursions');
+    const { useTracksStore } = await import('../stores/tracks');
+    const excursionsStore = useExcursionsStore();
+    const tracksStore = useTracksStore();
+    const drawers = useDrawersStore();
+
+    excursionsStore.excursions = [
+      {
+        id: 10,
+        trip_id: 1,
+        title: 'Gipfeltour',
+        spot_ids: [],
+        legs: [],
+        done: 0,
+      },
+    ] as never;
+
+    tracksStore.tracks = [
+      {
+        id: 101,
+        trip_id: 1,
+        user_id: 1,
+        excursion_id: 10,
+        title: 'Aufstieg',
+        visibility: 'shared',
+        started_at: '',
+        ended_at: '',
+      },
+      {
+        id: 102,
+        trip_id: 1,
+        user_id: 1,
+        excursion_id: 99,
+        title: 'Andere Tour',
+        visibility: 'shared',
+        started_at: '',
+        ended_at: '',
+      },
+    ] as never;
+
+    tracksStore.pointsByTrack = {
+      101: [
+        { id: 1, track_id: 101, lat: 47.0, lng: 11.0, recorded_at: '2026-06-01T08:00:00Z' },
+        { id: 2, track_id: 101, lat: 47.1, lng: 11.1, recorded_at: '2026-06-01T09:00:00Z' },
+      ],
+    } as never;
+
+    drawers.mapFocusExcursionId = 10;
+
+    const { focusedExcursionTracks, focusedExcursionTracksWithPoints } = useMapPoints({
+      travelItems: computed<TravelItem[]>(() => []),
+      scheduleItems: ref<ScheduleItem[]>([]),
+      excursionPhotoPoints: ref([]),
+      allTripPhotoPoints: ref([]),
+    });
+
+    expect(focusedExcursionTracks.value.map((track) => track.id)).toEqual([101]);
+    expect(focusedExcursionTracksWithPoints.value).toHaveLength(1);
+    expect(focusedExcursionTracksWithPoints.value[0].points).toHaveLength(2);
+  });
 });

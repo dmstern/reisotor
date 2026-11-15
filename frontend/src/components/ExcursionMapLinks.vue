@@ -21,7 +21,7 @@ const drawers = useDrawersStore();
 <template>
   <div v-if="hasMappedStations || linkedTracks.length" class="links">
     <Button
-      v-if="hasMappedStations"
+      v-if="hasMappedStations || linkedTracks.length"
       variant="card-action"
       class="show-on-map-btn"
       aria-label="Auf Karte anzeigen"

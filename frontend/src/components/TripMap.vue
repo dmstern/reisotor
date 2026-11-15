@@ -150,6 +150,8 @@ const {
   focusedSpot,
   focusedTrack,
   focusedTrackPoints,
+  focusedExcursionTracks,
+  focusedExcursionTracksWithPoints,
   focusedDateStations,
   points,
   filteredPoints,
@@ -160,6 +162,48 @@ const {
   accommodationPoints,
   vacationDays,
 } = mapPoints;
+
+const selectedExcursionTrackId = ref<number | null>(null);
+const excursionPlaybackDismissed = ref(false);
+
+const playableExcursionTracks = computed(() =>
+  focusedExcursionTracksWithPoints.value.filter((item) => item.points.length >= 2)
+);
+
+const activeExcursionTrackEntry = computed(() => {
+  if (
+    !focusedExcursion.value ||
+    excursionPlaybackDismissed.value ||
+    !playableExcursionTracks.value.length
+  ) {
+    return null;
+  }
+
+  return (
+    playableExcursionTracks.value.find(
+      (item) => item.track.id === selectedExcursionTrackId.value
+    ) ?? playableExcursionTracks.value[0]
+  );
+});
+
+const activePlaybackTrack = computed(
+  () => focusedTrack.value ?? activeExcursionTrackEntry.value?.track ?? null
+);
+
+const activePlaybackTrackPoints = computed(() => {
+  if (focusedTrack.value) {
+    return focusedTrackPoints.value;
+  }
+
+  return activeExcursionTrackEntry.value?.points ?? [];
+});
+
+function selectExcursionTrack(trackId: number) {
+  selectedExcursionTrackId.value = trackId;
+  excursionPlaybackDismissed.value = false;
+  trackPlaybackProgress.value = 0;
+  leafletTripMap.renderTracks();
+}
 
 // 3. Live Location composable
 const liveLocation = useMapLiveLocation({
@@ -195,6 +239,9 @@ const leafletTripMap = useLeafletTripMap({
   focusedExcursion,
   focusedTrack,
   focusedTrackPoints,
+  focusedExcursionTracks: focusedExcursionTracksWithPoints,
+  activePlaybackTrack,
+  activePlaybackTrackPoints,
   focusedDateStations,
   excursionPhotoPoints,
   allTripPhotoPoints,
@@ -204,6 +251,7 @@ const leafletTripMap = useLeafletTripMap({
   users,
   trackPlaybackProgress,
   onPointClick: handlePointClick,
+  onSelectExcursionTrack: selectExcursionTrack,
 });
 
 const { fitAll, fitVacation, fitHome, fitAccommodations, focusCategory } = leafletTripMap;
@@ -270,9 +318,20 @@ function clearFocus() {
 }
 
 function clearTrackFocus() {
-  drawers.mapFocusTrackId = null;
+  if (focusedTrack.value) {
+    drawers.mapFocusTrackId = null;
+    trackPlaybackProgress.value = 0;
+    leafletTripMap.clearTrackLayers();
+    return;
+  }
+
+  if (!focusedExcursion.value) {
+    return;
+  }
+
+  excursionPlaybackDismissed.value = true;
   trackPlaybackProgress.value = 0;
-  leafletTripMap.clearTrackLayers();
+  leafletTripMap.updateTrackPlaybackMarker();
 }
 
 async function loadAll() {
@@ -388,7 +447,7 @@ watch(
     leafletTripMap.renderMarkers();
     leafletTripMap.renderRoutes();
 
-    if (focusedTrackPoints.value.length >= 2) {
+    if (focusedTrackPoints.value.length >= 2 || focusedExcursionTracks.value.length > 0) {
       leafletTripMap.renderTracks();
     }
 
@@ -412,7 +471,7 @@ watch(
   () => {
     leafletTripMap.renderMarkers();
 
-    if (focusedTrackPoints.value.length >= 2) {
+    if (focusedTrackPoints.value.length >= 2 || focusedExcursionTracks.value.length > 0) {
       leafletTripMap.renderTracks();
     }
   }
@@ -471,7 +530,37 @@ watch(
 );
 
 watch(
-  () => focusedTrackPoints.value.length,
+  () => focusedExcursion.value?.id,
+  () => {
+    selectedExcursionTrackId.value = null;
+    excursionPlaybackDismissed.value = false;
+    trackPlaybackProgress.value = 0;
+    leafletTripMap.renderTracks();
+  }
+);
+
+watch(
+  focusedExcursionTracks,
+  async (tracks) => {
+    if (!tracks.length) {
+      leafletTripMap.renderTracks();
+      return;
+    }
+
+    const missing = tracks.filter((track) => !tracksStore.getPointsForTrack(track.id).length);
+
+    if (missing.length) {
+      await Promise.all(missing.map((track) => tracksStore.loadPoints(track.id).catch(() => [])));
+    }
+
+    leafletTripMap.renderMarkers();
+    leafletTripMap.renderTracks();
+  },
+  { immediate: true }
+);
+
+watch(
+  () => activePlaybackTrackPoints.value.length,
   () => leafletTripMap.renderTracks()
 );
 
@@ -533,19 +622,49 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
     <!-- Mobil/schmales Layout: TrackPlayback landet per Teleport im Spots-Drawer (#map-focus-dock) -->
     <TripMapDockTeleport :active="canTeleportToDock">
       <div
-        v-if="focusedTrack && focusedTrackPoints.length >= 2"
+        v-if="activePlaybackTrack && activePlaybackTrackPoints.length >= 2"
         class="map-track-playback-container"
       >
+        <div
+          v-if="!focusedTrack && playableExcursionTracks.length > 1"
+          class="excursion-track-switcher"
+          role="tablist"
+          aria-label="Aufzeichnungen der Tour"
+        >
+          <button
+            v-for="(item, index) in playableExcursionTracks"
+            :key="item.track.id"
+            type="button"
+            role="tab"
+            :aria-selected="activePlaybackTrack.id === item.track.id"
+            class="excursion-track-pill"
+            :class="{ 'is-active': activePlaybackTrack.id === item.track.id }"
+            @click="selectExcursionTrack(item.track.id)"
+          >
+            <span
+              v-if="item.track.author_avatar || trackAuthorUser(item.track.user_id)?.avatar"
+              class="excursion-track-pill-avatar"
+              aria-hidden="true"
+            >
+              {{ item.track.author_avatar || trackAuthorUser(item.track.user_id)?.avatar }}
+            </span>
+            <span class="excursion-track-pill-label">
+              {{ item.track.title || `Aufzeichnung ${index + 1}` }}
+            </span>
+          </button>
+        </div>
         <TrackPlayback
-          :track="focusedTrack"
-          :title="focusedTrack?.title"
+          :track="activePlaybackTrack"
+          :title="activePlaybackTrack?.title"
           :author-avatar="
-            focusedTrack?.author_avatar || trackAuthorUser(focusedTrack?.user_id)?.avatar
+            activePlaybackTrack?.author_avatar ||
+            trackAuthorUser(activePlaybackTrack?.user_id)?.avatar
           "
           :author-name="
-            focusedTrack?.author_username || trackAuthorUser(focusedTrack?.user_id)?.username
+            activePlaybackTrack?.author_username ||
+            trackAuthorUser(activePlaybackTrack?.user_id)?.username
           "
-          :points="focusedTrackPoints"
+          :points="activePlaybackTrackPoints"
           v-model:progress="trackPlaybackProgress"
           @close="clearTrackFocus"
         />
@@ -626,6 +745,59 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   bottom: auto;
   z-index: auto;
   margin-bottom: var(--space-3);
+}
+
+.excursion-track-switcher {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-1);
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-bottom: var(--space-2);
+  padding: 2px;
+}
+
+.excursion-track-switcher::-webkit-scrollbar {
+  display: none;
+}
+
+.excursion-track-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex: 0 0 auto;
+  max-width: 200px;
+  min-height: 32px;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-surface-glass-border);
+  background: var(--color-surface-glass);
+  backdrop-filter: var(--backdrop-blur-md);
+  box-shadow: var(--shadow-control);
+  color: var(--color-text);
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.excursion-track-pill.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+}
+
+.excursion-track-pill-avatar {
+  line-height: 1;
+}
+
+.excursion-track-pill-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Im Sheet-Overlay-Modus (z. B. auf Mobil oder bei schmalem .app-main Container)
