@@ -5,6 +5,33 @@ Format lose an [Keep a Changelog](https://keepachangelog.com/) angelehnt, Versio
 [Semantic Versioning](https://semver.org/). Neue Einträge werden beim Erstellen eines Releases
 (`.github/workflows/release.yml`) oben ergänzt.
 
+## [2.2.0] - 2026-11-15
+
+### Karte und Navigation
+
+- 👆 **Spots-Leiste per Wischgeste vergrößern**: Das Hochwischen der Spots-Leiste auf Mobilgeräten kann nun auch direkt über den oberen Tasten und Bedienelementen begonnen werden, ohne versehentlich Aktionen auszulösen.
+- 🔍 **Solide Suchleiste über der Karte**: Die schwebende Ortssuche über der Karte besitzt nun einen klar definierten Rahmen mit Milchglas-Optik und fügt sich harmonisch in die schwebenden Kartenelemente ein.
+
+### Spots, Touren und Unterkünfte
+
+- 🚗 **Routenberechnung für abseits gelegene Orte**: Liegt ein Spot etwas weiter von der nächsten befahrbaren Straße entfernt (etwa im Wald, Moor oder Park), erweitert die Routenberechnung den Suchradius automatisch, sodass Auto-, Fahrrad- und Fußrouten zuverlässig gefunden werden.
+- 💬 **Einheitliche Fehlerdetails und direkte Bug-Meldung**: Fehlermeldungen bei der Routenberechnung, in Fehler-Toasts sowie bei Inline-Hinweisen (z. B. Wetter-, Regions-, Upload-, Backup-, Standort- und Sync-Fehler) brechen sauber um und lassen sich direkt anklicken, um über das zentrale Fehlerdetail-Fenster technische Diagnosedaten als Bug-Feedback zu senden.
+
+### Kalender und Planung
+
+- 🗓️ **To-dos im Kalender**: To-do-Einträge im Kalender zeigen einen deutlichen Navigationspfeil, der signalisiert, dass ein Klick direkt zum Eintrag in der Aufgabenliste führt.
+
+### Listen, Notizen und Tagebuch
+
+- 📖 **Tagebuch und Reiseplan entkoppelt**: Das Verknüpfen von Spots mit einem Tagebucheintrag markiert diese als besucht, überschreibt aber nicht mehr ungefragt das geplante Reisedatum im Kalender. Bei abweichenden Terminen kann das Reisedatum auf Wunsch per Auswahlfeld mit einem Klick angepasst werden.
+- 🗺️ **Direktsprung aus dem Tagebuch**: Ein Klick auf verknüpfte Spots oder Touren im Tagebuch wechselt zuverlässig in den passenden Reiter der Ausflugsansicht, öffnet die Schublade und hebt den gewählten Ort hervor.
+
+### Design und Bedienung
+
+- 📱 **Ruhigeres Scrollen auf Smartphones**: Beim Scrollen durch Touren- und Spot-Listen auf Touchscreens werden Karten und Listeneinträge nicht mehr bei jeder Berührung hervorgehoben oder verfärbt. Das Scrollen fühlt sich dadurch deutlich ruhiger und natürlicher an, während das taktile Antipp-Feedback beim gezielten Berühren erhalten bleibt.
+- 🎯 **Ruhigere Spot-Karten beim Überfahren**: Beim Bewegen des Mauszeigers über eine Spot-Karte bleibt die Ausrichtung der Karte nun stabil und wackelt nicht mehr durch einen zusätzlichen Dreheffekt, während die subtile Anhebung und Schattenbildung für klare Orientierung sorgen.
+- ✨ **Harmonische 3D-Wölbung und aufgeräumte Karten-Aktionen**: Knöpfe mit 3D-Effekt besitzen nun unabhängig von ihrer Form einen gleichmäßigen, leicht gewölbten Lichtverlauf. Aktionsbuttons auf Karten ruhen im Ausgangszustand dezent und flach und heben sich erst beim Überfahren plastisch hervor, um visuelle Unruhe zu vermeiden. Zudem fügen sich die Schalter zum Bearbeiten von Urlaubsbannern und Titelbildern im einheitlichen schwebenden Glas-Design stimmig in die Oberfläche ein, und reine Anzeige-Listen bleiben angenehm flach.
+
 ## [2.1.0] - 2026-11-11
 
 ### Highlights
