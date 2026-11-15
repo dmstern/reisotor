@@ -444,11 +444,12 @@ function onSubmit() {
   </form>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .trip-form {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .trip-tab-bar {
@@ -524,8 +525,19 @@ label,
 }
 
 .dates-row label {
-  flex: 1 1 130px;
-  min-width: 130px;
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+@include media-down('mobile') {
+  .dates-row {
+    flex-direction: column;
+  }
+
+  .dates-row label {
+    flex: 1 1 auto;
+    width: 100%;
+  }
 }
 
 .location-box {

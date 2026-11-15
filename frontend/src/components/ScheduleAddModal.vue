@@ -135,11 +135,12 @@ const {
   </Modal>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .edit-form {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .edit-form .row {
@@ -151,6 +152,17 @@ const {
 .edit-form .row > * {
   flex: 1 1 140px;
   min-width: 0;
+}
+
+@include media-down('mobile') {
+  .edit-form .row {
+    flex-direction: column;
+  }
+
+  .edit-form .row > * {
+    flex: 1 1 auto;
+    width: 100%;
+  }
 }
 
 .actions-row {
