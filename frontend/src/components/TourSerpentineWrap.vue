@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ComponentPublicInstance } from 'vue';
+import { computed, type ComponentPublicInstance } from 'vue';
 import type { Excursion, Spot, User } from '../api/types';
 import type { TourLineData } from '../composables/useTourSerpentine';
 import type { TourSerpentineRow } from '../utils/tourSerpentine';
@@ -7,6 +7,7 @@ import type { SpotAccommodationDistanceInfo } from '../utils/spotAccommodationDi
 import SpotCard from './SpotCard.vue';
 import type { CommentItem } from './Comments.vue';
 import TourLegConnector from './TourLegConnector.vue';
+import TourSpotAssignDropdown from './TourSpotAssignDropdown.vue';
 import { useAuthStore } from '../stores/auth';
 import { useSpotsStore } from '../stores/spots';
 
@@ -47,10 +48,27 @@ const emit = defineEmits<{
   (e: 'openSpot', spot: Spot, el?: HTMLElement | null): void;
   (e: 'closeSpot'): void;
   (e: 'showSpotOnMap', spot: Spot): void;
+  (e: 'addSpotToTour', spotId: number): void;
+  (e: 'createSpotForTour'): void;
 }>();
 
 const auth = useAuthStore();
 const spotsStore = useSpotsStore();
+
+const lastSpotCol = computed(() => {
+  if (!props.rows.length || props.cols <= 1) {
+    return 0;
+  }
+
+  const lastRow = props.rows[props.rows.length - 1];
+  const spotCountInRow = lastRow.cells.filter((cell) => cell.type === 'spot').length;
+
+  if (lastRow.isRtl) {
+    return Math.max(0, props.cols - spotCountInRow);
+  }
+
+  return Math.max(0, spotCountInRow - 1);
+});
 
 function creatorLabel(userId: number | null | undefined): string | null {
   if (userId == null) {
@@ -69,6 +87,9 @@ function creatorLabel(userId: number | null | undefined): string | null {
     :style="{
       '--tour-theme-color': excursion.role ? 'var(--color-travel)' : 'var(--color-tour)',
       '--tour-theme-tint': excursion.role ? 'var(--color-travel-tint)' : 'var(--color-tour-tint)',
+      '--tour-theme-border': excursion.role
+        ? 'var(--color-travel-border)'
+        : 'var(--color-tour-border)',
     }"
     :ref="setTourWrapRef"
   >
@@ -212,6 +233,22 @@ function creatorLabel(userId: number | null | undefined): string | null {
           @click="emit('openLegModal', row.rowBreak.fromSpot, row.rowBreak.toSpot)"
         />
       </div>
+
+      <div
+        v-if="items.length > 0"
+        class="tour-add-spot-row"
+        :class="{ 'single-col': cols === 1 }"
+        :style="{ '--last-spot-col': lastSpotCol }"
+      >
+        <div class="tour-add-spot-row-inner">
+          <TourSpotAssignDropdown
+            :spots="spotsStore.spots"
+            :like-count="spotsStore.likeCountFor"
+            @select-spot="(spotId) => emit('addSpotToTour', spotId)"
+            @create-spot="emit('createSpotForTour')"
+          />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -318,6 +355,40 @@ function creatorLabel(userId: number | null | undefined): string | null {
   flex: 0 0 100%;
   width: 100%;
   max-width: 100%;
+}
+
+.tour-add-spot-row {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 2;
+  margin-top: var(--space-2);
+}
+
+.tour-add-spot-row-inner {
+  width: calc(
+    (100% - (var(--tour-cols, 1) - 1) * var(--tour-conn-width, 76px)) / var(--tour-cols, 1)
+  );
+  max-width: calc(
+    (100% - (var(--tour-cols, 1) - 1) * var(--tour-conn-width, 76px)) / var(--tour-cols, 1)
+  );
+  margin-left: calc(
+    var(--last-spot-col, 0) *
+      (
+        (100% - (var(--tour-cols, 1) - 1) * var(--tour-conn-width, 76px)) / var(--tour-cols, 1) +
+          var(--tour-conn-width, 76px)
+      )
+  );
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.tour-add-spot-row.single-col .tour-add-spot-row-inner {
+  width: 100%;
+  max-width: 100%;
+  margin-left: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

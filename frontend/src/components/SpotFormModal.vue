@@ -34,6 +34,7 @@ const props = defineProps<{
   show: boolean;
   spot?: Spot | null;
   defaultCategory?: string;
+  defaultTourTitle?: string;
   tripId: number;
   users: User[];
   spotScheduledDates: Map<number, string>;
@@ -43,6 +44,7 @@ const emit = defineEmits<{
   (e: 'update:show', value: boolean): void;
   (e: 'update:spot', value: Spot | null): void;
   (e: 'openScheduleDetail', item: unknown): void;
+  (e: 'created', spot: Spot): void;
 }>();
 
 const usersRef = toRef(props, 'users');
@@ -171,7 +173,7 @@ watch(
       if (spot) {
         startEditSpot(spot as Spot);
       } else {
-        openSpotForm(props.defaultCategory);
+        openSpotForm(props.defaultCategory, props.defaultTourTitle);
       }
     }
   },
@@ -192,12 +194,15 @@ function handleClose() {
 }
 
 async function handleAddSpot() {
-  await addSpot();
+  const created = await addSpot();
 
-  if (!showSpotForm.value) {
-    emit('update:show', false);
-    emit('update:spot', null);
+  if (!created || showSpotForm.value) {
+    return;
   }
+
+  emit('created', created);
+  emit('update:show', false);
+  emit('update:spot', null);
 }
 
 async function handleSubmitEditSpot() {

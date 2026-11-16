@@ -50,6 +50,7 @@ import TourSerpentineWrap from '../components/TourSerpentineWrap.vue';
 import SpotFormModal from '../components/SpotFormModal.vue';
 import ExcursionFormModal from '../components/ExcursionFormModal.vue';
 import TrackEditModal from '../components/TrackEditModal.vue';
+import TourSpotAssignDropdown from '../components/TourSpotAssignDropdown.vue';
 
 // Composables extrahiert im Rahmen von Phase 1 (Logik- & State-Entflechtung, #446)
 import { useExcursionsLayout } from '../composables/useExcursionsLayout';
@@ -492,15 +493,23 @@ function startEditExcursion(excursion: Excursion | number) {
   showExcursionModal.value = true;
 }
 
+const excursionFormModalRef = ref<InstanceType<typeof ExcursionFormModal> | null>(null);
+
 // 8. Spot Form Modal State
 const showSpotModal = ref(false);
 const editingSpot = ref<Spot | null>(null);
 const defaultSpotCategory = ref<string | undefined>(undefined);
+const defaultSpotTourTitle = ref<string | undefined>(undefined);
+const pendingTourIdForNewSpot = ref<number | null>(null);
+const pendingAddSpotToExcursionForm = ref(false);
 
-function openSpotForm(initialCategory?: string) {
+function openSpotForm(initialCategory?: string, initialTourTitle?: string) {
   editingSpot.value = null;
   defaultSpotCategory.value =
     initialCategory ?? (isAccommodationFilterActive.value ? 'Unterkunft' : undefined);
+  defaultSpotTourTitle.value = initialTourTitle;
+  pendingTourIdForNewSpot.value = null;
+  pendingAddSpotToExcursionForm.value = false;
   showSpotModal.value = true;
 }
 
@@ -512,7 +521,105 @@ function startEditSpot(spot: Spot | number) {
     editingSpot.value = spot;
   }
 
+  defaultSpotTourTitle.value = undefined;
+  pendingTourIdForNewSpot.value = null;
+  pendingAddSpotToExcursionForm.value = false;
   showSpotModal.value = true;
+}
+
+const TOUR_LINE_RECOMPUTE_DELAY_MS = 350;
+
+watch(showSpotModal, (isOpen) => {
+  if (isOpen) {
+    return;
+  }
+
+  pendingAddSpotToExcursionForm.value = false;
+  pendingTourIdForNewSpot.value = null;
+  defaultSpotTourTitle.value = undefined;
+});
+
+async function onAddExistingSpotToTour(excursion: Excursion, spotId: number) {
+  const current = excursionsStore.excursions.find((item) => item.id === excursion.id) ?? excursion;
+  expandedExcursionId.value = current.id;
+
+  await excursionsStore.update(current.id, {
+    title: current.title,
+    image_url: current.image_url ?? undefined,
+    note: current.note ?? undefined,
+    note_format: (current.note_format as 'html' | 'legacy') || undefined,
+    date: current.date ?? undefined,
+    spot_ids: [...current.spot_ids, spotId],
+    legs: current.legs,
+    role: current.role,
+    transport_type: current.transport_type,
+    departure_time: current.departure_time,
+    arrival_time: current.arrival_time,
+    checkin_info: current.checkin_info,
+    amount: current.amount,
+    paid_by_user_id: current.paid_by_user_id,
+    luggage: current.luggage,
+    seat: current.seat,
+    ticket_link: current.ticket_link,
+  });
+
+  await nextTick();
+  recomputeTourLine(current.id);
+  setTimeout(() => {
+    recomputeTourLine(current.id);
+  }, TOUR_LINE_RECOMPUTE_DELAY_MS);
+}
+
+function onCreateSpotForTourCard(excursion: Excursion) {
+  pendingTourIdForNewSpot.value = excursion.id;
+  pendingAddSpotToExcursionForm.value = false;
+  defaultSpotTourTitle.value = excursion.title;
+  editingSpot.value = null;
+  defaultSpotCategory.value = undefined;
+  showSpotModal.value = true;
+}
+
+function onCreateSpotFromExcursionModal() {
+  pendingAddSpotToExcursionForm.value = true;
+  pendingTourIdForNewSpot.value = null;
+  defaultSpotTourTitle.value = undefined;
+  editingSpot.value = null;
+  defaultSpotCategory.value = undefined;
+  showSpotModal.value = true;
+}
+
+async function onSpotCreated(spot: Spot) {
+  const isFromExcursionForm = pendingAddSpotToExcursionForm.value;
+  const tourId = pendingTourIdForNewSpot.value;
+
+  if (isFromExcursionForm) {
+    excursionFormModalRef.value?.addSpotIdToActiveForm(spot.id);
+    pendingAddSpotToExcursionForm.value = false;
+    return;
+  }
+
+  if (tourId == null) {
+    return;
+  }
+
+  const excursion = excursionsStore.excursions.find((e) => e.id === tourId);
+
+  if (excursion) {
+    expandedExcursionId.value = excursion.id;
+
+    if (!excursion.spot_ids.includes(spot.id)) {
+      await onAddExistingSpotToTour(excursion, spot.id);
+    } else {
+      await nextTick();
+      recomputeTourLine(excursion.id);
+      setTimeout(() => {
+        recomputeTourLine(excursion.id);
+      }, TOUR_LINE_RECOMPUTE_DELAY_MS);
+    }
+  }
+
+  pendingTourIdForNewSpot.value = null;
+  defaultSpotTourTitle.value = undefined;
 }
 
 function onAddButtonClick() {
@@ -1388,12 +1495,14 @@ onUnmounted(() => {
 
           <!-- Touren-Formular: Modale Komponente mit useTourForm (#446) -->
           <ExcursionFormModal
+            ref="excursionFormModalRef"
             v-model:show="showExcursionModal"
             v-model:excursion="editingExcursion"
             :default-role="activeExcursionRole"
             :default-title="activeExcursionTitle"
             :users="users"
             :excursion-for-group-title="excursionForGroupTitle"
+            @create-spot="onCreateSpotFromExcursionModal"
           />
 
           <div
@@ -1473,9 +1582,11 @@ onUnmounted(() => {
             v-model:show="showSpotModal"
             v-model:spot="editingSpot"
             :default-category="defaultSpotCategory"
+            :default-tour-title="defaultSpotTourTitle"
             :trip-id="tripId"
             :users="users"
             :spot-scheduled-dates="spotScheduledDates"
+            @created="onSpotCreated"
           />
 
           <!-- Sticky Category Nav Bar (#144, #446) -->
@@ -1602,6 +1713,8 @@ onUnmounted(() => {
                     @open-spot="onSpotCardOpen"
                     @close-spot="onSpotCardClose"
                     @show-spot-on-map="onSpotShowOnMap"
+                    @add-spot-to-tour="(spotId) => onAddExistingSpotToTour(grp.excursion!, spotId)"
+                    @create-spot-for-tour="onCreateSpotForTourCard(grp.excursion!)"
                   />
 
                   <!-- Nicht-Touren (Kategorie-Modus): Standard-Grid -->
@@ -1669,18 +1782,26 @@ onUnmounted(() => {
               </p>
               <div v-else-if="grp.excursion && !grp.items.length" class="empty tour-empty-group">
                 <p class="tour-empty-text">
-                  Noch keine Spots zugeordnet – bearbeite diese Tour, um Stationen hinzuzufügen,
-                  oder wähle sie beim Bearbeiten eines Spots über „Tour zuordnen“.
+                  Noch keine Spots zugeordnet – füge Stationen hinzu oder bearbeite die
+                  Tour-Details.
                 </p>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  class="tour-empty-action-btn"
-                  @click="startEditExcursion(grp.excursion)"
-                >
-                  <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
-                  <span>Tour bearbeiten</span>
-                </Button>
+                <div class="tour-empty-actions">
+                  <TourSpotAssignDropdown
+                    :spots="spotsStore.spots"
+                    :like-count="spotsStore.likeCountFor"
+                    @select-spot="(spotId) => onAddExistingSpotToTour(grp.excursion!, spotId)"
+                    @create-spot="onCreateSpotForTourCard(grp.excursion!)"
+                  />
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    class="tour-empty-action-btn"
+                    @click="startEditExcursion(grp.excursion)"
+                  >
+                    <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+                    <span>Tour bearbeiten</span>
+                  </Button>
+                </div>
               </div>
             </section>
             <div v-if="!spotGroups.length" class="empty-state-wrap">
@@ -2463,6 +2584,13 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-3);
+}
+
+.tour-empty-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
 .tour-empty-text {
