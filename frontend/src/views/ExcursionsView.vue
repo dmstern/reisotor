@@ -770,6 +770,7 @@ function onExcursionCardClose() {
 
 function onCancelProgrammaticScroll() {
   excursionOpenSequenceToken++;
+  spotOpenSequenceToken++;
   cancelProgrammaticScroll();
 }
 
@@ -1254,6 +1255,7 @@ onUnmounted(() => {
                 : '0px',
           }"
           @pointerdown="onSheetBodyPointerDown"
+          @touchstart.passive="onCancelProgrammaticScroll"
           @wheel.passive="onCancelProgrammaticScroll"
           @touchmove.passive="onCancelProgrammaticScroll"
         >
@@ -2083,6 +2085,7 @@ onUnmounted(() => {
 
 .spots-col-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   /* Verhindert, dass der Browser die Scrollposition beim Auf-/Zuklappen einer Spot-Karte (SpotCard.vue,
@@ -2115,10 +2118,7 @@ onUnmounted(() => {
   overflow-y: hidden;
   touch-action: none;
 
-  :deep(button),
-  :deep(.btn),
-  :deep(.segmented-control),
-  :deep(.segmented-option) {
+  :deep(*) {
     touch-action: none;
   }
 }

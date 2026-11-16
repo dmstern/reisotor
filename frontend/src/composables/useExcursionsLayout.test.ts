@@ -247,6 +247,36 @@ describe('useExcursionsLayout - drawer swipe gestures and click suppression (#75
     document.body.removeChild(buttonEl);
   });
 
+  it('pulls sheet up to full on slow drag distance >= 48px even when velocity is low/zero', async () => {
+    const layout = useExcursionsLayout({ isDesktop, tripMapRef });
+    expect(layout.sheetState.value).toBe('partial');
+
+    const mockSheetEl = document.createElement('div');
+    layout.sheetEl.value = mockSheetEl;
+
+    const bodyEl = document.createElement('div');
+    const downEvent = createPointerEvent('pointerdown', {
+      clientY: 400,
+      target: bodyEl,
+    });
+    layout.onSheetBodyPointerDown(downEvent);
+
+    // Drag upwards by 80px (>= SHEET_STEP_DRAG_DISTANCE_PX of 48px)
+    const moveEvent = createPointerEvent('pointermove', {
+      clientY: 320,
+    });
+    window.dispatchEvent(moveEvent);
+
+    const upEvent = createPointerEvent('pointerup', {
+      clientY: 320,
+    });
+    window.dispatchEvent(upEvent);
+    await nextTick();
+
+    // Reaches full state due to distance delta >= 48px
+    expect(layout.sheetState.value).toBe('full');
+  });
+
   it('ignores non-primary pointer down and text input fields', async () => {
     const layout = useExcursionsLayout({ isDesktop, tripMapRef });
 

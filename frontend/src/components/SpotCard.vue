@@ -538,7 +538,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 }
 
 .spot-note-container {
-  overflow: hidden;
+  overflow: clip;
   max-height: 2.85em;
   margin-top: calc(-1 * var(--space-1));
 }
@@ -555,18 +555,9 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
-  overflow: hidden;
+  overflow: clip;
   text-overflow: ellipsis;
   margin: 0;
-}
-
-.note.is-clamped :deep(.richtext) {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .note.is-clamped :deep(p),
@@ -875,11 +866,6 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
     line-clamp: 1;
     font-size: var(--font-size-sm);
     line-height: 1.4;
-  }
-
-  .note.is-clamped :deep(.richtext) {
-    -webkit-line-clamp: 1;
-    line-clamp: 1;
   }
 }
 

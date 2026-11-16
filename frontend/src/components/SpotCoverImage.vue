@@ -282,7 +282,7 @@ function formatAccommodationDate(dateStr: string | null) {
 
 .overlay-note {
   margin-top: 2px;
-  overflow: hidden;
+  overflow: clip;
   max-height: 2.85em;
 }
 
@@ -296,18 +296,8 @@ function formatAccommodationDate(dateStr: string | null) {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
-  overflow: hidden;
+  overflow: clip;
   text-overflow: ellipsis;
-}
-
-.note.is-banner :deep(.richtext) {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: inherit;
 }
 
 .note.is-banner :deep(p),

@@ -136,9 +136,10 @@ export function useExcursionsLayout(options: UseExcursionsLayoutOptions) {
     }
   }
 
-  const FLICK_SAMPLE_WINDOW_MS = 80;
-  const FLICK_VELOCITY_PX_MS = 0.35;
+  const FLICK_SAMPLE_WINDOW_MS = 120;
+  const FLICK_VELOCITY_PX_MS = 0.22;
   const SHEET_DRAG_THRESHOLD_PX = 8;
+  const SHEET_STEP_DRAG_DISTANCE_PX = 48;
   const CLICK_SUPPRESSION_TIMEOUT_MS = 250;
 
   let dragSamples: { y: number; t: number }[] = [];
@@ -222,6 +223,21 @@ export function useExcursionsLayout(options: UseExcursionsLayoutOptions) {
 
       if (next) {
         return next;
+      }
+    }
+
+    const startStateHeight = sheetHeightPx(startState);
+    const heightDelta = heightPx - startStateHeight;
+
+    if (
+      Math.abs(heightDelta) >= SHEET_STEP_DRAG_DISTANCE_PX &&
+      ((heightDelta > 0 && velocity <= 0) || (heightDelta < 0 && velocity >= 0))
+    ) {
+      const stepDirection = heightDelta > 0 ? 1 : -1;
+      const nextState = SHEET_ORDER[SHEET_ORDER.indexOf(startState) + stepDirection];
+
+      if (nextState) {
+        return nextState;
       }
     }
 
