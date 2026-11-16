@@ -420,8 +420,9 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     const spacing = 16;
     const targetScrollTop = Math.max(0, elTopInBody - navClearance - spacing);
     const behavior = overrideBehavior ?? (prefersReduced ? 'auto' : 'smooth');
+    const SCROLL_POSITION_TOLERANCE_PX = 2;
 
-    if (behavior === 'auto' && Math.abs(body.scrollTop - targetScrollTop) <= 2) {
+    if (Math.abs(body.scrollTop - targetScrollTop) <= SCROLL_POSITION_TOLERANCE_PX) {
       return;
     }
 

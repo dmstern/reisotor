@@ -87,10 +87,35 @@ describe('useCategoryNavSpy - spot refs and scrolling', () => {
 
     const targetEl = document.createElement('article');
     targetEl.className = 'spot-card';
+    targetEl.getBoundingClientRect = () => ({ top: 200 }) as DOMRect;
     body.appendChild(targetEl);
 
     await scrollToSpot(targetEl);
     expect(scrolledToTop).not.toBeNull();
+
+    body.remove();
+  });
+
+  it('skips scrollTo when already within 2px of targetScrollTop regardless of behavior', async () => {
+    const { scrollToSpot, spotsColBodyEl } = createSpy();
+
+    const body = document.createElement('div');
+    body.className = 'spots-col-body';
+    document.body.appendChild(body);
+    spotsColBodyEl.value = body;
+
+    let scrollToCalls = 0;
+
+    body.scrollTo = () => {
+      scrollToCalls += 1;
+    };
+
+    const targetEl = document.createElement('article');
+    targetEl.className = 'spot-card';
+    body.appendChild(targetEl);
+
+    await scrollToSpot(targetEl);
+    expect(scrollToCalls).toBe(0);
 
     body.remove();
   });
@@ -120,6 +145,7 @@ describe('useCategoryNavSpy - spot refs and scrolling', () => {
 
     const targetEl = document.createElement('section');
     targetEl.className = 'tour-group-card';
+    targetEl.getBoundingClientRect = () => ({ top: 200 }) as DOMRect;
     body.appendChild(targetEl);
     setCategoryRef('Wanderung', targetEl);
 

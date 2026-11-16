@@ -639,7 +639,7 @@ const {
   display: block;
   position: relative;
   margin-top: 2px;
-  overflow: hidden;
+  overflow: clip;
   transition:
     max-height 0.35s cubic-bezier(0.32, 0.72, 0, 1),
     margin 0.25s ease,
@@ -652,7 +652,8 @@ const {
 }
 
 .tour-note-container.is-expanded {
-  max-height: 500px;
+  max-height: none;
+  overflow: visible;
 }
 
 .note {
@@ -668,7 +669,7 @@ const {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
-  overflow: hidden;
+  overflow: clip;
   text-overflow: ellipsis;
   font-size: var(--font-size-sm);
   line-height: 1.4;
@@ -679,32 +680,18 @@ const {
   -webkit-line-clamp: unset;
   line-clamp: unset;
   display: block;
+  overflow: visible;
   color: var(--color-text);
 }
 
-.note.is-clamped :deep(.richtext) {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.note.is-clamped.is-expanded :deep(.richtext) {
-  -webkit-line-clamp: unset;
-  line-clamp: unset;
-  display: block;
-}
-
-.note.is-clamped :deep(p),
-.note.is-clamped :deep(div) {
+.note.is-clamped:not(.is-expanded) :deep(p),
+.note.is-clamped:not(.is-expanded) :deep(div) {
   display: inline;
   margin: 0;
 }
 
-.note.is-clamped :deep(p + p::before),
-.note.is-clamped :deep(div + div::before) {
+.note.is-clamped:not(.is-expanded) :deep(p + p::before),
+.note.is-clamped:not(.is-expanded) :deep(div + div::before) {
   content: ' ';
 }
 
@@ -773,7 +760,8 @@ const {
   }
 
   .tour-note-container.is-expanded {
-    max-height: 300px;
+    max-height: none;
+    overflow: visible;
   }
 
   .note.is-clamped {
@@ -787,17 +775,7 @@ const {
     -webkit-line-clamp: unset;
     line-clamp: unset;
     display: block;
-  }
-
-  .note.is-clamped :deep(.richtext) {
-    -webkit-line-clamp: 1;
-    line-clamp: 1;
-  }
-
-  .note.is-clamped.is-expanded :deep(.richtext) {
-    -webkit-line-clamp: unset;
-    line-clamp: unset;
-    display: block;
+    overflow: visible;
   }
 }
 

@@ -139,4 +139,13 @@ describe('ExcursionCard', () => {
     expect(html).toContain('is-travel');
     expect(html).toContain('has-role');
   });
+
+  it('verifies tour-note-container and clamped note styles using raw source code', async () => {
+    // Dynamically import or read ExcursionCard source via the existing raw import or fs check
+    const rawSource = (await import('./ExcursionCard.vue?raw')).default;
+    expect(rawSource).toContain('overflow: clip;');
+    expect(rawSource).toContain('max-height: none;');
+    expect(rawSource).toContain('overflow: visible;');
+    expect(rawSource).toContain('.note.is-clamped:not(.is-expanded) :deep(p)');
+  });
 });
