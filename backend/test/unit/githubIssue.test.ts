@@ -111,6 +111,91 @@ describe('createGithubIssue', () => {
     const result = await createGithubIssue({ title: 'x', body: 'y', labels: [] });
     expect(result.ok).toBe(false);
   });
+
+  it('deduplicates and trims labels before sending to GitHub', async () => {
+    process.env.GITHUB_TOKEN = 'test-token';
+    process.env.GITHUB_REPO = 'someone/somerepo';
+    let sentLabels: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url: string, init: RequestInit) => {
+        sentLabels = JSON.parse(init.body as string).labels;
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ number: 5, html_url: 'https://x' }),
+        });
+      })
+    );
+    vi.resetModules();
+    const { createGithubIssue } = await import('../../src/utils/githubIssue.js');
+
+    await createGithubIssue({
+      title: 'x',
+      body: 'y',
+      labels: ['🐛️ bug', '📱️ from-app', '🐛️ bug', '  📱️ from-app  ', ''],
+    });
+    expect(sentLabels).toEqual(['🐛️ bug', '📱️ from-app']);
+  });
+});
+
+describe('ensureGithubLabels', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.resetModules();
+    delete process.env.GITHUB_TOKEN;
+    delete process.env.GITHUB_REPO;
+  });
+
+  it('creates missing labels and updates default-grey labels with color and description', async () => {
+    process.env.GITHUB_TOKEN = 'test-token';
+    process.env.GITHUB_REPO = 'someone/somerepo';
+    const requests: Array<{ url: string; method: string; body?: unknown }> = [];
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string, init?: RequestInit) => {
+        const method = init?.method ?? 'GET';
+        const body = init?.body ? JSON.parse(init.body as string) : undefined;
+        requests.push({ url, method, body });
+
+        if (method === 'GET' && url.endsWith(encodeURIComponent('🔍️ needs-triage'))) {
+          return Promise.resolve({ ok: false, status: 404 });
+        }
+
+        if (method === 'GET' && url.endsWith(encodeURIComponent('📱️ from-app'))) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ color: 'ededed', description: '' }),
+          });
+        }
+
+        return Promise.resolve({ ok: true, status: 200 });
+      })
+    );
+    vi.resetModules();
+    const { ensureGithubLabels, FEEDBACK_LABELS } = await import('../../src/utils/githubIssue.js');
+
+    await ensureGithubLabels([FEEDBACK_LABELS.needsTriage, FEEDBACK_LABELS.fromApp]);
+
+    expect(requests).toContainEqual({
+      url: 'https://api.github.com/repos/someone/somerepo/labels',
+      method: 'POST',
+      body: {
+        name: FEEDBACK_LABELS.needsTriage.name,
+        color: FEEDBACK_LABELS.needsTriage.color,
+        description: FEEDBACK_LABELS.needsTriage.description,
+      },
+    });
+    expect(requests).toContainEqual({
+      url: `https://api.github.com/repos/someone/somerepo/labels/${encodeURIComponent(FEEDBACK_LABELS.fromApp.name)}`,
+      method: 'PATCH',
+      body: {
+        color: FEEDBACK_LABELS.fromApp.color,
+        description: FEEDBACK_LABELS.fromApp.description,
+      },
+    });
+  });
 });
 
 // Regressionsnetz für uploadFeedbackScreenshot() (#111): der frühere Ansatz verlinkte Screenshots

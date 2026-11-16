@@ -1,6 +1,7 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildTestApp } from '../helpers/buildTestApp.js';
+import { FEEDBACK_LABELS } from '../../src/utils/githubIssue.js';
 
 // Regressionsnetz für POST /feedback (routes/feedback.ts): Validierung, dass ein Screenshot als
 // Bild-Link in den Issue-Body eingebettet wird, und dass das Label-Set je nach Meldungstyp stimmt -
@@ -85,16 +86,20 @@ describe('feedback routes', () => {
     let sentBody: { title: string; body: string; labels: string[] } | undefined;
     vi.stubGlobal(
       'fetch',
-      vi.fn((_url: string, init: RequestInit) => {
-        sentBody = JSON.parse(init.body as string);
-        return Promise.resolve({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              number: 7,
-              html_url: 'https://github.com/someone/somerepo/issues/7',
-            }),
-        });
+      vi.fn((url: string, init: RequestInit) => {
+        if (url.includes('/issues')) {
+          sentBody = JSON.parse(init.body as string);
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                number: 7,
+                html_url: 'https://github.com/someone/somerepo/issues/7',
+              }),
+          });
+        }
+
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ color: '1d76db' }) });
       })
     );
 
@@ -114,7 +119,7 @@ describe('feedback routes', () => {
       issue_number: 7,
       issue_url: 'https://github.com/someone/somerepo/issues/7',
     });
-    expect(sentBody?.labels).toEqual(['enhancement', 'from-app']);
+    expect(sentBody?.labels).toEqual([FEEDBACK_LABELS.feature.name, FEEDBACK_LABELS.fromApp.name]);
     expect(sentBody?.body).toContain('feedback-user2');
     expect(sentBody?.body).toContain('fb2@example.com');
     expect(sentBody?.body).not.toContain('![Screenshot]');
@@ -461,10 +466,10 @@ describe('feedback routes', () => {
           issue_url: 'https://github.com/someone/somerepo/issues/99',
         });
         expect(issuePayload.labels).toEqual([
-          'community-instance',
-          'needs-triage',
-          'bug',
-          'from-app',
+          FEEDBACK_LABELS.communityInstance.name,
+          FEEDBACK_LABELS.needsTriage.name,
+          FEEDBACK_LABELS.bug.name,
+          FEEDBACK_LABELS.fromApp.name,
         ]);
         expect(issuePayload.body).toContain('Fehler beim Laden');
         expect(issuePayload.body).toContain('Externe Community-Instanz');

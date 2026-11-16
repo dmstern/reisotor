@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import Alert from './primitives/Alert.vue';
 import Button from './primitives/Button.vue';
+import ButtonGroup from './primitives/ButtonGroup.vue';
 import Input from './primitives/Input.vue';
 import Select from './primitives/Select.vue';
 import Textarea from './primitives/Textarea.vue';
@@ -37,6 +39,7 @@ const contactEmail = ref('');
 const screenshot = ref<string | null>(null);
 const screenshotName = ref('');
 const submitting = ref(false);
+const showPublishConfirm = ref(false);
 const error = ref('');
 const result = ref<FeedbackResult | null>(null);
 
@@ -80,6 +83,7 @@ watch(
     contactEmail.value = '';
     screenshot.value = null;
     screenshotName.value = '';
+    showPublishConfirm.value = false;
     error.value = '';
     result.value = null;
   }
@@ -105,7 +109,22 @@ function removeScreenshot() {
   screenshotName.value = '';
 }
 
-async function submit() {
+function requestSubmit() {
+  error.value = '';
+
+  if (!form.value.title.trim() || !form.value.description.trim()) {
+    return;
+  }
+
+  showPublishConfirm.value = true;
+}
+
+function cancelPublishConfirm() {
+  showPublishConfirm.value = false;
+}
+
+async function confirmAndSubmit() {
+  showPublishConfirm.value = false;
   error.value = '';
 
   if (!form.value.title.trim() || !form.value.description.trim()) {
@@ -148,11 +167,12 @@ function close() {
         <Button type="button" @click="close">Schließen</Button>
       </template>
 
-      <form v-else class="form" @submit.prevent="submit">
-        <p class="hint info">
-          Meldungen sind öffentlich auf GitHub (Coding-Plattform von Microsoft) einsehbar. Bitte
-          teile keine privaten Infos, die nicht im Internet landen sollen.
-        </p>
+      <form v-else class="form" @submit.prevent="requestSubmit">
+        <Alert variant="warning" title="Öffentlich im Internet sichtbar">
+          Alle Meldungen (Titel, Beschreibung, Screenshot sowie ggf. E-Mail-Adresse) werden
+          öffentlich einsehbar auf GitHub (Plattform von Microsoft) gespeichert. Bitte teile keine
+          privaten oder sensiblen Daten!
+        </Alert>
 
         <label for="auto-id-1788301151970-4">
           Art der Meldung
@@ -264,6 +284,39 @@ function close() {
       </form>
     </div>
   </Modal>
+
+  <Modal
+    :model-value="showPublishConfirm"
+    title="Öffentlich auf GitHub veröffentlichen?"
+    size="sm"
+    @update:model-value="cancelPublishConfirm"
+  >
+    <div class="publish-confirm-dialog">
+      <Alert variant="warning" title="Achtung: Öffentliche Speicherung im Internet">
+        Deine Meldung wird für alle sichtbar auf GitHub veröffentlicht und lässt sich dort nicht
+        einfach privat stellen.
+      </Alert>
+      <p class="publish-confirm-text">
+        Bitte prüfe vor dem Absenden noch einmal, dass weder im <strong>Titel</strong>, in der
+        <strong>Beschreibung</strong>, im <strong>Screenshot</strong> noch in der optionalen
+        <strong>E-Mail-Adresse</strong> private oder sensible Daten enthalten sind.
+      </p>
+      <ButtonGroup>
+        <Button type="button" variant="secondary" class="btn-cancel" @click="cancelPublishConfirm">
+          Zurück &amp; prüfen
+        </Button>
+        <Button
+          type="button"
+          class="btn-confirm-publish"
+          :disabled="submitting"
+          @click="confirmAndSubmit"
+        >
+          <AppIcon :icon="ACTION_ICONS.send" :size="15" group="actions" />
+          Ja, öffentlich absenden
+        </Button>
+      </ButtonGroup>
+    </div>
+  </Modal>
 </template>
 
 <style scoped>
@@ -271,6 +324,19 @@ function close() {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+.publish-confirm-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.publish-confirm-text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--color-text);
 }
 
 .form {
@@ -321,10 +387,6 @@ label {
 
 .hint.success {
   color: var(--color-success);
-}
-
-.hint.info {
-  color: var(--color-text-muted);
 }
 
 .upload-label {

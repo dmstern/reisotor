@@ -3,7 +3,9 @@ import { randomUUID } from 'node:crypto';
 import { db } from '../db/index.js';
 import { requireAuth } from '../auth.js';
 import {
+  FEEDBACK_LABELS,
   createGithubIssue,
+  ensureGithubLabels,
   getGithubRepo,
   uploadFeedbackScreenshot,
 } from '../utils/githubIssue.js';
@@ -184,17 +186,19 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
       `Eingereicht über eine externe Reisotor-Community-Instanz via Feedback-Relay.\n${metaParts.join(' | ')}`,
     ];
 
-    const labels = [
-      'community-instance',
-      'needs-triage',
-      type === 'bug' ? 'bug' : 'enhancement',
-      'from-app',
+    const labelSpecs = [
+      FEEDBACK_LABELS.communityInstance,
+      FEEDBACK_LABELS.needsTriage,
+      type === 'bug' ? FEEDBACK_LABELS.bug : FEEDBACK_LABELS.feature,
+      FEEDBACK_LABELS.fromApp,
     ];
+
+    await ensureGithubLabels(labelSpecs);
 
     const result = await createGithubIssue({
       title: title.trim(),
       body: bodyParts.filter(Boolean).join('\n'),
-      labels,
+      labels: labelSpecs.map((label) => label.name),
     });
 
     if (!result.ok) {
@@ -314,12 +318,17 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
         `Gemeldet von **${reporter?.username ?? 'unbekannt'}**${contactEmail ? ` (${contactEmail})` : ''} über das In-App-Feedback-Formular.`,
       ];
 
-      const labels = [type === 'bug' ? 'bug' : 'enhancement', 'from-app'];
+      const labelSpecs = [
+        type === 'bug' ? FEEDBACK_LABELS.bug : FEEDBACK_LABELS.feature,
+        FEEDBACK_LABELS.fromApp,
+      ];
+
+      await ensureGithubLabels(labelSpecs);
 
       const result = await createGithubIssue({
         title: title.trim(),
         body: bodyParts.filter(Boolean).join('\n'),
-        labels,
+        labels: labelSpecs.map((label) => label.name),
       });
 
       if (!result.ok) {
