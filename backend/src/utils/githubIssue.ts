@@ -4,8 +4,47 @@ export interface CreateIssueInput {
   labels: string[];
 }
 
+export interface GithubLabelSpec {
+  name: string;
+  color: string;
+  description: string;
+}
+
 export type CreateIssueResult =
   { ok: true; number: number; url: string } | { ok: false; error: string; status?: number };
+
+export const FEEDBACK_LABELS = {
+  bug: {
+    name: '\u{1F41B}\uFE0F bug',
+    color: 'd73a4a',
+    description: "Something isn't working",
+  },
+  feature: {
+    name: '\u{1F31F}\uFE0F new-feature',
+    color: 'a2eeef',
+    description: 'New feature or request',
+  },
+  fromApp: {
+    name: '\u{1F4F1}\uFE0F from-app',
+    color: '1d76db',
+    description: 'Aus der App eingereichtes Feedback',
+  },
+  communityInstance: {
+    name: '\u{1F310}\uFE0F community-instance',
+    color: '0e8a16',
+    description: 'Feedback von einer externen Community-Instanz',
+  },
+  needsTriage: {
+    name: '\u{1F50D}\uFE0F needs-triage',
+    color: 'fbca04',
+    description: 'Muss noch gesichtet und eingeordnet werden',
+  },
+} as const satisfies Record<string, GithubLabelSpec>;
+
+const DEFAULT_GITHUB_LABEL_COLOR = 'ededed';
+const HTTP_STATUS_NOT_FOUND = 404;
+const LABEL_SYNC_TIMEOUT_MS = 5_000;
+const syncedLabels = new Set<string>();
 
 import { getEffectiveSetting } from '../instanceSettings.js';
 
@@ -151,6 +190,77 @@ export async function uploadFeedbackScreenshot(
 // nur ohne In-App-Feedback (siehe routes/feedback.ts).
 export const githubIssuesEnabled = !!process.env.GITHUB_TOKEN;
 
+/** Stellt best-effort sicher, dass alle angegebenen Labels im Ziel-Repository mit passender Farbe
+ *  und Beschreibung existieren (und färbt ggf. noch ungefärbte Default-Labels nach). Ein Fehler
+ *  blockiert niemals das eigentliche Anlegen des Issues.
+ */
+export async function ensureGithubLabels(labels: readonly GithubLabelSpec[]): Promise<void> {
+  const token = getGithubToken();
+  const repo = getGithubRepo();
+
+  if (!token) {
+    return;
+  }
+
+  for (const label of labels) {
+    const cacheKey = `${repo}::${label.name}`;
+
+    if (syncedLabels.has(cacheKey)) {
+      continue;
+    }
+
+    const encodedName = encodeURIComponent(label.name);
+    const labelUrl = `https://api.github.com/repos/${repo}/labels/${encodedName}`;
+
+    try {
+      const getRes = await fetch(labelUrl, {
+        headers: githubApiHeaders(),
+        signal: AbortSignal.timeout(LABEL_SYNC_TIMEOUT_MS),
+      });
+
+      if (getRes.status === HTTP_STATUS_NOT_FOUND) {
+        await fetch(`https://api.github.com/repos/${repo}/labels`, {
+          method: 'POST',
+          headers: { ...githubApiHeaders(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: label.name,
+            color: label.color,
+            description: label.description,
+          }),
+          signal: AbortSignal.timeout(LABEL_SYNC_TIMEOUT_MS),
+        });
+        syncedLabels.add(cacheKey);
+        continue;
+      }
+
+      if (!getRes.ok) {
+        continue;
+      }
+
+      const existing = (await getRes.json()) as { color?: string; description?: string | null };
+      const needsColorUpdate =
+        !existing.color || existing.color.toLowerCase() === DEFAULT_GITHUB_LABEL_COLOR;
+      const needsDescriptionUpdate = !existing.description && Boolean(label.description);
+
+      if (needsColorUpdate || needsDescriptionUpdate) {
+        await fetch(labelUrl, {
+          method: 'PATCH',
+          headers: { ...githubApiHeaders(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            color: needsColorUpdate ? label.color : existing.color,
+            description: needsDescriptionUpdate ? label.description : (existing.description ?? ''),
+          }),
+          signal: AbortSignal.timeout(LABEL_SYNC_TIMEOUT_MS),
+        });
+      }
+
+      syncedLabels.add(cacheKey);
+    } catch {
+      // Best-effort: Label-Abgleich darf die Issue-Erstellung niemals blockieren
+    }
+  }
+}
+
 /** Legt ein echtes GitHub-Issue über die REST-API an. Anders als mapsLink.ts's best-effort-fetch
  *  (dort ist ein Fehlschlag ein akzeptabler stiller Fallback) wird hier der Fehler an den Aufrufer
  *  durchgereicht – Issue-Erstellung ist der eigentliche Zweck des Aufrufs, kein Nice-to-have. Der
@@ -171,6 +281,7 @@ export async function createGithubIssue(input: CreateIssueInput): Promise<Create
     };
   }
 
+  const uniqueLabels = [...new Set(input.labels.map((label) => label.trim()).filter(Boolean))];
   let res: Response;
 
   try {
@@ -182,7 +293,7 @@ export async function createGithubIssue(input: CreateIssueInput): Promise<Create
         'Content-Type': 'application/json',
         'User-Agent': 'reisotor-feedback',
       },
-      body: JSON.stringify({ title: input.title, body: input.body, labels: input.labels }),
+      body: JSON.stringify({ title: input.title, body: input.body, labels: uniqueLabels }),
       signal: AbortSignal.timeout(10_000),
     });
   } catch {

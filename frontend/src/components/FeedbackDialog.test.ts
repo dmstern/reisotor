@@ -36,7 +36,7 @@ describe('FeedbackDialog', () => {
     };
   }
 
-  it('renders form and submits feedback', async () => {
+  it('renders warning alert, opens confirmation modal on submit, and submits after confirming', async () => {
     const postSpy = vi.spyOn(api, 'post').mockResolvedValue({
       issue_number: 123,
       issue_url: 'https://github.com/dmstern/reisotor/issues/123',
@@ -49,10 +49,37 @@ describe('FeedbackDialog', () => {
     });
     await nextTick();
 
+    expect(document.body.querySelector('.alert--warning')).toBeTruthy();
+    expect(document.body.innerHTML).toContain('Öffentlich im Internet sichtbar');
+
     const form = document.body.querySelector('form');
     expect(form).toBeTruthy();
 
     form!.dispatchEvent(new Event('submit'));
+    await nextTick();
+
+    // Noch nicht abgesendet, erst Bestätigungsdialog sichtbar
+    expect(postSpy).not.toHaveBeenCalled();
+    expect(document.body.innerHTML).toContain('Öffentlich auf GitHub veröffentlichen?');
+
+    // Abbrechen im Bestätigungsdialog sendet nicht ab
+    const cancelConfirmBtn = document.body.querySelector(
+      '.publish-confirm-dialog .btn-cancel'
+    ) as HTMLButtonElement | null;
+    expect(cancelConfirmBtn).toBeTruthy();
+    cancelConfirmBtn!.click();
+    await nextTick();
+    expect(postSpy).not.toHaveBeenCalled();
+
+    // Erneut absenden und diesmal bestätigen
+    form!.dispatchEvent(new Event('submit'));
+    await nextTick();
+
+    const confirmBtn = document.body.querySelector(
+      '.btn-confirm-publish'
+    ) as HTMLButtonElement | null;
+    expect(confirmBtn).toBeTruthy();
+    confirmBtn!.click();
     await nextTick();
     await nextTick();
 
@@ -97,6 +124,12 @@ describe('FeedbackDialog', () => {
 
     const form = document.body.querySelector('form');
     form!.dispatchEvent(new Event('submit'));
+    await nextTick();
+
+    const confirmBtn = document.body.querySelector(
+      '.btn-confirm-publish'
+    ) as HTMLButtonElement | null;
+    confirmBtn!.click();
     await nextTick();
     await nextTick();
 
