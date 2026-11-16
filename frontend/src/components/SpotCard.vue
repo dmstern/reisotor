@@ -679,12 +679,12 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   .spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) .spot-expand-chevron {
     transform: translateY(1.5px);
   }
-}
 
-.spot-expand-pill:active {
-  transform: translateY(0.5px) scale(0.96);
-  translate: 0 0;
-  box-shadow: var(--shadow-control-active);
+  .spot-expand-pill:active {
+    transform: translateY(0.5px) scale(0.96);
+    translate: 0 0;
+    box-shadow: var(--shadow-control-active);
+  }
 }
 
 .spot-layover-badge {

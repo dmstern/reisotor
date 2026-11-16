@@ -411,13 +411,13 @@ const isNewHighlight = computed(() => {
     --surface-grad-bottom: var(--gradient-surface-hover-bottom);
     z-index: 5;
   }
-}
 
-.card--polaroid:not(.card--expanded):not(.expanded):active {
-  transform: translateY(1px) scale(0.985);
-  box-shadow: var(--shadow-card-polaroid-active);
-  --surface-grad-top: rgba(0, 0, 0, 0.04);
-  --surface-grad-bottom: transparent;
+  .card--polaroid:not(.card--expanded):not(.expanded):active {
+    transform: translateY(1px) scale(0.985);
+    box-shadow: var(--shadow-card-polaroid-active);
+    --surface-grad-top: rgba(0, 0, 0, 0.04);
+    --surface-grad-bottom: transparent;
+  }
 }
 
 .card--polaroid.card--expanded,
@@ -435,13 +435,13 @@ const isNewHighlight = computed(() => {
     box-shadow: var(--shadow-card-polaroid-hover);
     background-color: #2e2b28;
   }
-}
 
-:root[data-theme='dark'] .card--polaroid:not(.card--expanded):not(.expanded):active {
-  box-shadow: var(--shadow-card-polaroid-active);
-  --surface-grad-top: rgba(0, 0, 0, 0.06);
-  --surface-grad-bottom: transparent;
-  background-color: #252320;
+  :root[data-theme='dark'] .card--polaroid:not(.card--expanded):not(.expanded):active {
+    box-shadow: var(--shadow-card-polaroid-active);
+    --surface-grad-top: rgba(0, 0, 0, 0.06);
+    --surface-grad-bottom: transparent;
+    background-color: #252320;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -455,13 +455,13 @@ const isNewHighlight = computed(() => {
       box-shadow: var(--shadow-card-polaroid-hover);
       background-color: #2e2b28;
     }
-  }
 
-  :root:not([data-theme='light']) .card--polaroid:not(.card--expanded):not(.expanded):active {
-    box-shadow: var(--shadow-card-polaroid-active);
-    --surface-grad-top: rgba(0, 0, 0, 0.06);
-    --surface-grad-bottom: transparent;
-    background-color: #252320;
+    :root:not([data-theme='light']) .card--polaroid:not(.card--expanded):not(.expanded):active {
+      box-shadow: var(--shadow-card-polaroid-active);
+      --surface-grad-top: rgba(0, 0, 0, 0.06);
+      --surface-grad-bottom: transparent;
+      background-color: #252320;
+    }
   }
 }
 
@@ -491,13 +491,13 @@ const isNewHighlight = computed(() => {
     --surface-grad-bottom: var(--gradient-surface-hover-bottom);
     z-index: 5;
   }
-}
 
-.card--tile:active {
-  transform: translateY(1px) scale(0.985);
-  box-shadow:
-    inset 0 1.5px 3px rgba(0, 0, 0, 0.25),
-    0 1px 2px var(--tile-shadow, var(--shadow-xs));
+  .card--tile:active {
+    transform: translateY(1px) scale(0.985);
+    box-shadow:
+      inset 0 1.5px 3px rgba(0, 0, 0, 0.25),
+      0 1px 2px var(--tile-shadow, var(--shadow-xs));
+  }
 }
 
 .card-tile-icon {
@@ -546,13 +546,13 @@ const isNewHighlight = computed(() => {
     background-color: color-mix(in srgb, white 2.5%, var(--color-surface));
     z-index: 5;
   }
-}
 
-.card--expandable:not(.card--expanded):active,
-.card--interactive:not(.card--expanded):active {
-  transform: translateY(1px) scale(0.988);
-  box-shadow: var(--shadow-card-active);
-  background-color: color-mix(in srgb, black 2%, var(--color-surface));
+  .card--expandable:not(.card--expanded):active,
+  .card--interactive:not(.card--expanded):active {
+    transform: translateY(1px) scale(0.988);
+    box-shadow: var(--shadow-card-active);
+    background-color: color-mix(in srgb, black 2%, var(--color-surface));
+  }
 }
 
 .card--expandable.card--expanded {

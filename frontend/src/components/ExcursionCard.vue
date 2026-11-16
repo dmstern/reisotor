@@ -348,11 +348,11 @@ const {
   .excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) .card-title {
     color: var(--excursion-theme-dark);
   }
-}
 
-.excursion-card:not(.expanded):active:not(:has(.tour-edit-btn:hover)) {
-  transform: none;
-  background: color-mix(in srgb, var(--color-hover) 80%, var(--color-border)) !important;
+  .excursion-card:not(.expanded):active:not(:has(.tour-edit-btn:hover)) {
+    transform: none;
+    background: color-mix(in srgb, var(--color-hover) 80%, var(--color-border)) !important;
+  }
 }
 
 .excursion-card.expanded {
@@ -469,11 +469,11 @@ const {
     transform: translateY(-2px);
     opacity: 0.82;
   }
-}
 
-.excursion-card.expanded .card-header-row:active:not(:has(.tour-edit-btn:hover)) {
-  transform: translateY(1px) scale(0.995);
-  box-shadow: var(--shadow-control-active);
+  .excursion-card.expanded .card-header-row:active:not(:has(.tour-edit-btn:hover)) {
+    transform: translateY(1px) scale(0.995);
+    box-shadow: var(--shadow-control-active);
+  }
 }
 
 .card-title-block {
