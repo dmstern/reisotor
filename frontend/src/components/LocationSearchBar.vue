@@ -314,23 +314,79 @@ function onDropdownScroll(e: Event) {
 }
 
 .location-search-inner {
+  --search-groove-edge: rgba(43, 42, 40, 0.28);
+  --search-groove-depth: rgba(43, 42, 40, 0.16);
+  --search-groove-gloss-top: rgba(255, 255, 255, 0.96);
+  --search-groove-gloss-bottom: rgba(255, 255, 255, 0.92);
+
   position: relative;
   width: 100%;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   background: transparent;
-  border: 2px groove color-mix(in srgb, var(--color-text-muted) 45%, transparent);
+  border: 2px solid transparent;
   border-radius: var(--radius-pill);
   corner-shape: round;
-  transition: border-color 0.15s ease;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    corner-shape: round;
+    border: 1px solid var(--search-groove-edge);
+    box-shadow:
+      inset 0 1px 0.5px var(--search-groove-gloss-top),
+      0 1px 0.5px var(--search-groove-gloss-bottom),
+      inset 0 0 0 1px var(--search-groove-depth);
+    pointer-events: none;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
 
   .location-search-wrap:focus-within & {
-    border-color: color-mix(in srgb, var(--color-primary) 60%, var(--color-text-muted));
+    --search-groove-edge: rgba(43, 42, 40, 0.32);
+    --search-groove-depth: rgba(43, 42, 40, 0.18);
+    --search-groove-gloss-top: rgba(255, 255, 255, 0.98);
+    --search-groove-gloss-bottom: rgba(255, 255, 255, 0.94);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    transition: none;
+    &::before {
+      transition: none;
+    }
+  }
+}
+
+:root[data-theme='dark'] .location-search-inner {
+  --search-groove-edge: rgba(0, 0, 0, 0.76);
+  --search-groove-depth: rgba(0, 0, 0, 0.38);
+  --search-groove-gloss-top: rgba(255, 255, 255, 0.36);
+  --search-groove-gloss-bottom: rgba(255, 255, 255, 0.28);
+}
+
+:root[data-theme='dark'] .location-search-wrap:focus-within .location-search-inner {
+  --search-groove-edge: rgba(0, 0, 0, 0.8);
+  --search-groove-depth: rgba(0, 0, 0, 0.42);
+  --search-groove-gloss-top: rgba(255, 255, 255, 0.4);
+  --search-groove-gloss-bottom: rgba(255, 255, 255, 0.3);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .location-search-inner {
+    --search-groove-edge: rgba(0, 0, 0, 0.76);
+    --search-groove-depth: rgba(0, 0, 0, 0.38);
+    --search-groove-gloss-top: rgba(255, 255, 255, 0.36);
+    --search-groove-gloss-bottom: rgba(255, 255, 255, 0.28);
+  }
+
+  :root:not([data-theme='light']) .location-search-wrap:focus-within .location-search-inner {
+    --search-groove-edge: rgba(0, 0, 0, 0.8);
+    --search-groove-depth: rgba(0, 0, 0, 0.42);
+    --search-groove-gloss-top: rgba(255, 255, 255, 0.4);
+    --search-groove-gloss-bottom: rgba(255, 255, 255, 0.3);
   }
 }
 
