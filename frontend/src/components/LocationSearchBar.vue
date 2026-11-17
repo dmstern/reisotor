@@ -314,10 +314,10 @@ function onDropdownScroll(e: Event) {
 }
 
 .location-search-inner {
-  --search-groove-edge: rgba(43, 42, 40, 0.28);
-  --search-groove-depth: rgba(43, 42, 40, 0.16);
-  --search-groove-gloss-top: rgba(255, 255, 255, 0.96);
-  --search-groove-gloss-bottom: rgba(255, 255, 255, 0.92);
+  --search-groove-edge: rgba(43, 42, 40, 0.15);
+  --search-groove-depth: rgba(43, 42, 40, 0.08);
+  --search-groove-gloss-top: rgba(255, 255, 255, 0.72);
+  --search-groove-gloss-bottom: rgba(255, 255, 255, 0.64);
 
   position: relative;
   width: 100%;
@@ -347,10 +347,10 @@ function onDropdownScroll(e: Event) {
   }
 
   .location-search-wrap:focus-within & {
-    --search-groove-edge: rgba(43, 42, 40, 0.32);
-    --search-groove-depth: rgba(43, 42, 40, 0.18);
-    --search-groove-gloss-top: rgba(255, 255, 255, 0.98);
-    --search-groove-gloss-bottom: rgba(255, 255, 255, 0.94);
+    --search-groove-edge: rgba(43, 42, 40, 0.18);
+    --search-groove-depth: rgba(43, 42, 40, 0.1);
+    --search-groove-gloss-top: rgba(255, 255, 255, 0.78);
+    --search-groove-gloss-bottom: rgba(255, 255, 255, 0.7);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -361,32 +361,32 @@ function onDropdownScroll(e: Event) {
 }
 
 :root[data-theme='dark'] .location-search-inner {
-  --search-groove-edge: rgba(0, 0, 0, 0.76);
-  --search-groove-depth: rgba(0, 0, 0, 0.38);
-  --search-groove-gloss-top: rgba(255, 255, 255, 0.36);
-  --search-groove-gloss-bottom: rgba(255, 255, 255, 0.28);
+  --search-groove-edge: rgba(0, 0, 0, 0.44);
+  --search-groove-depth: rgba(0, 0, 0, 0.16);
+  --search-groove-gloss-top: rgba(255, 255, 255, 0.16);
+  --search-groove-gloss-bottom: rgba(255, 255, 255, 0.12);
 }
 
 :root[data-theme='dark'] .location-search-wrap:focus-within .location-search-inner {
-  --search-groove-edge: rgba(0, 0, 0, 0.8);
-  --search-groove-depth: rgba(0, 0, 0, 0.42);
-  --search-groove-gloss-top: rgba(255, 255, 255, 0.4);
-  --search-groove-gloss-bottom: rgba(255, 255, 255, 0.3);
+  --search-groove-edge: rgba(0, 0, 0, 0.5);
+  --search-groove-depth: rgba(0, 0, 0, 0.18);
+  --search-groove-gloss-top: rgba(255, 255, 255, 0.2);
+  --search-groove-gloss-bottom: rgba(255, 255, 255, 0.15);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .location-search-inner {
-    --search-groove-edge: rgba(0, 0, 0, 0.76);
-    --search-groove-depth: rgba(0, 0, 0, 0.38);
-    --search-groove-gloss-top: rgba(255, 255, 255, 0.36);
-    --search-groove-gloss-bottom: rgba(255, 255, 255, 0.28);
+    --search-groove-edge: rgba(0, 0, 0, 0.44);
+    --search-groove-depth: rgba(0, 0, 0, 0.16);
+    --search-groove-gloss-top: rgba(255, 255, 255, 0.16);
+    --search-groove-gloss-bottom: rgba(255, 255, 255, 0.12);
   }
 
   :root:not([data-theme='light']) .location-search-wrap:focus-within .location-search-inner {
-    --search-groove-edge: rgba(0, 0, 0, 0.8);
-    --search-groove-depth: rgba(0, 0, 0, 0.42);
-    --search-groove-gloss-top: rgba(255, 255, 255, 0.4);
-    --search-groove-gloss-bottom: rgba(255, 255, 255, 0.3);
+    --search-groove-edge: rgba(0, 0, 0, 0.5);
+    --search-groove-depth: rgba(0, 0, 0, 0.18);
+    --search-groove-gloss-top: rgba(255, 255, 255, 0.2);
+    --search-groove-gloss-bottom: rgba(255, 255, 255, 0.15);
   }
 }
 
