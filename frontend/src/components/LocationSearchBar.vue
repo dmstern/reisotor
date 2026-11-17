@@ -352,15 +352,10 @@ function onDropdownScroll(e: Event) {
   }
 
   .location-search-wrap:focus-within &::before {
-    border-color: color-mix(
-      in srgb,
-      var(--focus-ring-color, var(--color-primary)) 85%,
-      transparent
-    );
+    border-color: var(--focus-ring-color, var(--color-primary));
     box-shadow:
-      inset 0 0 0 1px
-        color-mix(in srgb, var(--focus-ring-color, var(--color-primary)) 38%, transparent),
-      0 0 0 2px color-mix(in srgb, var(--focus-ring-color, var(--color-primary)) 18%, transparent);
+      inset 0 0 0 1px var(--focus-ring-color, var(--color-primary)),
+      0 0 0 1px color-mix(in srgb, var(--focus-ring-color, var(--color-primary)) 25%, transparent);
   }
 
   @media (prefers-reduced-motion: reduce) {
