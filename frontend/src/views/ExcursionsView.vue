@@ -2024,7 +2024,10 @@ onUnmounted(() => {
     bottom 0.3s cubic-bezier(0.32, 0.72, 0, 1),
     left 0.3s cubic-bezier(0.32, 0.72, 0, 1),
     right 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-    border-radius 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    border-radius 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    background-color 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   overflow: hidden;
   /* Bekannter iOS-Safari-Bug: ein fixed/absolute positioniertes Element mit border-radius+box-shadow
      malt seinen Hintergrund beim allerersten Paint mitunter nicht korrekt (bleibt transparent, bis
@@ -2042,6 +2045,24 @@ onUnmounted(() => {
   z-index: -1;
   background: inherit;
   transform: translateZ(0);
+}
+
+/* Wie bei Apple Karten: im eingeklappten ("klein") und angeschnittenen ("halb") Zustand schwebt
+   das Sheet mit Liquid-Glass-Effekt über der Karte; erst ganz hochgezogen (.full) wird es
+   undurchsichtig. ::before wird im Glas-Modus ausgeblendet, da backdrop-filter bereits eine eigene
+   Compositing-Ebene erzwingt und background: inherit auf ::before sonst die Transparenz doppelt
+   überlagern würde. */
+.spots-col.collapsed,
+.spots-col.partial {
+  background: var(--color-surface-glass);
+  backdrop-filter: var(--backdrop-blur-md);
+  border-color: var(--color-surface-glass-border);
+  box-shadow: var(--shadow-floating-island);
+}
+
+.spots-col.collapsed::before,
+.spots-col.partial::before {
+  display: none;
 }
 
 /* Wie bei Apples eingeklapptem Suchleisten-Zustand: eine reine Pille (nur die Anfasser-Zeile ist
@@ -2351,6 +2372,7 @@ onUnmounted(() => {
       max-height: none;
       z-index: 5;
       background: var(--color-surface);
+      backdrop-filter: none;
       border-radius: var(--radius-md-squircle);
       corner-shape: squircle;
       border: 1px solid var(--color-border);
