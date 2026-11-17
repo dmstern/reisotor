@@ -252,7 +252,7 @@
 /// Hover: Lift (-1px) + shadow-control-hover.
 /// Active: Press (translateY(1px) scale(0.985)) + shadow-control-active.
 @mixin control-3d-raised {
-  background-color: var(--color-surface);
+  background-color: transparent;
   background-image: var(--gradient-control-3d);
   box-shadow: var(--shadow-control);
   transition: var(--transition-control);

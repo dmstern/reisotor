@@ -189,7 +189,7 @@ watch(
   grid-template-columns: repeat(var(--count), minmax(0, 1fr));
   min-height: 40px;
   box-sizing: border-box;
-  background-color: var(--color-hover);
+  background-color: var(--color-control-track-bg);
   background-image: var(--texture-grain);
   background-blend-mode: overlay;
   border-radius: var(--radius-pill);
@@ -209,7 +209,7 @@ watch(
   left: 4px;
   bottom: 4px;
   width: calc((100% - 8px - (var(--count) - 1) * 2px) / var(--count));
-  background-color: var(--color-surface);
+  background-color: var(--color-control-thumb-bg);
   background-image: var(--gradient-control-3d);
   border-radius: var(--radius-pill);
   box-shadow:

@@ -458,13 +458,24 @@
     var(--gradient-surface-hover-top) 0%,
     var(--gradient-surface-hover-bottom) 100%
   );
-  --gradient-control-top: rgba(255, 255, 255, 0.85);
+  --gradient-control-top: rgba(255, 255, 255, 0.38);
   --gradient-control-bottom: rgba(43, 42, 40, 0.055);
   --gradient-control-3d: linear-gradient(
     180deg,
     var(--gradient-control-top) 0%,
     var(--gradient-control-bottom) 100%
   );
+  --color-control-hover-bg: rgba(43, 42, 40, 0.055);
+  --color-control-active-bg: rgba(43, 42, 40, 0.09);
+  --color-control-track-bg: rgba(43, 42, 40, 0.065);
+  --color-control-thumb-bg: rgba(255, 255, 255, 0.55);
+  --color-control-active-tint: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  --color-control-active-tint-hover: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  --color-glass-field-inset-bg: rgba(43, 42, 40, 0.06);
+  --color-glass-field-inset-hover-bg: rgba(43, 42, 40, 0.1);
+  --color-glass-field-inset-border: rgba(43, 42, 40, 0.1);
+  --shadow-glass-field-inset:
+    inset 0 1px 2px rgba(43, 42, 40, 0.08), 0 1px 0 rgba(255, 255, 255, 0.45);
   --transition-control:
     border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease,
     outline-color 0.15s ease, --control-grad-top 0.15s ease, --control-grad-bottom 0.15s ease,
@@ -699,6 +710,17 @@
     --gradient-surface-hover-bottom: rgba(0, 0, 0, 0.1);
     --gradient-control-top: rgba(255, 255, 255, 0.08);
     --gradient-control-bottom: rgba(0, 0, 0, 0.12);
+    --color-control-hover-bg: rgba(255, 255, 255, 0.075);
+    --color-control-active-bg: rgba(255, 255, 255, 0.12);
+    --color-control-track-bg: rgba(0, 0, 0, 0.24);
+    --color-control-thumb-bg: rgba(255, 255, 255, 0.12);
+    --color-control-active-tint: color-mix(in srgb, var(--color-primary) 18%, transparent);
+    --color-control-active-tint-hover: color-mix(in srgb, var(--color-primary) 26%, transparent);
+    --color-glass-field-inset-bg: rgba(255, 255, 255, 0.11);
+    --color-glass-field-inset-hover-bg: rgba(255, 255, 255, 0.16);
+    --color-glass-field-inset-border: rgba(255, 255, 255, 0.14);
+    --shadow-glass-field-inset:
+      inset 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.1);
     --shadow-control-highlight: rgba(255, 255, 255, 0.12);
     --shadow-control-highlight-strong: rgba(255, 255, 255, 0.2);
     --shadow-control:
@@ -860,6 +882,16 @@
   --gradient-surface-hover-bottom: rgba(0, 0, 0, 0.1);
   --gradient-control-top: rgba(255, 255, 255, 0.08);
   --gradient-control-bottom: rgba(0, 0, 0, 0.12);
+  --color-control-hover-bg: rgba(255, 255, 255, 0.075);
+  --color-control-active-bg: rgba(255, 255, 255, 0.12);
+  --color-control-track-bg: rgba(0, 0, 0, 0.24);
+  --color-control-thumb-bg: rgba(255, 255, 255, 0.12);
+  --color-control-active-tint: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  --color-control-active-tint-hover: color-mix(in srgb, var(--color-primary) 26%, transparent);
+  --color-glass-field-inset-bg: rgba(255, 255, 255, 0.11);
+  --color-glass-field-inset-hover-bg: rgba(255, 255, 255, 0.16);
+  --color-glass-field-inset-border: rgba(255, 255, 255, 0.14);
+  --shadow-glass-field-inset: inset 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.1);
   --shadow-control-highlight: rgba(255, 255, 255, 0.12);
   --shadow-control-highlight-strong: rgba(255, 255, 255, 0.2);
   --shadow-control:
@@ -1039,8 +1071,19 @@
   --surface-grad-bottom: var(--gradient-surface-bottom);
   --gradient-surface-hover-top: rgba(255, 255, 255, 0.9);
   --gradient-surface-hover-bottom: rgba(43, 42, 40, 0.065);
-  --gradient-control-top: rgba(255, 255, 255, 0.85);
+  --gradient-control-top: rgba(255, 255, 255, 0.38);
   --gradient-control-bottom: rgba(43, 42, 40, 0.055);
+  --color-control-hover-bg: rgba(43, 42, 40, 0.055);
+  --color-control-active-bg: rgba(43, 42, 40, 0.09);
+  --color-control-track-bg: rgba(43, 42, 40, 0.065);
+  --color-control-thumb-bg: rgba(255, 255, 255, 0.55);
+  --color-control-active-tint: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  --color-control-active-tint-hover: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  --color-glass-field-inset-bg: rgba(43, 42, 40, 0.06);
+  --color-glass-field-inset-hover-bg: rgba(43, 42, 40, 0.1);
+  --color-glass-field-inset-border: rgba(43, 42, 40, 0.1);
+  --shadow-glass-field-inset:
+    inset 0 1px 2px rgba(43, 42, 40, 0.08), 0 1px 0 rgba(255, 255, 255, 0.45);
   --shadow-control-highlight: rgba(255, 255, 255, 0.65);
   --shadow-control-highlight-strong: rgba(255, 255, 255, 0.85);
   --shadow-control:

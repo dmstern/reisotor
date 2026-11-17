@@ -134,7 +134,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   align-items: center;
   gap: 6px;
   min-height: 36px;
-  background-color: var(--color-surface);
+  background-color: transparent;
   background-image: var(--gradient-control-3d);
   border: 1px solid var(--color-border);
   border-radius: 999px;
@@ -165,7 +165,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 }
 
 .done-toggle:not(.done-toggle--split):hover {
-  background-color: var(--color-hover);
+  background-color: var(--color-control-hover-bg);
   border-color: var(--toggle-hover-border, var(--color-primary));
   color: var(--color-text);
   box-shadow: var(--shadow-control-hover);
@@ -173,6 +173,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 }
 
 .done-toggle:not(.done-toggle--split):active {
+  background-color: var(--color-control-active-bg);
   transform: scale(0.98);
   translate: 0 0;
   box-shadow: var(--shadow-control-active);
@@ -181,7 +182,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 .done-toggle.planned {
   color: var(--color-text);
   border-color: var(--color-border);
-  background-color: var(--color-surface);
+  background-color: transparent;
   box-shadow: var(--shadow-control);
 }
 
@@ -195,14 +196,14 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 .done-toggle.status-done {
   color: var(--color-success);
   font-weight: 600;
-  background-color: color-mix(in srgb, var(--color-success) 14%, var(--color-surface));
+  background-color: color-mix(in srgb, var(--color-success) 14%, transparent);
   border-color: var(--color-success);
   box-shadow: var(--shadow-control);
 }
 
 .done-toggle:not(.done-toggle--split).active:hover,
 .done-toggle:not(.done-toggle--split).status-done:hover {
-  background-color: color-mix(in srgb, var(--color-success) 22%, var(--color-surface));
+  background-color: color-mix(in srgb, var(--color-success) 22%, transparent);
   box-shadow: var(--shadow-control-hover);
 }
 

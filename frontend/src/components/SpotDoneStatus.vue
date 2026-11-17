@@ -507,29 +507,29 @@ function handleItemJump(item: ScheduledSpotItem) {
 }
 
 .date-check-item:hover {
-  background-color: var(--color-hover);
+  background-color: var(--color-control-hover-bg);
   border-color: var(--color-primary-dark);
 }
 
 .date-check-item:active {
-  background-color: var(--color-hover);
+  background-color: var(--color-control-active-bg);
 }
 
 .date-check-item.checked {
-  background-color: color-mix(in srgb, var(--color-primary-tint) 65%, var(--color-surface));
+  background-color: var(--color-control-active-tint);
   border-color: var(--color-primary);
   color: var(--color-primary-dark);
   box-shadow: none;
 }
 
 .date-check-item.checked:hover {
-  background-color: color-mix(in srgb, var(--color-primary-tint) 80%, var(--color-surface));
+  background-color: var(--color-control-active-tint-hover);
   border-color: var(--color-primary-dark);
   box-shadow: var(--shadow-control-hover);
 }
 
 .date-check-item.checked:active {
-  background-color: color-mix(in srgb, var(--color-primary-tint) 55%, var(--color-surface));
+  background-color: var(--color-control-active-tint);
   box-shadow: var(--shadow-control-active);
 }
 

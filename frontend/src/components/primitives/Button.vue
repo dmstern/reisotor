@@ -304,9 +304,9 @@ a.btn.is-loading {
     0 1px 1px rgba(0, 0, 0, 0.06);
 }
 
-/* Secondary Button mit elegantem 3D-Look */
+/* Secondary Button mit elegantem, hintergrundadaptivem 3D-Look (transparent + 3D-Verlauf) */
 .btn--secondary {
-  background-color: var(--color-surface);
+  background-color: transparent;
   background-image: var(--gradient-control-3d);
   color: var(--color-primary);
   border: 1.5px solid transparent;
@@ -320,12 +320,12 @@ a.btn.is-loading {
 }
 
 .btn--secondary:hover:not(:disabled) {
-  background-color: var(--color-hover);
+  background-color: var(--color-control-hover-bg);
   box-shadow: var(--shadow-control-hover);
 }
 
 .btn--secondary:active:not(:disabled) {
-  background-color: var(--color-hover);
+  background-color: var(--color-control-active-bg);
   box-shadow: var(--shadow-control-active);
 }
 
@@ -360,7 +360,7 @@ a.btn.is-loading {
 }
 
 .btn--danger.btn--secondary {
-  background-color: var(--color-surface);
+  background-color: transparent;
   background-image: var(--gradient-control-3d);
   color: var(--color-danger);
   border: 1.5px solid var(--color-danger);
@@ -368,14 +368,14 @@ a.btn.is-loading {
 }
 
 .btn--danger.btn--secondary:hover:not(:disabled) {
-  background-color: var(--color-danger-tint);
+  background-color: color-mix(in srgb, var(--color-danger) 12%, transparent);
   border-color: var(--color-danger-dark, #b91c1c);
   color: var(--color-danger-dark, #b91c1c);
   box-shadow: var(--shadow-control-hover);
 }
 
 .btn--danger.btn--secondary:active:not(:disabled) {
-  background-color: var(--color-danger-tint);
+  background-color: color-mix(in srgb, var(--color-danger) 18%, transparent);
   box-shadow: var(--shadow-control-active);
 }
 
@@ -392,7 +392,7 @@ a.btn.is-loading {
   background-origin: border-box;
   --control-grad-top: transparent;
   --control-grad-bottom: transparent;
-  background-color: var(--color-primary-tint);
+  background-color: var(--color-control-active-tint);
   background-image: linear-gradient(
     180deg,
     var(--control-grad-top) 0%,
@@ -419,7 +419,7 @@ a.btn.is-loading {
 
 .btn--card-action:hover:not(:disabled) {
   translate: 0 -1px;
-  background-color: color-mix(in srgb, var(--color-primary) 22%, var(--color-surface));
+  background-color: var(--color-control-active-tint-hover);
   --control-grad-top: var(--gradient-control-top);
   --control-grad-bottom: var(--gradient-control-bottom);
   border-color: var(--color-primary);
@@ -429,7 +429,7 @@ a.btn.is-loading {
 .btn--card-action:active:not(:disabled) {
   transform: translateY(1px) scale(0.985);
   translate: 0 0;
-  background-color: color-mix(in srgb, var(--color-primary) 26%, var(--color-surface));
+  background-color: color-mix(in srgb, var(--color-primary) 24%, transparent);
   --control-grad-top: var(--gradient-control-top);
   --control-grad-bottom: var(--gradient-control-bottom);
   box-shadow: var(--shadow-control-active);
@@ -451,7 +451,7 @@ a.btn.is-loading {
 
 /* Ghost: erst bei Hover/Active entsteht der 3D-Look mit sanftem Wölbungsverlauf (Rahmen, Verlauf, Schatten) */
 .btn--ghost:hover:not(:disabled) {
-  background-color: var(--color-hover);
+  background-color: var(--color-control-hover-bg);
   --control-grad-top: var(--gradient-control-top);
   --control-grad-bottom: var(--gradient-control-bottom);
   background-origin: border-box;
@@ -459,7 +459,7 @@ a.btn.is-loading {
 }
 
 .btn--ghost:active:not(:disabled) {
-  background-color: var(--color-hover);
+  background-color: var(--color-control-active-bg);
   --control-grad-top: var(--gradient-control-top);
   --control-grad-bottom: var(--gradient-control-bottom);
   box-shadow: var(--shadow-control-active);
@@ -500,7 +500,7 @@ a.btn.is-loading {
 
 .btn--glass.is-active,
 .btn--glass.active {
-  background-color: var(--color-primary-tint);
+  background-color: var(--color-control-active-tint);
   border-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
   color: var(--color-primary-dark);
   box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.4);
@@ -510,7 +510,7 @@ a.btn.is-loading {
 .btn.is-active,
 .btn--secondary.is-active,
 .btn--ghost.is-active {
-  background: var(--color-primary-tint);
+  background-color: var(--color-control-active-tint);
   border: 1.5px solid var(--color-primary);
   color: var(--color-primary-dark);
   /* Nur symmetrischer Ring: ein Versatz-Schatten (--shadow-sm: 0 2px 6px) verdunkelt sonst unten/seitlich */
@@ -521,7 +521,7 @@ a.btn.is-loading {
 .btn.is-active:hover:not(:disabled),
 .btn--secondary.is-active:hover:not(:disabled),
 .btn--ghost.is-active:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
+  background-color: var(--color-control-active-tint-hover);
   border-color: var(--color-primary-dark);
   box-shadow: 0 0 0 1px var(--color-primary-dark);
 }
