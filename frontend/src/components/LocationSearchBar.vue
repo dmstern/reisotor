@@ -61,6 +61,8 @@ function handleBlur(event: FocusEvent) {
   emit('blur', event);
 }
 
+const LOAD_MORE_SCROLL_THRESHOLD_PX = 36;
+
 function onDropdownScroll(e: Event) {
   const el = e.target as HTMLElement;
 
@@ -68,7 +70,7 @@ function onDropdownScroll(e: Event) {
     return;
   }
 
-  if (el.scrollHeight - el.scrollTop - el.clientHeight < 36) {
+  if (el.scrollHeight - el.scrollTop - el.clientHeight < LOAD_MORE_SCROLL_THRESHOLD_PX) {
     if (props.hasMore && !props.isLoadingMore && !props.isSearching) {
       emit('loadMore');
     }
@@ -81,7 +83,7 @@ function onDropdownScroll(e: Event) {
     <div class="location-search-field">
       <div
         class="location-search-wrap"
-        :class="{ 'is-loading': isSearching, loading: isSearching }"
+        :class="{ 'is-loading': isSearching, loading: isSearching, 'is-focused': isFocused }"
         :aria-busy="isSearching"
       >
         <div class="location-search-inner">
@@ -312,7 +314,19 @@ function onDropdownScroll(e: Event) {
   box-sizing: border-box;
   padding: 5px;
 
-  &:focus-within {
+  &:focus-within:not(.is-focused) {
+    background-color: var(--color-surface-glass);
+    outline: none;
+    box-shadow: var(--shadow-floating-island);
+
+    &:hover {
+      background-color: var(--color-surface-glass-hover);
+      box-shadow: var(--shadow-floating-island-hover);
+    }
+  }
+
+  &.is-focused {
+    background-color: var(--color-surface-glass-active);
     outline: none;
     box-shadow: var(--shadow-floating-island-hover);
   }
@@ -351,7 +365,7 @@ function onDropdownScroll(e: Event) {
       box-shadow 0.15s ease;
   }
 
-  .location-search-wrap:focus-within &::before {
+  .location-search-wrap.is-focused &::before {
     border-color: var(--focus-ring-color, var(--color-primary));
     box-shadow:
       inset 0 0 0 1px var(--focus-ring-color, var(--color-primary)),
@@ -391,13 +405,12 @@ function onDropdownScroll(e: Event) {
   z-index: 2;
   transition: color 0.15s ease;
 
-  .location-search-wrap:focus-within & {
+  .location-search-wrap.is-focused & {
     color: var(--color-primary);
   }
 }
 
-.location-picker-input,
-.location-search-wrap :deep(.location-picker-input) {
+.location-search-wrap .location-search-inner :deep(.location-picker-input) {
   width: 100%;
   box-sizing: border-box;
   min-height: 40px;
@@ -424,11 +437,11 @@ function onDropdownScroll(e: Event) {
   }
 }
 
-.location-search-wrap.is-loading :deep(.location-picker-input) {
+.location-search-wrap.is-loading .location-search-inner :deep(.location-picker-input) {
   padding-right: 70px;
 }
 
-.location-search-wrap :deep(.location-picker-input)::placeholder {
+.location-search-wrap .location-search-inner :deep(.location-picker-input)::placeholder {
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
@@ -436,7 +449,7 @@ function onDropdownScroll(e: Event) {
 
 .search-right-actions {
   position: absolute;
-  right: 8px;
+  right: 5px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
