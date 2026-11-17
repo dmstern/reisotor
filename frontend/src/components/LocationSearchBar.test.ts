@@ -44,22 +44,23 @@ describe('LocationSearchBar - solid glass feeling (#759)', () => {
     isDetailsVisible: false,
   };
 
-  it('renders floating search wrap with glass container structure', () => {
+  it('renders floating search wrap with glass bezel and inner solid input container', () => {
     const { container, cleanUp } = mountLocationSearchBar(defaultProps);
 
     const wrap = container.querySelector('.location-search-wrap');
     expect(wrap).not.toBeNull();
 
-    const input = container.querySelector(
-      '[data-testid="location-search-input"]'
-    ) as HTMLInputElement;
+    const inner = wrap?.querySelector('.location-search-inner');
+    expect(inner).not.toBeNull();
+
+    const input = inner?.querySelector('[data-testid="location-search-input"]') as HTMLInputElement;
     expect(input).not.toBeNull();
     expect(input.placeholder).toBe('Reiseziel, Stadt oder Maps-Link eingeben...');
 
-    const searchIcon = container.querySelector('.location-search-icon');
+    const searchIcon = inner?.querySelector('.location-search-icon');
     expect(searchIcon).not.toBeNull();
 
-    const infoPopover = container.querySelector('.search-info-popover');
+    const infoPopover = inner?.querySelector('.search-info-popover');
     expect(infoPopover).not.toBeNull();
 
     cleanUp();
