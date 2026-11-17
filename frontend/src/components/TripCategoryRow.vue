@@ -100,7 +100,7 @@ const usageLabel = computed(() => {
   </Card>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .category-row {
   display: flex;
   align-items: center;
@@ -144,5 +144,19 @@ const usageLabel = computed(() => {
 .hide-btn {
   font-size: var(--font-size-xs);
   padding: var(--space-1) var(--space-2);
+}
+
+@include media-down('tablet-sm') {
+  .category-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .row-actions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    padding-top: var(--space-1);
+    border-top: 1px solid var(--color-border);
+  }
 }
 </style>
