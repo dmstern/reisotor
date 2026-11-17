@@ -319,25 +319,23 @@ function onDropdownScroll(e: Event) {
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  background: color-mix(in srgb, var(--color-surface-glass) 45%, transparent);
-  border: 1px solid
-    color-mix(in srgb, var(--color-border-strong) 45%, var(--color-surface-glass-border));
+  background: transparent;
+  border: 1px solid var(--shadow-control-highlight);
   border-radius: var(--radius-pill);
   corner-shape: round;
-  box-shadow:
-    var(--shadow-control-inset),
-    inset 0 -1px 0 var(--shadow-control-highlight);
+  box-shadow: 0 0 6px -1px var(--shadow-control-highlight);
   transition:
     border-color 0.15s ease,
-    background-color 0.15s ease,
     box-shadow 0.15s ease;
 
   .location-search-wrap:focus-within & {
-    background: color-mix(in srgb, var(--color-surface-glass-hover) 55%, transparent);
-    border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border-strong));
-    box-shadow:
-      var(--shadow-control-inset-hover),
-      inset 0 -1px 0 var(--shadow-control-highlight);
+    border-color: color-mix(
+      in srgb,
+      var(--color-primary) 50%,
+      var(--shadow-control-highlight-strong)
+    );
+    box-shadow: 0 0 8px -1px
+      color-mix(in srgb, var(--color-primary) 35%, var(--shadow-control-highlight-strong));
   }
 
   @media (prefers-reduced-motion: reduce) {
