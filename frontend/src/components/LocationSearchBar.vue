@@ -311,6 +311,11 @@ function onDropdownScroll(e: Event) {
   width: 100%;
   box-sizing: border-box;
   padding: 5px;
+
+  &:focus-within {
+    outline: none;
+    box-shadow: var(--shadow-floating-island-hover);
+  }
 }
 
 .location-search-inner {
@@ -346,11 +351,16 @@ function onDropdownScroll(e: Event) {
       box-shadow 0.15s ease;
   }
 
-  .location-search-wrap:focus-within & {
-    --search-groove-edge: rgba(43, 42, 40, 0.18);
-    --search-groove-depth: rgba(43, 42, 40, 0.1);
-    --search-groove-gloss-top: rgba(255, 255, 255, 0.78);
-    --search-groove-gloss-bottom: rgba(255, 255, 255, 0.7);
+  .location-search-wrap:focus-within &::before {
+    border-color: color-mix(
+      in srgb,
+      var(--focus-ring-color, var(--color-primary)) 85%,
+      transparent
+    );
+    box-shadow:
+      inset 0 0 0 1px
+        color-mix(in srgb, var(--focus-ring-color, var(--color-primary)) 38%, transparent),
+      0 0 0 2px color-mix(in srgb, var(--focus-ring-color, var(--color-primary)) 18%, transparent);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -367,26 +377,12 @@ function onDropdownScroll(e: Event) {
   --search-groove-gloss-bottom: rgba(255, 255, 255, 0.12);
 }
 
-:root[data-theme='dark'] .location-search-wrap:focus-within .location-search-inner {
-  --search-groove-edge: rgba(0, 0, 0, 0.5);
-  --search-groove-depth: rgba(0, 0, 0, 0.18);
-  --search-groove-gloss-top: rgba(255, 255, 255, 0.2);
-  --search-groove-gloss-bottom: rgba(255, 255, 255, 0.15);
-}
-
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .location-search-inner {
     --search-groove-edge: rgba(0, 0, 0, 0.44);
     --search-groove-depth: rgba(0, 0, 0, 0.16);
     --search-groove-gloss-top: rgba(255, 255, 255, 0.16);
     --search-groove-gloss-bottom: rgba(255, 255, 255, 0.12);
-  }
-
-  :root:not([data-theme='light']) .location-search-wrap:focus-within .location-search-inner {
-    --search-groove-edge: rgba(0, 0, 0, 0.5);
-    --search-groove-depth: rgba(0, 0, 0, 0.18);
-    --search-groove-gloss-top: rgba(255, 255, 255, 0.2);
-    --search-groove-gloss-bottom: rgba(255, 255, 255, 0.15);
   }
 }
 
