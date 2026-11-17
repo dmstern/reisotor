@@ -69,7 +69,7 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
         ([entry]) => {
           isCategoryNavStuck.value = !entry.isIntersecting;
         },
-        { root: el.closest('.spots-col'), threshold: 0 }
+        { root: el.closest('.spots-col-body') ?? el.closest('.spots-col'), threshold: 0 }
       );
       categoryNavObserver.observe(el);
     } else {

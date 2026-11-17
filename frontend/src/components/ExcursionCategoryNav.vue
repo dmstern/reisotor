@@ -37,6 +37,7 @@ const emit = defineEmits<{
   <div v-if="spotGroups.length > 1" class="category-nav-wrap" :class="{ 'is-stuck': isStuck }">
     <nav
       class="category-nav"
+      :class="{ 'fade-left': canScrollLeft, 'fade-right': canScrollRight }"
       aria-label="Zu Kategorie springen"
       :ref="setNavRef"
       @scroll="emit('updateNavArrows')"
@@ -111,7 +112,10 @@ const emit = defineEmits<{
   --category-nav-bg: var(--color-surface);
   background: var(--category-nav-bg);
   border-bottom: 1px solid var(--color-border);
-  transition: box-shadow 0.2s ease;
+  transition:
+    box-shadow 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .category-nav-wrap.is-stuck {
@@ -127,6 +131,24 @@ const emit = defineEmits<{
   overflow-y: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
+}
+
+.category-nav.fade-left {
+  mask-image: linear-gradient(to right, transparent 0, black 36px, black 100%);
+}
+
+.category-nav.fade-right {
+  mask-image: linear-gradient(to left, transparent 0, black 36px, black 100%);
+}
+
+.category-nav.fade-left.fade-right {
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 36px,
+    black calc(100% - 36px),
+    transparent 100%
+  );
 }
 
 .category-nav::-webkit-scrollbar {
