@@ -206,6 +206,35 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
       }
     }
 
+    const addSpotEl = wrapEl.querySelector<HTMLElement>('.tour-add-spot-trigger');
+
+    if (addSpotEl && spotBoxes.length > 0) {
+      const addRect = addSpotEl.getBoundingClientRect();
+
+      if (addRect.width > 0 && addRect.height > 0) {
+        const lastBox = spotBoxes[spotBoxes.length - 1];
+        const addCx = addRect.left - wrapRect.left + addRect.width / 2;
+        const addTop = addRect.top - wrapRect.top;
+        const addLegOffset = 20;
+        const startX = lastBox.cx - addLegOffset;
+        const startY = lastBox.bottom;
+        const endX = addCx + addLegOffset;
+        const endY = addTop;
+
+        if (endY > startY) {
+          const dy = endY - startY;
+          const cpFactor = 0.45;
+          dots.push({ x: startX, y: startY, isEnd: false });
+          segments.push({
+            d: ` M ${startX} ${startY} C ${startX} ${startY + dy * cpFactor}, ${endX} ${endY - dy * cpFactor}, ${endX} ${endY}`,
+            y1: startY,
+            y2: endY,
+          });
+          dots.push({ x: endX, y: endY, isEnd: true });
+        }
+      }
+    }
+
     function combineSegments(segs: { d: string; y1: number; y2: number }[]) {
       if (segs.length === 0) {
         return null;

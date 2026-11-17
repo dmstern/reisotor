@@ -347,12 +347,32 @@ export function useSpotForm(options: UseSpotFormOptions) {
     return undefined;
   });
 
-  function openSpotForm(initialCategory?: string) {
+  let pendingInitialTourTitle: string | null = null;
+
+  watch(newSpotDraft.restored, (restored) => {
+    if (
+      restored &&
+      pendingInitialTourTitle &&
+      !spotForm.value.tourTitles.includes(pendingInitialTourTitle)
+    ) {
+      spotForm.value.tourTitles.push(pendingInitialTourTitle);
+      showSpotScheduleSection.value = true;
+    }
+  });
+
+  function openSpotForm(initialCategory?: string, initialTourTitle?: string) {
     spotTitleTouched.value = false;
+    pendingInitialTourTitle = initialTourTitle ?? null;
     const category = initialCategory ?? '';
     spotForm.value.category = category;
     spotForm.value.is_home = isHomeCategory(category);
     showSpotLocationSection.value = category === 'Unterkunft' || isHomeCategory(category);
+
+    if (initialTourTitle) {
+      spotForm.value.tourTitles = [initialTourTitle];
+    } else if (!Array.isArray(spotForm.value.tourTitles)) {
+      spotForm.value.tourTitles = [];
+    }
 
     if (
       (!Array.isArray(spotForm.value.scheduledDates) ||
@@ -938,6 +958,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
   }
 
   function closeSpotForm() {
+    pendingInitialTourTitle = null;
     previewRequestId++;
     lastPreviewFetchKey = '';
     isFetchingSpotPreview.value = false;
@@ -958,6 +979,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
   }
 
   function discardNewSpotDraft() {
+    pendingInitialTourTitle = null;
     previewRequestId++;
     lastPreviewFetchKey = '';
     isFetchingSpotPreview.value = false;
@@ -994,8 +1016,20 @@ export function useSpotForm(options: UseSpotFormOptions) {
           title: tour.title,
           image_url: tour.image_url ?? undefined,
           note: tour.note ?? undefined,
+          note_format: (tour.note_format as 'html' | 'legacy') || undefined,
           date: tour.date ?? undefined,
           spot_ids: tour.spot_ids.filter((id) => id !== spotId),
+          legs: tour.legs,
+          role: tour.role,
+          transport_type: tour.transport_type,
+          departure_time: tour.departure_time,
+          arrival_time: tour.arrival_time,
+          checkin_info: tour.checkin_info,
+          amount: tour.amount,
+          paid_by_user_id: tour.paid_by_user_id,
+          luggage: tour.luggage,
+          seat: tour.seat,
+          ticket_link: tour.ticket_link,
         });
       }
     }
@@ -1012,21 +1046,33 @@ export function useSpotForm(options: UseSpotFormOptions) {
           title: existing.title,
           image_url: existing.image_url ?? undefined,
           note: existing.note ?? undefined,
+          note_format: (existing.note_format as 'html' | 'legacy') || undefined,
           date: existing.date ?? undefined,
           spot_ids: [...existing.spot_ids, spotId],
+          legs: existing.legs,
+          role: existing.role,
+          transport_type: existing.transport_type,
+          departure_time: existing.departure_time,
+          arrival_time: existing.arrival_time,
+          checkin_info: existing.checkin_info,
+          amount: existing.amount,
+          paid_by_user_id: existing.paid_by_user_id,
+          luggage: existing.luggage,
+          seat: existing.seat,
+          ticket_link: existing.ticket_link,
         });
       }
     }
   }
 
-  async function addSpot() {
+  async function addSpot(): Promise<Spot | null> {
     if (!spotForm.value.title.trim()) {
       spotTitleTouched.value = true;
-      return;
+      return null;
     }
 
     if (isSpotUploadingAttachments.value || isSpotUploadingCoverImage.value) {
-      return;
+      return null;
     }
 
     const body = spotToBody(spotForm.value, spotManualPin.value);
@@ -1040,7 +1086,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
       spotPendingFixId.value = result.id;
       spotLocationError.value = true;
       showSpotLocationSection.value = true;
-      return;
+      return null;
     }
 
     await syncSpotTours(result.id, spotForm.value.tourTitles);
@@ -1064,6 +1110,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
     }
 
     closeSpotForm();
+    return result;
   }
 
   function onSpotLocationSelect(place: PlaceSearchResult) {

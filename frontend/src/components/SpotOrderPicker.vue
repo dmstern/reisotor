@@ -7,6 +7,7 @@ import { travelTypeIcon } from '../utils/travelTypeIcon';
 import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
 import type { IconDef } from '../utils/icon';
 import AppIcon from './AppIcon.vue';
+import Button from './primitives/Button.vue';
 import LegTransportModal from './LegTransportModal.vue';
 
 // Drag&Drop-Reihenfolge-Editor fürs Touren-Formular (ExcursionsView.vue) – TourAssignDropdown.vue
@@ -31,6 +32,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: 'update:modelValue', value: number[]): void;
   (e: 'update:legs', value: ExcursionLeg[]): void;
+  (e: 'create-spot'): void;
 }>();
 
 // Schreibbarer Computed statt einzelner add/remove-Emits: die Checkboxen der "weitere Spots"-Liste
@@ -383,10 +385,11 @@ function onDeleteLeg() {
       ></div>
     </fieldset>
 
-    <fieldset v-if="addableSpots.length" class="spot-picker">
+    <fieldset class="spot-picker">
       <legend>
         Spots hinzufügen – nach Likes sortiert (auch mehrfach möglich, z. B. Start &amp; Ende)
       </legend>
+      <p v-if="!addableSpots.length" class="spot-picker-empty">Noch keine Spots angelegt.</p>
       <button
         v-for="spot in addableSpots"
         :key="spot.id"
@@ -404,6 +407,19 @@ function onDeleteLeg() {
         </span>
         <span class="derived-add" aria-hidden="true">+</span>
       </button>
+
+      <div class="spot-picker-create-row">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          class="spot-picker-create-btn"
+          @click="emit('create-spot')"
+        >
+          <AppIcon :icon="ACTION_ICONS.mapPinPlus" :size="14" group="actions" />
+          <span>Neuen Spot erstellen</span>
+        </Button>
+      </div>
     </fieldset>
 
     <LegTransportModal
@@ -663,5 +679,19 @@ function onDeleteLeg() {
   color: var(--color-primary);
   font-weight: 700;
   flex-shrink: 0;
+}
+
+.spot-picker-create-row {
+  margin-top: var(--space-1);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: flex-start;
+}
+
+.spot-picker-empty {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
 }
 </style>

@@ -36,6 +36,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:show', value: boolean): void;
   (e: 'update:excursion', value: Excursion | null): void;
+  (e: 'create-spot'): void;
 }>();
 
 const spotsStore = useSpotsStore();
@@ -170,6 +171,16 @@ function trackDurationLabel(track: LocationTrack): string | null {
   const ms = Math.max(0, new Date(track.ended_at).getTime() - new Date(track.started_at).getTime());
   return formatDurationShort(ms);
 }
+
+function addSpotIdToActiveForm(spotId: number) {
+  activeExcursionForm.value.spot_ids = [...activeExcursionForm.value.spot_ids, spotId];
+  showEditExcursionSpotsSection.value = true;
+  showExcursionSpotsSection.value = true;
+}
+
+defineExpose({
+  addSpotIdToActiveForm,
+});
 </script>
 
 <template>
@@ -241,7 +252,6 @@ function trackDurationLabel(track: LocationTrack): string | null {
         </template>
       </p>
       <CollapsibleFieldset
-        v-if="spotsStore.spots.length || activeExcursionForm.role"
         :model-value="
           editingExcursion !== null ? showEditExcursionSpotsSection : showExcursionSpotsSection
         "
@@ -269,6 +279,7 @@ function trackDurationLabel(track: LocationTrack): string | null {
           :spots="spotsStore.spots"
           :like-count="spotsStore.likeCountFor"
           :users="users"
+          @create-spot="emit('create-spot')"
         />
       </CollapsibleFieldset>
       <CollapsibleFieldset
