@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { createApp, h, type Component, nextTick } from 'vue';
 import { createPinia } from 'pinia';
 import LocationSearchBar from './LocationSearchBar.vue';
+import type { PlaceSearchResult } from '../composables/usePlaceSearch';
 
 function mountLocationSearchBar(
   props: Record<string, unknown> = {},
@@ -44,23 +45,50 @@ describe('LocationSearchBar - solid glass feeling (#759)', () => {
     isDetailsVisible: false,
   };
 
-  it('renders floating search wrap with glass container structure', () => {
+  it('renders floating search wrap with glass bezel and flush inner input container', () => {
     const { container, cleanUp } = mountLocationSearchBar(defaultProps);
 
     const wrap = container.querySelector('.location-search-wrap');
     expect(wrap).not.toBeNull();
 
-    const input = container.querySelector(
-      '[data-testid="location-search-input"]'
-    ) as HTMLInputElement;
+    const inner = wrap?.querySelector('.location-search-inner');
+    expect(inner).not.toBeNull();
+
+    const input = inner?.querySelector('[data-testid="location-search-input"]') as HTMLInputElement;
     expect(input).not.toBeNull();
     expect(input.placeholder).toBe('Reiseziel, Stadt oder Maps-Link eingeben...');
 
-    const searchIcon = container.querySelector('.location-search-icon');
+    const searchIcon = inner?.querySelector('.location-search-icon');
     expect(searchIcon).not.toBeNull();
 
-    const infoPopover = container.querySelector('.search-info-popover');
+    const infoPopover = inner?.querySelector('.search-info-popover');
     expect(infoPopover).not.toBeNull();
+
+    cleanUp();
+  });
+
+  it('toggles is-focused only on search input focus and not when focusing the info popover button', async () => {
+    const { container, cleanUp } = mountLocationSearchBar(defaultProps);
+
+    const wrap = container.querySelector('.location-search-wrap');
+    const input = container.querySelector(
+      '[data-testid="location-search-input"]'
+    ) as HTMLInputElement;
+    const infoBtn = container.querySelector('.info-popover-btn') as HTMLButtonElement;
+
+    expect(wrap?.classList.contains('is-focused')).toBe(false);
+
+    infoBtn.dispatchEvent(new FocusEvent('focus'));
+    await nextTick();
+    expect(wrap?.classList.contains('is-focused')).toBe(false);
+
+    input.dispatchEvent(new FocusEvent('focus'));
+    await nextTick();
+    expect(wrap?.classList.contains('is-focused')).toBe(true);
+
+    input.dispatchEvent(new FocusEvent('blur'));
+    await nextTick();
+    expect(wrap?.classList.contains('is-focused')).toBe(false);
 
     cleanUp();
   });
@@ -83,18 +111,19 @@ describe('LocationSearchBar - solid glass feeling (#759)', () => {
   });
 
   it('renders autocomplete results with glass dropdown when open', () => {
+    const place: PlaceSearchResult = {
+      id: '1',
+      name: 'Lissabon',
+      formatted_address: 'Lissabon, Portugal',
+      address: 'Portugal',
+      lat: 38.72,
+      lng: -9.14,
+    };
+
     const { container, cleanUp } = mountLocationSearchBar({
       ...defaultProps,
       isOpen: true,
-      results: [
-        {
-          id: '1',
-          name: 'Lissabon',
-          address: 'Portugal',
-          lat: 38.72,
-          lng: -9.14,
-        },
-      ],
+      results: [place],
     });
 
     const dropdown = container.querySelector('.location-dropdown');
@@ -111,15 +140,16 @@ describe('LocationSearchBar - solid glass feeling (#759)', () => {
   });
 
   it('emits select when clicking an autocomplete item', async () => {
-    const place = {
+    const place: PlaceSearchResult = {
       id: '1',
       name: 'Lissabon',
+      formatted_address: 'Lissabon, Portugal',
       address: 'Portugal',
       lat: 38.72,
       lng: -9.14,
     };
 
-    let selectedPlace: any = null;
+    let selectedPlace: PlaceSearchResult | null = null;
     const { container, cleanUp } = mountLocationSearchBar(
       {
         ...defaultProps,
@@ -127,8 +157,8 @@ describe('LocationSearchBar - solid glass feeling (#759)', () => {
         results: [place],
       },
       {
-        onSelect: (p: any) => {
-          selectedPlace = p;
+        onSelect: (selected: PlaceSearchResult) => {
+          selectedPlace = selected;
         },
       }
     );

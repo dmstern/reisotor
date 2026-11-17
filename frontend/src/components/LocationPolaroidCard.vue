@@ -458,7 +458,7 @@ defineExpose({
 /* Polaroid Card */
 .polaroid-card {
   position: absolute;
-  top: 68px;
+  top: 80px;
   left: 12px;
   width: 320px;
   max-width: calc(100% - 24px);
@@ -796,12 +796,12 @@ defineExpose({
 @container (min-width: 581px) {
   .polaroid-card {
     position: absolute;
-    top: 68px;
+    top: 80px;
     left: 12px;
     right: auto;
     width: 320px;
     max-width: calc(100% - 24px);
-    max-height: calc(100% - 80px);
+    max-height: calc(100% - 92px);
     overflow-y: auto;
   }
 

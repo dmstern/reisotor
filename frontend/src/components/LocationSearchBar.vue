@@ -61,6 +61,8 @@ function handleBlur(event: FocusEvent) {
   emit('blur', event);
 }
 
+const LOAD_MORE_SCROLL_THRESHOLD_PX = 36;
+
 function onDropdownScroll(e: Event) {
   const el = e.target as HTMLElement;
 
@@ -68,7 +70,7 @@ function onDropdownScroll(e: Event) {
     return;
   }
 
-  if (el.scrollHeight - el.scrollTop - el.clientHeight < 36) {
+  if (el.scrollHeight - el.scrollTop - el.clientHeight < LOAD_MORE_SCROLL_THRESHOLD_PX) {
     if (props.hasMore && !props.isLoadingMore && !props.isSearching) {
       emit('loadMore');
     }
@@ -81,68 +83,71 @@ function onDropdownScroll(e: Event) {
     <div class="location-search-field">
       <div
         class="location-search-wrap"
-        :class="{ 'is-loading': isSearching, loading: isSearching }"
+        :class="{ 'is-loading': isSearching, loading: isSearching, 'is-focused': isFocused }"
         :aria-busy="isSearching"
       >
-        <AppIcon
-          :icon="ACTION_ICONS.search"
-          :size="16"
-          group="actions"
-          class="location-search-icon"
-          aria-hidden="true"
-        />
-        <Input
-          :model-value="modelValue"
-          class="location-picker-input"
-          type="search"
-          name="location-search"
-          data-testid="location-search-input"
-          :placeholder="activePlaceholder"
-          aria-label="Ort suchen oder Maps-Link einfügen"
-          autocomplete="off"
-          @update:model-value="emit('update:modelValue', $event)"
-          @keydown="emit('keydown', $event)"
-          @focus="handleFocus"
-          @blur="handleBlur"
-        />
-        <div class="search-right-actions">
-          <div v-if="isSearching" class="input-spinner-wrap" aria-hidden="true">
-            <LoadingSpinner size="sm" class="spinner input-spinner" />
+        <div class="location-search-inner">
+          <AppIcon
+            :icon="ACTION_ICONS.search"
+            :size="16"
+            group="actions"
+            class="location-search-icon"
+            aria-hidden="true"
+          />
+          <Input
+            :model-value="modelValue"
+            class="location-picker-input"
+            type="search"
+            name="location-search"
+            data-testid="location-search-input"
+            :placeholder="activePlaceholder"
+            aria-label="Ort suchen oder Maps-Link einfügen"
+            autocomplete="off"
+            @update:model-value="emit('update:modelValue', $event)"
+            @keydown="emit('keydown', $event)"
+            @focus="handleFocus"
+            @blur="handleBlur"
+          />
+          <div class="search-right-actions">
+            <div v-if="isSearching" class="input-spinner-wrap" aria-hidden="true">
+              <LoadingSpinner size="sm" class="spinner input-spinner" />
+            </div>
+            <InfoPopover
+              title="Suchtipps, Maps- & Buchungs-Links"
+              aria-label="Suchtipps und Maps-Links anzeigen"
+              align="right"
+              placement="bottom"
+              :menu-width="290"
+              class="search-info-popover"
+            >
+              <p>
+                <strong>Ortssuche:</strong> Du kannst nach Adressen, Cafés, Sehenswürdigkeiten oder
+                Orten weltweit suchen.
+              </p>
+              <p>
+                <strong>Karten-Links:</strong> Kopiere einfach einen Link von Google Maps, Apple
+                Maps oder OpenStreetMap (OSM) hier hinein.
+              </p>
+              <p>
+                <strong>Buchungs-Links:</strong> Füge einen Link von Booking.com, Airbnb oder
+                Trivago ein – Name, Fotos, Adresse, Preis und Reisedaten werden automatisch
+                übernommen.
+              </p>
+              <p class="popover-tip">
+                <AppIcon
+                  :icon="FORM_FIELD_ICONS.location"
+                  :size="14"
+                  group="formFields"
+                  class="popover-tip-icon"
+                  aria-hidden="true"
+                />
+                <span
+                  >Du kannst auch direkt auf die Karte tippen, um die Stecknadel manuell zu
+                  platzieren.</span
+                >
+              </p>
+            </InfoPopover>
           </div>
-          <InfoPopover
-            title="Suchtipps, Maps- & Buchungs-Links"
-            aria-label="Suchtipps und Maps-Links anzeigen"
-            align="right"
-            placement="bottom"
-            :menu-width="290"
-            class="search-info-popover"
-          >
-            <p>
-              <strong>Ortssuche:</strong> Du kannst nach Adressen, Cafés, Sehenswürdigkeiten oder
-              Orten weltweit suchen.
-            </p>
-            <p>
-              <strong>Karten-Links:</strong> Kopiere einfach einen Link von Google Maps, Apple Maps
-              oder OpenStreetMap (OSM) hier hinein.
-            </p>
-            <p>
-              <strong>Buchungs-Links:</strong> Füge einen Link von Booking.com, Airbnb oder Trivago
-              ein – Name, Fotos, Adresse, Preis und Reisedaten werden automatisch übernommen.
-            </p>
-            <p class="popover-tip">
-              <AppIcon
-                :icon="FORM_FIELD_ICONS.location"
-                :size="14"
-                group="formFields"
-                class="popover-tip-icon"
-                aria-hidden="true"
-              />
-              <span
-                >Du kannst auch direkt auf die Karte tippen, um die Stecknadel manuell zu
-                platzieren.</span
-              >
-            </p>
-          </InfoPopover>
         </div>
       </div>
 
@@ -307,6 +312,87 @@ function onDropdownScroll(e: Event) {
   @include control-glass-field(true);
   width: 100%;
   box-sizing: border-box;
+  padding: 5px;
+
+  &:focus-within:not(.is-focused) {
+    background-color: var(--color-surface-glass);
+    outline: none;
+    box-shadow: var(--shadow-floating-island);
+
+    &:hover {
+      background-color: var(--color-surface-glass-hover);
+      box-shadow: var(--shadow-floating-island-hover);
+    }
+  }
+
+  &.is-focused {
+    background-color: var(--color-surface-glass-active);
+    outline: none;
+    box-shadow: var(--shadow-floating-island-hover);
+  }
+}
+
+.location-search-inner {
+  --search-groove-edge: rgba(43, 42, 40, 0.15);
+  --search-groove-depth: rgba(43, 42, 40, 0.08);
+  --search-groove-gloss-top: rgba(255, 255, 255, 0.72);
+  --search-groove-gloss-bottom: rgba(255, 255, 255, 0.64);
+
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
+  corner-shape: round;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    corner-shape: round;
+    border: 1px solid var(--search-groove-edge);
+    box-shadow:
+      inset 0 1px 0.5px var(--search-groove-gloss-top),
+      0 1px 0.5px var(--search-groove-gloss-bottom),
+      inset 0 0 0 1px var(--search-groove-depth);
+    pointer-events: none;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  .location-search-wrap.is-focused &::before {
+    border-color: var(--focus-ring-color, var(--color-primary));
+    box-shadow:
+      inset 0 0 0 1px var(--focus-ring-color, var(--color-primary)),
+      0 0 0 1px color-mix(in srgb, var(--focus-ring-color, var(--color-primary)) 25%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::before {
+      transition: none;
+    }
+  }
+}
+
+:root[data-theme='dark'] .location-search-inner {
+  --search-groove-edge: rgba(0, 0, 0, 0.44);
+  --search-groove-depth: rgba(0, 0, 0, 0.16);
+  --search-groove-gloss-top: rgba(255, 255, 255, 0.16);
+  --search-groove-gloss-bottom: rgba(255, 255, 255, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .location-search-inner {
+    --search-groove-edge: rgba(0, 0, 0, 0.44);
+    --search-groove-depth: rgba(0, 0, 0, 0.16);
+    --search-groove-gloss-top: rgba(255, 255, 255, 0.16);
+    --search-groove-gloss-bottom: rgba(255, 255, 255, 0.12);
+  }
 }
 
 .location-search-icon {
@@ -319,19 +405,21 @@ function onDropdownScroll(e: Event) {
   z-index: 2;
   transition: color 0.15s ease;
 
-  .location-search-wrap:focus-within & {
+  .location-search-wrap.is-focused & {
     color: var(--color-primary);
   }
 }
 
-.location-picker-input,
-.location-search-wrap :deep(.location-picker-input) {
+.location-search-wrap .location-search-inner :deep(.location-picker-input) {
   width: 100%;
   box-sizing: border-box;
+  min-height: 40px;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   outline: none !important;
+  padding-top: 7px;
+  padding-bottom: 7px;
   padding-left: 38px;
   padding-right: 42px;
   border-radius: var(--radius-pill);
@@ -349,11 +437,11 @@ function onDropdownScroll(e: Event) {
   }
 }
 
-.location-search-wrap.is-loading :deep(.location-picker-input) {
+.location-search-wrap.is-loading .location-search-inner :deep(.location-picker-input) {
   padding-right: 70px;
 }
 
-.location-search-wrap :deep(.location-picker-input)::placeholder {
+.location-search-wrap .location-search-inner :deep(.location-picker-input)::placeholder {
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
@@ -361,7 +449,7 @@ function onDropdownScroll(e: Event) {
 
 .search-right-actions {
   position: absolute;
-  right: 10px;
+  right: 5px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;

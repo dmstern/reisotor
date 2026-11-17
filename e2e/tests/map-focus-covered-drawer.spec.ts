@@ -28,9 +28,15 @@ async function focusDayViaCalendar(page: Page, viewportName: string) {
 
   // "🏖️ Urlaub" springt zum Start des Urlaubszeitraums - stellt sicher, dass excursion.date (irgendwo
   // im Urlaubszeitraum) in der sichtbaren Wochenauswahl liegt, unabhängig vom heutigen Datum.
-  // exact: true - sonst matcht das nicht-exakte Substring-Matching auch AppHeader.vue's
-  // TripSwitcher-Knopf (Trip-Name "Sommerurlaub Lissabon" enthält "Urlaub" als Substring).
-  await page.getByRole('button', { name: 'Urlaub', exact: true }).click();
+  // Auf ".jump-row" gescoped (+ exact: true): sonst matcht "Urlaub" auch AppHeader.vue's
+  // TripSwitcher-Knopf (Trip-Name "Sommerurlaub Lissabon").
+  const urlaubBtn = page.locator('.jump-row').getByRole('button', { name: 'Urlaub', exact: true });
+  await urlaubBtn.click();
+  await expect(urlaubBtn).toHaveClass(/is-active/);
+  // Warten bis eine eventuelle Monats-Transition beendet ist und die alte Seite aus dem DOM
+  // entfernt wurde (wie goToTripMonth() in calendar.spec.ts) — andernfalls existieren Übergangstage
+  // (z. B. Anfang Folgemonat als .other-month-Zelle) kurzzeitig doppelt im DOM (Strict-Mode-Fehler).
+  await expect(page.locator('.calendar-weeks-viewport .calendar-weeks-page')).toHaveCount(1);
   await page.locator(`.day[data-date="${excursion.date}"]`).click();
   await page.getByRole('button', { name: 'Tag auf Karte anzeigen' }).click();
   await page.waitForURL('**/excursions');
