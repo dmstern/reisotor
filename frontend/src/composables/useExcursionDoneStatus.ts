@@ -6,16 +6,26 @@ import { useDrawersStore } from '../stores/drawers';
 import { toLocalDateString } from '../utils/dateFormat';
 import { computePopoverPosition } from '../utils/popoverPosition';
 
+const DATES_POPOVER_WIDTH_PX = 320;
+const DATES_POPOVER_HEIGHT_PX = 180;
+const UNPLANNED_POPOVER_WIDTH_PX = 290;
+const UNPLANNED_POPOVER_HEIGHT_PX = 220;
+const POPOVER_VIEWPORT_PADDING_PX = 16;
+
 export interface UseExcursionDoneStatusOptions {
   excursion: MaybeRefOrGetter<Excursion>;
 }
 
 export interface UseExcursionDoneStatusReturn {
+  datesPopoverOpen: Ref<boolean>;
+  datesPopoverStyle: Ref<{ top: string; left: string }>;
   unplannedPopoverOpen: Ref<boolean>;
   unplannedPopoverStyle: Ref<{ top: string; left: string }>;
   unplannedDoneDate: Ref<string>;
   onToggleDone: (event?: MouseEvent) => Promise<void>;
+  togglePlannedDone: () => Promise<void>;
   submitUnplannedDone: () => Promise<void>;
+  submitUnplannedPlan: () => Promise<void>;
   openCalendarConfirmDone: () => void;
 }
 
@@ -25,6 +35,9 @@ export function useExcursionDoneStatus(
   const excursionsStore = useExcursionsStore();
   const tripStore = useTripStore();
   const drawers = useDrawersStore();
+
+  const datesPopoverOpen = ref(false);
+  const datesPopoverStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
 
   const unplannedPopoverOpen = ref(false);
   const unplannedPopoverStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
@@ -49,38 +62,76 @@ export function useExcursionDoneStatus(
     unplannedDoneDate.value = newDate;
   });
 
+  async function positionAndOpenPopover(popoverOptions: {
+    event?: MouseEvent;
+    openRef: Ref<boolean>;
+    styleRef: Ref<{ top: string; left: string }>;
+    selector: string;
+    widthPx: number;
+    heightPx: number;
+  }) {
+    const triggerEl = (popoverOptions.event?.currentTarget as HTMLElement | undefined) ?? null;
+    const initialWidth =
+      typeof window !== 'undefined'
+        ? Math.min(popoverOptions.widthPx, window.innerWidth - POPOVER_VIEWPORT_PADDING_PX)
+        : popoverOptions.widthPx;
+
+    if (triggerEl) {
+      popoverOptions.styleRef.value = computePopoverPosition(triggerEl, {
+        menuWidth: initialWidth,
+        menuHeight: popoverOptions.heightPx,
+      });
+    }
+
+    popoverOptions.openRef.value = true;
+    await nextTick();
+
+    if (typeof document !== 'undefined') {
+      const menuEl = document.querySelector(popoverOptions.selector) as HTMLElement | null;
+
+      if (menuEl && triggerEl) {
+        const rect = menuEl.getBoundingClientRect();
+        popoverOptions.styleRef.value = computePopoverPosition(triggerEl, {
+          menuWidth: rect.width,
+          menuHeight: rect.height,
+        });
+      }
+    }
+  }
+
   async function onToggleDone(event?: MouseEvent) {
     const excursion = toValue(options.excursion);
 
+    if (excursion.date) {
+      await positionAndOpenPopover({
+        event,
+        openRef: datesPopoverOpen,
+        styleRef: datesPopoverStyle,
+        selector: '.tour-dates-popover',
+        widthPx: DATES_POPOVER_WIDTH_PX,
+        heightPx: DATES_POPOVER_HEIGHT_PX,
+      });
+      return;
+    }
+
     if (excursion.done) {
       await excursionsStore.setDone(excursion.id, false);
-    } else if (excursion.date) {
-      await excursionsStore.setDone(excursion.id, true);
-    } else {
-      const triggerEl = (event?.currentTarget as HTMLElement | undefined) ?? null;
-
-      if (triggerEl) {
-        unplannedPopoverStyle.value = computePopoverPosition(triggerEl, {
-          menuWidth: 260,
-          menuHeight: 180,
-        });
-      }
-
-      unplannedPopoverOpen.value = true;
-      await nextTick();
-
-      if (typeof document !== 'undefined') {
-        const menuEl = document.querySelector('.tour-unplanned-popover') as HTMLElement | null;
-
-        if (menuEl && triggerEl) {
-          const rect = menuEl.getBoundingClientRect();
-          unplannedPopoverStyle.value = computePopoverPosition(triggerEl, {
-            menuWidth: rect.width,
-            menuHeight: rect.height,
-          });
-        }
-      }
+      return;
     }
+
+    await positionAndOpenPopover({
+      event,
+      openRef: unplannedPopoverOpen,
+      styleRef: unplannedPopoverStyle,
+      selector: '.tour-unplanned-popover',
+      widthPx: UNPLANNED_POPOVER_WIDTH_PX,
+      heightPx: UNPLANNED_POPOVER_HEIGHT_PX,
+    });
+  }
+
+  async function togglePlannedDone() {
+    const excursion = toValue(options.excursion);
+    await excursionsStore.setDone(excursion.id, !excursion.done);
   }
 
   async function submitUnplannedDone() {
@@ -95,6 +146,17 @@ export function useExcursionDoneStatus(
     unplannedPopoverOpen.value = false;
   }
 
+  async function submitUnplannedPlan() {
+    const excursion = toValue(options.excursion);
+
+    if (!unplannedDoneDate.value) {
+      return;
+    }
+
+    await excursionsStore.setDate(excursion.id, unplannedDoneDate.value);
+    unplannedPopoverOpen.value = false;
+  }
+
   function openCalendarConfirmDone() {
     const excursion = toValue(options.excursion);
     unplannedPopoverOpen.value = false;
@@ -102,11 +164,15 @@ export function useExcursionDoneStatus(
   }
 
   return {
+    datesPopoverOpen,
+    datesPopoverStyle,
     unplannedPopoverOpen,
     unplannedPopoverStyle,
     unplannedDoneDate,
     onToggleDone,
+    togglePlannedDone,
     submitUnplannedDone,
+    submitUnplannedPlan,
     openCalendarConfirmDone,
   };
 }

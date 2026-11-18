@@ -47,6 +47,7 @@ const {
   onToggleDone,
   toggleScheduledItemDone,
   submitUnplannedDone,
+  submitUnplannedPlan,
   openCalendarConfirmDone,
 } = useSpotDoneStatus({
   spot: () => props.spot,
@@ -71,33 +72,19 @@ const { scheduledDaysCount, dayWeather, plannedDateLabel } = useSpotWeather({
   expanded: () => props.expanded,
 });
 
-const isSplit = computed(() => props.expanded && totalItemsCount.value === 1);
-const hasDropdown = computed(() => props.expanded && totalItemsCount.value > 1);
-
-const checkAriaLabel = computed(() =>
-  isSpotDone.value ? 'Nicht mehr als gemacht markieren' : 'Als gemacht markieren'
+const hasDropdown = computed(
+  () => props.expanded && (totalItemsCount.value >= 1 || !isSpotDone.value)
 );
-const actionAriaLabel = computed(() => {
-  const single = scheduledItemsForSpot.value[0];
 
-  if (single?.type === 'diary') {
-    return 'Zum Tagebucheintrag springen';
+const dropdownTitle = computed(() => {
+  if (!hasDropdown.value) {
+    return undefined;
   }
 
-  return plannedDateLabel.value ? `${plannedDateLabel.value} im Kalender öffnen` : undefined;
+  return totalItemsCount.value >= 1
+    ? 'Besuche für einzelne Tage verwalten'
+    : 'Spot einplanen oder als besucht markieren';
 });
-const actionTitle = computed(() => {
-  const single = scheduledItemsForSpot.value[0];
-
-  if (single?.type === 'diary') {
-    return 'Zum Tagebucheintrag springen';
-  }
-
-  return plannedDateLabel.value ? `Zum ${plannedDateLabel.value} im Kalender springen` : undefined;
-});
-const dropdownTitle = computed(() =>
-  hasDropdown.value ? 'Besuche für einzelne Tage verwalten' : undefined
-);
 
 function handleDoneClick(event: MouseEvent) {
   if (props.expanded) {
@@ -105,34 +92,6 @@ function handleDoneClick(event: MouseEvent) {
   } else {
     emit('card-click', event);
   }
-}
-
-function handleSingleItemToggle() {
-  const singleItem = scheduledItemsForSpot.value[0];
-
-  if (singleItem) {
-    void toggleScheduledItemDone(singleItem);
-  }
-}
-
-function handleCalendarJump(event: MouseEvent) {
-  event.stopPropagation();
-
-  if (!targetCalendarDate.value) {
-    return;
-  }
-
-  const single = scheduledItemsForSpot.value[0];
-
-  if (single?.type === 'diary') {
-    const tripId = tripStore.currentTripId;
-    router.push(
-      tripId ? `/trip/${tripId}/diary#entry-${single.sourceId}` : `/diary#entry-${single.sourceId}`
-    );
-    return;
-  }
-
-  openCalendarAtDate(targetCalendarDate.value);
 }
 
 function openCalendarAtDate(date: string) {
@@ -179,21 +138,13 @@ function handleItemJump(item: ScheduledSpotItem) {
     :done="isSpotDone"
     :partially-done="isSpotPartiallyDone"
     :planned="!!(scheduledDate || totalItemsCount > 0)"
-    :split="isSplit"
-    :jumpable="isSplit"
     :dropdown="hasDropdown"
-    :dropdown-open="datesPopoverOpen"
-    :check-aria-label="checkAriaLabel"
-    :check-title="checkAriaLabel"
-    :action-aria-label="actionAriaLabel"
-    :action-title="actionTitle"
+    :dropdown-open="datesPopoverOpen || unplannedPopoverOpen"
     :aria-label="isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
     :title="
       dropdownTitle || (isSpotDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren')
     "
     @click="handleDoneClick"
-    @click-check="handleSingleItemToggle"
-    @click-action="handleCalendarJump"
   >
     <template v-if="totalItemsCount > 1">
       <template v-if="allItemsDone">
@@ -266,9 +217,9 @@ function handleItemJump(item: ScheduledSpotItem) {
       <div class="unplanned-popover-content">
         <div class="popover-title-row">
           <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-          <span class="popover-heading">Spot als besucht markieren</span>
+          <span class="popover-heading">Spot einplanen oder abhaken</span>
         </div>
-        <p class="popover-subtext">An welchem Tag wurde dieser Spot besucht?</p>
+        <p class="popover-subtext">Wähle ein Datum für diesen Spot:</p>
         <Input
           v-model="unplannedDoneDate"
           type="date"
@@ -285,6 +236,15 @@ function handleItemJump(item: ScheduledSpotItem) {
             @click="submitUnplannedDone"
           >
             Als besucht markieren
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            :disabled="!unplannedDoneDate"
+            @click="submitUnplannedPlan"
+          >
+            Für Datum einplanen
           </Button>
           <Button
             type="button"

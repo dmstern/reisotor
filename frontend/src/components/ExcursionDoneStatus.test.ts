@@ -74,7 +74,7 @@ describe('ExcursionDoneStatus', () => {
     expect(html).not.toContain('<button');
   });
 
-  it('renders interactive DoneToggle button when unplanned and expanded', async () => {
+  it('renders interactive DoneToggle dropdown button when unplanned and expanded', async () => {
     const unplannedExcursion: Excursion = {
       ...mockExcursion,
       date: null,
@@ -84,28 +84,26 @@ describe('ExcursionDoneStatus', () => {
       excursion: unplannedExcursion,
       expanded: true,
     });
-    expect(html).toContain('Als gemacht markieren');
+    expect(html).toContain('Gemacht');
     expect(html).toContain('done-toggle');
+    expect(html).toContain('done-toggle-chevron');
     expect(html).not.toContain('done-toggle--split');
     expect(html).toContain('<button');
   });
 
-  it('renders split DoneToggle button with date action when planned and expanded', async () => {
+  it('renders dropdown DoneToggle button when planned and expanded', async () => {
     const html = await mountComponent({
       excursion: mockExcursion,
       expanded: true,
     });
     expect(html).toContain('done-toggle');
-    expect(html).toContain('done-toggle--split');
-    expect(html).toContain('done-toggle-btn--check');
-    expect(html).toContain('done-toggle-btn--action');
-    expect(html).toContain('done-toggle-jump-icon');
+    expect(html).toContain('done-toggle-chevron');
+    expect(html).not.toContain('done-toggle--split');
     expect(html).toContain('Geplant für');
     expect(html).toContain('15.07');
-    expect(html).toContain('Zum 15.07 im Kalender springen');
   });
 
-  it('renders split DoneToggle button with date action when excursion is done and planned', async () => {
+  it('renders dropdown DoneToggle button when excursion is done and planned', async () => {
     const doneExcursion: Excursion = {
       ...mockExcursion,
       done: 1,
@@ -114,20 +112,23 @@ describe('ExcursionDoneStatus', () => {
       excursion: doneExcursion,
       expanded: true,
     });
-    expect(html).toContain('done-toggle--split');
-    expect(html).toContain('done-toggle-btn--check');
-    expect(html).toContain('done-toggle-btn--action');
+    expect(html).toContain('done-toggle');
+    expect(html).toContain('done-toggle-chevron');
+    expect(html).not.toContain('done-toggle--split');
     expect(html).toContain('Gemacht am');
     expect(html).toContain('15.07');
-    expect(html).toContain('Zum 15.07 im Kalender springen');
   });
 
-  it('triggers drawers.openCalendar with excursion date when calendar action button is clicked', async () => {
+  it('opens tour-dates-popover on click, toggles done, and jumps to calendar via date-calendar-jump-btn', async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const { useDrawersStore } = await import('../stores/drawers');
     const drawers = useDrawersStore();
     const openCalendarSpy = vi.spyOn(drawers, 'openCalendar').mockImplementation(() => {});
+
+    const { useExcursionsStore } = await import('../stores/excursions');
+    const excursionsStore = useExcursionsStore();
+    const setDoneSpy = vi.spyOn(excursionsStore, 'setDone').mockResolvedValue();
 
     const el = document.createElement('div');
     document.body.appendChild(el);
@@ -141,11 +142,27 @@ describe('ExcursionDoneStatus', () => {
     app.use(pinia);
     app.mount(el);
 
-    const actionBtn = el.querySelector('.done-toggle-btn--action') as HTMLButtonElement | null;
-    expect(actionBtn).not.toBeNull();
-    actionBtn?.click();
+    const toggleBtn = el.querySelector('.done-toggle') as HTMLButtonElement | null;
+    expect(toggleBtn).not.toBeNull();
+    toggleBtn?.click();
 
+    await new Promise((r) => setTimeout(r, 20));
+
+    const popover = document.body.querySelector('.tour-dates-popover');
+    expect(popover).not.toBeNull();
+
+    const checkItem = document.body.querySelector('.date-check-item') as HTMLButtonElement | null;
+    expect(checkItem).not.toBeNull();
+    checkItem?.click();
+    expect(setDoneSpy).toHaveBeenCalledWith(1, true);
+
+    const jumpBtn = document.body.querySelector(
+      '.date-calendar-jump-btn'
+    ) as HTMLButtonElement | null;
+    expect(jumpBtn).not.toBeNull();
+    jumpBtn?.click();
     expect(openCalendarSpy).toHaveBeenCalledWith('2026-07-15');
+
     app.unmount();
     el.remove();
   });

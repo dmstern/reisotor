@@ -21,7 +21,7 @@ import { computePopoverPosition } from '../utils/popoverPosition';
 const DATES_POPOVER_WIDTH_PX = 320;
 const DATES_POPOVER_HEIGHT_PX = 240;
 const UNPLANNED_POPOVER_WIDTH_PX = 290;
-const UNPLANNED_POPOVER_HEIGHT_PX = 180;
+const UNPLANNED_POPOVER_HEIGHT_PX = 220;
 const POPOVER_VIEWPORT_PADDING_PX = 16;
 
 export interface ScheduledSpotItem {
@@ -55,6 +55,7 @@ export interface UseSpotDoneStatusReturn {
   onToggleDone: (event?: MouseEvent) => Promise<void>;
   toggleScheduledItemDone: (item: ScheduledSpotItem) => Promise<void>;
   submitUnplannedDone: () => Promise<void>;
+  submitUnplannedPlan: () => Promise<void>;
   openCalendarConfirmDone: () => void;
 }
 
@@ -274,6 +275,26 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
     unplannedPopoverOpen.value = false;
   }
 
+  async function submitUnplannedPlan() {
+    if (!unplannedDoneDate.value) {
+      return;
+    }
+
+    const spot = toValue(options.spot);
+
+    if (tripStore.currentTripId != null) {
+      await scheduleStore.setSpotDate({
+        spotId: spot.id,
+        tripId: tripStore.currentTripId,
+        title: spot.title,
+        date: unplannedDoneDate.value,
+        done: false,
+      });
+    }
+
+    unplannedPopoverOpen.value = false;
+  }
+
   function openCalendarConfirmDone() {
     const spot = toValue(options.spot);
     unplannedPopoverOpen.value = false;
@@ -295,6 +316,7 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
     onToggleDone,
     toggleScheduledItemDone,
     submitUnplannedDone,
+    submitUnplannedPlan,
     openCalendarConfirmDone,
   };
 }

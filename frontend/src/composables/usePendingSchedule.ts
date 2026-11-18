@@ -112,16 +112,11 @@ export function usePendingSchedule(options: UsePendingScheduleOptions = {}) {
   onMounted(() => document.addEventListener('keydown', onEscape));
   onBeforeUnmount(() => document.removeEventListener('keydown', onEscape));
 
-  function onDropExcursion(date: string, excursionId: number) {
-    excursionsStore.setDate(excursionId, date);
-  }
-
   return {
     pendingSchedule: computed(() => drawers.pendingSchedule),
     pendingScheduleLabel,
     finishPendingSchedule,
     cancelPendingSchedule,
     returnToCard,
-    onDropExcursion,
   };
 }

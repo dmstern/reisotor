@@ -72,7 +72,7 @@ describe('SpotDoneStatus', () => {
     expect(html).toContain('12.06');
   });
 
-  it('renders split button when spot has 1 planned date and expanded=true, jumping directly to calendar', async () => {
+  it('renders dropdown button when spot has 1 planned date and expanded=true, opening dates popover and jumping to calendar', async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const { useDrawersStore } = await import('../stores/drawers');
@@ -103,23 +103,27 @@ describe('SpotDoneStatus', () => {
     app.use(pinia);
     app.mount(el);
 
-    // 1 Termin im expanded Zustand: Ist ein Split-Button mit Checkbox und Kalender-Aktion
-    const splitContainer = el.querySelector<HTMLElement>('.done-toggle--split');
-    expect(splitContainer).not.toBeNull();
+    const toggleBtn = el.querySelector<HTMLButtonElement>('.done-toggle');
+    expect(toggleBtn).not.toBeNull();
+    expect(el.querySelector('.done-toggle-chevron')).not.toBeNull();
+    expect(toggleBtn?.textContent).toContain('12.06');
 
-    const actionBtn = el.querySelector<HTMLButtonElement>('.done-toggle-btn--action');
-    expect(actionBtn).not.toBeNull();
-    expect(actionBtn?.textContent).toContain('12.06');
-    expect(el.querySelector('.done-toggle-jump-icon')).not.toBeNull();
+    toggleBtn?.click();
+    await new Promise((r) => setTimeout(r, 20));
 
-    actionBtn?.click();
+    const popover = document.body.querySelector('.spot-dates-popover');
+    expect(popover).not.toBeNull();
+
+    const jumpBtn = document.body.querySelector<HTMLButtonElement>('.date-calendar-jump-btn');
+    expect(jumpBtn).not.toBeNull();
+    jumpBtn?.click();
     expect(openCalendarSpy).toHaveBeenCalledWith('2026-06-12');
 
     app.unmount();
     el.remove();
   });
 
-  it('directly toggles done state via check button when 1 date is planned without opening popover', async () => {
+  it('toggles done state via checklist item in dates popover when 1 date is planned', async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const scheduleStore = useScheduleStore();
@@ -148,13 +152,16 @@ describe('SpotDoneStatus', () => {
     app.use(pinia);
     app.mount(el);
 
-    const checkBtn = el.querySelector<HTMLButtonElement>('.done-toggle-btn--check');
-    expect(checkBtn).not.toBeNull();
-    checkBtn?.click();
+    const toggleBtn = el.querySelector<HTMLButtonElement>('.done-toggle');
+    expect(toggleBtn).not.toBeNull();
+    toggleBtn?.click();
+    await new Promise((r) => setTimeout(r, 20));
+
+    const checkItem = document.body.querySelector<HTMLButtonElement>('.date-check-item');
+    expect(checkItem).not.toBeNull();
+    checkItem?.click();
 
     expect(setDoneSpy).toHaveBeenCalledWith(101, true);
-    // Popover wurde nicht geöffnet
-    expect(document.body.querySelector('.spot-dates-popover')).toBeNull();
 
     app.unmount();
     el.remove();
