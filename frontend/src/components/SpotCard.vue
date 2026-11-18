@@ -430,6 +430,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   top: calc(var(--spot-card-pad) + var(--space-2));
   right: calc(var(--spot-card-pad) + var(--space-2));
   cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .card-badge-group :deep(.category-chip) {
@@ -455,25 +456,53 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   padding: var(--spot-card-pad) var(--space-2) 0 var(--space-2);
   gap: var(--space-2);
   min-width: 0;
+  transition: padding 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  box-sizing: border-box;
+}
+
+.spot-card.expanded .body > :not(.card-header-row, .spot-accordion, .accordion) {
   transition:
-    padding 0.3s cubic-bezier(0.32, 0.72, 0, 1),
     transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
     opacity 0.2s ease;
-  box-sizing: border-box;
 }
 
 @include can-hover {
   .spot-card.expanded:has(
       .image.is-expanded:hover:not(:has(a:hover)),
-      .card-badge-group:hover:not(:has(.spot-location-badge:hover, .spot-edit-btn:hover))
+      .card-badge-group:hover:not(
+          :has(.spot-location-badge:hover, .pending-sync-badge:hover, .spot-edit-btn:hover)
+        )
     )
-    .body {
+    .body
+    > :not(.card-header-row, .accordion:not(.is-expanded)) {
     transform: translateY(-2px);
     opacity: 0.84;
   }
 
   .spot-card.expanded:has(
-      .card-badge-group:hover:not(:has(.spot-location-badge:hover, .spot-edit-btn:hover))
+      .image.is-expanded:hover:not(:has(a:hover)),
+      .card-badge-group:hover:not(
+          :has(.spot-location-badge:hover, .pending-sync-badge:hover, .spot-edit-btn:hover)
+        )
+    )
+    .card-badge-group {
+    transform: translateY(-1px);
+  }
+
+  .spot-card.expanded:has(
+      .image.is-expanded:active:not(:has(a:active)),
+      .card-badge-group:active:not(
+          :has(.spot-location-badge:active, .pending-sync-badge:active, .spot-edit-btn:active)
+        )
+    )
+    .card-badge-group {
+    transform: translateY(1px);
+  }
+
+  .spot-card.expanded:has(
+      .card-badge-group:hover:not(
+          :has(.spot-location-badge:hover, .pending-sync-badge:hover, .spot-edit-btn:hover)
+        )
     )
     :deep(.image.is-expanded) {
     border-color: var(--color-primary);
@@ -484,7 +513,9 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   }
 
   .spot-card.expanded:has(
-      .card-badge-group:active:not(:has(.spot-location-badge:active, .spot-edit-btn:active))
+      .card-badge-group:active:not(
+          :has(.spot-location-badge:active, .pending-sync-badge:active, .spot-edit-btn:active)
+        )
     )
     :deep(.image.is-expanded) {
     transform: translateY(1px) scale(0.995);
@@ -492,7 +523,9 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   }
 
   .spot-card.expanded:has(
-      .card-badge-group:hover:not(:has(.spot-location-badge:hover, .spot-edit-btn:hover))
+      .card-badge-group:hover:not(
+          :has(.spot-location-badge:hover, .pending-sync-badge:hover, .spot-edit-btn:hover)
+        )
     )
     :deep(.spot-collapse-pill) {
     background: var(--color-primary);
@@ -502,7 +535,9 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   }
 
   .spot-card.expanded:has(
-      .card-badge-group:hover:not(:has(.spot-location-badge:hover, .spot-edit-btn:hover))
+      .card-badge-group:hover:not(
+          :has(.spot-location-badge:hover, .pending-sync-badge:hover, .spot-edit-btn:hover)
+        )
     )
     :deep(.spot-collapse-chevron) {
     transform: translateY(-2px);
@@ -947,6 +982,8 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 @media (prefers-reduced-motion: reduce) {
   .spot-card,
   .body,
+  .spot-card.expanded .card-badge-group,
+  .spot-card.expanded .body > :not(.card-header-row),
   .spot-expand-pill,
   .spot-expand-chevron,
   .actions-accordion,

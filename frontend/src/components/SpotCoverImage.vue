@@ -360,7 +360,6 @@ function formatAccommodationDate(dateStr: string | null) {
 @container spots-col (max-width: 480px) {
   .image {
     height: 100px;
-    transition: height 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   .image.is-expanded {
