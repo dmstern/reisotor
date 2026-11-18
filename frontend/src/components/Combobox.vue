@@ -732,14 +732,17 @@ defineOptions({
     background 0.15s ease;
 }
 
-.combobox-clear-btn:hover {
-  color: var(--color-text);
-  background: var(--color-hover);
+@include can-hover {
+  .combobox-clear-btn:hover {
+    color: var(--color-text);
+    background: var(--color-hover);
+  }
 }
 
 .combobox-clear-btn:focus-visible {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
   outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .combobox--sm .combobox-clear-btn {
@@ -825,7 +828,7 @@ defineOptions({
 .options {
   list-style: none;
   margin: 0;
-  padding: 4px 0;
+  padding: var(--space-1) 0;
   overflow-y: auto;
   flex: 1 1 auto;
 }
@@ -857,11 +860,16 @@ defineOptions({
   flex: 1;
 }
 
-.combobox-option:hover,
 .combobox-option.is-highlighted,
-.options li:hover,
 .options li.is-highlighted {
   background: var(--color-hover);
+}
+
+@include can-hover {
+  .combobox-option:hover,
+  .options li:hover {
+    background: var(--color-hover);
+  }
 }
 
 .combobox-option.is-selected,
@@ -876,16 +884,25 @@ defineOptions({
 }
 
 .combobox-empty {
-  padding: 8px 10px;
+  padding: var(--space-2) 10px;
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   text-align: center;
 }
 
 .combobox-footer {
-  border-top: 1px solid var(--color-border);
-  padding: 4px;
+  border-top: var(--border-width) solid var(--color-border);
+  padding: var(--space-1);
   background: var(--color-surface);
   flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .combobox-clear-btn,
+  .combobox-caret,
+  .combobox-option,
+  .options li {
+    transition: none;
+  }
 }
 </style>

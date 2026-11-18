@@ -96,7 +96,7 @@ withDefaults(
 .unseen-dot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   border: 1.5px solid var(--color-surface);
   flex-shrink: 0;
   position: relative;

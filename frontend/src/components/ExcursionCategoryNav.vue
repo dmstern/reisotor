@@ -177,6 +177,7 @@ const emit = defineEmits<{
   cursor: pointer;
   background: transparent;
   color: var(--color-text-muted);
+  @include touch-target($expand: true);
 }
 
 @include can-hover {

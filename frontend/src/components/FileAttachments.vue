@@ -371,7 +371,7 @@ function handleUploadClick() {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .file-attachments {
   margin-top: var(--space-3);
 }
@@ -385,15 +385,16 @@ function handleUploadClick() {
 }
 
 .attachments-badge {
+  @include touch-target($expand: true);
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
+  gap: var(--space-1);
+  padding: 3px var(--space-2);
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: var(--radius-pill);
-  color: #ffffff;
+  color: var(--color-primary-contrast, #ffffff);
   font-size: 0.75rem;
   font-weight: 600;
   line-height: 1;
@@ -407,11 +408,13 @@ function handleUploadClick() {
   user-select: none;
 }
 
-.attachments-badge:hover {
-  background: rgba(0, 0, 0, 0.75);
-  border-color: rgba(255, 255, 255, 0.45);
-  transform: scale(1.06);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+@include can-hover {
+  .attachments-badge:hover {
+    background: rgba(0, 0, 0, 0.75);
+    border-color: rgba(255, 255, 255, 0.45);
+    transform: scale(1.06);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+  }
 }
 
 .attachments-badge:active {
@@ -419,8 +422,9 @@ function handleUploadClick() {
 }
 
 .attachments-badge:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .attachments-badge-count {
@@ -450,5 +454,11 @@ function handleUploadClick() {
 
 .error {
   margin-top: var(--space-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .attachments-badge {
+    transition: none;
+  }
 }
 </style>

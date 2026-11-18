@@ -65,7 +65,7 @@ const meta = computed(() => {
 
   font-size: 0.72rem;
   max-width: 120px;
-  font-weight: 650;
+  font-weight: 600;
   background: var(--chip-bg);
   color: var(--chip-text);
   border: 1px solid var(--chip-border);

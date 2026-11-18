@@ -6,7 +6,6 @@ import { ACTION_ICONS } from '../../utils/actionIcons';
 // Einheitliche, wiederverwendbare Status-Pill / Checkbox-Toggle (DRY gemäß AGENTS.md):
 // Kombiniert Geplant-Status und Gemacht-Checkbox für Spots und Touren/Ausflüge mit
 // zentrierter Flex-Ausrichtung für Text, Trennpunkte und Wetter-Icons.
-// Unterstützt optionalen Split-Modus für getrennt klickbare Checkbox und Datums-/Aktions-Zone.
 const props = withDefaults(
   defineProps<{
     done?: boolean;
@@ -15,31 +14,21 @@ const props = withDefaults(
     ariaLabel?: string;
     title?: string;
     showIcon?: boolean;
-    split?: boolean;
     dropdown?: boolean;
     dropdownOpen?: boolean;
-    jumpable?: boolean;
-    checkAriaLabel?: string;
-    checkTitle?: string;
-    actionAriaLabel?: string;
-    actionTitle?: string;
   }>(),
   {
     done: false,
     partiallyDone: false,
     planned: false,
     showIcon: true,
-    split: false,
     dropdown: false,
     dropdownOpen: false,
-    jumpable: false,
   }
 );
 
 defineEmits<{
   (e: 'click', event: MouseEvent): void;
-  (e: 'click-check', event: MouseEvent): void;
-  (e: 'click-action', event: MouseEvent): void;
 }>();
 
 const isDoneOrPartial = computed(() => props.done || props.partiallyDone);
@@ -47,53 +36,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 </script>
 
 <template>
-  <div
-    v-if="split"
-    class="done-toggle done-toggle--split"
-    :class="{
-      status: planned || isDoneOrPartial,
-      planned: planned && !isDoneOrPartial,
-      'status-done': isDoneOrPartial,
-      active: done,
-    }"
-    role="group"
-    :aria-label="ariaLabel"
-  >
-    <button
-      type="button"
-      class="done-toggle-btn done-toggle-btn--check"
-      :class="{ active: done }"
-      :aria-pressed="done"
-      :aria-label="checkAriaLabel || ariaLabel"
-      :title="checkTitle || title"
-      @click.stop="$emit('click-check', $event)"
-    >
-      <AppIcon v-if="showIcon" :icon="icon" :size="14" group="actions" :active="done" />
-    </button>
-    <span class="done-toggle-divider" aria-hidden="true" />
-    <button
-      type="button"
-      class="done-toggle-btn done-toggle-btn--action"
-      :class="{ 'done-toggle-btn--jumpable': jumpable }"
-      :aria-label="actionAriaLabel"
-      :title="actionTitle"
-      @click.stop="$emit('click-action', $event)"
-    >
-      <span class="status-text">
-        <slot />
-      </span>
-      <AppIcon
-        v-if="jumpable"
-        :icon="ACTION_ICONS.scrollRight"
-        :size="12"
-        group="actions"
-        class="done-toggle-jump-icon"
-        aria-hidden="true"
-      />
-    </button>
-  </div>
   <button
-    v-else
     type="button"
     class="done-toggle"
     :class="{
@@ -127,7 +70,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   </button>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .done-toggle {
   position: relative;
   display: inline-flex;
@@ -136,10 +79,10 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   min-height: 36px;
   background-color: transparent;
   background-image: var(--gradient-control-3d);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-pill);
   corner-shape: round;
-  padding: 4px 12px;
+  padding: var(--space-1) 12px;
   font-size: var(--font-size-xs);
   font-weight: 500;
   color: var(--color-text-muted);
@@ -158,21 +101,23 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
     transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1);
 }
 
-.done-toggle:not(.done-toggle--split):focus-visible {
+.done-toggle:focus-visible {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
   outline-offset: var(--focus-ring-offset, 2px);
   box-shadow: var(--focus-ring-halo);
 }
 
-.done-toggle:not(.done-toggle--split):hover {
-  background-color: var(--color-control-hover-bg);
-  border-color: var(--toggle-hover-border, var(--color-primary));
-  color: var(--color-text);
-  box-shadow: var(--shadow-control-hover);
-  translate: 0 -1px;
+@include can-hover {
+  .done-toggle:hover {
+    background-color: var(--color-control-hover-bg);
+    border-color: var(--toggle-hover-border, var(--color-primary));
+    color: var(--color-text);
+    box-shadow: var(--shadow-control-hover);
+    translate: 0 -1px;
+  }
 }
 
-.done-toggle:not(.done-toggle--split):active {
+.done-toggle:active {
   background-color: var(--color-control-active-bg);
   transform: scale(0.98);
   translate: 0 0;
@@ -186,10 +131,12 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   box-shadow: var(--shadow-control);
 }
 
-.done-toggle:not(.done-toggle--split).planned:hover {
-  border-color: var(--color-success);
-  color: var(--color-success);
-  box-shadow: var(--shadow-control-hover);
+@include can-hover {
+  .done-toggle.planned:hover {
+    border-color: var(--color-success);
+    color: var(--color-success);
+    box-shadow: var(--shadow-control-hover);
+  }
 }
 
 .done-toggle.active,
@@ -201,110 +148,12 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   box-shadow: var(--shadow-control);
 }
 
-.done-toggle:not(.done-toggle--split).active:hover,
-.done-toggle:not(.done-toggle--split).status-done:hover {
-  background-color: color-mix(in srgb, var(--color-success) 22%, transparent);
-  box-shadow: var(--shadow-control-hover);
-}
-
-/* Split-Pill Layout & Sub-Buttons */
-.done-toggle--split {
-  padding: 0;
-  gap: 0;
-  cursor: default;
-  overflow: hidden;
-  align-items: stretch;
-}
-
-.done-toggle-btn {
-  appearance: none;
-  border: none;
-  background: transparent;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  min-height: 34px;
-  position: relative;
-  transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
-}
-
-.done-toggle-btn--check {
-  padding: 4px 8px 4px 11px;
-  justify-content: center;
-}
-
-.done-toggle-btn--check :deep(.app-icon) {
-  transition: transform 0.15s ease;
-}
-
-.done-toggle-btn--check:hover {
-  background: color-mix(in srgb, var(--color-success) 16%, transparent);
-  color: var(--color-success);
-}
-
-.done-toggle-btn--check:hover :deep(.app-icon) {
-  transform: scale(1.15);
-}
-
-.done-toggle-divider {
-  width: 1px;
-  height: 16px;
-  background-color: var(--color-border);
-  align-self: center;
-  flex-shrink: 0;
-  transition: background-color 0.15s ease;
-}
-
-.done-toggle--split.status-done .done-toggle-divider,
-.done-toggle--split.active .done-toggle-divider {
-  background-color: color-mix(in srgb, var(--color-success) 35%, transparent);
-}
-
-.done-toggle-btn--action {
-  padding: 4px 12px 4px 8px;
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  min-width: 0;
-}
-
-.done-toggle-btn--action:hover {
-  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-  color: var(--color-text);
-}
-
-.done-toggle--split.status-done .done-toggle-btn--action:hover,
-.done-toggle--split.active .done-toggle-btn--action:hover {
-  background: color-mix(in srgb, var(--color-success) 22%, transparent);
-  color: var(--color-success);
-}
-
-.done-toggle-btn--action:hover :deep(.done-toggle-calendar-icon) {
-  transform: scale(1.15);
-  opacity: 1;
-}
-
-.done-toggle-btn--action:hover :deep(.done-toggle-date) {
-  text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
-  text-underline-offset: 2px;
-}
-
-.done-toggle-jump-icon {
-  margin-left: 2px;
-  opacity: 0.7;
-  flex-shrink: 0;
-  transition:
-    transform 0.15s cubic-bezier(0.2, 0.8, 0.4, 1),
-    opacity 0.15s ease;
-}
-
-.done-toggle-btn--action:hover .done-toggle-jump-icon {
-  transform: translateX(2px);
-  opacity: 1;
+@include can-hover {
+  .done-toggle.active:hover,
+  .done-toggle.status-done:hover {
+    background-color: color-mix(in srgb, var(--color-success) 22%, transparent);
+    box-shadow: var(--shadow-control-hover);
+  }
 }
 
 .done-toggle-chevron {
@@ -316,29 +165,15 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
     opacity 0.15s ease;
 }
 
-.done-toggle:hover .done-toggle-chevron {
-  opacity: 1;
+@include can-hover {
+  .done-toggle:hover .done-toggle-chevron {
+    opacity: 1;
+  }
 }
 
 .done-toggle-chevron.is-open,
 .done-toggle.is-dropdown-open .done-toggle-chevron {
   transform: rotate(180deg);
-}
-
-.done-toggle-btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: -3px;
-  z-index: 1;
-}
-
-.done-toggle-btn--check:focus-visible {
-  border-start-start-radius: 999px;
-  border-end-start-radius: 999px;
-}
-
-.done-toggle-btn--action:focus-visible {
-  border-start-end-radius: 999px;
-  border-end-end-radius: 999px;
 }
 
 .status-text {
@@ -382,17 +217,9 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
    Wort "Geplant für"/"Gemacht am"/"Besucht am" per Visually-Hidden ausblenden.
    Checkbox, Kalender-Icon, Datum und Wetter bleiben stets komplett sichtbar. */
 @container spots-col (max-width: 380px) {
-  .done-toggle:not(.done-toggle--split) {
+  .done-toggle {
     padding: 3px 8px;
     gap: 4px;
-  }
-
-  .done-toggle--split .done-toggle-btn--check {
-    padding: 3px 5px 3px 7px;
-  }
-
-  .done-toggle--split .done-toggle-btn--action {
-    padding: 3px 7px 3px 5px;
   }
 
   :deep(.done-toggle-prefix) {
@@ -409,17 +236,9 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 }
 
 @container spot-card (max-width: 360px) {
-  .done-toggle:not(.done-toggle--split) {
+  .done-toggle {
     padding: 3px 8px;
     gap: 4px;
-  }
-
-  .done-toggle--split .done-toggle-btn--check {
-    padding: 3px 5px 3px 7px;
-  }
-
-  .done-toggle--split .done-toggle-btn--action {
-    padding: 3px 7px 3px 5px;
   }
 
   :deep(.done-toggle-prefix) {
@@ -436,17 +255,9 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 }
 
 @container excursion-card (max-width: 360px) {
-  .done-toggle:not(.done-toggle--split) {
+  .done-toggle {
     padding: 3px 8px;
     gap: 4px;
-  }
-
-  .done-toggle--split .done-toggle-btn--check {
-    padding: 3px 5px 3px 7px;
-  }
-
-  .done-toggle--split .done-toggle-btn--action {
-    padding: 3px 7px 3px 5px;
   }
 
   :deep(.done-toggle-prefix) {
@@ -463,17 +274,9 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 }
 
 @container (max-width: 360px) {
-  .done-toggle:not(.done-toggle--split) {
+  .done-toggle {
     padding: 3px 8px;
     gap: 4px;
-  }
-
-  .done-toggle--split .done-toggle-btn--check {
-    padding: 3px 5px 3px 7px;
-  }
-
-  .done-toggle--split .done-toggle-btn--action {
-    padding: 3px 7px 3px 5px;
   }
 
   :deep(.done-toggle-prefix) {
@@ -490,8 +293,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 }
 
 /* Virtuelles Touch-Target (mind. 44px Höhe gemäß DESIGN.md §7.1 / WCAG 2.5.5) */
-.done-toggle:not(.done-toggle--split)::after,
-.done-toggle-btn::after {
+.done-toggle::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -502,9 +304,15 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 }
 
 @media (pointer: fine) {
-  .done-toggle:not(.done-toggle--split)::after,
-  .done-toggle-btn::after {
+  .done-toggle::after {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .done-toggle,
+  .done-toggle-chevron {
+    transition: none;
   }
 }
 </style>

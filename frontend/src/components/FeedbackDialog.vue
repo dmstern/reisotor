@@ -390,16 +390,34 @@ label {
 }
 
 .upload-label {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   align-self: flex-start;
+  min-height: 44px;
   font-size: 0.85rem;
   font-weight: 400;
   color: var(--color-primary);
   cursor: pointer;
+  border-radius: var(--radius-xs-squircle);
+}
+
+.upload-label:has(.hidden-input:focus-visible) {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .hidden-input {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .screenshot-preview-container {
@@ -422,6 +440,7 @@ label {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .screenshot-preview img {
@@ -430,10 +449,12 @@ label {
   object-fit: cover;
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
+  flex-shrink: 0;
 }
 
 .screenshot-name {
   flex: 1;
+  min-width: 0;
   font-size: 0.85rem;
   color: var(--color-text-muted);
   overflow: hidden;

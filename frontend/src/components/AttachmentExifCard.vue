@@ -95,7 +95,7 @@ const { currentMetadata, hasExifMetadata, formatExifDateTime, onShowLocationOnMa
   </Transition>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .preview-exif-card {
   display: flex;
   justify-content: space-between;
@@ -105,14 +105,16 @@ const { currentMetadata, hasExifMetadata, formatExifDateTime, onShowLocationOnMa
   padding: var(--space-3) var(--space-4);
   margin-top: var(--space-3);
   background: var(--color-surface-sunken);
-  border: 1px solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   transition: border-color var(--transition-fast);
 }
 
-.preview-exif-card:hover {
-  border-color: var(--color-border-strong);
+@include can-hover {
+  .preview-exif-card:hover {
+    border-color: var(--color-border-strong);
+  }
 }
 
 /* Smooth Transition für den EXIF-Metadaten-Kasten */

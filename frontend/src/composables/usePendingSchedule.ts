@@ -11,7 +11,7 @@ export interface UsePendingScheduleOptions {
 }
 
 /**
- * Verwaltet den Klick- und Drag&Drop-Workflow zum Einplanen von Touren und Spots im Kalender
+ * Verwaltet den Klick-Workflow zum Einplanen von Touren und Spots im Kalender
  * (inkl. 'confirm-done'-Modus und Rücksprung zur aufrufenden Karte per Hash).
  */
 export function usePendingSchedule(options: UsePendingScheduleOptions = {}) {
@@ -36,7 +36,7 @@ export function usePendingSchedule(options: UsePendingScheduleOptions = {}) {
     return spotsStore.spots.find((spot) => spot.id === pending.id)?.title ?? null;
   });
 
-  // Gleiches Blau-Highlighting der Tage wie beim Drag & Drop, solange der Auswahlmodus aktiv ist
+  // Blau-Highlighting der Kalendertage, solange der Einplanen-/Auswahlmodus aktiv ist
   watch(
     () => drawers.pendingSchedule,
     (pending) => document.body.classList.toggle('is-dragging-calendar', !!pending),
@@ -112,16 +112,11 @@ export function usePendingSchedule(options: UsePendingScheduleOptions = {}) {
   onMounted(() => document.addEventListener('keydown', onEscape));
   onBeforeUnmount(() => document.removeEventListener('keydown', onEscape));
 
-  function onDropExcursion(date: string, excursionId: number) {
-    excursionsStore.setDate(excursionId, date);
-  }
-
   return {
     pendingSchedule: computed(() => drawers.pendingSchedule),
     pendingScheduleLabel,
     finishPendingSchedule,
     cancelPendingSchedule,
     returnToCard,
-    onDropExcursion,
   };
 }

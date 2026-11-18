@@ -6,13 +6,13 @@ import { useExcursionWeather } from '../composables/useExcursionWeather';
 import { useExcursionDoneStatus } from '../composables/useExcursionDoneStatus';
 import { useDrawersStore } from '../stores/drawers';
 import DoneToggle from './primitives/DoneToggle.vue';
-import Button from './primitives/Button.vue';
-import Input from './primitives/Input.vue';
-import PickerMenu from './primitives/PickerMenu.vue';
+import DoneUnplannedPopover from './DoneUnplannedPopover.vue';
+import DoneDatesPopover, { type DoneDateChecklistItem } from './DoneDatesPopover.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import AppIcon from './AppIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { formatDate as formatDateShared } from '../utils/dateFormat';
 
 const props = withDefaults(
   defineProps<{
@@ -32,26 +32,57 @@ const { weatherSummary, statusDateLabel } = useExcursionWeather({
   resolvedStations: () => props.resolvedStations,
 });
 
-const isSplit = computed(() => !!props.excursion.date);
-
-function handleCalendarJump(event: MouseEvent) {
-  event.stopPropagation();
-
-  if (props.excursion.date) {
-    drawers.openCalendar(props.excursion.date);
-  }
-}
-
 const {
+  datesPopoverOpen,
+  datesPopoverStyle,
   unplannedPopoverOpen,
   unplannedPopoverStyle,
   unplannedDoneDate,
   onToggleDone,
+  togglePlannedDone,
   submitUnplannedDone,
+  submitUnplannedPlan,
   openCalendarConfirmDone,
 } = useExcursionDoneStatus({
   excursion: () => props.excursion,
 });
+
+const hasDropdown = computed(
+  () => props.expanded && (!!props.excursion.date || !props.excursion.done)
+);
+
+const dropdownTitle = computed(() => {
+  if (!hasDropdown.value) {
+    return undefined;
+  }
+
+  return props.excursion.date
+    ? 'Tour-Status und Termin verwalten'
+    : 'Tour einplanen oder als gemacht markieren';
+});
+
+const tourDateItems = computed<DoneDateChecklistItem[]>(() => {
+  if (!props.excursion.date) {
+    return [];
+  }
+
+  return [
+    {
+      id: props.excursion.id,
+      date: props.excursion.date,
+      done: !!props.excursion.done,
+      sourceClass: props.excursion.role ? 'is-travel' : 'is-tour',
+      statusLabel: props.excursion.done ? 'Gemacht' : 'Geplant',
+      jumpTitle: 'Diesen Tag im Kalender öffnen',
+      jumpAriaLabel: `${formatDateShared(props.excursion.date)} im Kalender öffnen`,
+    },
+  ];
+});
+
+function openCalendarAtDate(date: string) {
+  datesPopoverOpen.value = false;
+  drawers.openCalendar(date);
+}
 </script>
 
 <template>
@@ -60,19 +91,14 @@ const {
     key="btn-done"
     :done="!!excursion.done"
     :planned="!!excursion.date"
-    :split="isSplit"
-    :jumpable="isSplit"
-    :check-aria-label="
-      excursion.done ? 'Nicht mehr als gemacht markieren' : 'Als gemacht markieren'
-    "
-    :check-title="excursion.done ? 'Nicht mehr als gemacht markieren' : 'Als gemacht markieren'"
-    :action-aria-label="excursion.date ? `${statusDateLabel} im Kalender öffnen` : undefined"
-    :action-title="excursion.date ? `Zum ${statusDateLabel} im Kalender springen` : undefined"
+    :dropdown="hasDropdown"
+    :dropdown-open="datesPopoverOpen || unplannedPopoverOpen"
     :aria-label="excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
-    :title="excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
+    :title="
+      dropdownTitle ||
+      (excursion.done ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren')
+    "
     @click="onToggleDone"
-    @click-check="onToggleDone"
-    @click-action="handleCalendarJump"
   >
     <template v-if="excursion.done">
       <template v-if="excursion.date">
@@ -109,7 +135,7 @@ const {
         {{ weatherSummary.tempLabel }}
       </span>
     </template>
-    <template v-else>Als gemacht markieren</template>
+    <template v-else>Gemacht</template>
   </DoneToggle>
 
   <div
@@ -164,53 +190,35 @@ const {
     </template>
   </div>
 
-  <Teleport to="body">
-    <PickerMenu
-      v-if="unplannedPopoverOpen"
-      class="tour-unplanned-popover"
-      :style="unplannedPopoverStyle"
-      @close="unplannedPopoverOpen = false"
-    >
-      <div class="unplanned-popover-content">
-        <div class="popover-title-row">
-          <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
-          <span class="popover-heading">Tour als gemacht markieren</span>
-        </div>
-        <p class="popover-subtext">An welchem Tag wurde diese Tour gemacht?</p>
-        <Input
-          v-model="unplannedDoneDate"
-          type="date"
-          class="popover-date-input"
-          aria-label="Datum der gemachten Tour"
-          @keyup.enter="submitUnplannedDone"
-        />
-        <div class="popover-buttons">
-          <Button
-            type="button"
-            variant="primary"
-            size="sm"
-            :disabled="!unplannedDoneDate"
-            @click="submitUnplannedDone"
-          >
-            Als gemacht markieren
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="calendar-alt-link"
-            @click="openCalendarConfirmDone"
-          >
-            <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" />
-            Im Kalender auswählen
-          </Button>
-        </div>
-      </div>
-    </PickerMenu>
-  </Teleport>
+  <DoneUnplannedPopover
+    v-model:date="unplannedDoneDate"
+    :open="unplannedPopoverOpen"
+    :popover-style="unplannedPopoverStyle"
+    popover-class="tour-unplanned-popover"
+    heading="Tour einplanen oder abhaken"
+    subtext="Wähle ein Datum für diese Tour:"
+    date-aria-label="Datum für diese Tour"
+    done-button-label="Als gemacht markieren"
+    @close="unplannedPopoverOpen = false"
+    @submit-done="submitUnplannedDone"
+    @submit-plan="submitUnplannedPlan"
+    @open-calendar="openCalendarConfirmDone"
+  />
+
+  <DoneDatesPopover
+    :open="datesPopoverOpen"
+    :popover-style="datesPopoverStyle"
+    popover-class="tour-dates-popover"
+    heading="Tour abhaken"
+    subtext="Markiere diesen Termin als gemacht:"
+    :items="tourDateItems"
+    @close="datesPopoverOpen = false"
+    @toggle-item="togglePlannedDone"
+    @jump-item="(item) => openCalendarAtDate(item.date)"
+  />
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 :deep(.done-toggle) {
   --toggle-hover-border: var(--excursion-theme-color, var(--color-tour));
 }
@@ -259,52 +267,6 @@ const {
   gap: 4px;
   flex-shrink: 0;
   white-space: nowrap;
-}
-
-.unplanned-popover-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-2);
-  min-width: 250px;
-  max-width: min(280px, calc(100vw - var(--space-4)));
-}
-
-.popover-title-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.popover-subtext {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  margin: 0;
-  line-height: 1.3;
-}
-
-.popover-date-input {
-  width: 100%;
-}
-
-.popover-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin-top: var(--space-1);
-}
-
-.calendar-alt-link {
-  font-size: var(--font-size-xs) !important;
-  color: var(--color-text-muted) !important;
-  justify-content: center;
-}
-
-.calendar-alt-link:hover {
-  color: var(--color-primary) !important;
 }
 
 @container spots-col (max-width: 360px) {

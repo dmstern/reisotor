@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import type { CalendarEntry, Spot } from '../api/types';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { weatherCodeMeta } from '../utils/weather';
@@ -31,7 +30,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'select', date: string): void;
-  (e: 'drop-excursion', date: string, excursionId: number): void;
 }>();
 
 const weekdayFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'short' });
@@ -63,33 +61,6 @@ function isTripStart(date: string) {
 function isTripEnd(date: string) {
   return props.tripEndDate != null && date === props.tripEndDate;
 }
-
-// Zähler statt Boolean pro Tag: dragenter/dragleave feuern beim Überqueren verschachtelter
-// Kind-Elemente (day-head, item-line, …) mehrfach, ein einfacher Boolean würde dabei flackern.
-const dragOverCounts = ref<Record<string, number>>({});
-
-function isDragOver(date: string) {
-  return (dragOverCounts.value[date] ?? 0) > 0;
-}
-
-function onDragEnter(date: string) {
-  dragOverCounts.value[date] = (dragOverCounts.value[date] ?? 0) + 1;
-}
-
-function onDragLeave(date: string) {
-  dragOverCounts.value[date] = Math.max(0, (dragOverCounts.value[date] ?? 0) - 1);
-}
-
-function onDrop(event: DragEvent, date: string) {
-  dragOverCounts.value[date] = 0;
-  const raw = event.dataTransfer?.getData('text/excursion-id');
-
-  if (!raw) {
-    return;
-  }
-
-  emit('drop-excursion', date, Number(raw));
-}
 </script>
 
 <template>
@@ -107,16 +78,11 @@ function onDrop(event: DragEvent, date: string) {
         'in-trip': isInTrip(day.date),
         'trip-start': isTripStart(day.date),
         'trip-end': isTripEnd(day.date),
-        'drag-over': isDragOver(day.date),
         'other-month': day.otherMonth,
       }"
       @click="emit('select', day.date)"
       @keydown.enter.prevent="emit('select', day.date)"
       @keydown.space.prevent="emit('select', day.date)"
-      @dragover.prevent
-      @dragenter.prevent="onDragEnter(day.date)"
-      @dragleave="onDragLeave(day.date)"
-      @drop.prevent="onDrop($event, day.date)"
     >
       <div class="day-head">
         <!-- Weekday bleibt für Screen-Reader und E2E-Tests vorhanden, wird aber für Sehende
@@ -181,7 +147,7 @@ function onDrop(event: DragEvent, date: string) {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .week {
   container-type: inline-size;
   display: grid;
@@ -201,10 +167,10 @@ function onDrop(event: DragEvent, date: string) {
 .day {
   position: relative;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  padding: 5px 4px;
+  padding: 5px var(--space-1);
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -220,22 +186,27 @@ function onDrop(event: DragEvent, date: string) {
     box-shadow var(--transition-fast);
 }
 
-.day:hover {
-  background: var(--color-hover);
-  transform: translateY(-1px);
+@include can-hover {
+  .day:hover {
+    background: var(--color-hover);
+    transform: translateY(-1px);
+  }
 }
 
 .day:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
   outline-offset: -2px;
+  box-shadow: var(--focus-ring-halo);
 }
 
 .day.in-trip {
   background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface));
 }
 
-.day.in-trip:hover {
-  background: color-mix(in srgb, var(--color-primary) 9%, var(--color-surface));
+@include can-hover {
+  .day.in-trip:hover {
+    background: color-mix(in srgb, var(--color-primary) 9%, var(--color-surface));
+  }
 }
 
 /* Urlaubs-Streifen am unteren Rand der Zelle */
@@ -269,13 +240,7 @@ function onDrop(event: DragEvent, date: string) {
   box-shadow: 0 0 0 1px var(--color-primary);
 }
 
-.day.drag-over {
-  background: var(--color-primary-tint);
-  outline: 2px dashed var(--color-primary);
-  outline-offset: -2px;
-}
-
-/* Leucht-Effekt, wenn der "Einplanen"-Anfasser einer SpotCard gerade gezogen wird (#drag) */
+/* Leucht-Effekt, wenn der "Einplanen"-Modus über das Kalender-Auswahl-Menü aktiv ist */
 :global(body.is-dragging-calendar .day) {
   background: var(--color-scheduled-tint);
   border-color: color-mix(in srgb, var(--color-scheduled) 50%, transparent);
@@ -311,15 +276,16 @@ function onDrop(event: DragEvent, date: string) {
   }
 }
 
-:global(body.is-dragging-calendar .day:hover),
-:global(body.is-dragging-calendar .day.drag-over) {
-  background: color-mix(in srgb, var(--color-scheduled) 28%, var(--color-surface));
-  border-color: var(--color-scheduled);
-  box-shadow:
-    0 0 0 3px var(--color-scheduled),
-    0 8px 22px -2px color-mix(in srgb, var(--color-scheduled) 55%, transparent);
-  transform: translateY(-2px) scale(1.02);
-  z-index: 5;
+@include can-hover {
+  :global(body.is-dragging-calendar .day:hover) {
+    background: color-mix(in srgb, var(--color-scheduled) 28%, var(--color-surface));
+    border-color: var(--color-scheduled);
+    box-shadow:
+      0 0 0 3px var(--color-scheduled),
+      0 8px 22px -2px color-mix(in srgb, var(--color-scheduled) 55%, transparent);
+    transform: translateY(-2px) scale(1.02);
+    z-index: 5;
+  }
 }
 
 /* Führende/nachfolgende Tage aus dem Vor-/Folgemonat in der echten Monatsansicht (siehe otherMonth
@@ -361,7 +327,7 @@ function onDrop(event: DragEvent, date: string) {
   min-height: 22px;
 }
 
-@container (max-width: 480px) {
+@include container-down('mobile') {
   .day-badge-wrap {
     flex-direction: column;
     align-items: center;
@@ -377,9 +343,9 @@ function onDrop(event: DragEvent, date: string) {
   }
 }
 
-@container (max-width: 360px) {
+@include container-down('mobile-compact') {
   .day {
-    padding: 4px 2px;
+    padding: var(--space-1) 2px;
   }
 }
 
@@ -484,7 +450,6 @@ function onDrop(event: DragEvent, date: string) {
 
 .item-checkbox {
   appearance: none;
-  -webkit-appearance: none;
   display: inline-block;
   flex-shrink: 0;
   width: 9px;
@@ -511,7 +476,7 @@ function onDrop(event: DragEvent, date: string) {
   content: '';
   width: 2px;
   height: 5px;
-  border: solid #fff;
+  border: solid var(--color-primary-contrast, #ffffff);
   border-width: 0 1.5px 1.5px 0;
   position: absolute;
   left: 2px;
@@ -524,6 +489,7 @@ function onDrop(event: DragEvent, date: string) {
   font-weight: 700;
   margin-right: 2px;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .more {
@@ -532,18 +498,29 @@ function onDrop(event: DragEvent, date: string) {
   color: var(--color-text-muted);
   padding: 0 3px;
   text-align: right;
+  white-space: nowrap;
 }
 
 @container (min-width: 520px) {
   .day {
     min-height: 84px;
     padding: 7px 6px;
-    gap: 4px;
+    gap: var(--space-1);
   }
 
   .item-line,
   .acc-bar {
     font-size: 0.68rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .day {
+    transition: none;
+  }
+
+  :global(body.is-dragging-calendar .day.in-trip) {
+    animation: none;
   }
 }
 </style>

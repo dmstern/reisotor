@@ -633,13 +633,16 @@ export function useSpotForm(options: UseSpotFormOptions) {
 
   const addSchedulePopoverOpen = ref(false);
   const addScheduleDateVal = ref('');
-  const addScheduleBtnRef = ref<HTMLElement | null>(null);
+  const addScheduleBtnRef = ref<{ $el?: HTMLElement } | HTMLElement | null>(null);
   const addScheduleMenuStyle = ref({ top: '0px', left: '0px' });
 
   async function toggleAddSchedulePopover(event?: MouseEvent) {
     if (!addSchedulePopoverOpen.value) {
       addScheduleDateVal.value = '';
-      const target = (event?.currentTarget || addScheduleBtnRef.value) as HTMLElement | null;
+      const refVal = addScheduleBtnRef.value;
+      const refEl =
+        refVal && '$el' in refVal ? (refVal.$el ?? null) : (refVal as HTMLElement | null);
+      const target = (event?.currentTarget || refEl) as HTMLElement | null;
 
       if (target) {
         addScheduleMenuStyle.value = computePopoverPosition(target, {

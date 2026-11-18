@@ -212,6 +212,7 @@ async function quickAddToGroup(group: { key: string }, label: string) {
   font-size: var(--font-size-sm);
   color: var(--color-primary-dark);
   margin-bottom: var(--space-2);
+  overflow-wrap: break-word;
 }
 
 .group-card {

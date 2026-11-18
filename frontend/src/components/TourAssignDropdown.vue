@@ -221,7 +221,7 @@ onUnmounted(() => {
 
 .tour-assign-popup {
   min-width: 220px;
-  max-width: 280px;
+  max-width: min(280px, calc(100vw - 24px));
 }
 
 .popup-head {
@@ -256,9 +256,9 @@ onUnmounted(() => {
 .create-tour-form {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 2px;
-  padding-top: 4px;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+  padding-top: var(--space-1);
   border-top: 1px solid var(--color-border);
 }
 

@@ -460,6 +460,7 @@ function onSubmit() {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .settings-tab,

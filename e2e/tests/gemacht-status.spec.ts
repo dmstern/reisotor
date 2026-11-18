@@ -62,12 +62,10 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     await page.locator(`.day[data-date="${today}"]`).click();
     await expect(banner).toBeHidden();
 
-    // #147: kein Textlabel mehr im "gemacht"-Zustand (nur noch das Icon) - das Datums-/Status-Badge
-    // auf dem Vorschaubild zeigt den Status bereits an, ein zweites "Gemacht"-Label wäre eine
-    // unnötige Dopplung.
-    const checkBtn = spotCard.locator('.done-toggle-btn--check, button.done-toggle');
+    // #147: der Status-Button ist im aufgeklappten Zustand ein Dropdown-Trigger (aria-haspopup="menu")
+    // und trägt im "gemacht"-Zustand die Klasse .status-done.
     await expect(toggle).toHaveAttribute('aria-label', 'Nicht mehr als gemacht markiert');
-    await expect(checkBtn).toHaveAttribute('aria-pressed', 'true');
+    await expect(toggle).toHaveAttribute('aria-haspopup', 'menu');
     await expect(spotCard.locator('.status.status-done')).toContainText('Besucht am');
 
     await page.reload();
@@ -102,9 +100,13 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     await spotCard.locator('.card-title').click();
     await expect(spotCard.locator('.status.planned')).toContainText('Geplant für');
 
-    // Klick auf die Checkbox im Split-Button markiert den 1-Termin-Spot direkt als besucht
-    const checkBtn = spotCard.locator('.done-toggle-btn--check');
-    await checkBtn.click();
+    // Klick auf den einheitlichen Status-Dropdown-Button öffnet das Termine-Popover, über das
+    // der Termin ohne Kalender-Bestätigungs-Flow abgehakt werden kann.
+    await spotCard.locator('.done-toggle').click();
+    const popover = page.locator('.spot-dates-popover');
+    await expect(popover).toBeVisible();
+    await popover.locator('.date-check-item').first().click();
+    await popover.getByRole('button', { name: 'Fertig' }).click();
 
     // Kein Kalender-Bestätigungs-Flow - das bereits vorhandene geplante Datum wird direkt als
     // Gemacht-/Besucht-Datum übernommen.

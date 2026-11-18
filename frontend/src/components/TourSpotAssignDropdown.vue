@@ -223,7 +223,7 @@ onUnmounted(() => {
 
 .tour-spot-assign-popup {
   min-width: 230px;
-  max-width: 300px;
+  max-width: min(300px, calc(100vw - 24px));
 }
 
 .popup-head {
@@ -278,8 +278,8 @@ onUnmounted(() => {
 }
 
 .create-spot-footer {
-  margin-top: 2px;
-  padding-top: 4px;
+  margin-top: var(--space-1);
+  padding-top: var(--space-1);
   border-top: 1px solid var(--color-border);
 }
 

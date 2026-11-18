@@ -202,6 +202,35 @@ describe('useSpotDoneStatus', () => {
     expect(unplannedPopoverOpen.value).toBe(false);
   });
 
+  it('submitUnplannedPlan ruft scheduleStore.setSpotDate mit done: false auf', async () => {
+    const scheduleStore = useScheduleStore();
+    const setSpotDateSpy = vi.spyOn(scheduleStore, 'setSpotDate').mockResolvedValue(undefined);
+    const tripStore = useTripStore();
+    tripStore.currentTripId = 10;
+
+    const spot = ref(createMockSpot({ id: 1, title: 'Museum' }));
+    const scheduledDate = ref<string | null>(null);
+
+    const { unplannedDoneDate, submitUnplannedPlan, unplannedPopoverOpen } = useSpotDoneStatus({
+      spot,
+      scheduledDate,
+    });
+
+    unplannedPopoverOpen.value = true;
+    unplannedDoneDate.value = '2026-07-11';
+
+    await submitUnplannedPlan();
+
+    expect(setSpotDateSpy).toHaveBeenCalledWith({
+      spotId: 1,
+      tripId: 10,
+      title: 'Museum',
+      date: '2026-07-11',
+      done: false,
+    });
+    expect(unplannedPopoverOpen.value).toBe(false);
+  });
+
   it('openCalendarConfirmDone triggert drawers.startPendingSchedule mit confirm-done', () => {
     const drawers = useDrawersStore();
     const pendingSpy = vi.spyOn(drawers, 'startPendingSchedule');

@@ -310,8 +310,8 @@ onBeforeUnmount(() => {
   z-index: 13;
   min-height: 72px;
   width: var(--drawer-tab-width);
-  padding: var(--space-2) 3px;
-  border: 1px solid var(--color-border);
+  padding: var(--space-2) var(--space-1);
+  border: var(--border-width) solid var(--color-border);
   corner-shape: squircle;
   display: flex;
   flex-direction: column;
@@ -331,12 +331,20 @@ onBeforeUnmount(() => {
     background-color 0.15s ease;
 }
 
-.drawer-tab:hover:not(:disabled) {
-  width: 46px;
-  min-height: 84px;
-  color: var(--color-primary-dark);
-  box-shadow: var(--shadow-control-hover);
-  translate: 0 0;
+@include can-hover {
+  .drawer-tab:hover:not(:disabled) {
+    width: 46px;
+    min-height: 84px;
+    color: var(--color-primary-dark);
+    box-shadow: var(--shadow-control-hover);
+    translate: 0 0;
+  }
+
+  .drawer-tab:disabled:hover {
+    width: var(--drawer-tab-width);
+    min-height: 72px;
+    color: var(--color-text-muted);
+  }
 }
 
 .drawer-tab:active:not(:disabled) {
@@ -354,12 +362,6 @@ onBeforeUnmount(() => {
 .drawer-tab:disabled {
   opacity: 0.35;
   cursor: not-allowed;
-}
-
-.drawer-tab:disabled:hover {
-  width: var(--drawer-tab-width);
-  min-height: 72px;
-  color: var(--color-text-muted);
 }
 
 .drawer.left .drawer-tab {
@@ -464,6 +466,7 @@ onBeforeUnmount(() => {
 
 .drawer-content {
   min-height: 100%;
+  min-width: 0;
 }
 
 /* Nur Positionierung/Größe hier – die eigentliche Anfasser-Optik (Hover-Hintergrund, zentrierter
@@ -524,22 +527,26 @@ onBeforeUnmount(() => {
      Vergrößerungseffekt läuft hier stattdessen rein visuell zusätzlich über scale() (kombiniert
      mit dem translateY(-50%) von oben, sonst spränge der Tab beim Hover aus der Zentrierung), das
      nimmt keinen Platz im Flex-Layout ein und schiebt daher nichts. */
-  .drawer-tab:hover {
-    width: 32px;
-    min-height: auto;
-    transform: translateY(-50%) scale(1.4);
-  }
+  @include can-hover {
+    .drawer-tab:hover:not(:disabled) {
+      width: var(--drawer-tab-width, 32px);
+      min-height: auto;
+      transform: translateY(-50%) scale(1.4);
+    }
 
-  .drawer-tab:disabled:hover {
-    transform: translateY(-50%);
-  }
+    .drawer-tab:disabled:hover {
+      width: var(--drawer-tab-width, 32px);
+      min-height: auto;
+      transform: translateY(-50%);
+    }
 
-  .drawer.left .drawer-tab:hover {
-    transform-origin: left center;
-  }
+    .drawer.left .drawer-tab:hover:not(:disabled) {
+      transform-origin: left center;
+    }
 
-  .drawer.right .drawer-tab:hover {
-    transform-origin: right center;
+    .drawer.right .drawer-tab:hover:not(:disabled) {
+      transform-origin: right center;
+    }
   }
 
   /* left/right stammen aus der mobilen position:fixed-Darstellung und wirkten bei position:static
@@ -635,11 +642,11 @@ onBeforeUnmount(() => {
   }
   .drawer.left .drawer-panel {
     order: 1;
-    border-right: 1px solid var(--color-border);
+    border-right: var(--border-width) solid var(--color-border);
   }
   .drawer.right .drawer-panel {
     order: 2;
-    border-left: 1px solid var(--color-border);
+    border-left: var(--border-width) solid var(--color-border);
   }
 
   .drawer:not(.open) .drawer-panel {
@@ -687,7 +694,14 @@ onBeforeUnmount(() => {
   }
 }
 
-/* Leucht-Effekt, wenn der "Einplanen"-Anfasser einer SpotCard gezogen wird (#drag) */
+@media (prefers-reduced-motion: reduce) {
+  .drawer-tab,
+  .drawer-panel {
+    transition: none;
+  }
+}
+
+/* Leucht-Effekt, wenn der "Einplanen"-Modus über das Kalender-Auswahl-Menü aktiv ist */
 :global(body.is-dragging-calendar .drawer.left .drawer-panel) {
   border-right-color: var(--color-scheduled);
   box-shadow:

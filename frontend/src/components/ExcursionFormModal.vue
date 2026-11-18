@@ -399,7 +399,7 @@ defineExpose({
   />
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .edit-form {
   display: flex;
   flex-direction: column;
@@ -451,8 +451,10 @@ defineExpose({
     border-color 0.15s ease;
 }
 
-.excursion-track-item:hover {
-  background: var(--color-hover);
+@include can-hover {
+  .excursion-track-item:hover {
+    background: var(--color-hover);
+  }
 }
 
 .excursion-track-item.is-selected {
@@ -467,6 +469,8 @@ defineExpose({
   padding: var(--space-2) var(--space-3);
   cursor: pointer;
   width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .excursion-track-info {
@@ -481,6 +485,7 @@ defineExpose({
   font-size: var(--font-size-md);
   font-weight: 600;
   color: var(--color-text);
+  overflow-wrap: anywhere;
 }
 
 .excursion-track-meta {
@@ -500,10 +505,12 @@ defineExpose({
   border-radius: var(--radius-pill);
   font-size: var(--font-size-xs);
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .privacy-pill--private {
-  background: var(--color-border);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border);
   color: var(--color-text-muted);
 }
 

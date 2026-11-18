@@ -540,11 +540,11 @@ a.btn.is-loading {
   box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.4);
 }
 
-/* Aktiver Zustand für alle Button-Varianten (#audit) */
-.btn.is-active,
+/* Aktiver Zustand für sekundäre/getönte 3D-Button-Varianten (#audit) */
 .btn--secondary.is-active,
 .btn--surface.is-active,
-.btn--ghost.is-active {
+.btn--ghost.is-active,
+.btn--card-action.is-active {
   --control-grad-top: var(--gradient-control-top);
   --control-grad-bottom: var(--gradient-control-bottom);
   background-color: var(--color-control-active-tint);
@@ -561,10 +561,10 @@ a.btn.is-loading {
   font-weight: 700;
 }
 
-.btn.is-active:hover:not(:disabled),
 .btn--secondary.is-active:hover:not(:disabled),
 .btn--surface.is-active:hover:not(:disabled),
-.btn--ghost.is-active:hover:not(:disabled) {
+.btn--ghost.is-active:hover:not(:disabled),
+.btn--card-action.is-active:hover:not(:disabled) {
   background-color: var(--color-control-active-tint-hover);
   border-color: var(--color-primary-dark);
   box-shadow:
@@ -572,19 +572,19 @@ a.btn.is-loading {
     var(--shadow-control-hover);
 }
 
-.btn.is-active:active:not(:disabled),
 .btn--secondary.is-active:active:not(:disabled),
 .btn--surface.is-active:active:not(:disabled),
-.btn--ghost.is-active:active:not(:disabled) {
+.btn--ghost.is-active:active:not(:disabled),
+.btn--card-action.is-active:active:not(:disabled) {
   box-shadow:
     0 0 0 1px var(--color-primary-dark),
     var(--shadow-control-active);
 }
 
-.btn.is-active:focus-visible,
 .btn--secondary.is-active:focus-visible,
 .btn--surface.is-active:focus-visible,
-.btn--ghost.is-active:focus-visible {
+.btn--ghost.is-active:focus-visible,
+.btn--card-action.is-active:focus-visible {
   box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control);
 }
 

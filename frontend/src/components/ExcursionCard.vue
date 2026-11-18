@@ -12,7 +12,6 @@ import Card from './primitives/Card.vue';
 import Accordion from './primitives/Accordion.vue';
 import FileAttachments from './FileAttachments.vue';
 import TourRoleBadge from './TourRoleBadge.vue';
-import CalendarDragHandle from './CalendarDragHandle.vue';
 import ExcursionCoverStack from './ExcursionCoverStack.vue';
 import ExcursionDoneStatus from './ExcursionDoneStatus.vue';
 import ExcursionRouteMeta from './ExcursionRouteMeta.vue';
@@ -239,7 +238,6 @@ const {
           class="card-actions-wrapper"
         >
           <div class="card-actions">
-            <CalendarDragHandle v-if="expanded && !excursion.date" :excursion="excursion" />
             <ExcursionDoneStatus
               :excursion="excursion"
               :expanded="expanded"
@@ -584,7 +582,7 @@ const {
   .excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) .card-disclosure-pill {
     background: var(--excursion-theme-color);
     border-color: var(--excursion-theme-color);
-    color: #ffffff;
+    color: var(--color-primary-contrast, #ffffff);
     box-shadow: var(--shadow-control-hover);
     transform: translateY(-1px);
   }
@@ -598,7 +596,7 @@ const {
     .card-disclosure-pill {
     background: var(--excursion-theme-color);
     border-color: var(--excursion-theme-color);
-    color: #ffffff;
+    color: var(--color-primary-contrast, #ffffff);
     box-shadow: var(--shadow-control-hover);
     transform: translateY(-1px);
   }
@@ -735,7 +733,7 @@ const {
   }
 
   .card-badge-group :deep(.category-chip) {
-    padding: 3px var(--radius-xs);
+    padding: 3px var(--space-1);
     gap: 0;
     max-width: none;
   }

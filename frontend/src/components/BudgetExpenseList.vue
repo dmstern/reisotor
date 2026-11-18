@@ -89,6 +89,7 @@ const store = useBudgetStore();
   padding: var(--space-2) 0;
   border-bottom: 1px solid var(--color-border);
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .row:last-child {
@@ -99,8 +100,8 @@ const store = useBudgetStore();
   display: flex;
   flex-direction: column;
   gap: 2px;
-  flex: 1;
-  min-width: 140px;
+  flex: 1 1 140px;
+  min-width: 0;
 }
 
 .row-title {
@@ -111,9 +112,10 @@ const store = useBudgetStore();
 .row-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-1);
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+  min-width: 0;
 }
 
 .note {
@@ -125,6 +127,7 @@ const store = useBudgetStore();
   flex-shrink: 0;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+  margin-left: auto;
 }
 
 .row-amount.is-expense {
@@ -144,7 +147,8 @@ const store = useBudgetStore();
 }
 
 .empty {
-  padding: var(--space-2) 0;
+  padding: var(--space-3) 0;
+  color: var(--color-text-muted);
   text-align: center;
 }
 </style>

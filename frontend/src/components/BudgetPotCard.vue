@@ -364,7 +364,7 @@ function onTotalSectionClick(e: MouseEvent) {
   </Card>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .pot-card {
   display: flex;
   flex-direction: column;
@@ -383,6 +383,7 @@ function onTotalSectionClick(e: MouseEvent) {
   align-items: flex-start;
   flex-wrap: wrap;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .pot-head.is-collapsible {
@@ -393,7 +394,8 @@ function onTotalSectionClick(e: MouseEvent) {
 .pot-actions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-1);
+  flex-shrink: 0;
 }
 
 .collapse-btn :deep(svg),
@@ -407,9 +409,11 @@ function onTotalSectionClick(e: MouseEvent) {
   transform: rotate(180deg);
 }
 
-.pot-head.is-collapsible:hover .collapse-btn :deep(svg),
-.pot-head.is-collapsible:hover .collapse-btn :deep(.btn__icon) {
-  color: var(--color-primary);
+@include can-hover {
+  .pot-head.is-collapsible:hover .collapse-btn :deep(svg),
+  .pot-head.is-collapsible:hover .collapse-btn :deep(.btn__icon) {
+    color: var(--color-primary);
+  }
 }
 
 .pot-title {
@@ -417,6 +421,7 @@ function onTotalSectionClick(e: MouseEvent) {
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .pot-title h3 {
@@ -427,18 +432,22 @@ function onTotalSectionClick(e: MouseEvent) {
 }
 
 .kind-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
 .btn-spacer {
-  width: 30px;
-  height: 30px;
+  width: var(--input-width-sm, 38px);
+  height: var(--input-height-sm, 38px);
   flex-shrink: 0;
 }
 
 .total-section {
   width: 100%;
+  min-width: 0;
 }
 
 .total-section.has-categories {
@@ -456,9 +465,11 @@ function onTotalSectionClick(e: MouseEvent) {
     border-color 0.15s ease;
 }
 
-.total-section.is-collapsed:hover {
-  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
-  border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
+@include can-hover {
+  .total-section.is-collapsed:hover {
+    background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+    border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
+  }
 }
 
 .total-section.is-collapsed .category-edit {
@@ -482,6 +493,7 @@ function onTotalSectionClick(e: MouseEvent) {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .categories-header {
@@ -489,7 +501,7 @@ function onTotalSectionClick(e: MouseEvent) {
   align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-1);
-  padding: 0 4px;
+  padding: 0 var(--space-1);
 }
 
 .categories-title {
@@ -505,8 +517,9 @@ function onTotalSectionClick(e: MouseEvent) {
   flex-direction: column;
   gap: var(--space-1);
   border-left: 2px solid color-mix(in srgb, var(--color-primary) 20%, var(--color-border));
-  margin-left: 6px;
+  margin-left: var(--space-1);
   padding-left: var(--space-2);
+  min-width: 0;
 }
 
 .category-row,
@@ -515,12 +528,13 @@ function onTotalSectionClick(e: MouseEvent) {
   align-items: center;
   gap: var(--space-2);
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .category-row :deep(.meter-row),
 .total-row :deep(.meter-row) {
-  flex: 1;
-  min-width: 140px;
+  flex: 1 1 140px;
+  min-width: 0;
 }
 
 .category-edit {
@@ -544,14 +558,17 @@ function onTotalSectionClick(e: MouseEvent) {
     background-color 0.15s ease;
 }
 
-.remove-category-btn:hover {
-  color: var(--color-text);
+@include can-hover {
+  .remove-category-btn:hover {
+    color: var(--color-text);
+  }
 }
 
 .add-category {
   display: flex;
   flex-direction: column;
   margin-top: var(--space-1);
+  min-width: 0;
 }
 
 .add-category-toggle {
@@ -565,8 +582,10 @@ function onTotalSectionClick(e: MouseEvent) {
   corner-shape: squircle;
 }
 
-.add-category-toggle:hover {
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+@include can-hover {
+  .add-category-toggle:hover {
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  }
 }
 
 .toggle-chevron {
@@ -589,16 +608,23 @@ function onTotalSectionClick(e: MouseEvent) {
   border: 1px dashed color-mix(in srgb, var(--color-primary) 20%, transparent);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
+  min-width: 0;
 }
 
 .add-category-form .form-field {
-  flex: 1;
-  min-width: 110px;
+  flex: 1 1 110px;
+  min-width: 0;
+}
+
+.add-category-form :deep(.combobox) {
+  min-width: 0;
+  width: 100%;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .collapse-btn :deep(svg),
-  .collapse-btn :deep(.btn__icon) {
+  .collapse-btn :deep(.btn__icon),
+  .toggle-chevron {
     transition: none;
   }
 }

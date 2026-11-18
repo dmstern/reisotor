@@ -351,7 +351,7 @@ Um CSS-Duplikate, Drift und doppelte Fokusrahmen im Error-/Modified-Zustand zu v
    - Keine `:deep(...)`-Überschreibungen von Rahmen, Schatten, Backgrounds, Hover- oder Fokus-Styles in Fachkomponenten (wie z. B. in `PackingAddRow.vue` oder `Combobox.vue`).
 2. **Zusammengesetzte Spezial-Container nutzen die zentralen SCSS-Mixins:**
    - Spezial-Container, die technisch kein `<input>`-Tag sein können (`QuickAddRow.vue`s `.input-container`, `RichTextEditor.vue`s `.richtext-editor`), binden ausschließlich `@include control-field-inset($focus-within: true);` aus `src/styles/_controls.scss` ein.
-   - Spezial-Pills und taktile Kacheln (`SpotCard.vue`s `.spot-expand-pill`, `SpotDoneStatus.vue`s `.date-check-item`, `Drawer.vue`s `.drawer-tab`) nutzen `@include control-3d-raised;`.
+   - Spezial-Pills und taktile Kacheln (`SpotCard.vue`s `.spot-expand-pill`, `DoneDatesPopover.vue`s `.date-check-item`, `Drawer.vue`s `.drawer-tab`) nutzen `@include control-3d-raised;`.
    - Schwebende Menü-/Popover-Oberflächen (`PickerMenu.vue`, `Combobox.vue`, `NotificationInbox.vue`) nutzen `@include control-menu-surface;`.
    - Alle Mixins sind über `_breakpoints.scss` in jeder `<style lang="scss" scoped>`-Komponente automatisch verfügbar.
 

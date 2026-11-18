@@ -200,7 +200,10 @@ function selectAndClose(id: number) {
         </div>
         <p v-if="!tripStore.trips.length" class="empty">Noch keine Urlaube.</p>
         <Button type="button" variant="ghost" class="new-trip-btn" @click="handleCreateTrip">
-          <AppIcon :icon="ACTION_ICONS.mapPlus" :size="14" group="actions" /> Neuer Urlaub
+          <span class="new-trip-label">
+            <AppIcon :icon="ACTION_ICONS.mapPlus" :size="14" group="actions" />
+            <span>Neuer Urlaub</span>
+          </span>
           <PremiumBadge v-if="tripCreationBlocked()" feature="trips" as="span" :stop="false" />
         </Button>
         <router-link to="/trips" class="manage-trips-btn" @click="close"
@@ -245,7 +248,7 @@ function selectAndClose(id: number) {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .trip-switcher {
   position: relative;
   display: inline-flex;
@@ -279,7 +282,7 @@ function selectAndClose(id: number) {
     transform 0.15s ease;
 }
 
-@media (max-width: 450px) {
+@include media-down('mobile') {
   .switcher-btn {
     padding: 5px 10px;
     gap: 4px;
@@ -293,8 +296,9 @@ function selectAndClose(id: number) {
 }
 
 .switcher-btn:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .trip-switcher.is-docked {
@@ -364,8 +368,17 @@ function selectAndClose(id: number) {
   gap: var(--space-2);
 }
 
+.new-trip-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
 .manage-trips-btn {
-  display: block;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
   text-align: left;
   background: none;
   border: none;
@@ -383,7 +396,8 @@ function selectAndClose(id: number) {
 }
 
 .manage-trips-btn:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: 1px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 </style>
