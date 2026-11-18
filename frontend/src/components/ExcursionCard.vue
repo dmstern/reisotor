@@ -129,7 +129,7 @@ const {
             </div>
 
             <div class="card-badge-group">
-              <TourRoleBadge :role="excursion.role" />
+              <TourRoleBadge :role="excursion.role" :translucent="expanded" />
               <PendingSyncBadge v-if="excursion._pending" />
               <EditButton
                 small

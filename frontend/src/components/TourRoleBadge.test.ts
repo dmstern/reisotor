@@ -53,6 +53,20 @@ describe('TourRoleBadge', () => {
     const { container, cleanUp } = mountBadge({ role: 'onward' });
     expect(container.textContent).toContain('Weiterreise');
     expect(container.querySelector('.tour-type-badge')?.getAttribute('title')).toBe('Weiterreise');
+    expect(container.querySelector('.tour-type-badge')?.classList.contains('is-translucent')).toBe(
+      false
+    );
+    cleanUp();
+  });
+
+  it('forwards translucent prop to CategoryChip', () => {
+    const { container, cleanUp } = mountBadge({ role: 'onward', translucent: true });
+    expect(container.querySelector('.tour-type-badge')?.classList.contains('is-translucent')).toBe(
+      true
+    );
+    expect(
+      container.querySelector('.tour-type-badge')?.classList.contains('badge--translucent')
+    ).toBe(true);
     cleanUp();
   });
 });

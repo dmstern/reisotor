@@ -79,6 +79,7 @@ describe('ExcursionCard', () => {
     expect(html).toContain('Wanderung zum Wasserfall');
     expect(html).toContain('card-title-row');
     expect(html).toContain('tour-type-badge');
+    expect(html).not.toContain('is-translucent');
     expect(html).toContain('Parkplatz → Wasserfall');
     expect(html).toContain('excursion-card');
     expect(html).toContain('tour-status-meta');
@@ -116,6 +117,7 @@ describe('ExcursionCard', () => {
     expect(html).toContain('tour-edit-btn');
     expect(html).toContain('btn--circle');
     expect(html).toContain('btn--secondary');
+    expect(html).toContain('is-translucent');
   });
 
   it('rendert Travel-Leg mit Route und Transportart-Rolle korrekt', async () => {

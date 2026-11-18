@@ -24,6 +24,8 @@ withDefaults(
     closeTitle?: string;
     /** Zusätzliche CSS-Klassen für den Schließen-Button (z. B. für bestehende Selektoren) */
     closeButtonClass?: string;
+    /** Transluzenter Hintergrund (mischt gegen transparent statt --color-surface), passend für farbige/glasige Flächen */
+    translucent?: boolean;
   }>(),
   {
     variant: 'default',
@@ -34,6 +36,7 @@ withDefaults(
     closeAriaLabel: 'Entfernen',
     closeTitle: 'Entfernen',
     closeButtonClass: '',
+    translucent: false,
   }
 );
 
@@ -52,6 +55,7 @@ const emit = defineEmits<{
       {
         'badge--interactive': interactive || as === 'button',
         'badge--closable': closable,
+        'badge--translucent': translucent,
       },
     ]"
     :type="as === 'button' ? 'button' : undefined"
@@ -147,6 +151,41 @@ const emit = defineEmits<{
   background: var(--badge-bg, var(--color-hover));
   color: var(--badge-color, var(--color-text));
   border-color: var(--badge-border, transparent);
+}
+
+.badge--default.badge--translucent {
+  background: var(--color-control-hover-bg);
+  border-color: color-mix(in srgb, var(--color-border-strong) 50%, transparent);
+}
+
+.badge--primary.badge--translucent {
+  background: var(--color-control-active-tint);
+  border-color: color-mix(in srgb, var(--color-primary) 24%, transparent);
+}
+
+.badge--success.badge--translucent {
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  border-color: color-mix(in srgb, var(--color-success) 24%, transparent);
+}
+
+.badge--danger.badge--translucent {
+  background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+  border-color: color-mix(in srgb, var(--color-danger) 24%, transparent);
+}
+
+.badge--warning.badge--translucent {
+  background: color-mix(in srgb, var(--color-warning) 16%, transparent);
+  border-color: color-mix(in srgb, var(--color-warning) 26%, transparent);
+}
+
+.badge--accent.badge--translucent {
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent) 26%, transparent);
+}
+
+.badge--accent-secondary.badge--translucent {
+  background: color-mix(in srgb, var(--color-accent-secondary) 14%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent-secondary) 24%, transparent);
 }
 
 .badge--interactive {
