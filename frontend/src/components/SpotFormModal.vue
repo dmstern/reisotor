@@ -789,6 +789,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
 }
 
 .spot-region-override-btn {
+  @include touch-target($expand: true);
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
@@ -805,9 +806,11 @@ function handleOpenScheduledItem(item: ScheduleItem) {
     background-color 0.15s ease;
 }
 
-.spot-region-override-btn:hover {
-  color: var(--color-primary);
-  background-color: var(--color-hover);
+@include can-hover {
+  .spot-region-override-btn:hover {
+    color: var(--color-primary);
+    background-color: var(--color-hover);
+  }
 }
 
 .spot-region-warning-text {
@@ -817,7 +820,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   margin-top: var(--space-2);
   font-size: var(--font-size-xs);
   line-height: 1.4;
-  color: var(--color-warning, #d97706);
+  color: var(--color-warning-dark, #92400e);
 }
 
 .spot-region-override-btn:focus-visible {
@@ -843,6 +846,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
 }
 
 .add-schedule-btn {
+  @include touch-target($expand: true);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -874,10 +878,12 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   white-space: nowrap;
 }
 
-.add-schedule-btn:hover {
-  background: var(--color-surface);
-  border-color: var(--color-calendar-appointment);
-  color: var(--color-calendar-appointment);
+@include can-hover {
+  .add-schedule-btn:hover {
+    background: var(--color-surface);
+    border-color: var(--color-calendar-appointment);
+    color: var(--color-calendar-appointment);
+  }
 }
 
 .add-schedule-btn:focus-visible {
@@ -890,7 +896,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
 .add-schedule-popover {
   width: 220px;
   padding: var(--space-2) var(--space-3);
-  z-index: 1100;
+  z-index: calc(var(--z-popover, 1100) + 1);
 }
 
 .add-schedule-label {
@@ -950,6 +956,7 @@ function handleOpenScheduledItem(item: ScheduleItem) {
 }
 
 .assign-chip-done-toggle {
+  @include touch-target;
   background: none;
   border: none;
   padding: 2px;
@@ -966,9 +973,11 @@ function handleOpenScheduledItem(item: ScheduleItem) {
     opacity 0.15s ease;
 }
 
-.assign-chip-done-toggle:hover {
-  opacity: 1;
-  transform: scale(1.15);
+@include can-hover {
+  .assign-chip-done-toggle:hover {
+    opacity: 1;
+    transform: scale(1.15);
+  }
 }
 
 .assign-chip-action {
@@ -990,8 +999,10 @@ button.assign-chip-action {
   cursor: pointer;
 }
 
-button.assign-chip-action:hover {
-  text-decoration: underline;
+@include can-hover {
+  button.assign-chip-action:hover {
+    text-decoration: underline;
+  }
 }
 
 .assign-chip-label {

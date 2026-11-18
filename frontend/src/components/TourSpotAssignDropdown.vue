@@ -193,6 +193,7 @@ onUnmounted(() => {
 }
 
 .tour-add-spot-btn {
+  @include touch-target($expand: true);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -216,7 +217,16 @@ onUnmounted(() => {
     box-shadow 0.15s ease;
 }
 
-.tour-add-spot-btn:hover,
+@include can-hover {
+  .tour-add-spot-btn:hover {
+    background: var(--tour-theme-tint, var(--color-tour-tint));
+    border-color: var(--tour-theme-color, var(--color-tour));
+    color: var(--tour-theme-color, var(--color-tour));
+    transform: translateY(-1.5px);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
 .tour-add-spot-btn.is-open {
   background: var(--tour-theme-tint, var(--color-tour-tint));
   border-color: var(--tour-theme-color, var(--color-tour));
@@ -268,7 +278,7 @@ onUnmounted(() => {
   position: fixed;
   z-index: calc(var(--z-popover, 1100) + 1);
   min-width: 220px;
-  max-width: 300px;
+  max-width: min(300px, calc(100vw - 24px));
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm-squircle);
@@ -308,10 +318,13 @@ onUnmounted(() => {
 .spot-assign-item {
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  transition: all 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .spot-assign-option {
+  @include min-touch-target(44px);
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -331,9 +344,11 @@ onUnmounted(() => {
     color 0.15s ease;
 }
 
-.spot-assign-option:hover {
-  background: var(--tour-theme-tint, var(--color-hover));
-  color: var(--tour-theme-color, var(--color-primary-dark));
+@include can-hover {
+  .spot-assign-option:hover {
+    background: var(--tour-theme-tint, var(--color-hover));
+    color: var(--tour-theme-color, var(--color-primary-dark));
+  }
 }
 
 .spot-assign-option:focus-visible {
@@ -377,12 +392,13 @@ onUnmounted(() => {
 }
 
 .create-spot-footer {
-  margin-top: 4px;
-  padding-top: 4px;
+  margin-top: var(--space-1);
+  padding-top: var(--space-1);
   border-top: 1px solid var(--color-border);
 }
 
 .create-spot-btn {
+  @include min-touch-target(44px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -403,9 +419,11 @@ onUnmounted(() => {
     color 0.15s ease;
 }
 
-.create-spot-btn:hover {
-  background: var(--tour-theme-tint, var(--color-primary-tint));
-  color: var(--tour-theme-color, var(--color-primary-dark));
+@include can-hover {
+  .create-spot-btn:hover {
+    background: var(--tour-theme-tint, var(--color-primary-tint));
+    color: var(--tour-theme-color, var(--color-primary-dark));
+  }
 }
 
 .create-spot-btn:focus-visible {
@@ -414,5 +432,15 @@ onUnmounted(() => {
   outline: var(--focus-ring-width, 3px) solid
     var(--focus-ring-color, var(--tour-theme-color, var(--color-tour)));
   outline-offset: var(--focus-ring-offset, 2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-add-spot-btn,
+  .spot-assign-item,
+  .spot-assign-option,
+  .create-spot-btn {
+    transition: none;
+    transform: none;
+  }
 }
 </style>

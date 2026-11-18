@@ -429,6 +429,9 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   position: absolute;
   top: calc(var(--spot-card-pad) + var(--space-2));
   right: calc(var(--spot-card-pad) + var(--space-2));
+  max-width: calc(100% - 2 * (var(--spot-card-pad) + var(--space-2)));
+  flex-wrap: wrap;
+  justify-content: flex-end;
   cursor: pointer;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -858,8 +861,8 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 @container spots-col (max-width: 480px) {
   .spot-card {
     --spot-cover-height: 100px;
-    --spot-card-pad: var(--radius-xs);
-    padding: var(--radius-xs) var(--radius-xs) 10px var(--radius-xs);
+    --spot-card-pad: 6px;
+    padding: var(--spot-card-pad) var(--spot-card-pad) 10px var(--spot-card-pad);
   }
 
   .spot-card:not(.expanded) {
@@ -868,7 +871,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   }
 
   .body {
-    padding: var(--radius-xs) var(--space-2) var(--space-1) var(--space-2);
+    padding: var(--spot-card-pad) var(--space-2) var(--space-1) var(--space-2);
   }
 
   .spot-card:not(.expanded) .body {
@@ -900,6 +903,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   .spot-card.expanded .card-badge-group {
     top: calc(var(--spot-card-pad) + var(--space-2));
     right: calc(var(--spot-card-pad) + var(--space-2));
+    max-width: calc(100% - 2 * (var(--spot-card-pad) + var(--space-2)));
   }
 
   .spot-note-container {
@@ -928,7 +932,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   }
 
   .spot-card:not(.expanded) .card-badge-group :deep(.spot-location-badge) {
-    padding: 2px 4px;
+    padding: 2px var(--space-1);
     gap: 2px;
   }
 }
@@ -947,7 +951,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   }
 
   .spot-card:not(.expanded) .card-badge-group :deep(.category-chip) {
-    padding: 3px var(--radius-xs);
+    padding: 3px var(--space-1);
     gap: 0;
     max-width: none;
   }
@@ -965,7 +969,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   }
 
   .spot-card:not(.expanded) .card-badge-group :deep(.pending-sync-badge) {
-    padding: 3px var(--radius-xs);
+    padding: 3px var(--space-1);
     gap: 0;
   }
 

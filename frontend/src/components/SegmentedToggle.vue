@@ -297,4 +297,11 @@ watch(
   background: var(--color-danger);
   border: 1.5px solid var(--color-surface);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .segmented-thumb,
+  .segmented-option {
+    transition: none;
+  }
+}
 </style>

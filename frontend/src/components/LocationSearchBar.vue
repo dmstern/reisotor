@@ -284,6 +284,7 @@ function onDropdownScroll(e: Event) {
 }
 
 .manual-details-btn {
+  @include touch-target($expand: true);
   font-size: var(--font-size-xs);
   color: var(--color-text);
   background: var(--color-surface-glass);
@@ -296,10 +297,12 @@ function onDropdownScroll(e: Event) {
   cursor: pointer;
   transition: var(--transition-glass);
 
-  &:hover {
-    background: var(--color-surface-glass-hover);
-    border-color: var(--color-surface-glass-hover-border);
-    box-shadow: var(--shadow-md);
+  @include can-hover {
+    &:hover {
+      background: var(--color-surface-glass-hover);
+      border-color: var(--color-surface-glass-hover-border);
+      box-shadow: var(--shadow-md);
+    }
   }
 }
 
@@ -502,10 +505,15 @@ function onDropdownScroll(e: Event) {
   cursor: pointer;
   transition: background 0.15s ease;
 
-  &:hover,
   &.is-active,
   &[aria-selected='true'] {
     background: var(--color-hover);
+  }
+
+  @include can-hover {
+    &:hover {
+      background: var(--color-hover);
+    }
   }
 }
 
@@ -595,10 +603,16 @@ function onDropdownScroll(e: Event) {
   user-select: none;
 }
 
-.location-load-more:hover,
+@include can-hover {
+  .location-load-more:hover {
+    background: var(--color-hover);
+  }
+}
+
 .location-load-more:focus-visible {
   background: var(--color-hover);
-  outline: none;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: -3px;
 }
 
 .location-load-more.is-loading {

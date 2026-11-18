@@ -477,6 +477,7 @@ function handleItemJump(item: ScheduledSpotItem) {
 
 .date-check-item {
   @include control-3d-raised;
+  @include min-touch-target(44px);
   /* Initial flach (wie Dropdowns/Inputs) - der 3D-Look entsteht erst bei Hover/Fokus */
   background-image: none;
   box-shadow: none;
@@ -500,15 +501,20 @@ function handleItemJump(item: ScheduledSpotItem) {
   box-sizing: border-box;
 }
 
-.date-check-item:hover:not(:disabled),
+@include can-hover {
+  .date-check-item:hover:not(:disabled) {
+    background-image: var(--gradient-control-3d);
+    box-shadow: var(--shadow-control-hover);
+    background-color: var(--color-control-hover-bg);
+    border-color: var(--color-primary-dark);
+  }
+}
+
 .date-check-item:focus-visible {
   background-image: var(--gradient-control-3d);
   box-shadow: var(--shadow-control-hover);
-}
-
-.date-check-item:hover {
-  background-color: var(--color-control-hover-bg);
-  border-color: var(--color-primary-dark);
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
 }
 
 .date-check-item:active {
@@ -522,10 +528,12 @@ function handleItemJump(item: ScheduledSpotItem) {
   box-shadow: none;
 }
 
-.date-check-item.checked:hover {
-  background-color: var(--color-control-active-tint-hover);
-  border-color: var(--color-primary-dark);
-  box-shadow: var(--shadow-control-hover);
+@include can-hover {
+  .date-check-item.checked:hover {
+    background-color: var(--color-control-active-tint-hover);
+    border-color: var(--color-primary-dark);
+    box-shadow: var(--shadow-control-hover);
+  }
 }
 
 .date-check-item.checked:active {
@@ -570,6 +578,7 @@ function handleItemJump(item: ScheduledSpotItem) {
 }
 
 .date-calendar-jump-btn {
+  @include touch-target;
   flex: 0 0 34px !important;
   width: 34px !important;
   height: 34px !important;
@@ -582,8 +591,10 @@ function handleItemJump(item: ScheduledSpotItem) {
   color: var(--color-text-muted);
 }
 
-.date-calendar-jump-btn:hover {
-  color: var(--color-primary);
+@include can-hover {
+  .date-calendar-jump-btn:hover {
+    color: var(--color-primary);
+  }
 }
 
 /* Quelle des Termins: Kalender (blau) vs. Tour (orange) */
@@ -591,8 +602,10 @@ function handleItemJump(item: ScheduledSpotItem) {
   border-color: color-mix(in srgb, var(--color-scheduled) 40%, transparent);
 }
 
-.is-calendar .date-check-item:not(.checked):hover {
-  border-color: var(--color-scheduled);
+@include can-hover {
+  .is-calendar .date-check-item:not(.checked):hover {
+    border-color: var(--color-scheduled);
+  }
 }
 
 .is-calendar .date-calendar-jump-btn {
@@ -603,48 +616,60 @@ function handleItemJump(item: ScheduledSpotItem) {
   border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
 }
 
-.is-diary .date-check-item:not(.checked):hover {
-  border-color: var(--color-primary);
+@include can-hover {
+  .is-diary .date-check-item:not(.checked):hover {
+    border-color: var(--color-primary);
+  }
 }
 
 .is-diary .date-calendar-jump-btn {
   color: var(--color-primary);
 }
 
-.is-diary .date-calendar-jump-btn:hover {
-  color: var(--color-primary-dark);
+@include can-hover {
+  .is-diary .date-calendar-jump-btn:hover {
+    color: var(--color-primary-dark);
+  }
 }
 
 .is-tour .date-check-item:not(.checked) {
   border-color: var(--color-tour-border);
 }
 
-.is-tour .date-check-item:not(.checked):hover {
-  border-color: var(--color-tour);
+@include can-hover {
+  .is-tour .date-check-item:not(.checked):hover {
+    border-color: var(--color-tour);
+  }
 }
 
 .is-tour .date-calendar-jump-btn {
   color: var(--color-tour);
 }
 
-.is-tour .date-calendar-jump-btn:hover {
-  color: var(--color-tour-dark);
+@include can-hover {
+  .is-tour .date-calendar-jump-btn:hover {
+    color: var(--color-tour-dark);
+  }
 }
 
 .is-travel .date-check-item:not(.checked) {
   border-color: var(--color-travel-border);
 }
 
-.is-travel .date-check-item:not(.checked):hover {
-  border-color: var(--color-travel);
+@include can-hover {
+  .is-travel .date-check-item:not(.checked):hover {
+    border-color: var(--color-travel);
+  }
 }
 
 .is-travel .date-calendar-jump-btn {
   color: var(--color-travel);
 }
 
-.is-travel .date-calendar-jump-btn:hover {
-  color: var(--color-travel-dark);
+@include can-hover {
+  .is-travel .date-calendar-jump-btn:hover {
+    color: var(--color-travel-dark);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
