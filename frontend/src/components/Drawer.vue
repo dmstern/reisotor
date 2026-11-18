@@ -701,7 +701,7 @@ onBeforeUnmount(() => {
   }
 }
 
-/* Leucht-Effekt, wenn der "Einplanen"-Anfasser einer SpotCard gezogen wird (#drag) */
+/* Leucht-Effekt, wenn der "Einplanen"-Modus über das Kalender-Auswahl-Menü aktiv ist */
 :global(body.is-dragging-calendar .drawer.left .drawer-panel) {
   border-right-color: var(--color-scheduled);
   box-shadow:

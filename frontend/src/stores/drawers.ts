@@ -149,14 +149,13 @@ export const useDrawersStore = defineStore('drawers', () => {
     }
   }
 
-  // Klick-Alternative zum Drag-Einplanen (ExcursionCard.vue/SpotCard.vue's 📅-Anfasser): statt den
-  // Ausflug/Spot auf einen Kalendertag zu ziehen, tippt man den Anfasser einmal an (öffnet die
-  // Kalender-Schublade + merkt sich, was eingeplant werden soll) und tippt danach einen Tag an
-  // (ScheduleView.vue's handleDaySelect() löst das auf und ruft clearPendingSchedule() auf).
-  // mode 'confirm-done' (#106): der Anfasser wurde nicht zum spontanen Einplanen genutzt, sondern
-  // um beim Markieren als "gemacht" den Besuchs-/Erledigungstag zu bestätigen (ScheduleView.vue's
-  // handleDaySelect() setzt danach zusätzlich den "gemacht"-Status) - eigener Banner-Hinweistext und
-  // Rücksprung zur Karte gelten für beide Modi gleich (siehe returnToCard in ScheduleView.vue).
+  // Einplanen-/Bestätigungs-Workflow über das Kalender-Auswahl-Menü (SpotDoneStatus.vue /
+  // ExcursionDoneStatus.vue): öffnet die Kalender-Schublade + merkt sich, was eingeplant oder
+  // bestätigt werden soll; danach tippt man einen Tag an (ScheduleView.vue's handleDaySelect()
+  // löst das auf und ruft clearPendingSchedule() auf).
+  // mode 'confirm-done' (#106): beim Markieren als "gemacht"/"besucht" den Tag im Kalender
+  // bestätigen (usePendingSchedule.ts setzt danach zusätzlich den "gemacht"-Status) – eigener
+  // Banner-Hinweistext und Rücksprung zur Karte gelten für beide Modi gleich.
   const pendingSchedule = ref<{
     kind: 'excursion' | 'spot';
     id: number;

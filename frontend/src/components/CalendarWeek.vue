@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import type { CalendarEntry, Spot } from '../api/types';
 import { SCHEDULE_CATEGORY_META } from '../utils/scheduleCategory';
 import { weatherCodeMeta } from '../utils/weather';
@@ -31,7 +30,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'select', date: string): void;
-  (e: 'drop-excursion', date: string, excursionId: number): void;
 }>();
 
 const weekdayFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'short' });
@@ -63,33 +61,6 @@ function isTripStart(date: string) {
 function isTripEnd(date: string) {
   return props.tripEndDate != null && date === props.tripEndDate;
 }
-
-// Zähler statt Boolean pro Tag: dragenter/dragleave feuern beim Überqueren verschachtelter
-// Kind-Elemente (day-head, item-line, …) mehrfach, ein einfacher Boolean würde dabei flackern.
-const dragOverCounts = ref<Record<string, number>>({});
-
-function isDragOver(date: string) {
-  return (dragOverCounts.value[date] ?? 0) > 0;
-}
-
-function onDragEnter(date: string) {
-  dragOverCounts.value[date] = (dragOverCounts.value[date] ?? 0) + 1;
-}
-
-function onDragLeave(date: string) {
-  dragOverCounts.value[date] = Math.max(0, (dragOverCounts.value[date] ?? 0) - 1);
-}
-
-function onDrop(event: DragEvent, date: string) {
-  dragOverCounts.value[date] = 0;
-  const raw = event.dataTransfer?.getData('text/excursion-id');
-
-  if (!raw) {
-    return;
-  }
-
-  emit('drop-excursion', date, Number(raw));
-}
 </script>
 
 <template>
@@ -107,16 +78,11 @@ function onDrop(event: DragEvent, date: string) {
         'in-trip': isInTrip(day.date),
         'trip-start': isTripStart(day.date),
         'trip-end': isTripEnd(day.date),
-        'drag-over': isDragOver(day.date),
         'other-month': day.otherMonth,
       }"
       @click="emit('select', day.date)"
       @keydown.enter.prevent="emit('select', day.date)"
       @keydown.space.prevent="emit('select', day.date)"
-      @dragover.prevent
-      @dragenter.prevent="onDragEnter(day.date)"
-      @dragleave="onDragLeave(day.date)"
-      @drop.prevent="onDrop($event, day.date)"
     >
       <div class="day-head">
         <!-- Weekday bleibt für Screen-Reader und E2E-Tests vorhanden, wird aber für Sehende
@@ -274,13 +240,7 @@ function onDrop(event: DragEvent, date: string) {
   box-shadow: 0 0 0 1px var(--color-primary);
 }
 
-.day.drag-over {
-  background: var(--color-primary-tint);
-  outline: 2px dashed var(--color-primary);
-  outline-offset: -2px;
-}
-
-/* Leucht-Effekt, wenn der "Einplanen"-Anfasser einer SpotCard gerade gezogen wird (#drag) */
+/* Leucht-Effekt, wenn der "Einplanen"-Modus über das Kalender-Auswahl-Menü aktiv ist */
 :global(body.is-dragging-calendar .day) {
   background: var(--color-scheduled-tint);
   border-color: color-mix(in srgb, var(--color-scheduled) 50%, transparent);
@@ -326,16 +286,6 @@ function onDrop(event: DragEvent, date: string) {
     transform: translateY(-2px) scale(1.02);
     z-index: 5;
   }
-}
-
-:global(body.is-dragging-calendar .day.drag-over) {
-  background: color-mix(in srgb, var(--color-scheduled) 28%, var(--color-surface));
-  border-color: var(--color-scheduled);
-  box-shadow:
-    0 0 0 3px var(--color-scheduled),
-    0 8px 22px -2px color-mix(in srgb, var(--color-scheduled) 55%, transparent);
-  transform: translateY(-2px) scale(1.02);
-  z-index: 5;
 }
 
 /* Führende/nachfolgende Tage aus dem Vor-/Folgemonat in der echten Monatsansicht (siehe otherMonth

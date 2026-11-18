@@ -12,7 +12,6 @@ import Card from './primitives/Card.vue';
 import Accordion from './primitives/Accordion.vue';
 import FileAttachments from './FileAttachments.vue';
 import TourRoleBadge from './TourRoleBadge.vue';
-import CalendarDragHandle from './CalendarDragHandle.vue';
 import ExcursionCoverStack from './ExcursionCoverStack.vue';
 import ExcursionDoneStatus from './ExcursionDoneStatus.vue';
 import ExcursionRouteMeta from './ExcursionRouteMeta.vue';
@@ -239,7 +238,6 @@ const {
           class="card-actions-wrapper"
         >
           <div class="card-actions">
-            <CalendarDragHandle v-if="expanded && !excursion.date" :excursion="excursion" />
             <ExcursionDoneStatus
               :excursion="excursion"
               :expanded="expanded"
