@@ -69,7 +69,7 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
         ([entry]) => {
           isCategoryNavStuck.value = !entry.isIntersecting;
         },
-        { root: el.closest('.spots-col'), threshold: 0 }
+        { root: el.closest('.spots-col-body') ?? el.closest('.spots-col'), threshold: 0 }
       );
       categoryNavObserver.observe(el);
     } else {
@@ -494,7 +494,7 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     intersectingCategories.clear();
     categoryByEl.clear();
     const firstEl = categoryRefs.values().next().value as HTMLElement | undefined;
-    const root = firstEl?.closest('.spots-col') ?? null;
+    const root = firstEl?.closest('.spots-col-body') ?? firstEl?.closest('.spots-col') ?? null;
 
     if (!root) {
       return;

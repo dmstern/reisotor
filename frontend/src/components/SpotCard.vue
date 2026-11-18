@@ -661,7 +661,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 @include can-hover {
   .spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) .spot-expand-pill,
   .spot-expand-pill:hover {
-    background-color: var(--color-primary-tint);
+    background-color: var(--color-control-active-tint);
     color: var(--color-primary-dark);
     box-shadow: var(--shadow-control-hover);
     translate: 0 -1px;

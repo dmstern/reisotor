@@ -303,6 +303,7 @@ onBeforeUnmount(() => {
    responsives Verhalten der Komponente erhalten. */
 .drawer-tab {
   @include control-3d-raised;
+  background-color: var(--color-surface);
   position: fixed;
   top: 50%;
   transform: translateY(-50%);

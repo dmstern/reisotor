@@ -187,6 +187,16 @@ const SEARCH_PLACEHOLDER_BY_MODE = {
 } as const;
 const searchPlaceholder = computed(() => SEARCH_PLACEHOLDER_BY_MODE[groupMode.value]);
 
+const canShowSearch = computed(
+  () =>
+    groupMode.value !== 'tracks' &&
+    (filterCategoryOptions.value.length > 0 || excursionsStore.excursions.length > 0)
+);
+
+const isCollapsedSearchVisible = computed(
+  () => isSheetOverlayMode.value && sheetState.value === 'collapsed' && canShowSearch.value
+);
+
 const searchFilterBarRef = ref<InstanceType<typeof SearchFilterBar> | null>(null);
 
 const activeSearchAndFilterCount = computed(() => {
@@ -199,19 +209,43 @@ const activeSearchAndFilterCount = computed(() => {
   );
 });
 
+const SHEET_EXPAND_FOCUS_DELAY_MS = 320;
 let expandSearchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function clearExpandSearchTimeout() {
+  if (expandSearchTimeout) {
+    clearTimeout(expandSearchTimeout);
+    expandSearchTimeout = null;
+  }
+}
 
 function expandAndFocusSearch() {
   sheetState.value = 'full';
-
-  if (expandSearchTimeout) {
-    clearTimeout(expandSearchTimeout);
-  }
+  clearExpandSearchTimeout();
 
   expandSearchTimeout = setTimeout(() => {
+    expandSearchTimeout = null;
+
+    if (
+      sheetDragging.value ||
+      !canShowSearch.value ||
+      (isSheetOverlayMode.value && sheetState.value !== 'full')
+    ) {
+      return;
+    }
+
     searchFilterBarRef.value?.focusInput();
-  }, 320);
+  }, SHEET_EXPAND_FOCUS_DELAY_MS);
 }
+
+watch(
+  [sheetState, sheetDragging, canShowSearch, isSheetOverlayMode],
+  ([state, dragging, searchable, overlay]) => {
+    if (dragging || !searchable || (overlay && state !== 'full')) {
+      clearExpandSearchTimeout();
+    }
+  }
+);
 
 // 3. Category Navigation, Sticky Sentinel & Scroll Spy
 const navSpy = useCategoryNavSpy({
@@ -1174,10 +1208,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  if (expandSearchTimeout) {
-    clearTimeout(expandSearchTimeout);
-    expandSearchTimeout = null;
-  }
+  clearExpandSearchTimeout();
 
   drawers.mapFocusKey = null;
   drawers.mapFocusExcursionId = null;
@@ -1205,87 +1236,125 @@ onUnmounted(() => {
         :class="[isSheetOverlayMode ? sheetState : null, { dragging: sheetDragging }]"
       >
         <div class="sheet-handle-row" @pointerdown="onSheetDragStart">
-          <div class="sheet-title-group">
-            <div
-              class="sheet-handle"
-              role="separator"
-              aria-orientation="horizontal"
-              aria-label="Spots-Liste ein-/ausklappen"
-            >
-              <h2 class="sheet-title">
-                <AnimatedText
-                  aria-hidden="true"
-                  :text="
-                    groupMode === 'tours' ? 'Touren' : groupMode === 'tracks' ? 'Tracks' : 'Spots'
-                  "
-                  :options="['Spots', 'Touren', 'Tracks']"
-                  :direction="groupMode === 'tours' ? 'up' : 'down'"
-                />
-                <span class="sr-only">{{
-                  groupMode === 'tours' ? 'Touren' : groupMode === 'tracks' ? 'Tracks' : 'Spots'
-                }}</span>
+          <div
+            class="sheet-title-group"
+            :class="{ 'is-collapsed-search': isCollapsedSearchVisible }"
+          >
+            <template v-if="isCollapsedSearchVisible">
+              <h2 class="sr-only">
+                {{ groupMode === 'tours' ? 'Touren' : 'Spots' }}
               </h2>
-            </div>
-            <InfoPopover
-              v-if="sheetState !== 'collapsed'"
-              class="header-info-popover"
-              :title="
-                groupMode === 'tours'
-                  ? 'Was sind Touren?'
-                  : groupMode === 'tracks'
-                    ? 'Was sind Tracks?'
-                    : 'Was sind Spots?'
-              "
-              :aria-label="
-                groupMode === 'tours'
-                  ? 'Was sind Touren?'
-                  : groupMode === 'tracks'
-                    ? 'Was sind Tracks?'
-                    : 'Was sind Spots?'
-              "
-              :menu-width="300"
-            >
-              <template v-if="groupMode === 'tours'">
-                <p>
-                  <strong>Touren</strong> fassen mehrere Spots zu einer gemeinsamen Route oder einem
-                  Tagesausflug zusammen. Eignet sich bspw. auch, um An- oder Abreise auf der Karte
-                  zu visualisieren.
-                </p>
-                <p class="popover-tip">
-                  💡 <strong>Tipp:</strong> Klicke auf eine Tour-Kachel, um deren Route und Wege auf
-                  der Karte anzuzeigen.
-                </p>
-              </template>
-              <template v-else-if="groupMode === 'tracks'">
-                <p>
-                  <strong>Tracks</strong> zeichnen deine zurückgelegten Wege per GPS auf. Du kannst
-                  sie auf der Karte nachverfolgen, mit Mitreisenden teilen oder Touren zuordnen.
-                </p>
-                <p class="popover-tip">
-                  💡 <strong>Tipp:</strong> Starte eine Aufzeichnung per Klick auf „Aufzeichnen“
-                  oder direkt über den Button auf der Karte.
-                </p>
-              </template>
-              <template v-else>
-                <p>
-                  <strong>Spots</strong> sind einzelne Orte (Restaurants, Sehenswürdigkeiten,
-                  Strände, …) – als Ideensammlung oder zur Reiseplanung.
-                </p>
-                <p class="popover-tip">
-                  💡 <strong>Tipp:</strong> Ziehe eine Spot-Karte direkt auf einen Kalendertag oder
-                  eine Tour, um sie einzutakten.
-                </p>
-              </template>
-            </InfoPopover>
+              <button
+                type="button"
+                class="collapsed-search-trigger"
+                :class="{
+                  'has-query': Boolean(searchQuery.trim()),
+                  'has-active-filters': activeSearchAndFilterCount > 0,
+                }"
+                :aria-label="
+                  activeSearchAndFilterCount > 0
+                    ? `${searchPlaceholder} (${activeSearchAndFilterCount} Filter aktiv)`
+                    : searchPlaceholder
+                "
+                @click="expandAndFocusSearch"
+              >
+                <AppIcon
+                  :icon="ACTION_ICONS.search"
+                  :size="16"
+                  group="actions"
+                  class="collapsed-search-icon"
+                />
+                <span class="collapsed-search-text">
+                  {{ searchQuery.trim() || searchPlaceholder }}
+                </span>
+                <Badge
+                  v-if="activeSearchAndFilterCount > 0"
+                  variant="primary"
+                  size="sm"
+                  class="collapsed-search-badge"
+                >
+                  {{ activeSearchAndFilterCount }}
+                </Badge>
+              </button>
+            </template>
+            <template v-else>
+              <div
+                class="sheet-handle"
+                role="separator"
+                aria-orientation="horizontal"
+                aria-label="Spots-Liste ein-/ausklappen"
+              >
+                <h2 class="sheet-title">
+                  <AnimatedText
+                    aria-hidden="true"
+                    :text="
+                      groupMode === 'tours' ? 'Touren' : groupMode === 'tracks' ? 'Tracks' : 'Spots'
+                    "
+                    :options="['Spots', 'Touren', 'Tracks']"
+                    :direction="groupMode === 'tours' ? 'up' : 'down'"
+                  />
+                  <span class="sr-only">{{
+                    groupMode === 'tours' ? 'Touren' : groupMode === 'tracks' ? 'Tracks' : 'Spots'
+                  }}</span>
+                </h2>
+              </div>
+              <InfoPopover
+                v-if="sheetState !== 'collapsed'"
+                class="header-info-popover"
+                :title="
+                  groupMode === 'tours'
+                    ? 'Was sind Touren?'
+                    : groupMode === 'tracks'
+                      ? 'Was sind Tracks?'
+                      : 'Was sind Spots?'
+                "
+                :aria-label="
+                  groupMode === 'tours'
+                    ? 'Was sind Touren?'
+                    : groupMode === 'tracks'
+                      ? 'Was sind Tracks?'
+                      : 'Was sind Spots?'
+                "
+                :menu-width="300"
+              >
+                <template v-if="groupMode === 'tours'">
+                  <p>
+                    <strong>Touren</strong> fassen mehrere Spots zu einer gemeinsamen Route oder
+                    einem Tagesausflug zusammen. Eignet sich bspw. auch, um An- oder Abreise auf der
+                    Karte zu visualisieren.
+                  </p>
+                  <p class="popover-tip">
+                    💡 <strong>Tipp:</strong> Klicke auf eine Tour-Kachel, um deren Route und Wege
+                    auf der Karte anzuzeigen.
+                  </p>
+                </template>
+                <template v-else-if="groupMode === 'tracks'">
+                  <p>
+                    <strong>Tracks</strong> zeichnen deine zurückgelegten Wege per GPS auf. Du
+                    kannst sie auf der Karte nachverfolgen, mit Mitreisenden teilen oder Touren
+                    zuordnen.
+                  </p>
+                  <p class="popover-tip">
+                    💡 <strong>Tipp:</strong> Starte eine Aufzeichnung per Klick auf „Aufzeichnen“
+                    oder direkt über den Button auf der Karte.
+                  </p>
+                </template>
+                <template v-else>
+                  <p>
+                    <strong>Spots</strong> sind einzelne Orte (Restaurants, Sehenswürdigkeiten,
+                    Strände, …) – als Ideensammlung oder zur Reiseplanung.
+                  </p>
+                  <p class="popover-tip">
+                    💡 <strong>Tipp:</strong> Ziehe eine Spot-Karte direkt auf einen Kalendertag
+                    oder eine Tour, um sie einzutakten.
+                  </p>
+                </template>
+              </InfoPopover>
+            </template>
           </div>
           <div class="sheet-handle-actions">
             <Button
-              v-if="
-                sheetState !== 'collapsed' &&
-                sheetState !== 'full' &&
-                groupMode !== 'tracks' &&
-                (filterCategoryOptions.length || excursionsStore.excursions.length)
-              "
+              v-if="sheetState !== 'collapsed' && sheetState !== 'full' && canShowSearch"
               variant="secondary"
               shape="circle"
               size="sm"
@@ -1508,10 +1577,7 @@ onUnmounted(() => {
           />
 
           <div
-            v-if="
-              groupMode !== 'tracks' &&
-              (filterCategoryOptions.length || excursionsStore.excursions.length)
-            "
+            v-if="canShowSearch"
             class="drawer-search-accordion"
             :class="{ 'is-collapsed': isSheetOverlayMode && sheetState !== 'full' }"
             :inert="isSheetOverlayMode && sheetState !== 'full'"
@@ -2010,7 +2076,7 @@ onUnmounted(() => {
   pointer-events: auto;
   display: flex;
   flex-direction: column;
-  background: var(--color-surface);
+  background: transparent;
   border-radius: var(--radius-lg-squircle);
   corner-shape: squircle;
   /* Feiner Rand wie bei Apples schwebendem Sheet (siehe PR-Referenzscreenshot) - ohne ihn verlor
@@ -2024,15 +2090,16 @@ onUnmounted(() => {
     bottom 0.3s cubic-bezier(0.32, 0.72, 0, 1),
     left 0.3s cubic-bezier(0.32, 0.72, 0, 1),
     right 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-    border-radius 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    border-radius 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   overflow: hidden;
   /* Bekannter iOS-Safari-Bug: ein fixed/absolute positioniertes Element mit border-radius+box-shadow
      malt seinen Hintergrund beim allerersten Paint mitunter nicht korrekt (bleibt transparent, bis
-     irgendeine Interaktion – z. B. das Ziehen am Griff – einen Repaint erzwingt). Der Fix (eigene
-     Compositing-Ebene erzwingen) sitzt trotzdem weiterhin auf einem eigenen ::before statt direkt
-     auf .spots-col, obwohl .spots-col jetzt selbst ein transform trägt - .spots-col::before hält so
-     unabhängig von .spots-col selbst seine eigene Compositing-Ebene, ohne dass diese beiden
-     transform-Werte sich gegenseitig überschreiben könnten. */
+     irgendeine Interaktion – z. B. das Ziehen am Griff – einen Repaint erzwingt). Zudem dient ::before
+     im Liquid-Glass-Modus (.collapsed / .partial) als eigenständige Hintergrund-/Blur-Ebene unter
+     den Kindern, damit .spots-col selbst keinen Backdrop-Root bildet und sticky Kinder wie
+     .category-nav-wrap ihren eigenen backdrop-filter auf gescrollte Karten anwenden können. */
 }
 
 .spots-col::before {
@@ -2040,8 +2107,45 @@ onUnmounted(() => {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: inherit;
+  border-radius: inherit;
+  corner-shape: inherit;
+  background: var(--color-surface);
+  backdrop-filter: none;
   transform: translateZ(0);
+  transition: background-color 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Wie bei Apple Karten: im eingeklappten ("klein") und angeschnittenen ("halb") Zustand schwebt
+   das Sheet mit Liquid-Glass-Effekt über der Karte; erst ganz hochgezogen (.full) wird es
+   undurchsichtig. */
+.spots-col.collapsed,
+.spots-col.partial {
+  border-color: var(--color-surface-glass-border);
+  box-shadow: var(--shadow-floating-island);
+}
+
+.spots-col.collapsed::before,
+.spots-col.partial::before {
+  background: var(--color-surface-glass);
+  backdrop-filter: var(--backdrop-blur-md);
+}
+
+/* Kategorie-TabNav auf dem Liquid-Glass-Sheet: im ungescrollten Zustand transparent (ohne eigenen
+   Blur-Block), damit keine doppelte Blur-Kante auf dem Glas entsteht; sobald gescrollter Inhalt
+   darunter liegt (auch beim Zurückstufen von full -> partial mit erhaltenem scrollTop), trennt
+   eine dichtere Frosted-Glass-Fläche + verstärkter backdrop-filter die Leiste sauber vom Content. */
+.spots-col.collapsed :deep(.category-nav-wrap),
+.spots-col.partial :deep(.category-nav-wrap) {
+  --category-nav-bg: transparent;
+  background: var(--category-nav-bg);
+  backdrop-filter: none;
+  border-bottom-color: var(--color-surface-glass-border);
+}
+
+.spots-col.partial :deep(.category-nav-wrap.is-stuck) {
+  --category-nav-bg: var(--color-surface-glass-dense);
+  background: var(--category-nav-bg);
+  backdrop-filter: blur(max(16px, calc(var(--glass-blur, 6px) * 2))) saturate(180%);
 }
 
 /* Wie bei Apples eingeklapptem Suchleisten-Zustand: eine reine Pille (nur die Anfasser-Zeile ist
@@ -2080,7 +2184,8 @@ onUnmounted(() => {
   }
 }
 
-.spots-col.dragging {
+.spots-col.dragging,
+.spots-col.dragging::before {
   transition: none;
 }
 
@@ -2103,14 +2208,14 @@ onUnmounted(() => {
 
 /* Im collapsed-Zustand ist die Anfasser-Zeile der komplette sichtbare Inhalt der Pille (siehe
    .spots-col.collapsed oben) - volle Höhe (100%), zentriertes Flex-Layout und seitliches Polster
-   von 13px, damit die runden 38x38px-Stufenbuttons nach oben, unten und zu den Seiten exakt
-   denselben 13px-Abstand zur Außenkante der 64px-Pille (Radius 32px) haben und sich perfekt
-   konzentrisch in die Kappen schmiegen (#515). */
+   von 12px innerhalb des 1px-Rahmens (= 13px zur Außenkante), damit sowohl das 38px hohe Suchfeld
+   links als auch die 38x38px-Stufenbuttons rechts oben, unten und seitlich exakt denselben
+   konzentrischen Abstand zur 64px-Pille (Radius 32px) einhalten. */
 .spots-col.collapsed .sheet-handle-row {
   height: 100%;
   box-sizing: border-box;
   align-items: center;
-  padding: 0 13px;
+  padding: 0 12px;
 }
 
 .sheet-title-group {
@@ -2118,6 +2223,92 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   min-width: 0;
+}
+
+.sheet-title-group.is-collapsed-search {
+  flex: 1 1 auto;
+}
+
+.collapsed-search-trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  padding: 0 var(--space-3);
+  box-sizing: border-box;
+  border-radius: var(--radius-pill);
+  corner-shape: round;
+  background-color: var(--color-glass-field-inset-bg);
+  background-image: none;
+  border: 1px solid var(--color-glass-field-inset-border);
+  box-shadow: var(--shadow-glass-field-inset);
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  text-align: left;
+  cursor: text;
+  user-select: none;
+  touch-action: none;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.collapsed-search-trigger::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 44px;
+  transform: translateY(-50%);
+}
+
+.collapsed-search-trigger.has-query {
+  color: var(--color-text);
+}
+
+.collapsed-search-trigger.has-active-filters {
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-glass-field-inset-border));
+}
+
+.collapsed-search-trigger:hover {
+  background-color: var(--color-glass-field-inset-hover-bg);
+  color: var(--color-text);
+}
+
+.collapsed-search-trigger:active {
+  background-color: var(--color-glass-field-inset-hover-bg);
+  box-shadow: var(--shadow-control-active);
+}
+
+.collapsed-search-trigger:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo), var(--shadow-glass-field-inset);
+}
+
+.collapsed-search-icon {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.collapsed-search-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collapsed-search-badge {
+  flex-shrink: 0;
 }
 
 .sheet-handle {
@@ -2150,7 +2341,7 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-.sheet-title .sr-only {
+.sheet-title-group .sr-only {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -2351,6 +2542,7 @@ onUnmounted(() => {
       max-height: none;
       z-index: 5;
       background: var(--color-surface);
+      backdrop-filter: none;
       border-radius: var(--radius-md-squircle);
       corner-shape: squircle;
       border: 1px solid var(--color-border);
@@ -2372,10 +2564,24 @@ onUnmounted(() => {
       transition: none;
     }
 
-    /* .spots-col ist auf Desktop undurchsichtig, keine speziellen Hintergrundanpassungen nötig. */
-    .spots-col .category-nav-wrap {
+    .spots-col::before,
+    .spots-col.collapsed::before,
+    .spots-col.partial::before,
+    .spots-col.full::before {
       background: var(--color-surface);
+      backdrop-filter: none;
+      transition: none;
+    }
+
+    /* .spots-col ist auf Desktop undurchsichtig, Glas-/Blur-Regeln von Mobil-States zurücksetzen. */
+    .spots-col :deep(.category-nav-wrap),
+    .spots-col.collapsed :deep(.category-nav-wrap),
+    .spots-col.partial :deep(.category-nav-wrap),
+    .spots-col.partial :deep(.category-nav-wrap.is-stuck) {
       --category-nav-bg: var(--color-surface);
+      background: var(--category-nav-bg);
+      backdrop-filter: none;
+      border-bottom-color: var(--color-border);
     }
 
     .sheet-handle-row {
@@ -2655,7 +2861,8 @@ onUnmounted(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .spots-col {
+  .spots-col,
+  .spots-col::before {
     transition: none;
   }
   .category-group.is-tour-group {
