@@ -476,9 +476,19 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
       .card-badge-group:hover:not(:has(.spot-location-badge:hover, .spot-edit-btn:hover))
     )
     :deep(.image.is-expanded) {
+    border-color: var(--color-primary);
     box-shadow:
-      inset 0 0 0 2px var(--color-primary),
-      0 4px 12px rgba(0, 0, 0, 0.18);
+      inset 0 1px 0 var(--shadow-control-highlight-strong),
+      var(--shadow-control-hover);
+    transform: translateY(-1px);
+  }
+
+  .spot-card.expanded:has(
+      .card-badge-group:active:not(:has(.spot-location-badge:active, .spot-edit-btn:active))
+    )
+    :deep(.image.is-expanded) {
+    transform: translateY(1px) scale(0.995);
+    box-shadow: var(--shadow-control-active);
   }
 
   .spot-card.expanded:has(
