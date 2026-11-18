@@ -35,8 +35,9 @@ Wenn mehrere Agent-Sessions parallel laufen oder nacheinander im Repository arbe
   - Sollen mehrere Aufgaben gleichzeitig bearbeitet werden, ist die Nutzung separater Git Worktrees der verbindliche Best-Practice-Weg (in Antigravity direkt per UI-Dropdown **„New Worktree“** / `Ctrl+.` unter dem Chat-Eingabefeld, alternativ per CLI `git worktree add ../reisotor-<task> -b <task-branch>`). Dies verhindert Lock-Konflikte (`.git/index.lock`), Dateikollisionen und Wartezeiten vollständig.
   - **Schneller Worktree-Start:** Nach dem Auschecken eines Worktrees genügt `npm run dev:fresh` (oder `npm run setup:worktree`), um `node_modules` per Symlink aus dem Hauptordner zu teilen, `.env` zu synchronisieren, die Test-DB mit Demo-Daten anzulegen und den Server direkt zu starten.
 - **Clean Exit, Commit- & PR-Pflicht:**
+  - **Niemals direkt auf `main` committen:** Steht das Repository zu Beginn einer Session auf `main`, MUSS vor dem ersten Commit (am besten direkt nach dem Pre-Flight-Check) ein eigener semantischer Branch angelegt werden (`git checkout -b <type>/<kurzer-slug>`).
   - Jede Session MUSS nach erfolgreicher Arbeit, Prüfung der Release-Notes (siehe Abschnitt unten), Formatierung (`npx -y prettier --write <dateien>`), Typecheck und fokussierten Tests die eigenen Änderungen **stets sauber und semantisch committen** (`git commit -m "feat/fix/chore: ..."`).
-  - Wurde auf einem neuen Feature-Branch gearbeitet und existiert noch kein PR (`gh pr view 2>/dev/null`), MUSS der Branch gepusht (`git push -u origin <branch>`) und **automatisch ein Pull Request angelegt** werden (`gh pr create`).
+  - Existiert für den Branch noch kein PR (`gh pr view 2>/dev/null`), MUSS der Branch gepusht (`git push -u origin <branch>`) und **automatisch ein Pull Request angelegt** werden (`gh pr create`).
   - Der Worktree darf am Ende einer Session NIEMALS mit uncommitteten Änderungen, ungetrackten Testdateien oder unformatiertem Code hinterlassen werden, damit nachfolgende Sessions sofort eine saubere Ausgangsbasis vorfinden.
 
 ## UI-Audits & Layout-Testing
