@@ -127,7 +127,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   </button>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .done-toggle {
   position: relative;
   display: inline-flex;
@@ -136,10 +136,10 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   min-height: 36px;
   background-color: transparent;
   background-image: var(--gradient-control-3d);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-pill);
   corner-shape: round;
-  padding: 4px 12px;
+  padding: var(--space-1) 12px;
   font-size: var(--font-size-xs);
   font-weight: 500;
   color: var(--color-text-muted);
@@ -164,12 +164,14 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   box-shadow: var(--focus-ring-halo);
 }
 
-.done-toggle:not(.done-toggle--split):hover {
-  background-color: var(--color-control-hover-bg);
-  border-color: var(--toggle-hover-border, var(--color-primary));
-  color: var(--color-text);
-  box-shadow: var(--shadow-control-hover);
-  translate: 0 -1px;
+@include can-hover {
+  .done-toggle:not(.done-toggle--split):hover {
+    background-color: var(--color-control-hover-bg);
+    border-color: var(--toggle-hover-border, var(--color-primary));
+    color: var(--color-text);
+    box-shadow: var(--shadow-control-hover);
+    translate: 0 -1px;
+  }
 }
 
 .done-toggle:not(.done-toggle--split):active {
@@ -186,10 +188,12 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   box-shadow: var(--shadow-control);
 }
 
-.done-toggle:not(.done-toggle--split).planned:hover {
-  border-color: var(--color-success);
-  color: var(--color-success);
-  box-shadow: var(--shadow-control-hover);
+@include can-hover {
+  .done-toggle:not(.done-toggle--split).planned:hover {
+    border-color: var(--color-success);
+    color: var(--color-success);
+    box-shadow: var(--shadow-control-hover);
+  }
 }
 
 .done-toggle.active,
@@ -201,10 +205,12 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   box-shadow: var(--shadow-control);
 }
 
-.done-toggle:not(.done-toggle--split).active:hover,
-.done-toggle:not(.done-toggle--split).status-done:hover {
-  background-color: color-mix(in srgb, var(--color-success) 22%, transparent);
-  box-shadow: var(--shadow-control-hover);
+@include can-hover {
+  .done-toggle:not(.done-toggle--split).active:hover,
+  .done-toggle:not(.done-toggle--split).status-done:hover {
+    background-color: color-mix(in srgb, var(--color-success) 22%, transparent);
+    box-shadow: var(--shadow-control-hover);
+  }
 }
 
 /* Split-Pill Layout & Sub-Buttons */
@@ -212,7 +218,6 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   padding: 0;
   gap: 0;
   cursor: default;
-  overflow: hidden;
   align-items: stretch;
 }
 
@@ -233,7 +238,9 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 }
 
 .done-toggle-btn--check {
-  padding: 4px 8px 4px 11px;
+  padding: var(--space-1) var(--space-2) var(--space-1) 11px;
+  border-start-start-radius: var(--radius-pill);
+  border-end-start-radius: var(--radius-pill);
   justify-content: center;
 }
 
@@ -241,13 +248,15 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   transition: transform 0.15s ease;
 }
 
-.done-toggle-btn--check:hover {
-  background: color-mix(in srgb, var(--color-success) 16%, transparent);
-  color: var(--color-success);
-}
+@include can-hover {
+  .done-toggle-btn--check:hover {
+    background: color-mix(in srgb, var(--color-success) 16%, transparent);
+    color: var(--color-success);
+  }
 
-.done-toggle-btn--check:hover :deep(.app-icon) {
-  transform: scale(1.15);
+  .done-toggle-btn--check:hover :deep(.app-icon) {
+    transform: scale(1.15);
+  }
 }
 
 .done-toggle-divider {
@@ -265,32 +274,36 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 }
 
 .done-toggle-btn--action {
-  padding: 4px 12px 4px 8px;
+  padding: var(--space-1) 12px var(--space-1) var(--space-2);
+  border-start-end-radius: var(--radius-pill);
+  border-end-end-radius: var(--radius-pill);
   font-size: var(--font-size-xs);
   font-weight: 500;
   min-width: 0;
 }
 
-.done-toggle-btn--action:hover {
-  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-  color: var(--color-text);
-}
+@include can-hover {
+  .done-toggle-btn--action:hover {
+    background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+    color: var(--color-text);
+  }
 
-.done-toggle--split.status-done .done-toggle-btn--action:hover,
-.done-toggle--split.active .done-toggle-btn--action:hover {
-  background: color-mix(in srgb, var(--color-success) 22%, transparent);
-  color: var(--color-success);
-}
+  .done-toggle--split.status-done .done-toggle-btn--action:hover,
+  .done-toggle--split.active .done-toggle-btn--action:hover {
+    background: color-mix(in srgb, var(--color-success) 22%, transparent);
+    color: var(--color-success);
+  }
 
-.done-toggle-btn--action:hover :deep(.done-toggle-calendar-icon) {
-  transform: scale(1.15);
-  opacity: 1;
-}
+  .done-toggle-btn--action:hover :deep(.done-toggle-calendar-icon) {
+    transform: scale(1.15);
+    opacity: 1;
+  }
 
-.done-toggle-btn--action:hover :deep(.done-toggle-date) {
-  text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
-  text-underline-offset: 2px;
+  .done-toggle-btn--action:hover :deep(.done-toggle-date) {
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
+    text-underline-offset: 2px;
+  }
 }
 
 .done-toggle-jump-icon {
@@ -302,9 +315,11 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
     opacity 0.15s ease;
 }
 
-.done-toggle-btn--action:hover .done-toggle-jump-icon {
-  transform: translateX(2px);
-  opacity: 1;
+@include can-hover {
+  .done-toggle-btn--action:hover .done-toggle-jump-icon {
+    transform: translateX(2px);
+    opacity: 1;
+  }
 }
 
 .done-toggle-chevron {
@@ -316,8 +331,10 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
     opacity 0.15s ease;
 }
 
-.done-toggle:hover .done-toggle-chevron {
-  opacity: 1;
+@include can-hover {
+  .done-toggle:hover .done-toggle-chevron {
+    opacity: 1;
+  }
 }
 
 .done-toggle-chevron.is-open,
@@ -332,13 +349,13 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 }
 
 .done-toggle-btn--check:focus-visible {
-  border-start-start-radius: 999px;
-  border-end-start-radius: 999px;
+  border-start-start-radius: var(--radius-pill);
+  border-end-start-radius: var(--radius-pill);
 }
 
 .done-toggle-btn--action:focus-visible {
-  border-start-end-radius: 999px;
-  border-end-end-radius: 999px;
+  border-start-end-radius: var(--radius-pill);
+  border-end-end-radius: var(--radius-pill);
 }
 
 .status-text {
@@ -501,10 +518,26 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   min-height: 44px;
 }
 
+.done-toggle-btn--check::after {
+  left: auto;
+  right: 0;
+  min-width: 44px;
+}
+
 @media (pointer: fine) {
   .done-toggle:not(.done-toggle--split)::after,
   .done-toggle-btn::after {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .done-toggle,
+  .done-toggle-btn,
+  .done-toggle-btn--check :deep(.app-icon),
+  .done-toggle-jump-icon,
+  .done-toggle-chevron {
+    transition: none;
   }
 }
 </style>

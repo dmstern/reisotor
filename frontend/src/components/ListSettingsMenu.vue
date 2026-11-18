@@ -293,7 +293,7 @@ function resetDefaults() {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .dropdown {
   position: relative;
   display: inline-flex;
@@ -309,7 +309,7 @@ function resetDefaults() {
   right: -3px;
   min-width: 16px;
   height: 16px;
-  padding: 0 4px;
+  padding: 0 var(--space-1);
   font-size: 0.7rem;
   font-weight: 700;
   line-height: 16px;
@@ -337,7 +337,7 @@ function resetDefaults() {
   color: var(--color-text-muted);
   padding: var(--space-1) var(--space-2) var(--space-1);
   margin-top: var(--space-1);
-  border-top: 1px solid var(--color-border);
+  border-top: var(--border-width) solid var(--color-border);
 }
 
 .section-icon {
@@ -365,11 +365,12 @@ function resetDefaults() {
   margin: var(--space-2) calc(-1 * var(--space-2)) calc(-1 * var(--space-2));
   padding: var(--space-1) var(--space-2) var(--space-2);
   background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
+  border-top: var(--border-width) solid var(--color-border);
   z-index: 2;
 }
 
 .reset-settings-btn {
+  @include min-touch-target(44px);
   width: 100%;
   display: flex;
   align-items: center;
@@ -395,13 +396,22 @@ function resetDefaults() {
   flex-shrink: 0;
 }
 
-.reset-settings-btn:hover {
-  color: var(--color-danger);
-  background: var(--color-hover);
+@include can-hover {
+  .reset-settings-btn:hover {
+    color: var(--color-danger);
+    background: var(--color-hover);
+  }
 }
 
 .reset-settings-btn:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: 1px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reset-settings-btn {
+    transition: none;
+  }
 }
 </style>

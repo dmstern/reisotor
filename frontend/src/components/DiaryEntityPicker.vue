@@ -234,7 +234,7 @@ const hasDateMismatch = computed(() => {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .diary-entity-pickers {
   display: flex;
   flex-direction: column;
@@ -257,13 +257,16 @@ const hasDateMismatch = computed(() => {
   transition: background-color var(--transition-fast);
 }
 
-.diary-picker-option:hover {
-  background-color: var(--color-hover);
+@include can-hover {
+  .diary-picker-option:hover {
+    background-color: var(--color-hover);
+  }
 }
 
 .diary-picker-option:focus-within {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .diary-picker-option-content {
@@ -378,11 +381,19 @@ const hasDateMismatch = computed(() => {
   margin-top: 2px;
 }
 
-.mismatch-opt-in-label:hover {
-  color: var(--color-text);
+@include can-hover {
+  .mismatch-opt-in-label:hover {
+    color: var(--color-text);
+  }
 }
 
 .mismatch-opt-in-text {
   line-height: 1.3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .diary-picker-option {
+    transition: none;
+  }
 }
 </style>
