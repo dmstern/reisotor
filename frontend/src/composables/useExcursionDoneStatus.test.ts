@@ -41,29 +41,41 @@ describe('useExcursionDoneStatus', () => {
     setActivePinia(createPinia());
   });
 
-  it('schaltet done von true auf false zurück (ohne Popover)', async () => {
-    const excursionsStore = useExcursionsStore();
-    const setDoneSpy = vi.spyOn(excursionsStore, 'setDone').mockResolvedValue();
-
-    const excursion = ref(createMockExcursion({ done: 1, date: '2026-07-10' }));
-    const { onToggleDone, unplannedPopoverOpen } = useExcursionDoneStatus({ excursion });
-
-    await onToggleDone();
-
-    expect(setDoneSpy).toHaveBeenCalledWith(10, false);
-    expect(unplannedPopoverOpen.value).toBe(false);
-  });
-
-  it('markiert geplante Tour mit Datum direkt als done', async () => {
+  it('öffnet datesPopover bei geplanter Tour mit Datum und schaltet via togglePlannedDone', async () => {
     const excursionsStore = useExcursionsStore();
     const setDoneSpy = vi.spyOn(excursionsStore, 'setDone').mockResolvedValue();
 
     const excursion = ref(createMockExcursion({ done: 0, date: '2026-07-10' }));
-    const { onToggleDone, unplannedPopoverOpen } = useExcursionDoneStatus({ excursion });
+    const { onToggleDone, datesPopoverOpen, unplannedPopoverOpen, togglePlannedDone } =
+      useExcursionDoneStatus({ excursion });
 
     await onToggleDone();
 
+    expect(datesPopoverOpen.value).toBe(true);
+    expect(unplannedPopoverOpen.value).toBe(false);
+    expect(setDoneSpy).not.toHaveBeenCalled();
+
+    await togglePlannedDone();
     expect(setDoneSpy).toHaveBeenCalledWith(10, true);
+
+    excursion.value = createMockExcursion({ done: 1, date: '2026-07-10' });
+    await togglePlannedDone();
+    expect(setDoneSpy).toHaveBeenCalledWith(10, false);
+  });
+
+  it('schaltet done von true auf false zurück bei ungeplanter Tour ohne Datum', async () => {
+    const excursionsStore = useExcursionsStore();
+    const setDoneSpy = vi.spyOn(excursionsStore, 'setDone').mockResolvedValue();
+
+    const excursion = ref(createMockExcursion({ done: 1, date: null }));
+    const { onToggleDone, datesPopoverOpen, unplannedPopoverOpen } = useExcursionDoneStatus({
+      excursion,
+    });
+
+    await onToggleDone();
+
+    expect(setDoneSpy).toHaveBeenCalledWith(10, false);
+    expect(datesPopoverOpen.value).toBe(false);
     expect(unplannedPopoverOpen.value).toBe(false);
   });
 
@@ -117,6 +129,28 @@ describe('useExcursionDoneStatus', () => {
     expect(unplannedPopoverOpen.value).toBe(false);
   });
 
+  it('plant Tour in submitUnplannedPlan nur auf Datum ohne done zu setzen', async () => {
+    const excursionsStore = useExcursionsStore();
+    const setDateSpy = vi.spyOn(excursionsStore, 'setDate').mockResolvedValue();
+    const setDoneSpy = vi.spyOn(excursionsStore, 'setDone').mockResolvedValue();
+
+    const excursion = ref(createMockExcursion({ done: 0, date: null }));
+    const { submitUnplannedPlan, unplannedDoneDate, unplannedPopoverOpen } = useExcursionDoneStatus(
+      {
+        excursion,
+      }
+    );
+
+    unplannedPopoverOpen.value = true;
+    unplannedDoneDate.value = '2026-07-13';
+
+    await submitUnplannedPlan();
+
+    expect(setDateSpy).toHaveBeenCalledWith(10, '2026-07-13');
+    expect(setDoneSpy).not.toHaveBeenCalled();
+    expect(unplannedPopoverOpen.value).toBe(false);
+  });
+
   it('springt zur Kalender-Bestätigung in openCalendarConfirmDone ab', () => {
     const drawers = useDrawersStore();
     const startPendingSpy = vi.spyOn(drawers, 'startPendingSchedule');
@@ -131,5 +165,38 @@ describe('useExcursionDoneStatus', () => {
 
     expect(unplannedPopoverOpen.value).toBe(false);
     expect(startPendingSpy).toHaveBeenCalledWith('excursion', 10, 'confirm-done');
+  });
+
+  it('behält note_format html beim Planen über excursionsStore.setDate bei', async () => {
+    const { api } = await import('../api/client');
+    const putSpy = vi.mocked(api.put).mockResolvedValue({
+      ...createMockExcursion({
+        id: 10,
+        note: '<p>Notiz</p>',
+        note_format: 'html',
+        date: '2026-07-20',
+      }),
+    });
+
+    const excursionsStore = useExcursionsStore();
+    excursionsStore.excursions = [
+      createMockExcursion({
+        id: 10,
+        note: '<p>Notiz</p>',
+        note_format: 'html',
+        date: null,
+      }),
+    ];
+
+    await excursionsStore.setDate(10, '2026-07-20');
+
+    expect(putSpy).toHaveBeenCalledWith(
+      '/ideas/10',
+      expect.objectContaining({
+        date: '2026-07-20',
+        note: '<p>Notiz</p>',
+        note_format: 'html',
+      })
+    );
   });
 });

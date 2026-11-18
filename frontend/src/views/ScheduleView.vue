@@ -42,9 +42,10 @@ const {
   initCalendarData,
 } = useCalendarData();
 
-// 2. Einplanen-Workflow & Drag-and-Drop
-const { pendingScheduleLabel, finishPendingSchedule, cancelPendingSchedule, onDropExcursion } =
-  usePendingSchedule({ standalone: props.standalone });
+// 2. Einplanen-Workflow
+const { pendingScheduleLabel, finishPendingSchedule, cancelPendingSchedule } = usePendingSchedule({
+  standalone: props.standalone,
+});
 
 // 3. Kalenderraster-Navigation & Datumsauswahl
 const {
@@ -225,7 +226,6 @@ onMounted(async () => {
               :trip-start-date="trip?.start_date"
               :trip-end-date="trip?.end_date"
               @select="handleDaySelect"
-              @drop-excursion="onDropExcursion"
             />
           </div>
         </Transition>
@@ -305,7 +305,7 @@ onMounted(async () => {
     box-shadow 0.2s ease;
 }
 
-/* Leucht-Effekt für den gesamten Kalender-Wochenbereich während des Einplanen-Drags (#drag) */
+/* Leucht-Effekt für den gesamten Kalender-Wochenbereich während des aktiven Einplanen-Modus */
 :global(body.is-dragging-calendar .weeks) {
   border-color: color-mix(in srgb, var(--color-scheduled) 60%, transparent);
   box-shadow:

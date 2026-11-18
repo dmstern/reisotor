@@ -111,31 +111,6 @@ export const PartiallyCompleted: Story = {
   }),
 };
 
-export const SplitInteractive: Story = {
-  args: {
-    split: true,
-    jumpable: true,
-    planned: true,
-    checkTitle: 'Als gemacht markieren',
-    actionTitle: 'Zum 05.11. im Kalender springen',
-  },
-  render: (args) => ({
-    components: { DoneToggle, AppIcon },
-    setup() {
-      return { args, FORM_FIELD_ICONS };
-    },
-    template: `
-      <DoneToggle v-bind="args">
-        <span class="done-toggle-prefix">Geplant für </span>
-        <span class="done-toggle-date">
-          <AppIcon :icon="FORM_FIELD_ICONS.date" :size="12" group="formFields" class="done-toggle-calendar-icon" />
-          05.11.
-        </span>
-      </DoneToggle>
-    `,
-  }),
-};
-
 export const DropdownMultiDay: Story = {
   args: {
     planned: true,

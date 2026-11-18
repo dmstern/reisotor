@@ -111,6 +111,7 @@ export const useExcursionsStore = defineStore('excursions', () => {
       title: existing.title,
       image_url: existing.image_url ?? undefined,
       note: existing.note ?? undefined,
+      note_format: existing.note_format === 'html' ? 'html' : 'legacy',
       date: date ?? undefined,
       spot_ids: existing.spot_ids,
       legs: existing.legs,
