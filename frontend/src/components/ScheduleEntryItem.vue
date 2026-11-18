@@ -102,17 +102,18 @@ const categoryMeta = computed(
   </li>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .item {
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   border-left: 3px solid var(--entry-cat-color, var(--color-primary));
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
+  min-width: 0;
   transition:
     background-color var(--transition-fast),
     border-color var(--transition-fast),
@@ -124,17 +125,23 @@ const categoryMeta = computed(
   cursor: pointer;
 }
 
-@media (hover: hover) {
+@include can-hover {
   .item.clickable:hover {
     background: var(--color-hover);
     transform: translateY(-1px);
     box-shadow: var(--shadow-sm);
   }
+
+  .item.clickable:hover .todo-nav-indicator {
+    color: var(--color-primary);
+    transform: translateX(3px);
+  }
 }
 
 .item.clickable:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .item-leading {
@@ -165,8 +172,7 @@ const categoryMeta = computed(
 .item-main {
   min-width: 0;
   flex: 1;
-  word-break: break-word;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
 }
 
 .item-header-line {
@@ -217,8 +223,14 @@ const categoryMeta = computed(
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-1);
+  min-width: 0;
+}
+
+.item .location :deep(.app-icon) {
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .item .note {
@@ -241,13 +253,16 @@ const categoryMeta = computed(
   color: var(--color-text-muted);
   padding: 2px;
   border-radius: var(--radius-xs-squircle);
+  corner-shape: squircle;
   transition:
     color var(--transition-fast),
     transform var(--transition-fast);
 }
 
-.item.clickable:hover .todo-nav-indicator {
-  color: var(--color-primary);
-  transform: translateX(3px);
+@media (prefers-reduced-motion: reduce) {
+  .item,
+  .todo-nav-indicator {
+    transition: none;
+  }
 }
 </style>

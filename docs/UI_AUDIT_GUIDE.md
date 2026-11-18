@@ -239,7 +239,7 @@ Fällt im Chat eine allgemeine Aufforderung wie:
 1. **Kontext-Disziplin im Haupt-Chat:** Der Haupt-Agent darf **niemals selbst alle 6 Teams im eigenen Kontextfenster** untersuchen und bearbeiten (Gefahr von Kontext-Kollaps und Attention Dilution). Er agiert rein als **Orchestrator**.
 2. **Status & Git-Delta ermitteln:**
    - Existiert bereits ein laufender Audit-Branch/PR (`gh pr view` / `git log main..HEAD --oneline`), prüft der Orchestrator, welche Teams bereits erledigt sind und welche noch ausstehen.
-   - Bei einem Neustart ermittelt er per Git, welche Frontend-Bereiche seit dem letzten Release-Tag verändert wurden (`git log $(git describe --tags --abbrev=0 --match "v*" 2>/dev/null || echo "v1.0.0")..HEAD --name-only frontend/`), oder nimmt auf Wunsch alle Teams 1–6.
+   - Bei einem Neustart aktualisiert er zuerst die Release-Tags (`git fetch --tags --force`) und ermittelt per Git, welche Frontend-Bereiche seit dem letzten Release-Tag verändert wurden (`git log $(git describe --tags --abbrev=0 --match "v*" 2>/dev/null || echo "v1.0.0")..HEAD --name-only frontend/`), oder nimmt auf Wunsch alle Teams 1–6.
 3. **Sequenzielle Subagenten-Orchestrierung (`invoke_subagent`):**
    - Für jedes ausstehende Team spawnt der Orchestrator **nacheinander (immer erst warten, bis das vorherige Team fertig ist!)** einen `self`-Subagenten (`TypeName: "self"`, `Workspace: "inherit"`) mit den Aufgaben aus dem Abschnitt _„Arbeitsauftrag pro Team-Subagent“_.
 4. **Finales Gate & Abschlussbericht:**

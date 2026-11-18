@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import type { ExcursionLeg, Spot, User } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { ACTION_ICONS } from '../utils/actionIcons';
-import { travelTypeIcon } from '../utils/travelTypeIcon';
+import { travelTypeIconDef } from '../utils/travelTypeIcon';
 import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
 import type { IconDef } from '../utils/icon';
 import AppIcon from './AppIcon.vue';
@@ -287,7 +287,8 @@ function onDeleteLeg() {
             class="layover-badge"
             title="Aufenthalts-/Umsteigezeit"
           >
-            ⏱️ {{ formatTravelDuration(getLayover(index)!) }} Umstiegszeit
+            <AppIcon :icon="ACTION_ICONS.duration" :size="12" group="actions" />
+            {{ formatTravelDuration(getLayover(index)!) }} Umstiegszeit
           </span>
           <button
             type="button"
@@ -313,12 +314,16 @@ function onDeleteLeg() {
             >
               <template v-if="getLegBetween(station.id, plannedStations[index + 1].id)">
                 <span class="leg-pill">
-                  {{
-                    travelTypeIcon(
-                      getLegBetween(station.id, plannedStations[index + 1].id)!.transport_type ??
-                        null
-                    )
-                  }}
+                  <AppIcon
+                    :icon="
+                      travelTypeIconDef(
+                        getLegBetween(station.id, plannedStations[index + 1].id)!.transport_type ??
+                          null
+                      )
+                    "
+                    :size="13"
+                    group="categories"
+                  />
                   <span class="leg-type">
                     {{
                       getLegBetween(station.id, plannedStations[index + 1].id)!.transport_type ||
@@ -434,18 +439,22 @@ function onDeleteLeg() {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .spot-order-picker {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .leg-connector {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 2px 0 2px 28px;
+  padding: 2px 0 2px var(--space-3);
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .leg-connector-line {
@@ -459,6 +468,9 @@ function onDeleteLeg() {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  min-width: 0;
+  max-width: 100%;
+  flex: 0 1 auto;
 }
 
 .leg-remove-btn {
@@ -469,28 +481,45 @@ function onDeleteLeg() {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .leg-btn {
+  @include touch-target($expand: true);
   display: inline-flex;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
   background: none;
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  padding: 3px 8px;
+  padding: 3px var(--space-2);
   font-size: 0.78rem;
   color: var(--color-text-muted);
   cursor: pointer;
   box-shadow: none;
-  transition: all 0.15s ease;
+  text-align: left;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.leg-btn:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary-dark);
-  background: var(--color-surface);
+@include can-hover {
+  .leg-btn:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary-dark);
+    background: var(--color-surface);
+  }
+}
+
+.leg-btn:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
 }
 
 .leg-btn.has-data {
@@ -504,8 +533,11 @@ function onDeleteLeg() {
 .leg-pill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: var(--space-1);
   font-weight: 500;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .leg-type {
@@ -516,11 +548,12 @@ function onDeleteLeg() {
   color: var(--color-text-muted);
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: var(--space-1);
 }
 
 .leg-duration {
-  color: var(--color-text-subtle);
+  color: var(--color-text-muted);
   font-size: 0.72rem;
 }
 
@@ -533,10 +566,13 @@ function onDeleteLeg() {
 .leg-empty {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .layover-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-text-muted);
@@ -546,6 +582,7 @@ function onDeleteLeg() {
   padding: 2px 6px;
   margin-left: auto;
   white-space: nowrap;
+  max-width: 100%;
 }
 
 .planned-box,
@@ -557,6 +594,7 @@ function onDeleteLeg() {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  min-width: 0;
 }
 
 .planned-box {
@@ -569,7 +607,7 @@ function onDeleteLeg() {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-text-muted);
-  padding: 0 4px;
+  padding: 0 var(--space-1);
 }
 
 .order-hint {
@@ -581,12 +619,14 @@ function onDeleteLeg() {
 .planned-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-2);
-  padding: 6px 8px;
+  padding: 6px var(--space-2);
   background: var(--color-surface);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   cursor: grab;
+  min-width: 0;
 }
 
 .planned-row:active {
@@ -601,7 +641,7 @@ function onDeleteLeg() {
   height: 2px;
   border-radius: 1px;
   background: var(--color-primary);
-  margin: 0 8px;
+  margin: 0 var(--space-2);
 }
 
 .order-num {
@@ -617,7 +657,7 @@ function onDeleteLeg() {
 }
 
 .spot-title {
-  flex: 1;
+  flex: 1 1 120px;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -626,17 +666,30 @@ function onDeleteLeg() {
 }
 
 .remove-btn {
+  @include touch-target;
   background: none;
   border: none;
   padding: 2px 6px;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   color: var(--color-text-muted);
   cursor: pointer;
   font-size: 0.85rem;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.remove-btn:hover {
-  color: var(--color-danger);
+@include can-hover {
+  .remove-btn:hover {
+    color: var(--color-danger);
+  }
+}
+
+.remove-btn:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
 }
 
 .spot-option-title {
@@ -648,18 +701,25 @@ function onDeleteLeg() {
 }
 
 .spot-option-likes {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   font-size: 0.8rem;
   color: var(--color-text-muted);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .derived-option {
+  @include touch-target($expand: true);
   display: flex;
   align-items: center;
   gap: var(--space-2);
   font-size: 0.9rem;
   background: none;
   border: none;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   /* #207: der globale `button`-Basisstil (style.css) setzt box-shadow: var(--shadow-sm) - ohne
      Reset klebten in dieser dichten Liste die Einzelschatten benachbarter Zeilen aneinander und
      wirkten buggy, statt wie ein einzelnes, flaches Listenelement auszusehen. */
@@ -668,11 +728,19 @@ function onDeleteLeg() {
   cursor: pointer;
   color: var(--color-text);
   width: 100%;
+  min-width: 0;
   text-align: left;
 }
 
-.derived-option:hover {
-  color: var(--color-primary-dark);
+@include can-hover {
+  .derived-option:hover {
+    color: var(--color-primary-dark);
+  }
+}
+
+.derived-option:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
 }
 
 .derived-add {
@@ -693,5 +761,12 @@ function onDeleteLeg() {
   margin: 0;
   font-size: 0.82rem;
   color: var(--color-text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leg-remove-btn,
+  .leg-btn {
+    transition: none;
+  }
 }
 </style>

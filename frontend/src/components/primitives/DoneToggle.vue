@@ -70,7 +70,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   </button>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .done-toggle {
   position: relative;
   display: inline-flex;
@@ -79,10 +79,10 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   min-height: 36px;
   background-color: transparent;
   background-image: var(--gradient-control-3d);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-pill);
   corner-shape: round;
-  padding: 4px 12px;
+  padding: var(--space-1) 12px;
   font-size: var(--font-size-xs);
   font-weight: 500;
   color: var(--color-text-muted);
@@ -107,12 +107,14 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   box-shadow: var(--focus-ring-halo);
 }
 
-.done-toggle:hover {
-  background-color: var(--color-control-hover-bg);
-  border-color: var(--toggle-hover-border, var(--color-primary));
-  color: var(--color-text);
-  box-shadow: var(--shadow-control-hover);
-  translate: 0 -1px;
+@include can-hover {
+  .done-toggle:hover {
+    background-color: var(--color-control-hover-bg);
+    border-color: var(--toggle-hover-border, var(--color-primary));
+    color: var(--color-text);
+    box-shadow: var(--shadow-control-hover);
+    translate: 0 -1px;
+  }
 }
 
 .done-toggle:active {
@@ -129,10 +131,12 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   box-shadow: var(--shadow-control);
 }
 
-.done-toggle.planned:hover {
-  border-color: var(--color-success);
-  color: var(--color-success);
-  box-shadow: var(--shadow-control-hover);
+@include can-hover {
+  .done-toggle.planned:hover {
+    border-color: var(--color-success);
+    color: var(--color-success);
+    box-shadow: var(--shadow-control-hover);
+  }
 }
 
 .done-toggle.active,
@@ -144,10 +148,12 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   box-shadow: var(--shadow-control);
 }
 
-.done-toggle.active:hover,
-.done-toggle.status-done:hover {
-  background-color: color-mix(in srgb, var(--color-success) 22%, transparent);
-  box-shadow: var(--shadow-control-hover);
+@include can-hover {
+  .done-toggle.active:hover,
+  .done-toggle.status-done:hover {
+    background-color: color-mix(in srgb, var(--color-success) 22%, transparent);
+    box-shadow: var(--shadow-control-hover);
+  }
 }
 
 .done-toggle-chevron {
@@ -159,8 +165,10 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
     opacity 0.15s ease;
 }
 
-.done-toggle:hover .done-toggle-chevron {
-  opacity: 1;
+@include can-hover {
+  .done-toggle:hover .done-toggle-chevron {
+    opacity: 1;
+  }
 }
 
 .done-toggle-chevron.is-open,
@@ -298,6 +306,13 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 @media (pointer: fine) {
   .done-toggle::after {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .done-toggle,
+  .done-toggle-chevron {
+    transition: none;
   }
 }
 </style>

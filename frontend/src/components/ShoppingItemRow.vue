@@ -80,7 +80,7 @@ const emit = defineEmits<{
   </CheckableListItem>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .item-main {
   display: flex;
   flex-direction: column;
@@ -144,7 +144,7 @@ const emit = defineEmits<{
   align-items: center;
   gap: var(--space-1);
   min-height: 34px;
-  padding: 4px 10px;
+  padding: var(--space-1) 10px;
   font-size: var(--font-size-xs);
   max-width: 100%;
   min-width: 0;
@@ -158,11 +158,12 @@ const emit = defineEmits<{
 }
 
 .link {
+  @include touch-target($expand: true);
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   min-height: 34px;
-  padding: 4px 8px;
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm-squircle);
   font-size: var(--font-size-xs);
   color: var(--color-primary);
@@ -171,8 +172,10 @@ const emit = defineEmits<{
   flex-shrink: 0;
 }
 
-.link:hover {
-  color: var(--color-primary-dark);
+@include can-hover {
+  .link:hover {
+    color: var(--color-primary-dark);
+  }
 }
 
 .link:focus-visible {

@@ -507,7 +507,8 @@ const isNewHighlight = computed(() => {
   transform: translateX(-50%);
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
+  corner-shape: round;
   border: 1px solid var(--color-border);
   box-shadow: 0 2px 6px var(--tile-icon-shadow, var(--shadow-sm));
   display: flex;

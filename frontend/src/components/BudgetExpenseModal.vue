@@ -489,6 +489,7 @@ async function handleDelete() {
 <style scoped lang="scss">
 .type-toggle-wrapper {
   margin-bottom: var(--space-1);
+  min-width: 0;
 }
 
 .edit-form {
@@ -508,6 +509,11 @@ async function handleDelete() {
 .row > * {
   flex: 1 1 140px;
   min-width: 0;
+}
+
+.row :deep(.combobox) {
+  min-width: 0;
+  width: 100%;
 }
 
 @include media-down('mobile') {

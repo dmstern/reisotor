@@ -102,7 +102,7 @@ const hasVisibleReadonlyItems = computed(
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .card-social-actions {
   display: flex;
   align-items: center;
@@ -132,8 +132,10 @@ const hasVisibleReadonlyItems = computed(
   color: var(--color-like);
 }
 
-.like-btn.liked:hover {
-  background: var(--color-like-tint);
+@include can-hover {
+  .like-btn.liked:hover {
+    background: var(--color-like-tint);
+  }
 }
 
 .comment-btn.active,

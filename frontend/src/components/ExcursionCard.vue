@@ -582,7 +582,7 @@ const {
   .excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) .card-disclosure-pill {
     background: var(--excursion-theme-color);
     border-color: var(--excursion-theme-color);
-    color: #ffffff;
+    color: var(--color-primary-contrast, #ffffff);
     box-shadow: var(--shadow-control-hover);
     transform: translateY(-1px);
   }
@@ -596,7 +596,7 @@ const {
     .card-disclosure-pill {
     background: var(--excursion-theme-color);
     border-color: var(--excursion-theme-color);
-    color: #ffffff;
+    color: var(--color-primary-contrast, #ffffff);
     box-shadow: var(--shadow-control-hover);
     transform: translateY(-1px);
   }
@@ -733,7 +733,7 @@ const {
   }
 
   .card-badge-group :deep(.category-chip) {
-    padding: 3px var(--radius-xs);
+    padding: 3px var(--space-1);
     gap: 0;
     max-width: none;
   }

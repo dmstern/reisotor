@@ -583,7 +583,7 @@ async function remove(id: number) {
 
 .note-actions {
   display: flex;
-  gap: 4px;
+  gap: var(--space-1);
   flex-shrink: 0;
   /* Rückt die Buttons auch dann ans rechte Zeilenende, wenn kein h3 (flex:1) daneben steht, das
      sie von selbst dorthin schiebt - z. B. bei einem Entwurf ohne Titel, wo nur DraftBadge.vue's

@@ -21,7 +21,7 @@ defineEmits<{
   ></div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .resize-handle {
   width: var(--drawer-handle-gap, 12px);
   position: relative;
@@ -50,7 +50,13 @@ defineEmits<{
     box-shadow 0.18s ease;
 }
 
-.resize-grip:hover,
+@include can-hover {
+  .resize-grip:hover {
+    background-color: color-mix(in srgb, var(--color-hover) 75%, transparent);
+    box-shadow: var(--shadow-inset);
+  }
+}
+
 .resize-grip:active,
 .resize-grip.resizing {
   background-color: color-mix(in srgb, var(--color-hover) 75%, transparent);
@@ -63,7 +69,7 @@ defineEmits<{
   height: var(--input-default-height, 46px);
   box-sizing: border-box;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--color-border-strong);
+  border: var(--border-width) solid var(--color-border-strong);
   background-color: var(--color-surface);
   background-image: linear-gradient(
     90deg,
@@ -81,14 +87,16 @@ defineEmits<{
     transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.resize-grip:hover::after {
-  height: 54px;
-  transform: scaleX(1.12);
-  background-color: var(--color-primary-tint);
-  border-color: var(--color-primary);
-  box-shadow:
-    inset 1px 1px 0 var(--shadow-control-highlight-strong),
-    var(--shadow-control-hover);
+@include can-hover {
+  .resize-grip:hover::after {
+    height: 54px;
+    transform: scaleX(1.12);
+    background-color: var(--color-primary-tint);
+    border-color: var(--color-primary);
+    box-shadow:
+      inset 1px 1px 0 var(--shadow-control-highlight-strong),
+      var(--shadow-control-hover);
+  }
 }
 
 .resize-grip:active::after,
@@ -98,5 +106,12 @@ defineEmits<{
   background-color: var(--color-primary);
   border-color: var(--color-primary-dark);
   box-shadow: var(--shadow-control-active);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resize-grip,
+  .resize-grip::after {
+    transition: none;
+  }
 }
 </style>

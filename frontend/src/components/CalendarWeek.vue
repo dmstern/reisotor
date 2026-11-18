@@ -147,7 +147,7 @@ function isTripEnd(date: string) {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .week {
   container-type: inline-size;
   display: grid;
@@ -167,10 +167,10 @@ function isTripEnd(date: string) {
 .day {
   position: relative;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  padding: 5px 4px;
+  padding: 5px var(--space-1);
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -186,22 +186,27 @@ function isTripEnd(date: string) {
     box-shadow var(--transition-fast);
 }
 
-.day:hover {
-  background: var(--color-hover);
-  transform: translateY(-1px);
+@include can-hover {
+  .day:hover {
+    background: var(--color-hover);
+    transform: translateY(-1px);
+  }
 }
 
 .day:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
   outline-offset: -2px;
+  box-shadow: var(--focus-ring-halo);
 }
 
 .day.in-trip {
   background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface));
 }
 
-.day.in-trip:hover {
-  background: color-mix(in srgb, var(--color-primary) 9%, var(--color-surface));
+@include can-hover {
+  .day.in-trip:hover {
+    background: color-mix(in srgb, var(--color-primary) 9%, var(--color-surface));
+  }
 }
 
 /* Urlaubs-Streifen am unteren Rand der Zelle */
@@ -271,14 +276,16 @@ function isTripEnd(date: string) {
   }
 }
 
-:global(body.is-dragging-calendar .day:hover) {
-  background: color-mix(in srgb, var(--color-scheduled) 28%, var(--color-surface));
-  border-color: var(--color-scheduled);
-  box-shadow:
-    0 0 0 3px var(--color-scheduled),
-    0 8px 22px -2px color-mix(in srgb, var(--color-scheduled) 55%, transparent);
-  transform: translateY(-2px) scale(1.02);
-  z-index: 5;
+@include can-hover {
+  :global(body.is-dragging-calendar .day:hover) {
+    background: color-mix(in srgb, var(--color-scheduled) 28%, var(--color-surface));
+    border-color: var(--color-scheduled);
+    box-shadow:
+      0 0 0 3px var(--color-scheduled),
+      0 8px 22px -2px color-mix(in srgb, var(--color-scheduled) 55%, transparent);
+    transform: translateY(-2px) scale(1.02);
+    z-index: 5;
+  }
 }
 
 /* Führende/nachfolgende Tage aus dem Vor-/Folgemonat in der echten Monatsansicht (siehe otherMonth
@@ -320,7 +327,7 @@ function isTripEnd(date: string) {
   min-height: 22px;
 }
 
-@container (max-width: 480px) {
+@include container-down('mobile') {
   .day-badge-wrap {
     flex-direction: column;
     align-items: center;
@@ -336,9 +343,9 @@ function isTripEnd(date: string) {
   }
 }
 
-@container (max-width: 360px) {
+@include container-down('mobile-compact') {
   .day {
-    padding: 4px 2px;
+    padding: var(--space-1) 2px;
   }
 }
 
@@ -443,7 +450,6 @@ function isTripEnd(date: string) {
 
 .item-checkbox {
   appearance: none;
-  -webkit-appearance: none;
   display: inline-block;
   flex-shrink: 0;
   width: 9px;
@@ -470,7 +476,7 @@ function isTripEnd(date: string) {
   content: '';
   width: 2px;
   height: 5px;
-  border: solid #fff;
+  border: solid var(--color-primary-contrast, #ffffff);
   border-width: 0 1.5px 1.5px 0;
   position: absolute;
   left: 2px;
@@ -483,6 +489,7 @@ function isTripEnd(date: string) {
   font-weight: 700;
   margin-right: 2px;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .more {
@@ -491,18 +498,29 @@ function isTripEnd(date: string) {
   color: var(--color-text-muted);
   padding: 0 3px;
   text-align: right;
+  white-space: nowrap;
 }
 
 @container (min-width: 520px) {
   .day {
     min-height: 84px;
     padding: 7px 6px;
-    gap: 4px;
+    gap: var(--space-1);
   }
 
   .item-line,
   .acc-bar {
     font-size: 0.68rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .day {
+    transition: none;
+  }
+
+  :global(body.is-dragging-calendar .day.in-trip) {
+    animation: none;
   }
 }
 </style>

@@ -81,6 +81,7 @@ const isAllDone = computed(() => props.completed === props.total && props.total 
 .progress-pill-group {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-2);
 }
 
@@ -88,6 +89,7 @@ const isAllDone = computed(() => props.completed === props.total && props.total 
   font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 .header-progress-track {

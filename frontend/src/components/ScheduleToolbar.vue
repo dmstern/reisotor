@@ -132,11 +132,12 @@ defineEmits<{
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .schedule-toolbar-container {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  min-width: 0;
 }
 
 .pending-schedule-banner {
@@ -152,7 +153,13 @@ defineEmits<{
   border: 1px solid color-mix(in srgb, var(--color-scheduled) 50%, transparent);
   font-size: var(--font-size-sm);
   font-weight: 600;
-  color: var(--color-scheduled);
+  color: var(--color-scheduled-dark, var(--color-scheduled));
+}
+
+.pending-schedule-banner > span {
+  flex: 1 1 180px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .pending-schedule-banner .btn {
@@ -163,6 +170,7 @@ defineEmits<{
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .toolbar-nav-row {
@@ -171,26 +179,33 @@ defineEmits<{
   justify-content: space-between;
   gap: var(--space-2);
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .granularity-wrap {
   display: flex;
   justify-content: flex-end;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .pager {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  max-width: 100%;
+  min-width: 0;
 }
 
 .range-label {
   font-size: var(--font-size-sm);
   font-weight: 700;
   color: var(--color-text);
-  min-width: 11ch;
+  min-width: 0;
   text-align: center;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .toolbar-actions-row {
@@ -199,6 +214,7 @@ defineEmits<{
   justify-content: space-between;
   gap: var(--space-2);
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .jump-row {
@@ -206,6 +222,7 @@ defineEmits<{
   align-items: center;
   gap: var(--space-1);
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 @container schedule-view (max-width: 330px) {
@@ -225,7 +242,7 @@ defineEmits<{
 
 @container schedule-view (max-width: 300px) {
   :deep(.segmented-option) {
-    padding: 4px 6px;
+    padding: var(--space-1) 6px;
     font-size: var(--font-size-xs);
   }
 }

@@ -697,7 +697,7 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 /* Mobil (Default): die Karte füllt ihren Container (.map-col in ExcursionsView.vue, dort auf Mobil
    position:absolute über den ganzen Bildschirm) randlos vollflächig aus, ähnlich Google Maps –
    .karte spannt als absoluter Container den trip-map Query-Container auf, damit alle untergeordneten
@@ -754,7 +754,7 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   overflow-x: auto;
   scrollbar-width: none;
   margin-bottom: var(--space-2);
-  padding: 2px;
+  padding: 4px;
 }
 
 .excursion-track-switcher::-webkit-scrollbar {
@@ -762,6 +762,7 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
 }
 
 .excursion-track-pill {
+  @include touch-target($expand: true);
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
@@ -775,7 +776,7 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   backdrop-filter: var(--backdrop-blur-md);
   box-shadow: var(--shadow-control);
   color: var(--color-text);
-  font-size: var(--text-xs, 0.75rem);
+  font-size: var(--font-size-xs);
   font-weight: 500;
   cursor: pointer;
   transition:
@@ -784,10 +785,16 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
     color 0.15s ease;
 }
 
+.excursion-track-pill:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo), var(--shadow-control);
+}
+
 .excursion-track-pill.is-active {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-primary-contrast, #ffffff);
 }
 
 .excursion-track-pill-avatar {

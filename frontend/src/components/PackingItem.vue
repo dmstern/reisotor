@@ -267,8 +267,10 @@ function handleMainClick(e: MouseEvent) {
   justify-content: center;
 }
 
-.state-toggle:hover {
-  border-color: var(--color-primary);
+@include can-hover {
+  .state-toggle:hover {
+    border-color: var(--color-primary);
+  }
 }
 
 .state-toggle:focus-visible {
@@ -300,7 +302,7 @@ function handleMainClick(e: MouseEvent) {
   content: '';
   width: 6px;
   height: 11px;
-  border: solid #fff;
+  border: solid var(--color-primary-contrast, #ffffff);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg) translate(-1px, -1px);
 }
@@ -334,11 +336,13 @@ function handleMainClick(e: MouseEvent) {
 }
 
 .tally-pill {
+  @include touch-target($pseudo: 'before', $expand: true);
+  position: relative;
   appearance: none;
   -webkit-appearance: none;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   height: 36px;
   min-height: 34px;
   padding: 0 12px;
@@ -362,9 +366,11 @@ function handleMainClick(e: MouseEvent) {
   white-space: nowrap;
 }
 
-.tally-pill:hover {
-  border-color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+@include can-hover {
+  .tally-pill:hover {
+    border-color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+  }
 }
 
 .tally-pill:active {
@@ -382,21 +388,25 @@ function handleMainClick(e: MouseEvent) {
   border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
 }
 
-.tally-pill.laidOut:hover {
-  background: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
-  border-color: var(--color-primary);
+@include can-hover {
+  .tally-pill.laidOut:hover {
+    background: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
+    border-color: var(--color-primary);
+  }
 }
 
 .tally-pill.packed {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-primary-contrast, #ffffff);
   box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary) 35%, transparent);
 }
 
-.tally-pill.packed:hover {
-  background: color-mix(in srgb, var(--color-primary) 88%, #000);
-  border-color: color-mix(in srgb, var(--color-primary) 88%, #000);
+@include can-hover {
+  .tally-pill.packed:hover {
+    background: var(--color-primary-dark);
+    border-color: var(--color-primary-dark);
+  }
 }
 
 .tally-marks {
@@ -461,13 +471,13 @@ function handleMainClick(e: MouseEvent) {
 }
 
 .tally-pill.packed .tally-count {
-  color: #ffffff;
+  color: var(--color-primary-contrast, #ffffff);
 }
 
 .tally-check {
   font-weight: 700;
   font-size: var(--font-size-xs);
-  color: #ffffff;
+  color: var(--color-primary-contrast, #ffffff);
   line-height: 1;
 }
 
@@ -517,10 +527,12 @@ function handleMainClick(e: MouseEvent) {
     transform 0.1s ease;
 }
 
-.tally-minus:hover {
-  border-color: var(--color-danger);
-  color: var(--color-danger);
-  background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
+@include can-hover {
+  .tally-minus:hover {
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+    background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
+  }
 }
 
 .tally-minus:active {
@@ -531,5 +543,13 @@ function handleMainClick(e: MouseEvent) {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
   outline-offset: var(--focus-ring-offset, 2px);
   box-shadow: var(--focus-ring-halo);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .state-toggle,
+  .tally-pill,
+  .tally-minus {
+    transition: none;
+  }
 }
 </style>

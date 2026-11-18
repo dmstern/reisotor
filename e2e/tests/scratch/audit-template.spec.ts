@@ -4,6 +4,7 @@ import {
   expectNoHorizontalOverflow,
   setCalendarDrawerOpen,
   setCalendarDrawerWidth,
+  setSpotsColumnWidth,
   getAppMainContentWidth,
   VIEWPORTS,
 } from '../helpers/layout.js';
@@ -36,11 +37,14 @@ async function auditInteractiveStates(page: import('@playwright/test').Page): Pr
   const allDetails = page.locator('details');
   const detailsCount = await allDetails.count();
   let opened = 0;
+
   for (let i = 0; i < detailsCount && opened < 3; i++) {
     const detail = allDetails.nth(i);
     const isOpen = await detail.evaluate((el) => el.hasAttribute('open'));
+
     if (!isOpen) {
       const summary = detail.locator('summary').first();
+
       if (await summary.isVisible()) {
         await summary.click();
         opened++;
@@ -53,13 +57,39 @@ async function auditInteractiveStates(page: import('@playwright/test').Page): Pr
   // 2. Tab-Matrix: Falls Tabs vorhanden sind (z. B. TabBar in ListenView oder SettingsView), jeden Reiter durchschalten
   const tabs = page.locator('.tab-bar [role="tab"]');
   const tabCount = await tabs.count();
+
   for (let i = 0; i < tabCount; i++) {
     const tab = tabs.nth(i);
+
     if (await tab.isVisible()) {
       // Direkter DOM-Klick vermeidet Pointer-Interception durch .tab-bar-arrow Overlays am Rand auf 320px
       await tab.evaluate((el: HTMLElement) => el.click());
       await page.waitForTimeout(100);
       await expectNoHorizontalOverflow(page);
+    }
+  }
+
+  // 3. SegmentedToggle-Matrix: Falls auf der Seite ein primärer SegmentedToggle existiert (z. B. Spots/Touren/Tracks
+  //    oder Kalender-Granularität), die Optionen einmal durchschalten und am Ende die erste Option wiederherstellen.
+  const firstSegmentedGroup = page.locator('.segmented-toggle').first();
+
+  if (await firstSegmentedGroup.isVisible()) {
+    const segButtons = firstSegmentedGroup.locator('button.segmented-option');
+    const segCount = await segButtons.count();
+
+    for (let i = 0; i < segCount; i++) {
+      const btn = segButtons.nth(i);
+
+      if (await btn.isVisible()) {
+        await btn.evaluate((el: HTMLElement) => el.click());
+        await page.waitForTimeout(80);
+        await expectNoHorizontalOverflow(page);
+      }
+    }
+
+    if (segCount > 1) {
+      await segButtons.first().evaluate((el: HTMLElement) => el.click());
+      await page.waitForTimeout(50);
     }
   }
 }
@@ -80,9 +110,11 @@ for (const targetRoute of targetRoutes) {
       }) => {
         await forceFontDisplayBlock(page);
         await page.setViewportSize({ width: vp.width, height: vp.height });
+
         if (targetRoute === '/login') {
           await page.context().clearCookies();
         }
+
         await page.goto(targetRoute);
         await waitForAppReady(page);
         await waitForMapTiles(page);
@@ -120,9 +152,11 @@ for (const targetRoute of targetRoutes) {
       }) => {
         await forceFontDisplayBlock(page);
         await page.setViewportSize({ width: vp.width, height: vp.height });
+
         if (targetRoute === '/login') {
           await page.context().clearCookies();
         }
+
         await page.goto(targetRoute);
         await waitForAppReady(page);
         await waitForMapTiles(page);
@@ -130,6 +164,7 @@ for (const targetRoute of targetRoutes) {
         // Zustand 1: Schublade geöffnet (Default auf Desktop)
         await setCalendarDrawerOpen(page, true);
         await expectNoHorizontalOverflow(page);
+
         if (process.env.AUDIT_SCREENSHOTS) {
           await waitForMapTiles(page);
           await page.screenshot({
@@ -137,12 +172,16 @@ for (const targetRoute of targetRoutes) {
             fullPage: false,
           });
         }
+
         const widthOpen = await getAppMainContentWidth(page);
 
-        // Zustand 2: Stufenlose Maximalbreite / Enge-Stresstest (Schublade breit ziehen)
+        // Zustand 2: Stufenlose Minimal- & Maximalbreite / Enge-Stresstest (Schublade schmal & breit ziehen)
         if ((await page.locator('.drawer.left').count()) > 0) {
+          await setCalendarDrawerWidth(page, 280);
+          await expectNoHorizontalOverflow(page);
           await setCalendarDrawerWidth(page, 500);
           await expectNoHorizontalOverflow(page);
+
           if (process.env.AUDIT_SCREENSHOTS) {
             await waitForMapTiles(page);
             await page.screenshot({
@@ -150,13 +189,22 @@ for (const targetRoute of targetRoutes) {
               fullPage: false,
             });
           }
-          // Auch bei verengtem Desktop-Hauptbereich Tabs & Accordions auf Overflow prüfen
+
+          // Falls eine stufenlose Spots-Spalte (.col-resize-handle in ExcursionsView) vorhanden ist,
+          // auch deren Minimalbreite (280px) bei geöffneter Kalenderschublade auf Enge-Overflow prüfen
+          if ((await page.locator('.col-resize-handle').count()) > 0) {
+            await setSpotsColumnWidth(page, 280);
+            await expectNoHorizontalOverflow(page);
+          }
+
+          // Auch bei verengtem Desktop-Hauptbereich Tabs, SegmentedToggles & Accordions auf Overflow prüfen
           await auditInteractiveStates(page);
         }
 
         // Zustand 3: Schublade geschlossen (volle Inhaltsbreite)
         await setCalendarDrawerOpen(page, false);
         await expectNoHorizontalOverflow(page);
+
         if (process.env.AUDIT_SCREENSHOTS) {
           await waitForMapTiles(page);
           await page.screenshot({
@@ -164,6 +212,7 @@ for (const targetRoute of targetRoutes) {
             fullPage: false,
           });
         }
+
         const widthClosed = await getAppMainContentWidth(page);
 
         // Verifikation: Geschlossen muss der .app-main Container breiter sein als geöffnet

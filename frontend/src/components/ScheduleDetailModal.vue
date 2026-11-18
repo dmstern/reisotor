@@ -187,9 +187,10 @@ const emit = defineEmits<{
   font-size: var(--font-size-xs);
   font-weight: 600;
   line-height: 1.2;
+  white-space: nowrap;
   background: var(--color-hover);
   color: var(--color-text-muted);
-  border: 1px solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
 }
 
 .detail-badge.weather-badge {
@@ -205,6 +206,7 @@ const emit = defineEmits<{
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-1);
+  min-width: 0;
 }
 
 .linked-entity-btn {
@@ -212,6 +214,11 @@ const emit = defineEmits<{
   align-items: center;
   gap: var(--space-2);
   max-width: 100%;
+  min-width: 0;
+}
+
+.linked-entity-btn :deep(.app-icon) {
+  flex-shrink: 0;
 }
 
 .linked-entity-title {
@@ -225,6 +232,7 @@ const emit = defineEmits<{
 .linked-entity-chevron {
   margin-left: var(--space-1);
   opacity: 0.6;
+  flex-shrink: 0;
 }
 
 .detail-actions {
@@ -234,6 +242,6 @@ const emit = defineEmits<{
   gap: var(--space-2);
   margin-top: var(--space-3);
   padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border);
+  border-top: var(--border-width) solid var(--color-border);
 }
 </style>

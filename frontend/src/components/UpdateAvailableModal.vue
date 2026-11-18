@@ -467,10 +467,17 @@ function goToSettings() {
   font: inherit;
   cursor: pointer;
   display: inline;
+  border-radius: var(--radius-xs);
 }
 
 .settings-link:hover {
   filter: brightness(1.2);
+}
+
+.settings-link:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 @media (prefers-reduced-motion: reduce) {

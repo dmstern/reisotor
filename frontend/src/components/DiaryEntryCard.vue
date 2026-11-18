@@ -270,10 +270,11 @@ function excursionTooltip(ex: Excursion): string {
   </Card>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .entry-head {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-2);
   margin-bottom: var(--space-2);
 }
@@ -346,7 +347,7 @@ function excursionTooltip(ex: Excursion): string {
   gap: var(--space-2);
   margin-top: var(--space-2);
   padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border);
+  border-top: var(--border-width) solid var(--color-border);
 }
 
 .excursion-links {
@@ -376,12 +377,14 @@ function excursionTooltip(ex: Excursion): string {
   min-width: 0;
 }
 
-.excursion-chip:hover {
-  background: var(--color-primary-tint);
+@include can-hover {
+  .excursion-chip:hover {
+    background: var(--color-primary-tint);
+  }
 }
 
 .excursion-chip--mismatch {
-  border: 1px solid var(--color-warning);
+  border: var(--border-width) solid var(--color-warning);
 }
 
 .chip-mismatch-badge {
@@ -404,8 +407,9 @@ function excursionTooltip(ex: Excursion): string {
 }
 
 .excursion-chip:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .excursion-chip-title {
@@ -445,7 +449,7 @@ function excursionTooltip(ex: Excursion): string {
   font-size: var(--font-size-md);
 }
 
-@container app-main (max-width: 480px) {
+@include container-app-main-down('mobile') {
   .card-actions-wrapper {
     flex-direction: column;
     align-items: stretch;

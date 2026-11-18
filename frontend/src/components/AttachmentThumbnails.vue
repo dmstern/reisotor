@@ -237,7 +237,7 @@ const stackTooltip = computed(() => {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .attachment-thumbnails {
   margin-top: var(--space-2);
   margin-bottom: var(--space-3);
@@ -271,6 +271,7 @@ const stackTooltip = computed(() => {
 }
 
 .stack-fan-pill {
+  @include touch-target($expand: true);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -290,15 +291,18 @@ const stackTooltip = computed(() => {
   user-select: none;
 }
 
-.stack-fan-pill:hover {
-  border-color: var(--color-primary);
-  background: var(--color-primary-tint, rgba(59, 130, 246, 0.08));
-  transform: translateY(-1px);
+@include can-hover {
+  .stack-fan-pill:hover {
+    border-color: var(--color-primary);
+    background: var(--color-primary-tint, rgba(59, 130, 246, 0.08));
+    transform: translateY(-1px);
+  }
 }
 
 .stack-fan-pill:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .fan-pill-count {
@@ -344,16 +348,17 @@ const stackTooltip = computed(() => {
 }
 
 .stack-collapse-btn {
+  @include touch-target($expand: true);
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   padding: 3px 10px;
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--color-primary);
   background: var(--color-primary-tint, rgba(59, 130, 246, 0.1));
   border: 1px solid var(--color-primary-border, rgba(59, 130, 246, 0.2));
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
   transition:
     background-color 0.15s ease,
@@ -362,15 +367,18 @@ const stackTooltip = computed(() => {
   user-select: none;
 }
 
-.stack-collapse-btn:hover {
-  background: var(--color-primary);
-  color: #ffffff;
-  transform: translateY(-1px);
+@include can-hover {
+  .stack-collapse-btn:hover {
+    background: var(--color-primary);
+    color: var(--color-primary-contrast, #ffffff);
+    transform: translateY(-1px);
+  }
 }
 
 .stack-collapse-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .fanned-list {
@@ -390,15 +398,17 @@ const stackTooltip = computed(() => {
     z-index 0.2s ease;
 }
 
-.fanned-item-wrap:hover {
-  transform: rotate(var(--item-rot, 0deg)) scale(1.08) translateY(-3px);
-  z-index: 10;
-}
+@include can-hover {
+  .fanned-item-wrap:hover {
+    transform: rotate(var(--item-rot, 0deg)) scale(1.08) translateY(-3px);
+    z-index: 10;
+  }
 
-.fanned-item-wrap:hover .fanned-polaroid {
-  box-shadow:
-    0 8px 18px rgba(0, 0, 0, 0.22),
-    0 2px 6px rgba(0, 0, 0, 0.14);
+  .fanned-item-wrap:hover .fanned-polaroid {
+    box-shadow:
+      0 8px 18px rgba(0, 0, 0, 0.22),
+      0 2px 6px rgba(0, 0, 0, 0.14);
+  }
 }
 
 /* Basis-Stile für beide Karten-Typen */
@@ -418,8 +428,8 @@ const stackTooltip = computed(() => {
 
 .fanned-polaroid:focus-visible {
   box-shadow:
-    0 0 0 2px var(--color-background, #ffffff),
-    0 0 0 4px var(--color-primary, #3b82f6);
+    0 0 0 2px var(--color-bg, var(--color-surface)),
+    0 0 0 4px var(--color-focus-ring, var(--color-primary));
 }
 
 /* ==========================================================================
@@ -634,11 +644,11 @@ const stackTooltip = computed(() => {
   min-width: 22px;
   min-height: 22px;
   padding: 0;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   corner-shape: round;
-  border: 1.5px solid #ffffff;
+  border: 1.5px solid var(--color-surface, #ffffff);
   background: var(--color-danger, #c0392b);
-  color: white;
+  color: var(--color-primary-contrast, #ffffff);
   line-height: 1;
   cursor: pointer;
   display: flex;
@@ -661,9 +671,17 @@ const stackTooltip = computed(() => {
   }
 }
 
-.remove-thumb:hover {
-  background: var(--color-danger-dark, #a93226);
-  transform: scale(1.15);
+@include can-hover {
+  .remove-thumb:hover {
+    background: var(--color-danger-dark, #a93226);
+    transform: scale(1.15);
+  }
+}
+
+.remove-thumb:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 @media (prefers-reduced-motion: reduce) {

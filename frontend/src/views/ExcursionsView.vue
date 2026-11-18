@@ -2278,9 +2278,11 @@ onUnmounted(() => {
   border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-glass-field-inset-border));
 }
 
-.collapsed-search-trigger:hover {
-  background-color: var(--color-glass-field-inset-hover-bg);
-  color: var(--color-text);
+@include can-hover {
+  .collapsed-search-trigger:hover {
+    background-color: var(--color-glass-field-inset-hover-bg);
+    color: var(--color-text);
+  }
 }
 
 .collapsed-search-trigger:active {
@@ -2710,9 +2712,11 @@ onUnmounted(() => {
   color: #fff;
 }
 
-.header-actions button.recording:hover {
-  background: color-mix(in srgb, var(--color-danger) 85%, black);
-  border-color: color-mix(in srgb, var(--color-danger) 85%, black);
+@include can-hover {
+  .header-actions button.recording:hover {
+    background: color-mix(in srgb, var(--color-danger) 85%, black);
+    border-color: color-mix(in srgb, var(--color-danger) 85%, black);
+  }
 }
 
 .active-recording-banner {
@@ -3023,8 +3027,10 @@ onUnmounted(() => {
   display: inline;
 }
 
-.filter-reset-link:hover {
-  color: var(--color-primary-dark);
+@include can-hover {
+  .filter-reset-link:hover {
+    color: var(--color-primary-dark);
+  }
 }
 
 .filter-reset-link:focus-visible {

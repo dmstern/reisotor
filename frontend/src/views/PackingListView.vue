@@ -164,20 +164,27 @@ async function handleEditDelete(id: number) {
 
 .list-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
+  gap: var(--space-1) var(--space-2);
   margin-bottom: var(--space-2);
 }
 
 .list-header h2 {
+  flex: 1;
+  min-width: 0;
   font-size: 1.05rem;
   color: var(--color-primary-dark);
   margin: 0;
+  overflow-wrap: break-word;
 }
 
 .progress {
   font-size: 0.85rem;
   color: var(--color-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .group {
@@ -189,6 +196,7 @@ async function handleEditDelete(id: number) {
   font-size: 0.9rem;
   color: var(--color-text-muted);
   margin: 0 0 var(--space-2);
+  overflow-wrap: break-word;
 }
 
 .subcategory {
@@ -197,7 +205,8 @@ async function handleEditDelete(id: number) {
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  margin: var(--space-2) 0 4px;
+  margin: var(--space-2) 0 var(--space-1);
+  overflow-wrap: break-word;
 }
 
 .list {
