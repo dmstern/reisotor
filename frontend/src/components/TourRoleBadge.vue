@@ -9,10 +9,13 @@ const props = withDefaults(
   defineProps<{
     role?: IdeaRole | TourRoleFilterOption | '' | null;
     size?: number;
+    /** Transluzenter Hintergrund für getönte/glasige Flächen */
+    translucent?: boolean;
   }>(),
   {
     role: null,
     size: 14,
+    translucent: false,
   }
 );
 
@@ -39,6 +42,7 @@ const customMeta = computed(() => {
     :category="meta.label"
     :custom-meta="customMeta"
     :size="size"
+    :translucent="translucent"
   />
 </template>
 

@@ -14,11 +14,14 @@ const props = withDefaults(
     iconOnly?: boolean;
     size?: number;
     customMeta?: { label: string; icon: string; color: string; tabler: IconDef };
+    /** Transluzenter Hintergrund für getönte/glasige Flächen statt opaque über --color-surface */
+    translucent?: boolean;
   }>(),
   {
     type: 'spot',
     iconOnly: false,
     size: 14,
+    translucent: false,
   }
 );
 
@@ -41,7 +44,8 @@ const meta = computed(() => {
   <Badge
     v-if="category && meta"
     class="category-chip"
-    :class="{ 'is-icon-only': iconOnly }"
+    :class="{ 'is-icon-only': iconOnly, 'is-translucent': translucent }"
+    :translucent="translucent"
     :title="category"
     :style="{
       '--category-color': meta.color,
@@ -71,6 +75,11 @@ const meta = computed(() => {
     color var(--transition-fast);
 }
 
+.category-chip.is-translucent {
+  --chip-bg: color-mix(in srgb, var(--category-color) 11%, transparent);
+  --chip-border: color-mix(in srgb, var(--category-color) 24%, transparent);
+}
+
 /* Dunkel-Modus: Strahlend helle Textfarbe (80% weiß gemischt) und satterer Tint-Hintergrund für hohe Leuchtkraft */
 :root[data-theme='dark'] .category-chip {
   --chip-bg: color-mix(in srgb, var(--category-color) 22%, var(--color-surface, #1e1e24));
@@ -78,11 +87,21 @@ const meta = computed(() => {
   --chip-border: color-mix(in srgb, var(--category-color) 38%, transparent);
 }
 
+:root[data-theme='dark'] .category-chip.is-translucent {
+  --chip-bg: color-mix(in srgb, var(--category-color) 16%, transparent);
+  --chip-border: color-mix(in srgb, var(--category-color) 26%, transparent);
+}
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .category-chip {
     --chip-bg: color-mix(in srgb, var(--category-color) 22%, var(--color-surface, #1e1e24));
     --chip-text: color-mix(in srgb, var(--category-color) 20%, #ffffff);
     --chip-border: color-mix(in srgb, var(--category-color) 38%, transparent);
+  }
+
+  :root:not([data-theme='light']) .category-chip.is-translucent {
+    --chip-bg: color-mix(in srgb, var(--category-color) 16%, transparent);
+    --chip-border: color-mix(in srgb, var(--category-color) 26%, transparent);
   }
 }
 

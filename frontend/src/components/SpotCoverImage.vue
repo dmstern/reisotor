@@ -102,9 +102,12 @@ function formatAccommodationDate(dateStr: string | null) {
   align-items: center;
   justify-content: center;
   position: relative;
+  box-sizing: border-box;
   transition:
     height 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-    box-shadow 0.2s ease;
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   border-radius: calc(var(--radius-md-squircle) - var(--space-1));
   corner-shape: squircle;
   overflow: hidden;
@@ -114,13 +117,24 @@ function formatAccommodationDate(dateStr: string | null) {
 .image.is-expanded {
   height: 165px;
   cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 28%, var(--color-border));
+  box-shadow:
+    inset 0 1px 0 var(--shadow-control-highlight),
+    var(--shadow-control);
 }
 
 @include can-hover {
   .image.is-expanded:hover:not(:has(a:hover)) {
+    border-color: var(--color-primary);
     box-shadow:
-      inset 0 0 0 2px var(--color-primary),
-      0 4px 12px rgba(0, 0, 0, 0.18);
+      inset 0 1px 0 var(--shadow-control-highlight-strong),
+      var(--shadow-control-hover);
+    transform: translateY(-1px);
+  }
+
+  .image.is-expanded:active:not(:has(a:active)) {
+    transform: translateY(1px) scale(0.995);
+    box-shadow: var(--shadow-control-active);
   }
 }
 
@@ -149,7 +163,7 @@ function formatAccommodationDate(dateStr: string | null) {
   pointer-events: none;
 }
 
-/* Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit Titel, Autor, Notiz & Metadaten */
+/* Expanded Cover Overlay: Halbdunkles Gradient-Overlay mit 3D-Verlauf, Titel, Autor, Notiz & Metadaten */
 .image-expanded-overlay {
   position: absolute;
   inset: 0;
@@ -157,13 +171,15 @@ function formatAccommodationDate(dateStr: string | null) {
   flex-direction: column;
   justify-content: flex-end;
   padding: var(--space-3);
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.55) 0%,
-    rgba(0, 0, 0, 0.15) 25%,
-    rgba(0, 0, 0, 0.6) 55%,
-    rgba(0, 0, 0, 0.92) 100%
-  );
+  background:
+    var(--gradient-control-3d),
+    linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.55) 0%,
+      rgba(0, 0, 0, 0.15) 25%,
+      rgba(0, 0, 0, 0.6) 55%,
+      rgba(0, 0, 0, 0.92) 100%
+    );
   border-radius: inherit;
   pointer-events: none;
   z-index: var(--z-card);
@@ -344,7 +360,6 @@ function formatAccommodationDate(dateStr: string | null) {
 @container spots-col (max-width: 480px) {
   .image {
     height: 100px;
-    transition: height 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   .image.is-expanded {

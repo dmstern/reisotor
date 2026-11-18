@@ -28,6 +28,14 @@ describe('Badge primitive', () => {
     expect(html).toContain('badge--size-sm');
     expect(html).toContain('Test Badge');
     expect(html).not.toContain('badge__close-btn');
+    expect(html).not.toContain('badge--translucent');
+  });
+
+  it('adds badge--translucent when translucent is true', async () => {
+    const app = createTestApp(Badge, { variant: 'primary', translucent: true });
+    const html = await renderToString(app);
+    expect(html).toContain('badge--primary');
+    expect(html).toContain('badge--translucent');
   });
 
   it('renders closable badge with integrated close button', async () => {
