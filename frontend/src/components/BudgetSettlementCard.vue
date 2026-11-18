@@ -76,7 +76,11 @@ const store = useBudgetStore();
   </Card>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+.settlement-card h2 {
+  margin: 0 0 var(--space-2);
+}
+
 .settled-banner {
   display: flex;
   align-items: center;
@@ -129,10 +133,12 @@ const store = useBudgetStore();
     border-color 0.2s ease;
 }
 
-.suggestion-row:hover {
-  transform: translateY(-1.5px);
-  box-shadow: var(--shadow-sm);
-  border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-border));
+@include can-hover {
+  .suggestion-row:hover {
+    transform: translateY(-1.5px);
+    box-shadow: var(--shadow-sm);
+    border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-border));
+  }
 }
 
 .suggestion-text {
@@ -161,7 +167,7 @@ const store = useBudgetStore();
   font-size: var(--font-size-xs);
 }
 
-@container app-main (max-width: 480px) {
+@include container-app-main-down('mobile') {
   .suggestion-row {
     flex-direction: column;
     align-items: stretch;
@@ -186,6 +192,7 @@ const store = useBudgetStore();
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: var(--space-2);
   font-size: var(--font-size-sm);
   padding: var(--space-1) var(--space-2);
@@ -194,12 +201,15 @@ const store = useBudgetStore();
   transition: background 0.15s ease;
 }
 
-.balance-row:hover {
-  background: var(--color-hover);
+@include can-hover {
+  .balance-row:hover {
+    background: var(--color-hover);
+  }
 }
 
 .balance-row :deep(.badge) {
   flex-shrink: 0;
+  margin-left: auto;
   font-variant-numeric: tabular-nums;
 }
 
@@ -215,5 +225,12 @@ const store = useBudgetStore();
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   margin: var(--space-2) 0 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .suggestion-row,
+  .balance-row {
+    transition: none;
+  }
 }
 </style>

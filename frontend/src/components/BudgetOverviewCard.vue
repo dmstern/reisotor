@@ -95,6 +95,7 @@ const totalIncomes = computed(() =>
   font-size: var(--font-size-md);
   color: var(--color-primary-dark);
   margin: 0;
+  min-width: 0;
 }
 
 .overview-badges {
@@ -102,6 +103,7 @@ const totalIncomes = computed(() =>
   align-items: center;
   gap: var(--space-1);
   flex-wrap: wrap;
+  min-width: 0;
   font-variant-numeric: tabular-nums;
 }
 

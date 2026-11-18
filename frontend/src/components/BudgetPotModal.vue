@@ -166,6 +166,7 @@ async function handleDelete() {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  min-width: 0;
 }
 
 .row {
@@ -175,8 +176,8 @@ async function handleDelete() {
 }
 
 .row > * {
-  flex: 1;
-  min-width: 140px;
+  flex: 1 1 140px;
+  min-width: 0;
 }
 
 .actions-row {

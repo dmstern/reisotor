@@ -255,12 +255,13 @@ function fmt(value: number) {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .meter-row {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
   padding: var(--space-2) 0;
+  min-width: 0;
   transition: transform 0.15s ease;
 }
 
@@ -298,6 +299,7 @@ function fmt(value: number) {
   flex-wrap: wrap;
   row-gap: 2px;
   gap: var(--space-2);
+  min-width: 0;
   font-size: var(--font-size-sm);
 }
 
@@ -309,8 +311,10 @@ function fmt(value: number) {
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.meter-row:hover .meter-icon {
-  transform: scale(1.15);
+@include can-hover {
+  .meter-row:hover .meter-icon {
+    transform: scale(1.15);
+  }
 }
 
 .dot {
@@ -321,8 +325,10 @@ function fmt(value: number) {
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.meter-row:hover .dot {
-  transform: scale(1.2);
+@include can-hover {
+  .meter-row:hover .dot {
+    transform: scale(1.2);
+  }
 }
 
 .label {
@@ -341,15 +347,16 @@ function fmt(value: number) {
 .category-warning-icon {
   display: inline-flex;
   align-items: center;
-  margin-left: 0.35rem;
-  color: var(--color-warning, #f59e0b);
+  margin-left: var(--space-1);
+  color: var(--color-warning);
   vertical-align: middle;
   cursor: help;
 }
 
 .category-warning-icon:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
   border-radius: var(--radius-xs);
 }
 
@@ -360,6 +367,7 @@ function fmt(value: number) {
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
   margin-left: auto;
+  max-width: 100%;
 }
 
 .of {

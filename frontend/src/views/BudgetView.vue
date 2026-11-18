@@ -230,6 +230,7 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  min-width: 0;
 }
 
 .budget-header-bar {
@@ -245,6 +246,7 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
   align-items: center;
   gap: var(--space-3);
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .title-wrap h1 {
@@ -255,6 +257,7 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  max-width: 100%;
   font-size: var(--font-size-sm);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -283,6 +286,7 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
   height: 6px;
   border-radius: var(--radius-pill);
   background: currentColor;
+  flex-shrink: 0;
 }
 
 @keyframes pill-pop {
@@ -349,6 +353,11 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
   margin-bottom: var(--space-3);
 }
 
+.header h2 {
+  margin: 0;
+  min-width: 0;
+}
+
 /* Budget-Cards werden immer einspaltig untereinander dargestellt, damit ungleiche
    Höhen durch ein-/ausgeklappte Kategorien keine Lücken im Layout erzeugen */
 .pot-grid {
@@ -356,6 +365,7 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
   flex-direction: column;
   gap: var(--space-3);
   width: 100%;
+  min-width: 0;
 }
 
 /* Cards animation on view mount */
