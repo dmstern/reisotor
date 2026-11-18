@@ -323,7 +323,7 @@ async function onSubmit() {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .login-page {
   position: relative;
   min-height: 100vh;
@@ -346,7 +346,7 @@ async function onSubmit() {
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-sm);
-  z-index: 10;
+  z-index: var(--z-sticky, 10);
 }
 
 .login-card {
@@ -376,11 +376,13 @@ async function onSubmit() {
 
 .login-card p {
   margin: 0;
+  overflow-wrap: break-word;
 }
 
 .login-card label,
 .login-card .field {
   width: 100%;
+  min-width: 0;
   text-align: left;
 }
 
@@ -392,10 +394,18 @@ async function onSubmit() {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
   width: 100%;
+  min-width: 0;
+}
+
+.label-with-action label {
+  width: auto;
 }
 
 .forgot-link {
+  @include touch-target($expand: true);
   background: none;
   border: none;
   color: var(--color-primary);
@@ -404,10 +414,18 @@ async function onSubmit() {
   padding: 0;
   width: auto !important;
   text-decoration: underline;
+  text-underline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+.forgot-link:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .mode-toggle {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 400;
 }
 
@@ -415,7 +433,7 @@ async function onSubmit() {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   width: 100%;
 }
 
@@ -425,26 +443,28 @@ label,
   flex-direction: column;
   gap: var(--space-1);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .hint {
   color: var(--color-text-muted);
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--font-size-xs);
 }
 
 .error {
   color: var(--color-danger);
   margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
+  overflow-wrap: break-word;
 }
 
 .success-banner {
-  background: var(--color-success-bg, rgba(46, 160, 67, 0.12));
-  color: var(--color-success);
+  background: var(--color-success-tint);
+  color: var(--color-success-dark, var(--color-success));
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
   font-size: var(--font-size-xs);
   line-height: 1.4;
   text-align: left;
@@ -461,10 +481,11 @@ label,
   flex-direction: column;
   gap: var(--space-2);
   align-items: flex-start;
+  min-width: 0;
 }
 
 .reg-contact-btn {
-  font-size: var(--font-size-xs, 0.8rem);
+  font-size: var(--font-size-xs);
   width: auto !important;
 }
 
@@ -474,20 +495,34 @@ label,
   gap: var(--space-2);
   align-items: center;
   width: 100%;
+  min-width: 0;
 }
 
 .contact-admin-action {
-  font-size: var(--font-size-xs, 0.8rem);
+  font-size: var(--font-size-xs);
   width: auto !important;
 }
 
 .help-contact-link {
   margin-top: var(--space-1);
   color: var(--color-text-muted);
-  font-size: var(--font-size-xs, 0.8rem);
+  font-size: var(--font-size-xs);
 }
 
-.help-contact-link:hover {
-  color: var(--color-primary);
+@include can-hover {
+  .help-contact-link:hover {
+    color: var(--color-primary);
+  }
+}
+
+@include media-down('mobile-compact') {
+  .login-page {
+    padding: var(--space-3);
+    padding-top: calc(var(--space-6) + var(--space-2));
+  }
+
+  .login-card {
+    padding: var(--space-3);
+  }
 }
 </style>
