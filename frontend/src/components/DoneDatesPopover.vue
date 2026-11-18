@@ -153,8 +153,6 @@ const emit = defineEmits<{
 .date-check-item {
   @include control-3d-raised;
   @include min-touch-target(44px);
-  background-image: none;
-  box-shadow: none;
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
@@ -177,18 +175,15 @@ const emit = defineEmits<{
 
 @include can-hover {
   .date-check-item:hover:not(:disabled) {
-    background-image: var(--gradient-control-3d);
-    box-shadow: var(--shadow-control-hover);
     background-color: var(--color-control-hover-bg);
     border-color: var(--color-primary-dark);
   }
 }
 
 .date-check-item:focus-visible {
-  background-image: var(--gradient-control-3d);
-  box-shadow: var(--shadow-control-hover);
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
   outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-hover);
 }
 
 .date-check-item:active {
@@ -199,7 +194,6 @@ const emit = defineEmits<{
   background-color: var(--color-control-active-tint);
   border-color: var(--color-primary);
   color: var(--color-primary-dark);
-  box-shadow: none;
 }
 
 @include can-hover {

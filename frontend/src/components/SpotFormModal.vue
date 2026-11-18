@@ -508,16 +508,19 @@ function handleOpenScheduledItem(item: ScheduleItem) {
               @toggle-tour="toggleTourAssignment"
               @create-tour="createTourAssignment"
             />
-            <button
+            <Button
               ref="addScheduleBtnRef"
               type="button"
+              variant="secondary"
+              size="sm"
+              :active="addSchedulePopoverOpen"
               class="add-schedule-btn"
               title="Zu einem Datum einplanen"
               @click="toggleAddSchedulePopover($event)"
             >
               <AppIcon :icon="ACTION_ICONS.calendarPlus" :size="15" group="actions" />
               <span>Datum hinzufügen</span>
-            </button>
+            </Button>
             <Teleport to="body">
               <template v-if="addSchedulePopoverOpen">
                 <PickerMenu
@@ -845,52 +848,11 @@ function handleOpenScheduledItem(item: ScheduleItem) {
   max-width: 100%;
 }
 
-.add-schedule-btn {
-  @include touch-target($expand: true);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 12px;
-  height: 34px;
-  min-height: 34px;
-  max-width: 100%;
-  border-radius: var(--radius-pill);
-  corner-shape: round;
-  font-size: var(--font-size-sm);
-  line-height: 1.2;
-  font-weight: 500;
-  border: 1px dashed var(--color-border-strong);
-  background: var(--color-hover);
-  color: var(--color-text);
-  cursor: pointer;
-  box-sizing: border-box;
-  margin: 0;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
-}
-
 .add-schedule-btn span {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-@include can-hover {
-  .add-schedule-btn:hover {
-    background: var(--color-surface);
-    border-color: var(--color-calendar-appointment);
-    color: var(--color-calendar-appointment);
-  }
-}
-
-.add-schedule-btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid
-    var(--focus-ring-color, var(--color-calendar-appointment));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .add-schedule-popover {

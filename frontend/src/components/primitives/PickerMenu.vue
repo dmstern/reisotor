@@ -90,7 +90,7 @@ onUnmounted(() => {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 @keyframes picker-backdrop-fade {
   0% {
     opacity: 0;
@@ -131,6 +131,7 @@ onUnmounted(() => {
 }
 
 .picker-menu {
+  @include control-menu-surface;
   position: fixed;
   z-index: calc(var(--z-popover, 1100) + 1);
   min-width: 180px;
@@ -140,11 +141,9 @@ onUnmounted(() => {
   overflow-x: hidden;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
-  background: var(--color-surface);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  box-shadow: var(--shadow-dropdown-menu);
   padding: var(--space-2);
   display: flex;
   flex-direction: column;

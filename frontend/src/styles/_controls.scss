@@ -269,6 +269,19 @@
   }
 }
 
+/// Kapselt die schwebende 3D-Menüoberfläche für Dropdowns und Popovers
+/// (PickerMenu, Combobox, NotificationInbox).
+///
+/// Kombiniert den Hintergrund (--color-surface) mit dem dezenten Oberflächen-3D-Verlauf
+/// (--gradient-surface-3d) und dem Menü-Schwebeschatten inklusive oberem Kantenlicht
+/// (--shadow-dropdown-menu).
+@mixin control-menu-surface {
+  background-color: var(--color-surface);
+  background-image: var(--gradient-surface-3d);
+  background-origin: border-box;
+  box-shadow: var(--shadow-dropdown-menu);
+}
+
 /// Kapselt das 3D-Glas-Interaktionsverhalten (Hover, Active, Focus) für halbtransparente
 /// Glas-Elemente (Liquid Glass).
 ///

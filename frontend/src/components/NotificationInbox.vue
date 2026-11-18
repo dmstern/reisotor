@@ -463,17 +463,16 @@ function dismissPwaInstall() {
    height wird von AppHeader.vue bereits gepflegt (siehe dortiger ResizeObserver), right per
    --space-4 spiegelt dessen .header-row-Padding. */
 .dropdown {
+  @include control-menu-surface;
   position: fixed;
   top: var(--app-header-height, 56px);
   right: var(--space-4);
   transform-origin: top right;
   width: min(360px, calc(100vw - 2 * var(--space-4)));
   max-height: min(70vh, 480px);
-  background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  box-shadow: var(--shadow-md);
   z-index: var(--z-popover, 1100);
   display: flex;
   flex-direction: column;

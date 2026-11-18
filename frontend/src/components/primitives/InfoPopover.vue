@@ -105,7 +105,7 @@ defineExpose({
   <span class="info-popover-wrap">
     <Button
       ref="triggerRef"
-      variant="ghost"
+      variant="secondary"
       shape="circle"
       size="sm"
       :active="open"
@@ -152,8 +152,11 @@ defineExpose({
   height: var(--info-popover-btn-size);
   min-width: var(--info-popover-btn-size);
   min-height: var(--info-popover-btn-size);
-  color: var(--color-text-muted);
   font-size: var(--font-size-sm);
+}
+
+.info-popover-btn.btn:not(.is-active):not(:hover) {
+  color: var(--color-text-muted);
 }
 
 :global(.info-popover-menu.picker-menu) {
@@ -182,7 +185,10 @@ defineExpose({
 :global(.info-popover-content .popover-tip) {
   font-size: var(--font-size-xs);
   color: var(--color-text);
-  background: var(--color-hover);
+  background-color: var(--color-hover);
+  background-image: var(--gradient-surface-3d);
+  border: var(--border-width) solid var(--color-border);
+  box-shadow: inset 0 1px 0 var(--shadow-control-highlight);
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;

@@ -328,8 +328,8 @@ Buttons, Eingabefelder (Input, Textarea), Selects, Dropdown-Trigger, Toggle-Swit
 - **Umschalter & Toggles (`ToggleSwitch.vue`, `SegmentedToggle.vue`)**:
   - Die Führungsrinne/der Track ist eingelassen (`--shadow-inset` / oberer Inset-Schatten mit Kantenlichtsaum).
   - Der Thumb/Schieber ist als haptischer 3D-Körper mit Lichtkante oben (`inset 0 1px 0 #fff`) und weichem Kontaktschatten (`--shadow-pill-raised`) gestaltet.
-- **Dropdown-Menüs & Popovers (`PickerMenu.vue`, `Combobox.vue`)**:
-  - Nutzen `--shadow-dropdown-menu` mit tieferem Schwebeschatten und Lichtkante oben für eine schwebende, solide Menü-Platte.
+- **Dropdown-Menüs & Popovers (`PickerMenu.vue`, `Combobox.vue`, `NotificationInbox.vue`, `@mixin control-menu-surface`)**:
+  - Nutzen `@mixin control-menu-surface` (`_controls.scss`): Kombiniert `--color-surface` mit dem subtilen 3D-Oberflächenverlauf (`var(--gradient-surface-3d)`) sowie `--shadow-dropdown-menu` (tieferer Schwebeschatten + Lichtkante oben) für eine schwebende, solide Menü-Platte.
 - **Karten & Surfaces (`Card.vue`, `CheckboxCard.vue`, `SpotCard.vue`, `ExcursionCard.vue`)**:
   - Besitzen als solide Oberflächen ein feines Kantenlicht oben und mehrstufige Kontaktschatten (`--shadow-card`).
   - Ein extrem subtiler Oberflächen-Verlauf (`var(--gradient-surface-3d)`) verleiht der Fläche Plastizität ohne die Hintergrundfarbe zu verfälschen.
@@ -347,12 +347,13 @@ Um CSS-Duplikate, Drift und doppelte Fokusrahmen im Error-/Modified-Zustand zu v
    - Einzeilige Eingabefelder (inklusive Suche & Mengenangaben): `<Input>` (`shape="squircle" | "pill"`, `size="sm" | "md" | "lg"`). Niemals rohe `<input>`-Elemente mit nachgebauten Styles verwenden.
    - Mehrzeilige Freitextfelder: `<Textarea>`.
    - Native OS-Auswahlfelder: `<Select>`.
-   - Aktions- & Auswahl-Flyouts (inkl. Block-Dropdowns wie `ThemeModeSelect.vue` oder `TrackVisibilitySelect.vue`): `<DropdownMenu>` (`block`, `size`, `ariaLabel`, `ariaHaspopup`).
+   - Aktions- & Auswahl-Flyouts (inkl. Block-Dropdowns wie `ThemeModeSelect.vue` oder `TrackVisibilitySelect.vue`): `<DropdownMenu>` (`block`, `size`, `ariaLabel`, `ariaHaspopup`) bzw. `<PickerMenu>` + `<DropdownMenuItem>` für Popover-Listen (`TourSpotAssignDropdown.vue`, `TourAssignDropdown.vue`, `TripSwitcher.vue`).
    - Keine `:deep(...)`-Überschreibungen von Rahmen, Schatten, Backgrounds, Hover- oder Fokus-Styles in Fachkomponenten (wie z. B. in `PackingAddRow.vue` oder `Combobox.vue`).
 2. **Zusammengesetzte Spezial-Container nutzen die zentralen SCSS-Mixins:**
    - Spezial-Container, die technisch kein `<input>`-Tag sein können (`QuickAddRow.vue`s `.input-container`, `RichTextEditor.vue`s `.richtext-editor`), binden ausschließlich `@include control-field-inset($focus-within: true);` aus `src/styles/_controls.scss` ein.
-   - Spezial-Pills und taktile Kacheln (`SpotCard.vue`s `.spot-expand-pill`, `SpotDoneStatus.vue`s `.date-check-item`, `Drawer.vue`s `.drawer-tab`) nutzen `@include control-3d-raised;`.
-   - Alle drei Mixins sind über `_breakpoints.scss` in jeder `<style lang="scss" scoped>`-Komponente automatisch verfügbar.
+   - Spezial-Pills und taktile Kacheln (`SpotCard.vue`s `.spot-expand-pill`, `DoneDatesPopover.vue`s `.date-check-item`, `Drawer.vue`s `.drawer-tab`) nutzen `@include control-3d-raised;`.
+   - Schwebende Menü-/Popover-Oberflächen (`PickerMenu.vue`, `Combobox.vue`, `NotificationInbox.vue`) nutzen `@include control-menu-surface;`.
+   - Alle Mixins sind über `_breakpoints.scss` in jeder `<style lang="scss" scoped>`-Komponente automatisch verfügbar.
 
 ## Animationen
 

@@ -10,9 +10,14 @@ import EditButton from './EditButton.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
+import PickerMenu from './primitives/PickerMenu.vue';
 import PremiumBadge from './PremiumBadge.vue';
 import { useAccountTierModal } from '../composables/useAccountTierModal';
 import { ACTION_ICONS } from '../utils/actionIcons';
+
+const DEFAULT_MENU_WIDTH = 260;
+const VIEWPORT_PADDING = 8;
+const MENU_OFFSET = 6;
 
 const props = withDefaults(
   defineProps<{
@@ -27,7 +32,7 @@ const tripStore = useTripStore();
 const auth = useAuthStore();
 const open = ref(false);
 const switcherBtnRef = ref<HTMLButtonElement | null>(null);
-const dropdownRef = ref<HTMLElement | null>(null);
+const dropdownRef = ref<InstanceType<typeof PickerMenu> | null>(null);
 const dropdownStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
 const {
   showForm,
@@ -77,15 +82,14 @@ function updateDropdownPosition() {
   }
 
   const rect = switcherBtnRef.value.getBoundingClientRect();
-  const menuWidth = dropdownRef.value?.getBoundingClientRect().width || 260;
-  const padding = 8;
+  const menuWidth = dropdownRef.value?.el?.getBoundingClientRect().width || DEFAULT_MENU_WIDTH;
   const viewportWidth = window.innerWidth;
 
   const triggerCenter = rect.left + rect.width / 2;
   let left = triggerCenter - menuWidth / 2;
-  left = Math.max(padding, Math.min(left, viewportWidth - menuWidth - padding));
+  left = Math.max(VIEWPORT_PADDING, Math.min(left, viewportWidth - menuWidth - VIEWPORT_PADDING));
 
-  const top = rect.bottom + 6;
+  const top = rect.bottom + MENU_OFFSET;
 
   dropdownStyle.value = {
     top: `${Math.round(top)}px`,
@@ -109,19 +113,11 @@ function close() {
   open.value = false;
 }
 
-function onWindowKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape') {
-    close();
-  }
-}
-
 watch(open, (isOpen) => {
   if (isOpen) {
     window.addEventListener('resize', close, { passive: true });
-    window.addEventListener('keydown', onWindowKeydown);
   } else {
     window.removeEventListener('resize', close);
-    window.removeEventListener('keydown', onWindowKeydown);
   }
 });
 
@@ -135,7 +131,6 @@ watch(
 
 onUnmounted(() => {
   window.removeEventListener('resize', close);
-  window.removeEventListener('keydown', onWindowKeydown);
 });
 
 function selectAndClose(id: number) {
@@ -171,62 +166,50 @@ function selectAndClose(id: number) {
     </button>
 
     <Teleport to="body">
-      <Transition name="fade">
+      <PickerMenu
+        v-if="open"
+        ref="dropdownRef"
+        class="dropdown trip-switcher-dropdown"
+        :style="dropdownStyle"
+        aria-label="Urlaube"
+        @close="close"
+      >
         <div
-          v-if="open"
-          class="backdrop trip-switcher-backdrop"
-          role="button"
-          tabindex="0"
-          aria-label="Urlaubsauswahl schließen"
-          @click="close"
-          @keydown.enter.prevent="close"
-          @keydown.space.prevent="close"
-        />
-      </Transition>
-      <Transition name="dropdown-unfold">
-        <div
-          v-if="open"
-          ref="dropdownRef"
-          class="dropdown trip-switcher-dropdown"
-          :style="dropdownStyle"
-          role="menu"
-          aria-label="Urlaube"
-          @click.stop
+          v-for="trip in tripStore.trips"
+          :key="trip.id"
+          class="trip-row"
+          :class="{ active: trip.id === tripStore.currentTripId }"
         >
-          <div
-            v-for="trip in tripStore.trips"
-            :key="trip.id"
-            class="trip-row"
-            :class="{ active: trip.id === tripStore.currentTripId }"
-          >
-            <DropdownMenuItem
-              :label="trip.name"
-              :active="trip.id === tripStore.currentTripId"
-              class="trip-select"
-              @click="selectAndClose(trip.id)"
+          <DropdownMenuItem
+            :label="trip.name"
+            :active="trip.id === tripStore.currentTripId"
+            class="trip-select"
+            @click="selectAndClose(trip.id)"
+          />
+          <div class="row-actions">
+            <EditButton
+              small
+              @click="
+                () => {
+                  openEdit(trip);
+                  close();
+                }
+              "
             />
-            <div class="row-actions">
-              <EditButton
-                small
-                @click="
-                  () => {
-                    openEdit(trip);
-                    close();
-                  }
-                "
-              />
-            </div>
           </div>
-          <p v-if="!tripStore.trips.length" class="empty">Noch keine Urlaube.</p>
-          <Button type="button" variant="ghost" class="new-trip-btn" @click="handleCreateTrip">
-            <AppIcon :icon="ACTION_ICONS.mapPlus" :size="14" group="actions" /> Neuer Urlaub
-            <PremiumBadge v-if="tripCreationBlocked()" feature="trips" as="span" :stop="false" />
-          </Button>
-          <router-link to="/trips" class="manage-trips-btn" @click="close"
-            >Alle Urlaube verwalten</router-link
-          >
         </div>
-      </Transition>
+        <p v-if="!tripStore.trips.length" class="empty">Noch keine Urlaube.</p>
+        <Button type="button" variant="ghost" class="new-trip-btn" @click="handleCreateTrip">
+          <span class="new-trip-label">
+            <AppIcon :icon="ACTION_ICONS.mapPlus" :size="14" group="actions" />
+            <span>Neuer Urlaub</span>
+          </span>
+          <PremiumBadge v-if="tripCreationBlocked()" feature="trips" as="span" :stop="false" />
+        </Button>
+        <router-link to="/trips" class="manage-trips-btn" @click="close"
+          >Alle Urlaube verwalten</router-link
+        >
+      </PickerMenu>
     </Teleport>
 
     <Modal
@@ -339,29 +322,10 @@ function selectAndClose(id: number) {
   flex-shrink: 0;
 }
 
-.backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-modal, 1000);
-  background: transparent;
-}
-
 .dropdown {
-  position: fixed;
-  z-index: var(--z-popover, 1100);
   min-width: 240px;
   max-width: min(340px, calc(100vw - 16px));
   max-height: min(70vh, 480px);
-  overflow-y: auto;
-  transform-origin: top center;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  box-shadow: var(--shadow-md);
-  padding: var(--space-2);
-  display: flex;
-  flex-direction: column;
   gap: 4px;
 }
 
@@ -373,37 +337,9 @@ function selectAndClose(id: number) {
   corner-shape: squircle;
 }
 
-/* #193: der globale `button`-Basisstil (style.css) setzt box-shadow: var(--shadow-sm) - der
-   Dropdown-Container selbst trägt bereits --shadow-md (siehe .dropdown oben), ein zusätzlicher
-   Schatten je Listenzeile/Aktions-Button (Trip-Auswahl, Mitglieder/Bearbeiten, "+ Neuer
-   Urlaub") wirkte dadurch doppelt erhoben und "doof" (Issue #193). Trifft dank Vues Vererbung des
-   Scope-Attributs an Kind-Komponenten-Root-Elementen auch EditButton.vue, dessen <button> das
-   Root-Element ist. */
-.dropdown button {
-  box-shadow: none;
-}
-
-.trip-row.active .trip-select {
-  color: var(--color-primary-dark);
-  font-weight: 700;
-}
-
 .trip-select {
   flex: 1;
   min-width: 0;
-  text-align: left;
-  background: none;
-  border: none;
-  padding: 6px 8px;
-  font-size: 0.9rem;
-  color: var(--color-text);
-  cursor: pointer;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-}
-
-.trip-select:hover {
-  background: var(--color-hover);
 }
 
 .row-actions {
@@ -420,22 +356,23 @@ function selectAndClose(id: number) {
 .new-trip-btn {
   margin-top: var(--space-1);
   text-align: left;
-  background: none;
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   padding: 6px 8px;
   font-size: 0.85rem;
   color: var(--color-primary-dark);
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
 }
 
-.new-trip-btn:hover {
-  background: var(--color-primary-tint);
+.new-trip-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
 .manage-trips-btn {
