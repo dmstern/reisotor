@@ -265,7 +265,7 @@ function selectAndClose(id: number) {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .trip-switcher {
   position: relative;
   display: inline-flex;
@@ -299,7 +299,7 @@ function selectAndClose(id: number) {
     transform 0.15s ease;
 }
 
-@media (max-width: 450px) {
+@include media-down('mobile') {
   .switcher-btn {
     padding: 5px 10px;
     gap: 4px;
@@ -313,8 +313,9 @@ function selectAndClose(id: number) {
 }
 
 .switcher-btn:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .trip-switcher.is-docked {
@@ -438,7 +439,9 @@ function selectAndClose(id: number) {
 }
 
 .manage-trips-btn {
-  display: block;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
   text-align: left;
   background: none;
   border: none;
@@ -456,7 +459,8 @@ function selectAndClose(id: number) {
 }
 
 .manage-trips-btn:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-primary));
-  outline-offset: 1px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 </style>

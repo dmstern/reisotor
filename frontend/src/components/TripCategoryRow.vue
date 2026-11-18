@@ -126,6 +126,7 @@ const usageLabel = computed(() => {
 .usage-count {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 .usage-count.has-usage {
@@ -146,7 +147,7 @@ const usageLabel = computed(() => {
   padding: var(--space-1) var(--space-2);
 }
 
-@include media-down('tablet-sm') {
+@include container-down('tablet-sm') {
   .category-row {
     flex-direction: column;
     align-items: stretch;

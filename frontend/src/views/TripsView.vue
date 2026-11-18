@@ -206,11 +206,14 @@ function openMembers(trip: Trip) {
 .trip-select {
   flex: 1;
   min-width: 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
   text-align: left;
   background: none;
   border: none;
-  padding: 4px 6px;
-  margin: -4px -6px;
+  padding: 6px;
+  margin: -6px;
   border-radius: var(--radius-xs-squircle);
   corner-shape: squircle;
   font-size: var(--font-size-md);

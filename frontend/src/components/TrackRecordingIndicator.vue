@@ -180,7 +180,8 @@ const elapsedLabel = computed(() => {
   padding: 0;
   border: none;
   background: rgba(255, 255, 255, 0.22);
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
+  corner-shape: round;
   color: #fff;
   cursor: pointer;
   transition:

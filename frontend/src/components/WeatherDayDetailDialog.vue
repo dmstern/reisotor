@@ -663,7 +663,7 @@ function formatDate(dateStr: string) {
   </Modal>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .weather-detail-body {
   display: flex;
   flex-direction: column;
@@ -780,7 +780,7 @@ function formatDate(dateStr: string) {
   min-height: 110px;
 }
 
-@media (max-width: 480px) {
+@include container-down('mobile') {
   .hourly-section {
     min-height: 190px;
   }
@@ -813,7 +813,7 @@ function formatDate(dateStr: string) {
 .pulse-dot {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background-color: var(--color-primary);
 }
 
@@ -823,7 +823,7 @@ function formatDate(dateStr: string) {
   left: 0;
   width: 100%;
   height: 100%;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background-color: var(--color-primary);
   opacity: 0.75;
   animation: radar-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
@@ -861,7 +861,7 @@ function formatDate(dateStr: string) {
   gap: var(--space-2);
 }
 
-@media (max-width: 480px) {
+@include container-down('mobile') {
   .hourly-grid {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -971,7 +971,7 @@ function formatDate(dateStr: string) {
 .skeleton-icon-placeholder {
   width: 20px;
   height: 20px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background: var(--color-hover);
 }
 

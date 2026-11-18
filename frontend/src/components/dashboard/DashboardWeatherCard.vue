@@ -302,7 +302,7 @@ onMounted(() => {
   />
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .weather-card {
   margin-bottom: var(--space-4);
 }
@@ -361,13 +361,18 @@ onMounted(() => {
   word-break: break-word;
 }
 
+a.weather-source {
+  @include touch-target($expand: true);
+}
+
 .weather-source:hover {
   color: var(--color-primary-dark);
 }
 
 .weather-source:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
   border-radius: var(--radius-xs-squircle);
 }
 

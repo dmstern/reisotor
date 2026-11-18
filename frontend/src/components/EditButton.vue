@@ -63,8 +63,9 @@ defineEmits<{ (e: 'click'): void }>();
   </Button>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .edit-btn {
+  @include touch-target($expand: true);
   width: var(--input-height-sm, 38px);
   height: var(--input-height-sm, 38px);
   min-width: var(--input-height-sm, 38px);

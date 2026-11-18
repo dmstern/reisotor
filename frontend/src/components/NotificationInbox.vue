@@ -412,7 +412,7 @@ function dismissPwaInstall() {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .notification-inbox {
   position: relative;
   display: flex;
@@ -479,7 +479,7 @@ function dismissPwaInstall() {
   flex-direction: column;
 }
 
-@media (max-width: 600px) {
+@include media-down('tablet-sm') {
   .dropdown {
     right: var(--space-2);
     width: min(360px, calc(100vw - 2 * var(--space-2)));
@@ -502,6 +502,7 @@ function dismissPwaInstall() {
 }
 
 .mark-all-btn {
+  @include touch-target($expand: true);
   background: none;
   border: none;
   color: var(--color-primary-dark);
@@ -520,8 +521,9 @@ function dismissPwaInstall() {
 }
 
 .mark-all-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .notification-list {
@@ -552,8 +554,8 @@ function dismissPwaInstall() {
 }
 
 .notification-row:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: -3px;
 }
 
 .notification-row.unread {
@@ -596,7 +598,7 @@ function dismissPwaInstall() {
   align-self: center;
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background: var(--color-danger);
   flex-shrink: 0;
 }
@@ -617,6 +619,7 @@ function dismissPwaInstall() {
 
 .system-notice {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2);
@@ -650,7 +653,7 @@ function dismissPwaInstall() {
 .notice-icon {
   width: 28px;
   height: 28px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   corner-shape: round;
   display: flex;
   align-items: center;
@@ -678,8 +681,8 @@ function dismissPwaInstall() {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  min-width: 0;
-  flex: 1;
+  min-width: min(140px, 100%);
+  flex: 1 1 140px;
 }
 
 .notice-title {
@@ -700,10 +703,13 @@ function dismissPwaInstall() {
   align-items: center;
   gap: 2px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .reload-btn {
+  @include touch-target($expand: true);
   flex-shrink: 0;
+  margin-left: auto;
   background: var(--color-success);
   color: #fff;
   border: none;
@@ -726,8 +732,9 @@ function dismissPwaInstall() {
 }
 
 .reload-btn:focus-visible {
-  outline: 2px solid var(--color-success);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--color-success);
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .system-divider {

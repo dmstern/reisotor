@@ -58,7 +58,7 @@ defineEmits<{
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .weather-today {
   display: flex;
   align-items: center;
@@ -70,6 +70,7 @@ defineEmits<{
 }
 
 .weather-today.clickable {
+  @include touch-target($expand: true);
   cursor: pointer;
   transition:
     transform var(--transition-fast),

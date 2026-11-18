@@ -89,7 +89,7 @@ const heroStyle = computed(() => {
   </header>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .hero {
   position: relative;
   margin-bottom: var(--space-4);
@@ -152,7 +152,7 @@ const heroStyle = computed(() => {
   display: inline;
 }
 
-@container app-main (max-width: 768px) {
+@include container-app-main-down('desktop-sm') {
   .banner-action-label {
     display: none;
   }
