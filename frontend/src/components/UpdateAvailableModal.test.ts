@@ -157,4 +157,37 @@ describe('UpdateAvailableModal', () => {
 
     cleanUp();
   });
+
+  it('renders mandatory update view without close, later, or settings controls and blocks Escape/overlay dismissal', async () => {
+    const pwaUpdate = usePwaUpdateStore();
+    useUiSettingsStore().showUpdateDialogs = false;
+    pwaUpdate.simulateUpdateAvailable('99.0.0', { required: true });
+
+    const { cleanUp } = mountComponent();
+    await nextTick();
+
+    expect(document.body.innerHTML).toContain('Aktualisierung erforderlich');
+    expect(document.body.innerHTML).toContain('Pflicht-Update erforderlich');
+    expect(document.body.innerHTML).toContain(
+      'deine lokalen Daten und ungespeicherten Offline-Änderungen bleiben erhalten'
+    );
+    expect(document.body.innerHTML).toContain('Jetzt aktualisieren');
+    expect(document.body.innerHTML).not.toContain('Später');
+    expect(document.body.querySelector('.settings-link')).toBeNull();
+    expect(document.body.querySelector('.close-btn')).toBeNull();
+
+    const overlay = document.body.querySelector('.overlay') as HTMLElement;
+    expect(overlay).toBeTruthy();
+    overlay.click();
+    await nextTick();
+    expect(pwaUpdate.showUpdateDialog).toBe(true);
+    expect(document.body.querySelector('.modal')).toBeTruthy();
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await nextTick();
+    expect(pwaUpdate.showUpdateDialog).toBe(true);
+    expect(document.body.querySelector('.modal')).toBeTruthy();
+
+    cleanUp();
+  });
 });

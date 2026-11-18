@@ -25,6 +25,7 @@ interface ChangelogEntry {
 
 interface BuildInfo {
   version: string | null;
+  minClientVersion: string | null;
   ref: string | null;
   builtAt: string | null;
   changelog: ChangelogEntry | null;
@@ -36,10 +37,18 @@ interface BuildInfo {
 export function readBuildInfo(): BuildInfo {
   try {
     const raw = readFileSync(path.join(process.cwd(), 'dist', 'build-info.json'), 'utf-8');
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw) as Partial<BuildInfo>;
+
+    return {
+      version: parsed.version ?? null,
+      minClientVersion: parsed.minClientVersion ?? null,
+      ref: parsed.ref ?? null,
+      builtAt: parsed.builtAt ?? null,
+      changelog: parsed.changelog ?? null,
+    };
   } catch {
     // Root-package.json ist die einzige Versionsquelle (siehe generate-build-info.mjs)
-    let pkg: { version?: string } = {};
+    let pkg: { version?: string; minClientVersion?: string } = {};
     const localPkg = path.join(process.cwd(), 'package.json');
     const parentPkg = path.join(process.cwd(), '..', 'package.json');
 
@@ -64,22 +73,46 @@ export function readBuildInfo(): BuildInfo {
     }
 
     const fallbackVersion = pkg.version ? `${pkg.version}${versionSuffix}` : null;
-    return { version: fallbackVersion, ref: null, builtAt: null, changelog: null };
+    const fallbackMinClientVersion = pkg.minClientVersion ?? pkg.version ?? null;
+
+    return {
+      version: fallbackVersion,
+      minClientVersion: fallbackMinClientVersion,
+      ref: null,
+      builtAt: null,
+      changelog: null,
+    };
   }
 }
 
+export function getEffectiveMinClientVersion(): string | null {
+  const envMin = process.env.MIN_CLIENT_VERSION?.trim();
+
+  if (envMin) {
+    return envMin;
+  }
+
+  return readBuildInfo().minClientVersion ?? null;
+}
+
 export const buildInfoRoutes: FastifyPluginAsync = async (app) => {
-  app.get('/build-info', async () => ({
-    ...readBuildInfo(),
-    // Gleiches GITHUB_REPO-Env-Var-Muster wie in utils/githubIssue.ts (Feedback-Formular).
-    repoUrl: `https://github.com/${getEffectiveSetting('github_repo', 'GITHUB_REPO', 'dmstern/reisotor')}`,
-    // Konfigurierbar, damit andere Betreiber:innen (eigenes Hosting statt Berlin) den Über-Tab-
-    // Hinweis anpassen können, siehe Issue #171.
-    hostingLocation: getEffectiveSetting('hosting_location', 'HOSTING_LOCATION', 'Berlin'),
-    // Pro Instanz (Prod/Staging) im systemd-Service gesetzt - das Frontend wird für beide identisch
-    // gebaut (siehe .github/workflows/ci.yml), kann die Umgebung also nicht aus einem
-    // Build-Time-Env-Var erkennen und fragt sie stattdessen hier zur Laufzeit ab, siehe Issue #219.
-    environment:
-      process.env.APP_ENV ?? (process.env.NODE_ENV === 'production' ? 'production' : 'development'),
-  }));
+  app.get('/build-info', async () => {
+    const info = readBuildInfo();
+
+    return {
+      ...info,
+      minClientVersion: getEffectiveMinClientVersion(),
+      // Gleiches GITHUB_REPO-Env-Var-Muster wie in utils/githubIssue.ts (Feedback-Formular).
+      repoUrl: `https://github.com/${getEffectiveSetting('github_repo', 'GITHUB_REPO', 'dmstern/reisotor')}`,
+      // Konfigurierbar, damit andere Betreiber:innen (eigenes Hosting statt Berlin) den Über-Tab-
+      // Hinweis anpassen können, siehe Issue #171.
+      hostingLocation: getEffectiveSetting('hosting_location', 'HOSTING_LOCATION', 'Berlin'),
+      // Pro Instanz (Prod/Staging) im systemd-Service gesetzt - das Frontend wird für beide identisch
+      // gebaut (siehe .github/workflows/ci.yml), kann die Umgebung also nicht aus einem
+      // Build-Time-Env-Var erkennen und fragt sie stattdessen hier zur Laufzeit ab, siehe Issue #219.
+      environment:
+        process.env.APP_ENV ??
+        (process.env.NODE_ENV === 'production' ? 'production' : 'development'),
+    };
+  });
 };

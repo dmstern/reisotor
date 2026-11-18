@@ -117,4 +117,34 @@ describe('api client error handling & network resilience', () => {
     expect(followUp).toEqual({ ok: true });
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
+
+  it('sends X-Client-Version header and dispatches reisotor:update-required on HTTP 426 without recording a bug error', async () => {
+    const payload = {
+      error: 'Aktualisierung erforderlich. Bitte lade die App neu, um fortzufahren.',
+      code: 'CLIENT_UPDATE_REQUIRED',
+      minClientVersion: '2.5.0',
+      currentServerVersion: '2.5.0',
+    };
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 426,
+      statusText: 'Upgrade Required',
+      json: async () => payload,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(rawRequest('/trips')).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 426,
+      message: payload.error,
+    });
+
+    const fetchOptions = fetchMock.mock.calls[0][1] as { headers: Record<string, string> };
+    expect(fetchOptions.headers['X-Client-Version']).toBeDefined();
+    expect(window.dispatchEvent).toHaveBeenCalledTimes(1);
+    const dispatchedEvent = (window.dispatchEvent as ReturnType<typeof vi.fn>).mock
+      .calls[0][0] as CustomEvent;
+    expect(dispatchedEvent.type).toBe('reisotor:update-required');
+    expect(dispatchedEvent.detail).toEqual(payload);
+  });
 });

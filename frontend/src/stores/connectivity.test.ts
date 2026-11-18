@@ -8,6 +8,7 @@ const mockSetConfirmedOffline = vi.fn();
 const mockIsConfirmedOffline = vi.fn();
 const mockFetchWithTimeout = vi.fn();
 const mockRefreshAll = vi.fn();
+const mockUpdateRequired = vi.fn(() => false);
 
 vi.mock('../api/offline', () => ({
   flushOutbox: (...args: unknown[]) => mockFlushOutbox(...args),
@@ -27,6 +28,14 @@ vi.mock('./liveSync', () => ({
   }),
 }));
 
+vi.mock('./pwaUpdate', () => ({
+  usePwaUpdateStore: () => ({
+    get updateRequired() {
+      return mockUpdateRequired();
+    },
+  }),
+}));
+
 describe('useConnectivityStore', () => {
   let eventTarget: EventTarget;
   let store: ReturnType<typeof useConnectivityStore>;
@@ -34,6 +43,7 @@ describe('useConnectivityStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     vi.clearAllMocks();
+    mockUpdateRequired.mockReturnValue(false);
     mockGetOutboxLength.mockReturnValue(0);
     mockIsConfirmedOffline.mockReturnValue(false);
     mockFlushOutbox.mockResolvedValue(true);
@@ -136,5 +146,22 @@ describe('useConnectivityStore', () => {
     expect(mockFetchWithTimeout).toHaveBeenCalledWith('/api/auth/me', { credentials: 'include' });
     expect(store.isOnline).toBe(false);
     expect(mockFlushOutbox).not.toHaveBeenCalled();
+  });
+
+  it('pauses outbox sync and health checks while updateRequired is true', async () => {
+    mockGetOutboxLength.mockReturnValue(2);
+    store = useConnectivityStore();
+    mockFetchWithTimeout.mockClear();
+    mockFlushOutbox.mockClear();
+
+    mockUpdateRequired.mockReturnValue(true);
+
+    await store.trySync();
+    await store.checkNow();
+    window.dispatchEvent(new Event('reisotor:outbox-changed'));
+    await Promise.resolve();
+
+    expect(mockFlushOutbox).not.toHaveBeenCalled();
+    expect(mockFetchWithTimeout).not.toHaveBeenCalled();
   });
 });

@@ -314,6 +314,18 @@ function determineChangelog() {
   return entry;
 }
 
+function resolveMinClientVersion(packageJson) {
+  if (typeof packageJson?.minClientVersion === 'string' && packageJson.minClientVersion.trim()) {
+    return packageJson.minClientVersion.trim();
+  }
+
+  if (typeof packageJson?.version === 'string' && packageJson.version.trim()) {
+    return packageJson.version.trim();
+  }
+
+  return null;
+}
+
 export {
   SLUG_TITLES,
   GROUP_PRIORITY,
@@ -324,12 +336,14 @@ export {
   readAllChangelogEntries,
   findBaseRelease,
   determineChangelog,
+  resolveMinClientVersion,
 };
 
 // Nur direkt ausführen, wenn die Datei als Skript aufgerufen wird
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const buildInfo = {
     version: computedVersion,
+    minClientVersion: pkg.minClientVersion ?? pkg.version,
     ref,
     builtAt: new Date().toISOString(),
     changelog: determineChangelog(),

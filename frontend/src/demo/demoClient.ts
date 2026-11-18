@@ -218,6 +218,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       : `${__APP_VERSION__} (Demo)`;
     return {
       version: demoVersion,
+      minClientVersion: __APP_VERSION__,
       ref: __APP_COMMIT__,
       builtAt: __APP_BUILT_AT__,
       changelog: {

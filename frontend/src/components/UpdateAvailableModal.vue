@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import Modal from './Modal.vue';
 import Button from './primitives/Button.vue';
+import AppIcon from './AppIcon.vue';
 import ReisotorRobot from './ReisotorRobot.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { usePwaUpdateStore } from '../stores/pwaUpdate';
@@ -45,6 +46,10 @@ watch(
 );
 
 function onClose() {
+  if (pwaUpdate.updateRequired) {
+    return;
+  }
+
   pwaUpdate.dismissUpdateDialog();
 }
 
@@ -62,11 +67,12 @@ function goToSettings() {
 <template>
   <Modal
     :model-value="pwaUpdate.showUpdateDialog"
-    title="Neues Update verfügbar"
+    :title="pwaUpdate.updateRequired ? 'Aktualisierung erforderlich' : 'Neues Update verfügbar'"
+    :closable="!pwaUpdate.updateRequired"
     size="sm"
     @update:model-value="onClose"
   >
-    <div class="update-modal">
+    <div class="update-modal" :class="{ 'is-required': pwaUpdate.updateRequired }">
       <div class="update-hero-stage" aria-hidden="true">
         <!-- Weicher Glüh-Hintergrund & rotierender Schimmer-Ring -->
         <div class="glow-backdrop" />
@@ -86,11 +92,21 @@ function goToSettings() {
         <ReisotorRobot size="92px" phase="upgrade" interactive />
       </div>
 
-      <!-- Glänzender "Neue Version bereit"-Pill-Badge -->
-      <div class="update-pill-badge">
-        <span class="badge-icon" aria-hidden="true">✨</span>
-        <span class="badge-text">Neue Version bereit</span>
-        <span class="badge-icon" aria-hidden="true">✨</span>
+      <!-- Glänzender Pill-Badge -->
+      <div class="update-pill-badge" :class="{ 'is-required': pwaUpdate.updateRequired }">
+        <AppIcon
+          v-if="pwaUpdate.updateRequired"
+          :icon="ACTION_ICONS.warning"
+          :size="14"
+          group="actions"
+          force-style="icons"
+          class="badge-tabler-icon"
+        />
+        <span v-else class="badge-icon" aria-hidden="true">✨</span>
+        <span class="badge-text">{{
+          pwaUpdate.updateRequired ? 'Pflicht-Update erforderlich' : 'Neue Version bereit'
+        }}</span>
+        <span v-if="!pwaUpdate.updateRequired" class="badge-icon" aria-hidden="true">✨</span>
         <span v-if="versionDisplay" class="badge-versions" data-testid="version-change">
           <template v-if="versionDisplay.from">
             {{ versionDisplay.from }}
@@ -100,7 +116,12 @@ function goToSettings() {
         </span>
       </div>
 
-      <p class="update-desc">
+      <p v-if="pwaUpdate.updateRequired" class="update-desc">
+        Diese Version von Reisotor ist nicht mehr mit dem Server kompatibel (z. B. durch Änderungen
+        an Schnittstellen oder Datenformaten). Bitte aktualisiere jetzt, um weiterzuarbeiten – deine
+        lokalen Daten und ungespeicherten Offline-Änderungen bleiben erhalten.
+      </p>
+      <p v-else class="update-desc">
         Eine neuere Version von Reisotor steht bereit. Aktualisiere jetzt, um die neuesten
         Funktionen und Verbesserungen zu laden.
       </p>
@@ -115,12 +136,18 @@ function goToSettings() {
         >
           Jetzt aktualisieren
         </Button>
-        <Button variant="secondary" class="action-btn" :disabled="isUpdating" @click="onClose">
+        <Button
+          v-if="!pwaUpdate.updateRequired"
+          variant="secondary"
+          class="action-btn"
+          :disabled="isUpdating"
+          @click="onClose"
+        >
           Später
         </Button>
       </div>
 
-      <p class="settings-hint">
+      <p v-if="!pwaUpdate.updateRequired" class="settings-hint">
         Hinweis: Du kannst diese Update-Popups in den
         <button type="button" class="settings-link" @click="goToSettings">Einstellungen</button>
         deaktivieren.
@@ -328,6 +355,17 @@ function goToSettings() {
   100% {
     transform: translateX(100%);
   }
+}
+
+.update-pill-badge.is-required {
+  background: color-mix(in srgb, var(--color-warning-tint) 75%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-warning) 45%, transparent);
+  color: var(--color-warning-dark);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--color-warning) 18%, transparent);
+}
+
+.badge-tabler-icon {
+  flex-shrink: 0;
 }
 
 .badge-icon {

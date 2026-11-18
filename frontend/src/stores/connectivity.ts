@@ -8,6 +8,7 @@ import {
   setConfirmedOffline,
 } from '../api/offline';
 import { useLiveSyncStore } from './liveSync';
+import { usePwaUpdateStore } from './pwaUpdate';
 
 // Absichtlich niedrig gehalten (statt z. B. 15-30s): api/client.ts's isConfirmedOffline()-Flag
 // bleibt so lange auf "offline" stehen, bis HIER ein Check wieder erfolgreich war - ein zu großes
@@ -46,7 +47,13 @@ export const useConnectivityStore = defineStore('connectivity', () => {
   function handleOutboxChanged() {
     pendingCount.value = getOutboxLength();
 
-    if (isOnline.value && !isConfirmedOffline() && !syncing.value && pendingCount.value > 0) {
+    if (
+      isOnline.value &&
+      !isConfirmedOffline() &&
+      !syncing.value &&
+      pendingCount.value > 0 &&
+      !usePwaUpdateStore().updateRequired
+    ) {
       trySync();
     }
   }
@@ -60,7 +67,7 @@ export const useConnectivityStore = defineStore('connectivity', () => {
   async function trySync() {
     pendingCount.value = getOutboxLength();
 
-    if (syncing.value || pendingCount.value === 0) {
+    if (syncing.value || pendingCount.value === 0 || usePwaUpdateStore().updateRequired) {
       return;
     }
 
@@ -102,7 +109,7 @@ export const useConnectivityStore = defineStore('connectivity', () => {
    *  Kommentar oben) und einem manuellen Retry-Klick (OfflineIndicator.vue). Schaltet erst bei
    *  tatsächlichem Erfolg zurück auf online, nie nur optimistisch. */
   async function checkNow() {
-    if (checking.value) {
+    if (checking.value || usePwaUpdateStore().updateRequired) {
       return;
     }
 

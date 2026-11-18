@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import bcrypt from 'bcrypt';
 import { buildTestApp } from '../helpers/buildTestApp.js';
@@ -6,6 +6,7 @@ import { buildTestApp } from '../helpers/buildTestApp.js';
 describe('buildInfo routes', () => {
   let app: FastifyInstance;
   let cookie: string;
+  const originalMinClientVersion = process.env.MIN_CLIENT_VERSION;
 
   beforeAll(async () => {
     const built = await buildTestApp();
@@ -23,7 +24,15 @@ describe('buildInfo routes', () => {
     cookie = Array.isArray(setCookie) ? setCookie.join('; ') : String(setCookie);
   });
 
-  it('returns build info when logged in', async () => {
+  afterEach(() => {
+    if (originalMinClientVersion === undefined) {
+      delete process.env.MIN_CLIENT_VERSION;
+    } else {
+      process.env.MIN_CLIENT_VERSION = originalMinClientVersion;
+    }
+  });
+
+  it('returns build info including minClientVersion when logged in', async () => {
     const res = await app.inject({
       method: 'GET',
       url: '/api/build-info',
@@ -33,6 +42,7 @@ describe('buildInfo routes', () => {
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body).toHaveProperty('version');
+    expect(body).toHaveProperty('minClientVersion');
     expect(body).toHaveProperty('environment');
     expect(body).toHaveProperty('repoUrl');
     expect(body).toHaveProperty('hostingLocation');
@@ -47,9 +57,54 @@ describe('buildInfo routes', () => {
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body).toHaveProperty('version');
+    expect(body).toHaveProperty('minClientVersion');
     expect(body).toHaveProperty('environment');
     expect(body).toHaveProperty('repoUrl');
     expect(body).toHaveProperty('hostingLocation');
+  });
+
+  it('returns MIN_CLIENT_VERSION env override in /api/build-info and rejects outdated clients with 426', async () => {
+    process.env.MIN_CLIENT_VERSION = '2.5.0';
+
+    const buildInfoRes = await app.inject({
+      method: 'GET',
+      url: '/api/build-info',
+      headers: { 'x-client-version': '1.0.0' },
+    });
+    expect(buildInfoRes.statusCode).toBe(200);
+    expect(buildInfoRes.json().minClientVersion).toBe('2.5.0');
+
+    const legalRes = await app.inject({
+      method: 'GET',
+      url: '/api/legal?source=footer',
+      headers: { 'x-client-version': '1.0.0' },
+    });
+    expect(legalRes.statusCode).toBe(200);
+
+    const outdatedProtectedRes = await app.inject({
+      method: 'GET',
+      url: '/api/trips',
+      headers: { cookie, 'x-client-version': '2.4.9' },
+    });
+    expect(outdatedProtectedRes.statusCode).toBe(426);
+    expect(outdatedProtectedRes.json()).toMatchObject({
+      code: 'CLIENT_UPDATE_REQUIRED',
+      minClientVersion: '2.5.0',
+    });
+
+    const compatibleProtectedRes = await app.inject({
+      method: 'GET',
+      url: '/api/trips',
+      headers: { cookie, 'x-client-version': '2.5.0-dev' },
+    });
+    expect(compatibleProtectedRes.statusCode).toBe(200);
+
+    const noHeaderRes = await app.inject({
+      method: 'GET',
+      url: '/api/trips',
+      headers: { cookie },
+    });
+    expect(noHeaderRes.statusCode).toBe(200);
   });
 
   it('returns changelog with optional groups if available', async () => {

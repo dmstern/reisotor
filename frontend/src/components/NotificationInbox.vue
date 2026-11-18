@@ -60,6 +60,7 @@ const hasAdminNotice = computed(() => adminUnreadCount.value > 0);
 const hasSystemNotices = computed(() => {
   return (
     pwaUpdate.needRefresh ||
+    pwaUpdate.updateRequired ||
     pwaUpdate.offlineReady ||
     (!pwaInstall.isStandalone && !pwaInstall.dismissed) ||
     pwaUpdate.showReleaseNotesNotice ||
@@ -68,7 +69,7 @@ const hasSystemNotices = computed(() => {
 });
 
 const hasUpdateNotice = computed(() => {
-  return pwaUpdate.needRefresh || pwaUpdate.showReleaseNotesNotice;
+  return pwaUpdate.needRefresh || pwaUpdate.updateRequired || pwaUpdate.showReleaseNotesNotice;
 });
 
 // Ungelesene Aktivitäten oder Admin-Nachrichten zeigen einen Zähler-Badge. Liegen stattdessen System-Benachrichtigungen
@@ -231,14 +232,25 @@ function dismissPwaInstall() {
           <div class="notification-list">
             <!-- System-Benachrichtigungen (PWA-Update, Offline-Bereitschaft, App-Installation) -->
             <div v-if="hasSystemNotices" class="system-notices">
-              <!-- 1. Neues Update verfügbar -->
-              <div v-if="pwaUpdate.needRefresh" class="system-notice update pwa-pill update">
+              <!-- 1. Neues Update verfügbar / Aktualisierung erforderlich -->
+              <div
+                v-if="pwaUpdate.needRefresh || pwaUpdate.updateRequired"
+                class="system-notice update pwa-pill update"
+              >
                 <div class="notice-icon update-icon" aria-hidden="true">
                   <AppIcon :icon="ACTION_ICONS.refresh" :size="16" group="actions" />
                 </div>
                 <div class="notice-body">
-                  <span class="notice-title">Neues Update verfügbar</span>
-                  <span class="notice-desc">Eine neuere Version von Reisotor steht bereit.</span>
+                  <span class="notice-title">{{
+                    pwaUpdate.updateRequired
+                      ? 'Aktualisierung erforderlich'
+                      : 'Neues Update verfügbar'
+                  }}</span>
+                  <span class="notice-desc">{{
+                    pwaUpdate.updateRequired
+                      ? 'Bitte lade die App neu, um weiterzuarbeiten.'
+                      : 'Eine neuere Version von Reisotor steht bereit.'
+                  }}</span>
                 </div>
                 <button
                   type="button"
