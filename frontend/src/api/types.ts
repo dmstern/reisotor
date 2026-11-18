@@ -150,6 +150,7 @@ export interface ChangelogEntry {
  *  Umgebung also nicht aus einem Build-Time-Wert erkennen, siehe Issue #219. */
 export interface BuildInfo {
   version: string | null;
+  minClientVersion?: string | null;
   ref: string | null;
   builtAt: string | null;
   changelog: ChangelogEntry | null;

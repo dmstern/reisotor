@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 
 vi.mock('virtual:pwa-register', () => ({
@@ -14,6 +14,10 @@ describe('usePwaUpdateStore', () => {
     setActivePinia(createPinia());
     vi.clearAllMocks();
     localStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('initializes with needRefresh and offlineReady set to false', () => {
@@ -112,5 +116,84 @@ describe('usePwaUpdateStore', () => {
     store.reload();
     expect(store.needRefresh).toBe(false);
     expect(reloadMock).toHaveBeenCalled();
+  });
+
+  it('forces update dialog even when showUpdateDialogs is false if minClientVersion exceeds currentVersion', () => {
+    const uiSettings = useUiSettingsStore();
+    uiSettings.showUpdateDialogs = false;
+
+    const store = usePwaUpdateStore();
+    store.minClientVersion = '999.0.0';
+
+    expect(store.updateRequired).toBe(true);
+    expect(store.showUpdateDialog).toBe(true);
+
+    store.dismissUpdateDialog();
+    store.showUpdateDialog = false;
+    expect(store.showUpdateDialog).toBe(true);
+  });
+
+  it('activates mandatory update mode on reisotor:update-required window event', () => {
+    const uiSettings = useUiSettingsStore();
+    uiSettings.showUpdateDialogs = false;
+
+    const store = usePwaUpdateStore();
+    expect(store.updateRequired).toBe(false);
+
+    window.dispatchEvent(
+      new CustomEvent('reisotor:update-required', {
+        detail: { minClientVersion: '99.0.0', currentServerVersion: '99.1.0' },
+      })
+    );
+
+    expect(store.forceUpdateTriggered).toBe(true);
+    expect(store.updateRequired).toBe(true);
+    expect(store.needRefresh).toBe(true);
+    expect(store.minClientVersion).toBe('99.0.0');
+    expect(store.availableVersion).toBe('99.1.0');
+    expect(store.showUpdateDialog).toBe(true);
+
+    store.cleanup();
+  });
+
+  it('supports simulateUpdateAvailable with required option', () => {
+    const uiSettings = useUiSettingsStore();
+    uiSettings.showUpdateDialogs = false;
+
+    const store = usePwaUpdateStore();
+    store.simulateUpdateAvailable('99.2.0', { required: true });
+
+    expect(store.updateRequired).toBe(true);
+    expect(store.showUpdateDialog).toBe(true);
+    expect(store.availableVersion).toBe('99.2.0');
+  });
+
+  it('awaits swRegistration.update() and sends SKIP_WAITING to waiting worker before reload', async () => {
+    const { registerSW } = await import('virtual:pwa-register');
+    const postMessageMock = vi.fn();
+    const swUpdateMock = vi.fn().mockResolvedValue(undefined);
+    const updateSwMock = vi.fn().mockResolvedValue(undefined);
+
+    vi.mocked(registerSW).mockImplementation((opts) => {
+      opts?.onRegisteredSW?.('/sw.js', {
+        update: swUpdateMock,
+        waiting: { postMessage: postMessageMock },
+      } as unknown as ServiceWorkerRegistration);
+      return updateSwMock;
+    });
+
+    vi.stubGlobal('navigator', { serviceWorker: {} });
+    const store = usePwaUpdateStore();
+    store.init();
+    store.simulateUpdateAvailable('99.3.0', { required: true });
+    store.reload();
+
+    await vi.waitFor(() => {
+      expect(swUpdateMock).toHaveBeenCalledTimes(1);
+      expect(postMessageMock).toHaveBeenCalledWith({ type: 'SKIP_WAITING' });
+      expect(updateSwMock).toHaveBeenCalledWith(true);
+    });
+
+    store.cleanup();
   });
 });

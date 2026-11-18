@@ -58,6 +58,7 @@ const AUTH_SELF_HANDLED_PATHS = ['/auth/login', '/auth/me', '/auth/logout'];
 // Eigener Timeout per AbortController erzwingt stattdessen einen definierten Fehlschlag.
 const REQUEST_TIMEOUT_MS = 8_000;
 const ROUTING_TIMEOUT_MS = 25_000;
+const HTTP_UPGRADE_REQUIRED = 426;
 
 export async function fetchWithTimeout(
   input: string,
@@ -104,9 +105,12 @@ export async function rawRequest<T>(path: string, options: RequestOptions = {}):
     return demoRequest<T>(path, options);
   }
 
+  const clientVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'unknown';
+
   // Content-Type nur setzen, wenn wirklich ein Body gesendet wird – sonst parst Fastify
   // den (nicht vorhandenen) JSON-Body und lehnt mit 400 Bad Request ab (z. B. bei DELETE).
   const headers: HeadersInit = {
+    'X-Client-Version': clientVersion,
     ...(options.body ? { 'Content-Type': 'application/json' } : {}),
     ...options.headers,
   };
@@ -148,6 +152,10 @@ export async function rawRequest<T>(path: string, options: RequestOptions = {}):
       // ignore, kein JSON-Body
     }
 
+    if (res.status === HTTP_UPGRADE_REQUIRED && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('reisotor:update-required', { detail: body }));
+    }
+
     if (!message || !message.trim()) {
       if (res.status === 502) {
         message = 'Bad Gateway (Server nicht erreichbar)';
@@ -164,7 +172,7 @@ export async function rawRequest<T>(path: string, options: RequestOptions = {}):
       data: body,
     });
 
-    if (res.status !== 401) {
+    if (res.status !== 401 && res.status !== HTTP_UPGRADE_REQUIRED) {
       recordLastApiError(apiError);
     }
 

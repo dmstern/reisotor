@@ -6,6 +6,7 @@ import {
   findBaseRelease,
   parseChangelogSection,
   readPendingReleaseNotes,
+  resolveMinClientVersion,
 } from '../../scripts/generate-build-info.mjs';
 
 describe('generate-build-info changelog helpers', () => {
@@ -118,5 +119,12 @@ describe('generate-build-info changelog helpers', () => {
 
     const found = findBaseRelease('1.0.2', entries);
     expect(found).toEqual(base100);
+  });
+
+  it('resolves minClientVersion with fallback to package version', () => {
+    expect(resolveMinClientVersion({ version: '2.2.0', minClientVersion: '2.1.0' })).toBe('2.1.0');
+    expect(resolveMinClientVersion({ version: '2.2.0' })).toBe('2.2.0');
+    expect(resolveMinClientVersion({ version: '2.2.0', minClientVersion: '  ' })).toBe('2.2.0');
+    expect(resolveMinClientVersion({})).toBeNull();
   });
 });

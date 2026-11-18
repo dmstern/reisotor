@@ -33,6 +33,7 @@ const props = withDefaults(
     fullHeight?: boolean;
     ariaLabel?: string;
     size?: 'sm' | 'md' | 'lg' | 'xl';
+    closable?: boolean;
     confirmClose?: boolean;
     confirmCloseMode?: 'unsaved' | 'draft';
     confirmCloseEntity?: string;
@@ -43,6 +44,7 @@ const props = withDefaults(
   }>(),
   {
     size: 'md',
+    closable: true,
     confirmClose: false,
     confirmCloseMode: 'unsaved',
     confirmCloseCancelLabel: 'Weiter bearbeiten',
@@ -106,6 +108,10 @@ const resolvedConfirmConfirmLabel = computed(() => {
 });
 
 function close() {
+  if (!props.closable) {
+    return;
+  }
+
   if (props.confirmClose) {
     showConfirmClose.value = true;
     return;
@@ -414,6 +420,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
             <div class="modal-head-actions">
               <slot name="header-actions" />
               <IconButton
+                v-if="closable"
                 variant="ghost"
                 class="close-btn"
                 shape="circle"

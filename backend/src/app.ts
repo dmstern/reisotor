@@ -21,7 +21,11 @@ import { todosRoutes } from './routes/todos.js';
 import { notesRoutes } from './routes/notes.js';
 import { diaryRoutes } from './routes/diary.js';
 import { spotsRoutes } from './routes/spots.js';
-import { buildInfoRoutes } from './routes/buildInfo.js';
+import {
+  buildInfoRoutes,
+  getEffectiveMinClientVersion,
+  readBuildInfo,
+} from './routes/buildInfo.js';
 import { trashRoutes } from './routes/trash.js';
 import { realtimeRoutes } from './routes/realtime.js';
 import { pushRoutes } from './routes/push.js';
@@ -36,6 +40,10 @@ import { placesRoutes } from './routes/places.js';
 import { legalRoutes } from './routes/legal.js';
 import { adminSettingsRoutes } from './routes/adminSettings.js';
 import { uploadsRoutes } from './routes/uploads.js';
+import { isVersionBelowMin } from './utils/clientVersion.js';
+
+const HTTP_UPGRADE_REQUIRED = 426;
+const CLIENT_VERSION_EXEMPT_PATHS = new Set(['/api/build-info', '/api/legal']);
 
 // Von server.ts getrennt (das nur noch buildApp() aufruft und .listen()), damit Tests eine fertig
 // konfigurierte App-Instanz per Fastify .inject() ansprechen können, ohne einen echten Port zu
@@ -93,6 +101,32 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
 
   app.register(
     async (api) => {
+      api.addHook('onRequest', async (request, reply) => {
+        const urlPath = request.url.split('?')[0];
+
+        if (CLIENT_VERSION_EXEMPT_PATHS.has(urlPath)) {
+          return;
+        }
+
+        const rawHeader = request.headers['x-client-version'];
+        const clientVersion = Array.isArray(rawHeader) ? rawHeader[0] : rawHeader;
+
+        if (!clientVersion) {
+          return;
+        }
+
+        const minClientVersion = getEffectiveMinClientVersion();
+
+        if (isVersionBelowMin(clientVersion, minClientVersion)) {
+          return reply.code(HTTP_UPGRADE_REQUIRED).send({
+            error: 'Aktualisierung erforderlich. Bitte lade die App neu, um fortzufahren.',
+            code: 'CLIENT_UPDATE_REQUIRED',
+            minClientVersion,
+            currentServerVersion: readBuildInfo().version,
+          });
+        }
+      });
+
       await api.register(authRoutes, { prefix: '/auth' });
       await api.register(legalRoutes);
       await api.register(feedbackRoutes);

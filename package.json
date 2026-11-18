@@ -1,6 +1,7 @@
 {
   "name": "reisotor",
   "version": "2.2.0",
+  "minClientVersion": "2.0.0",
   "private": true,
   "license": "EUPL-1.2",
   "type": "module",

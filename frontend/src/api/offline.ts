@@ -28,11 +28,11 @@ const OUTBOX_KEY = 'reisotor-outbox';
 const CACHE_PREFIX = 'reisotor-cache:';
 
 // Endpunkte, die entweder pro Aufruf einen anderen Query-String tragen (Nachhol-Protokoll,
-// Autocomplete-Suche) oder ohnehin nur als Echtzeit-Ergänzung dienen – ein Cache-Eintrag pro
-// jemals aufgerufener Variante würde localStorage unbegrenzt wachsen lassen, ohne beim Offline-Lesen
-// echten Nutzen zu bringen (die jeweilige View verlässt sich für ihre Kernliste ohnehin auf eigene,
-// stabile GET-Pfade wie /todos?trip_id=).
-const UNCACHEABLE_PREFIXES = ['/trip-activity', '/users/search', '/realtime'];
+// Autocomplete-Suche), ohnehin nur als Echtzeit-Ergänzung dienen oder immer frische Server-
+// Versionsdaten liefern müssen (/build-info darf niemals veraltet aus dem Cache kommen) – ein
+// Cache-Eintrag pro jemals aufgerufener Variante würde localStorage unbegrenzt wachsen lassen oder
+// veraltete Server-Metadaten vorgaukeln.
+const UNCACHEABLE_PREFIXES = ['/trip-activity', '/users/search', '/realtime', '/build-info'];
 
 function isCacheable(path: string): boolean {
   return !UNCACHEABLE_PREFIXES.some((prefix) => path.startsWith(prefix));
@@ -450,8 +450,14 @@ export async function flushOutbox(
       return true;
     }
 
+    const HTTP_UPGRADE_REQUIRED = 426;
+    const HTTP_CLIENT_ERROR_MIN = 400;
+    const HTTP_CLIENT_ERROR_MAX = 500;
+    const HTTP_REQUEST_TIMEOUT = 408;
+    const HTTP_TOO_MANY_REQUESTS = 429;
     const inFlight = new Map<string, Promise<void>>();
     const failedIds = new Set<string>();
+    let abortedByUpgradeRequired = false;
 
     function findNextReady(): OutboxEntry | undefined {
       const currentList = readOutbox();
@@ -482,9 +488,9 @@ export async function flushOutbox(
       return undefined;
     }
 
-    while (true) {
+    while (!abortedByUpgradeRequired) {
       // Starte so viele bereite Einträge parallel wie möglich (bis MAX_CONCURRENCY)
-      while (inFlight.size < MAX_CONCURRENCY) {
+      while (!abortedByUpgradeRequired && inFlight.size < MAX_CONCURRENCY) {
         const entry = findNextReady();
 
         if (!entry) {
@@ -513,6 +519,15 @@ export async function flushOutbox(
               typeof (err as { status: unknown }).status === 'number'
                 ? (err as { status: number }).status
                 : undefined;
+
+            // Pflicht-Update (HTTP 426): Client ist veraltet, Mutation selbst aber potenziell gültig.
+            // Eintrag UNVERSEHRT behalten (kein removeOutboxEntry, kein retryCount++, keine Fehler-Events)
+            // und laufenden Flush sauber anhalten, bis der Client aktualisiert wurde.
+            if (status === HTTP_UPGRADE_REQUIRED) {
+              abortedByUpgradeRequired = true;
+              return;
+            }
+
             let message = 'Unbekannter Serverfehler';
 
             if (err instanceof Error) {
@@ -525,10 +540,10 @@ export async function flushOutbox(
             // 408 Request Timeout und 429 Too Many Requests): der Server lehnt diese Mutation endgültig ab.
             if (
               status != null &&
-              status >= 400 &&
-              status < 500 &&
-              status !== 408 &&
-              status !== 429
+              status >= HTTP_CLIENT_ERROR_MIN &&
+              status < HTTP_CLIENT_ERROR_MAX &&
+              status !== HTTP_REQUEST_TIMEOUT &&
+              status !== HTTP_TOO_MANY_REQUESTS
             ) {
               console.warn(
                 `Outbox-Eintrag vom Server dauerhaft abgelehnt (HTTP ${status}), wird übersprungen:`,
@@ -574,6 +589,11 @@ export async function flushOutbox(
 
       // Auf das nächste fertig werdende Promise warten
       await Promise.race(inFlight.values());
+
+      if (abortedByUpgradeRequired && inFlight.size > 0) {
+        await Promise.allSettled(inFlight.values());
+        break;
+      }
     }
 
     return readOutbox().length === 0;

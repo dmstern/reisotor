@@ -105,6 +105,12 @@ describe('findCachedItemInCollection', () => {
 
     expect(findCachedItemInCollection('/diary', 42)).toBeUndefined();
   });
+
+  it('never caches or reads /build-info from localStorage offline cache', () => {
+    writeCache('/build-info', { version: '1.0.0', minClientVersion: '1.0.0' });
+
+    expect(localStorage.getItem('reisotor-cache:/build-info')).toBeNull();
+  });
 });
 
 describe('flushOutbox and outbox events', () => {
@@ -297,5 +303,32 @@ describe('flushOutbox and outbox events', () => {
 
     clearOutbox();
     expect(getOutbox()).toHaveLength(0);
+  });
+
+  it('preserves outbox entries and halts flush without error events on HTTP 426 Upgrade Required', async () => {
+    enqueue('POST', '/todos', { title: 'Wichtige Offline-Aufgabe' });
+    enqueue('POST', '/notes', { title: 'Zweite Offline-Notiz' });
+
+    const rejectedHandler = vi.fn();
+    const failedHandler = vi.fn();
+    window.addEventListener('reisotor:outbox-rejected', rejectedHandler);
+    window.addEventListener('reisotor:outbox-failed', failedHandler);
+
+    const err = Object.assign(new Error('Aktualisierung erforderlich'), { status: 426 });
+    const sendRaw = vi.fn().mockRejectedValue(err);
+
+    const success = await flushOutbox(sendRaw);
+
+    expect(success).toBe(false);
+    expect(rejectedHandler).not.toHaveBeenCalled();
+    expect(failedHandler).not.toHaveBeenCalled();
+
+    const outbox = getOutbox();
+    expect(outbox).toHaveLength(2);
+    expect(outbox[0].retryCount).toBeUndefined();
+    expect(outbox[0].lastError).toBeUndefined();
+
+    window.removeEventListener('reisotor:outbox-rejected', rejectedHandler);
+    window.removeEventListener('reisotor:outbox-failed', failedHandler);
   });
 });
