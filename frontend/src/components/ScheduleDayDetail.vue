@@ -115,6 +115,7 @@ defineEmits<{
 .day-detail {
   container-type: inline-size;
   container-name: day-detail;
+  min-width: 0;
 }
 
 .day-detail-head {
@@ -124,6 +125,7 @@ defineEmits<{
   gap: var(--space-2);
   margin-bottom: var(--space-3);
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .day-detail-title-group {
@@ -131,12 +133,16 @@ defineEmits<{
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-2);
+  min-width: 0;
+  flex: 1 1 180px;
 }
 
 .day-detail-title-group h3 {
   color: var(--color-primary-dark);
   margin: 0;
   font-size: var(--font-size-lg);
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .day-detail-actions {
@@ -161,10 +167,11 @@ defineEmits<{
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-pill);
   font-size: var(--font-size-xs);
-  border: 1px solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   background: var(--color-hover);
   color: var(--color-text);
   max-width: 100%;
+  min-width: 0;
 }
 
 .day-meta-pill.weather-pill {

@@ -268,6 +268,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  min-width: 0;
 }
 
 /* Als eigenständige Seite (Route /calendar) übernimmt kein Drawer-Panel mehr das Scrollen/die
@@ -288,10 +289,14 @@ onMounted(async () => {
   }
 }
 
+.calendar-drawer-content h1,
 .calendar-drawer-content h2 {
   margin: 0;
-  font-size: var(--font-size-lg);
   color: var(--color-primary-dark);
+}
+
+.calendar-drawer-content h2 {
+  font-size: var(--font-size-lg);
 }
 
 .calendar-drawer-content:not(.standalone) h2 {
@@ -300,6 +305,7 @@ onMounted(async () => {
 
 .weeks {
   padding: var(--space-2);
+  min-width: 0;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;

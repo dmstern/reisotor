@@ -55,23 +55,23 @@ const computedAriaLabel = computed(() => {
   </Teleport>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .calendar-drag-handle {
   position: relative;
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
   background: var(--color-hover);
-  border: 1px solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-pill);
-  padding: 3px var(--space-2) 3px var(--space-2);
+  padding: 3px var(--space-2);
   font-size: var(--font-size-xs);
   font-weight: 500;
   color: var(--color-text-muted);
   cursor: grab;
   touch-action: none;
-  -webkit-user-select: none;
   user-select: none;
+  white-space: nowrap;
   transition:
     transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
     background-color 0.18s ease,
@@ -92,8 +92,9 @@ const computedAriaLabel = computed(() => {
 }
 
 .calendar-drag-handle:focus-visible {
-  outline: 2px solid var(--color-focus-ring, var(--color-scheduled));
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .calendar-drag-handle::before {
@@ -124,23 +125,25 @@ const computedAriaLabel = computed(() => {
   transform-origin: center bottom;
 }
 
-.calendar-drag-handle:hover {
-  background: var(--color-scheduled-tint);
-  border-color: color-mix(in srgb, var(--color-scheduled) 40%, transparent);
-  color: var(--color-scheduled);
-  transform: translateY(-1.5px);
-  box-shadow:
-    0 4px 12px -2px color-mix(in srgb, var(--color-scheduled) 22%, transparent),
-    0 2px 4px rgba(0, 0, 0, 0.06);
-}
+@include can-hover {
+  .calendar-drag-handle:hover {
+    background: var(--color-scheduled-tint);
+    border-color: color-mix(in srgb, var(--color-scheduled) 40%, transparent);
+    color: var(--color-scheduled-dark, var(--color-scheduled));
+    transform: translateY(-1.5px);
+    box-shadow:
+      0 4px 12px -2px color-mix(in srgb, var(--color-scheduled) 22%, transparent),
+      0 2px 4px rgba(0, 0, 0, 0.06);
+  }
 
-.calendar-drag-handle:hover::before {
-  opacity: 1;
-  transform: scale(1.25);
-}
+  .calendar-drag-handle:hover::before {
+    opacity: 1;
+    transform: scale(1.25);
+  }
 
-.calendar-drag-handle:hover :deep(.app-icon) {
-  transform: translateY(-0.5px) rotate(8deg) scale(1.15);
+  .calendar-drag-handle:hover :deep(.app-icon) {
+    transform: translateY(-0.5px) rotate(8deg) scale(1.15);
+  }
 }
 
 .calendar-drag-handle::after {
@@ -172,5 +175,13 @@ const computedAriaLabel = computed(() => {
   font-weight: 600;
   white-space: nowrap;
   box-shadow: var(--shadow-md);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calendar-drag-handle,
+  .calendar-drag-handle::before,
+  .calendar-drag-handle :deep(.app-icon) {
+    transition: none;
+  }
 }
 </style>
