@@ -494,7 +494,7 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     intersectingCategories.clear();
     categoryByEl.clear();
     const firstEl = categoryRefs.values().next().value as HTMLElement | undefined;
-    const root = firstEl?.closest('.spots-col') ?? null;
+    const root = firstEl?.closest('.spots-col-body') ?? firstEl?.closest('.spots-col') ?? null;
 
     if (!root) {
       return;

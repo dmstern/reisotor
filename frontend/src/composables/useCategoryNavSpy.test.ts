@@ -329,4 +329,63 @@ describe('useCategoryNavSpy - spot refs and scrolling', () => {
       body.remove();
     });
   });
+
+  describe('IntersectionObserver root selection', () => {
+    it('prefers .spots-col-body over .spots-col for sentinel and section observers with fallback to .spots-col', () => {
+      const originalIO = globalThis.IntersectionObserver;
+      const observedRoots: (Element | Document | null | undefined)[] = [];
+
+      globalThis.IntersectionObserver = class MockIntersectionObserver {
+        constructor(_cb: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+          observedRoots.push(options?.root);
+        }
+
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+        takeRecords(): IntersectionObserverEntry[] {
+          return [];
+        }
+
+        readonly root = null;
+        readonly rootMargin = '';
+        readonly thresholds: readonly number[] = [];
+      };
+
+      const col = document.createElement('div');
+      col.className = 'spots-col';
+      const body = document.createElement('div');
+      body.className = 'spots-col-body';
+      const sentinelEl = document.createElement('div');
+      const sectionEl = document.createElement('section');
+      const colOnlySectionEl = document.createElement('section');
+
+      body.appendChild(sentinelEl);
+      body.appendChild(sectionEl);
+      col.appendChild(body);
+      col.appendChild(colOnlySectionEl);
+      document.body.appendChild(col);
+
+      try {
+        const { setCategoryNavSentinelRef, setCategoryRef, rebuildCategorySectionObserver } =
+          createSpy();
+
+        setCategoryNavSentinelRef(sentinelEl);
+        setCategoryRef('Strand', sectionEl);
+        rebuildCategorySectionObserver();
+
+        expect(observedRoots).toEqual([body, body]);
+
+        observedRoots.length = 0;
+        setCategoryNavSentinelRef(colOnlySectionEl);
+        setCategoryRef('Strand', colOnlySectionEl);
+        rebuildCategorySectionObserver();
+
+        expect(observedRoots).toEqual([col, col]);
+      } finally {
+        col.remove();
+        globalThis.IntersectionObserver = originalIO;
+      }
+    });
+  });
 });

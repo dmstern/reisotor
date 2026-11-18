@@ -209,19 +209,43 @@ const activeSearchAndFilterCount = computed(() => {
   );
 });
 
+const SHEET_EXPAND_FOCUS_DELAY_MS = 320;
 let expandSearchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function clearExpandSearchTimeout() {
+  if (expandSearchTimeout) {
+    clearTimeout(expandSearchTimeout);
+    expandSearchTimeout = null;
+  }
+}
 
 function expandAndFocusSearch() {
   sheetState.value = 'full';
-
-  if (expandSearchTimeout) {
-    clearTimeout(expandSearchTimeout);
-  }
+  clearExpandSearchTimeout();
 
   expandSearchTimeout = setTimeout(() => {
+    expandSearchTimeout = null;
+
+    if (
+      sheetDragging.value ||
+      !canShowSearch.value ||
+      (isSheetOverlayMode.value && sheetState.value !== 'full')
+    ) {
+      return;
+    }
+
     searchFilterBarRef.value?.focusInput();
-  }, 320);
+  }, SHEET_EXPAND_FOCUS_DELAY_MS);
 }
+
+watch(
+  [sheetState, sheetDragging, canShowSearch, isSheetOverlayMode],
+  ([state, dragging, searchable, overlay]) => {
+    if (dragging || !searchable || (overlay && state !== 'full')) {
+      clearExpandSearchTimeout();
+    }
+  }
+);
 
 // 3. Category Navigation, Sticky Sentinel & Scroll Spy
 const navSpy = useCategoryNavSpy({
@@ -1184,10 +1208,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  if (expandSearchTimeout) {
-    clearTimeout(expandSearchTimeout);
-    expandSearchTimeout = null;
-  }
+  clearExpandSearchTimeout();
 
   drawers.mapFocusKey = null;
   drawers.mapFocusExcursionId = null;
