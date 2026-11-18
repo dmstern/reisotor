@@ -176,7 +176,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
           <EditButton
             small
             shape="circle"
-            variant="secondary"
+            :variant="expanded ? 'surface' : 'secondary'"
             class="spot-edit-btn"
             @click="emit('edit', spot)"
           />
@@ -421,7 +421,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   pointer-events: auto;
 }
 
-.card-badge-group > * {
+.card-badge-group > *:not(.spot-edit-btn) {
   box-shadow: var(--shadow-xs);
 }
 

@@ -13,14 +13,23 @@ const _props = withDefaults(
     /**
      * Button-Variante:
      * - 'primary': Haupt-Aktionsbutton (gefüllt mit --color-primary + Schatten)
-     * - 'secondary': Sekundärbutton (transparenter Hintergrund, Rand in --color-border-strong, Schatten erst beim Hovern)
+     * - 'secondary': Sekundärbutton (transparenter Hintergrund, 3D-Verlauf, Schatten)
+     * - 'surface': Deckender (opaquer) Sekundärbutton (Hintergrund --color-surface + 3D-Verlauf, z. B. über Bildern/Bannern)
      * - 'danger': Gefahrenbutton (gefüllt mit --color-danger + Schatten)
      * - 'card-action': Kompakter Karten-Aktionsbutton (Hintergrund --color-primary-tint)
      * - 'ghost': Dezent ohne Rahmen/Schatten für Toolbars/Untermenüs
      * - 'floating': Runder, schwebender Glass-Aktionsbutton (Liquid-Glass-Style analog zu Header Pill und NavBar Pill)
      * - 'glass': Transluzenter Glass-Button (speziell für Bedienelemente innerhalb von Glass-Pills und Toolbars)
      */
-    variant?: 'primary' | 'secondary' | 'danger' | 'card-action' | 'ghost' | 'floating' | 'glass';
+    variant?:
+      | 'primary'
+      | 'secondary'
+      | 'surface'
+      | 'danger'
+      | 'card-action'
+      | 'ghost'
+      | 'floating'
+      | 'glass';
     /** Ob der Button als Sekundär-Variante gestylt werden soll (z. B. in Kombination mit variant="danger"). */
     secondary?: boolean;
     /** Button-Größe: 'sm' (klein), 'md' (Standard), 'lg' (groß). */
@@ -329,6 +338,31 @@ a.btn.is-loading {
   box-shadow: var(--shadow-control-active);
 }
 
+/* Surface Button: deckende (opaque) 3D-Variante mit --color-surface-Hintergrund (z. B. über Fotos/Bannern) */
+.btn--surface {
+  background-color: var(--color-surface);
+  background-image: var(--gradient-control-3d);
+  color: var(--color-primary);
+  border: 1.5px solid color-mix(in srgb, var(--color-border-strong) 60%, transparent);
+  box-shadow: var(--shadow-control);
+}
+
+.btn--surface.btn--icon-only,
+.btn--surface.icon-only {
+  color: var(--color-text);
+}
+
+.btn--surface:hover:not(:disabled) {
+  background-color: var(--color-hover);
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-control-hover);
+}
+
+.btn--surface:active:not(:disabled) {
+  background-color: var(--color-hover);
+  box-shadow: var(--shadow-control-active);
+}
+
 .btn--danger {
   background-color: var(--color-danger);
   background-image: linear-gradient(
@@ -509,6 +543,7 @@ a.btn.is-loading {
 /* Aktiver Zustand für alle Button-Varianten (#audit) */
 .btn.is-active,
 .btn--secondary.is-active,
+.btn--surface.is-active,
 .btn--ghost.is-active {
   background-color: var(--color-control-active-tint);
   border: 1.5px solid var(--color-primary);
@@ -520,6 +555,7 @@ a.btn.is-loading {
 
 .btn.is-active:hover:not(:disabled),
 .btn--secondary.is-active:hover:not(:disabled),
+.btn--surface.is-active:hover:not(:disabled),
 .btn--ghost.is-active:hover:not(:disabled) {
   background-color: var(--color-control-active-tint-hover);
   border-color: var(--color-primary-dark);
