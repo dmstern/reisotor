@@ -2055,7 +2055,7 @@ onUnmounted(() => {
   pointer-events: auto;
   display: flex;
   flex-direction: column;
-  background: var(--color-surface);
+  background: transparent;
   border-radius: var(--radius-lg-squircle);
   corner-shape: squircle;
   /* Feiner Rand wie bei Apples schwebendem Sheet (siehe PR-Referenzscreenshot) - ohne ihn verlor
@@ -2070,17 +2070,15 @@ onUnmounted(() => {
     left 0.3s cubic-bezier(0.32, 0.72, 0, 1),
     right 0.3s cubic-bezier(0.32, 0.72, 0, 1),
     border-radius 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-    background-color 0.3s cubic-bezier(0.32, 0.72, 0, 1),
     border-color 0.3s cubic-bezier(0.32, 0.72, 0, 1),
     box-shadow 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   overflow: hidden;
   /* Bekannter iOS-Safari-Bug: ein fixed/absolute positioniertes Element mit border-radius+box-shadow
      malt seinen Hintergrund beim allerersten Paint mitunter nicht korrekt (bleibt transparent, bis
-     irgendeine Interaktion – z. B. das Ziehen am Griff – einen Repaint erzwingt). Der Fix (eigene
-     Compositing-Ebene erzwingen) sitzt trotzdem weiterhin auf einem eigenen ::before statt direkt
-     auf .spots-col, obwohl .spots-col jetzt selbst ein transform trägt - .spots-col::before hält so
-     unabhängig von .spots-col selbst seine eigene Compositing-Ebene, ohne dass diese beiden
-     transform-Werte sich gegenseitig überschreiben könnten. */
+     irgendeine Interaktion – z. B. das Ziehen am Griff – einen Repaint erzwingt). Zudem dient ::before
+     im Liquid-Glass-Modus (.collapsed / .partial) als eigenständige Hintergrund-/Blur-Ebene unter
+     den Kindern, damit .spots-col selbst keinen Backdrop-Root bildet und sticky Kinder wie
+     .category-nav-wrap ihren eigenen backdrop-filter auf gescrollte Karten anwenden können. */
 }
 
 .spots-col::before {
@@ -2088,42 +2086,45 @@ onUnmounted(() => {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: inherit;
+  border-radius: inherit;
+  corner-shape: inherit;
+  background: var(--color-surface);
+  backdrop-filter: none;
   transform: translateZ(0);
+  transition: background-color 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* Wie bei Apple Karten: im eingeklappten ("klein") und angeschnittenen ("halb") Zustand schwebt
    das Sheet mit Liquid-Glass-Effekt über der Karte; erst ganz hochgezogen (.full) wird es
-   undurchsichtig. ::before wird im Glas-Modus ausgeblendet, da backdrop-filter bereits eine eigene
-   Compositing-Ebene erzwingt und background: inherit auf ::before sonst die Transparenz doppelt
-   überlagern würde. */
+   undurchsichtig. */
 .spots-col.collapsed,
 .spots-col.partial {
-  background: var(--color-surface-glass);
-  backdrop-filter: var(--backdrop-blur-md);
   border-color: var(--color-surface-glass-border);
   box-shadow: var(--shadow-floating-island);
 }
 
 .spots-col.collapsed::before,
 .spots-col.partial::before {
-  display: none;
+  background: var(--color-surface-glass);
+  backdrop-filter: var(--backdrop-blur-md);
 }
 
-/* Kategorie-TabNav auf dem Liquid-Glass-Sheet: im ungescrollten Zustand transparent, damit keine
-   dunkle Kante auf dem Glas entsteht; sobald gescrollter Inhalt darunter liegt (auch beim
-   Zurückstufen von full -> partial mit erhaltenem scrollTop), trennen backdrop-filter + getönte
-   Glasfläche die Leiste sauber vom durchscheinenden Content. */
+/* Kategorie-TabNav auf dem Liquid-Glass-Sheet: im ungescrollten Zustand transparent (ohne eigenen
+   Blur-Block), damit keine doppelte Blur-Kante auf dem Glas entsteht; sobald gescrollter Inhalt
+   darunter liegt (auch beim Zurückstufen von full -> partial mit erhaltenem scrollTop), trennt
+   eine dichtere Frosted-Glass-Fläche + verstärkter backdrop-filter die Leiste sauber vom Content. */
 .spots-col.collapsed :deep(.category-nav-wrap),
 .spots-col.partial :deep(.category-nav-wrap) {
   --category-nav-bg: transparent;
-  background: transparent;
-  backdrop-filter: blur(max(12px, var(--glass-blur, 6px))) saturate(180%);
+  background: var(--category-nav-bg);
+  backdrop-filter: none;
   border-bottom-color: var(--color-surface-glass-border);
 }
 
 .spots-col.partial :deep(.category-nav-wrap.is-stuck) {
-  background: color-mix(in srgb, var(--color-surface-glass) 55%, transparent);
+  --category-nav-bg: var(--color-surface-glass-dense);
+  background: var(--category-nav-bg);
+  backdrop-filter: blur(max(16px, calc(var(--glass-blur, 6px) * 2))) saturate(180%);
 }
 
 /* Wie bei Apples eingeklapptem Suchleisten-Zustand: eine reine Pille (nur die Anfasser-Zeile ist
@@ -2162,7 +2163,8 @@ onUnmounted(() => {
   }
 }
 
-.spots-col.dragging {
+.spots-col.dragging,
+.spots-col.dragging::before {
   transition: none;
 }
 
@@ -2541,13 +2543,22 @@ onUnmounted(() => {
       transition: none;
     }
 
+    .spots-col::before,
+    .spots-col.collapsed::before,
+    .spots-col.partial::before,
+    .spots-col.full::before {
+      background: var(--color-surface);
+      backdrop-filter: none;
+      transition: none;
+    }
+
     /* .spots-col ist auf Desktop undurchsichtig, Glas-/Blur-Regeln von Mobil-States zurücksetzen. */
     .spots-col :deep(.category-nav-wrap),
     .spots-col.collapsed :deep(.category-nav-wrap),
     .spots-col.partial :deep(.category-nav-wrap),
     .spots-col.partial :deep(.category-nav-wrap.is-stuck) {
-      background: var(--color-surface);
       --category-nav-bg: var(--color-surface);
+      background: var(--category-nav-bg);
       backdrop-filter: none;
       border-bottom-color: var(--color-border);
     }
@@ -2829,7 +2840,8 @@ onUnmounted(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .spots-col {
+  .spots-col,
+  .spots-col::before {
     transition: none;
   }
   .category-group.is-tour-group {

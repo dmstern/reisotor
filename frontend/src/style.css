@@ -198,6 +198,7 @@
   --color-bg: #faf8f5;
   --color-surface: #ffffff;
   --color-surface-glass: rgb(255 255 255 / var(--glass-opacity));
+  --color-surface-glass-dense: rgb(255 255 255 / min(1, calc(0.78 + var(--glass-opacity) * 0.22)));
   --color-surface-glass-border: rgb(232 226 217 / calc(var(--glass-opacity) * 0.8));
   --color-surface-glass-hover: rgb(255 255 255 / min(0.78, calc(var(--glass-opacity) + 0.24)));
   --color-surface-glass-active: rgb(255 255 255 / min(0.88, calc(var(--glass-opacity) + 0.36)));
@@ -618,6 +619,7 @@
     --color-bg: #181715;
     --color-surface: #232220;
     --color-surface-glass: rgb(35 34 32 / var(--glass-opacity));
+    --color-surface-glass-dense: rgb(35 34 32 / min(1, calc(0.78 + var(--glass-opacity) * 0.22)));
     --color-surface-glass-border: rgb(13 13 12 / calc(var(--glass-opacity) * 0.8));
     --color-surface-glass-hover: rgb(55 53 50 / min(0.85, calc(var(--glass-opacity) + 0.26)));
     --color-surface-glass-active: rgb(68 66 62 / min(0.92, calc(var(--glass-opacity) + 0.38)));
@@ -793,6 +795,7 @@
   --color-bg: #181715;
   --color-surface: #232220;
   --color-surface-glass: rgb(35 34 32 / var(--glass-opacity));
+  --color-surface-glass-dense: rgb(35 34 32 / min(1, calc(0.78 + var(--glass-opacity) * 0.22)));
   --color-surface-glass-border: rgb(13 13 12 / calc(var(--glass-opacity) * 0.8));
   --color-surface-glass-hover: rgb(55 53 50 / min(0.85, calc(var(--glass-opacity) + 0.26)));
   --color-surface-glass-active: rgb(68 66 62 / min(0.92, calc(var(--glass-opacity) + 0.38)));
@@ -962,6 +965,7 @@
   --color-bg: #faf8f5;
   --color-surface: #ffffff;
   --color-surface-glass: rgb(255 255 255 / var(--glass-opacity));
+  --color-surface-glass-dense: rgb(255 255 255 / min(1, calc(0.78 + var(--glass-opacity) * 0.22)));
   --color-surface-glass-border: rgb(232 226 217 / calc(var(--glass-opacity) * 0.8));
   --color-surface-glass-hover: rgb(255 255 255 / min(0.78, calc(var(--glass-opacity) + 0.24)));
   --color-surface-glass-active: rgb(255 255 255 / min(0.88, calc(var(--glass-opacity) + 0.36)));

@@ -175,6 +175,7 @@ const emit = defineEmits<{
   border-radius: 0;
   padding: 0;
   cursor: pointer;
+  background: transparent;
   color: var(--color-text-muted);
 }
 
@@ -195,14 +196,12 @@ const emit = defineEmits<{
   left: 0;
   justify-content: flex-start;
   padding-left: 4px;
-  background: linear-gradient(to right, var(--category-nav-bg) 45%, transparent);
 }
 
 .category-nav-arrow.right {
   right: 0;
   justify-content: flex-end;
   padding-right: 4px;
-  background: linear-gradient(to left, var(--category-nav-bg) 45%, transparent);
 }
 
 .category-nav-item {
