@@ -166,4 +166,37 @@ describe('useExcursionDoneStatus', () => {
     expect(unplannedPopoverOpen.value).toBe(false);
     expect(startPendingSpy).toHaveBeenCalledWith('excursion', 10, 'confirm-done');
   });
+
+  it('behält note_format html beim Planen über excursionsStore.setDate bei', async () => {
+    const { api } = await import('../api/client');
+    const putSpy = vi.mocked(api.put).mockResolvedValue({
+      ...createMockExcursion({
+        id: 10,
+        note: '<p>Notiz</p>',
+        note_format: 'html',
+        date: '2026-07-20',
+      }),
+    });
+
+    const excursionsStore = useExcursionsStore();
+    excursionsStore.excursions = [
+      createMockExcursion({
+        id: 10,
+        note: '<p>Notiz</p>',
+        note_format: 'html',
+        date: null,
+      }),
+    ];
+
+    await excursionsStore.setDate(10, '2026-07-20');
+
+    expect(putSpy).toHaveBeenCalledWith(
+      '/ideas/10',
+      expect.objectContaining({
+        date: '2026-07-20',
+        note: '<p>Notiz</p>',
+        note_format: 'html',
+      })
+    );
+  });
 });

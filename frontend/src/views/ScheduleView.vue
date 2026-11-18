@@ -305,7 +305,7 @@ onMounted(async () => {
     box-shadow 0.2s ease;
 }
 
-/* Leucht-Effekt für den gesamten Kalender-Wochenbereich während des Einplanen-Drags (#drag) */
+/* Leucht-Effekt für den gesamten Kalender-Wochenbereich während des aktiven Einplanen-Modus */
 :global(body.is-dragging-calendar .weeks) {
   border-color: color-mix(in srgb, var(--color-scheduled) 60%, transparent);
   box-shadow:

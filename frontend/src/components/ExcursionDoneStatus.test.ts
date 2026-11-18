@@ -150,6 +150,8 @@ describe('ExcursionDoneStatus', () => {
 
     const popover = document.body.querySelector('.tour-dates-popover');
     expect(popover).not.toBeNull();
+    expect(popover?.textContent).toContain('Tour abhaken');
+    expect(popover?.textContent).not.toContain('Besuche abhaken');
 
     const checkItem = document.body.querySelector('.date-check-item') as HTMLButtonElement | null;
     expect(checkItem).not.toBeNull();
@@ -162,6 +164,66 @@ describe('ExcursionDoneStatus', () => {
     expect(jumpBtn).not.toBeNull();
     jumpBtn?.click();
     expect(openCalendarSpy).toHaveBeenCalledWith('2026-07-15');
+
+    app.unmount();
+    el.remove();
+  });
+
+  it('opens tour-unplanned-popover on click and triggers setDate via Für Datum einplanen', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const { useExcursionsStore } = await import('../stores/excursions');
+    const excursionsStore = useExcursionsStore();
+    const setDateSpy = vi.spyOn(excursionsStore, 'setDate').mockResolvedValue();
+    const setDoneSpy = vi.spyOn(excursionsStore, 'setDone').mockResolvedValue();
+
+    const unplannedExcursion: Excursion = {
+      ...mockExcursion,
+      date: null,
+      done: 0,
+    };
+
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    const app = createApp({
+      render: () =>
+        h(ExcursionDoneStatus, {
+          excursion: unplannedExcursion,
+          expanded: true,
+        }),
+    });
+    app.use(pinia);
+    app.mount(el);
+
+    const toggleBtn = el.querySelector('.done-toggle') as HTMLButtonElement | null;
+    expect(toggleBtn).not.toBeNull();
+    toggleBtn?.click();
+
+    await new Promise((r) => setTimeout(r, 20));
+
+    const popover = document.body.querySelector('.tour-unplanned-popover');
+    expect(popover).not.toBeNull();
+
+    const dateInput = popover?.querySelector('input[type="date"]') as HTMLInputElement | null;
+    expect(dateInput).not.toBeNull();
+
+    if (dateInput) {
+      dateInput.value = '2026-08-05';
+      dateInput.dispatchEvent(new Event('input'));
+    }
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    const planBtn = Array.from(popover?.querySelectorAll('button') ?? []).find((btn) =>
+      btn.textContent?.includes('Für Datum einplanen')
+    );
+    expect(planBtn).toBeDefined();
+    planBtn?.click();
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(setDateSpy).toHaveBeenCalledWith(1, '2026-08-05');
+    expect(setDoneSpy).not.toHaveBeenCalled();
 
     app.unmount();
     el.remove();

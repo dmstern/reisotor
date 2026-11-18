@@ -13,8 +13,24 @@ vi.mock('vue-router', async (importOriginal) => ({
   useRouter: () => ({ push: routerPush }),
 }));
 
+vi.mock('../api/client', () => ({
+  api: {
+    get: vi.fn().mockResolvedValue([]),
+    post: vi.fn().mockResolvedValue({}),
+    put: vi.fn().mockResolvedValue({}),
+    patch: vi.fn().mockResolvedValue({}),
+  },
+}));
+
+class MockEventSource {
+  addEventListener() {}
+  removeEventListener() {}
+  close() {}
+}
+
 describe('SpotDoneStatus', () => {
   beforeEach(() => {
+    vi.stubGlobal('EventSource', MockEventSource);
     setActivePinia(createPinia());
   });
 
@@ -286,6 +302,68 @@ describe('SpotDoneStatus', () => {
     jumpBtns[1].click();
     expect(routerPush).toHaveBeenCalledWith('/excursions#excursion-2');
     expect(openCalendarSpy).not.toHaveBeenCalled();
+
+    app.unmount();
+    el.remove();
+  });
+
+  it('opens spot-unplanned-popover and schedules spot for date via Für Datum einplanen', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const { useTripStore } = await import('../stores/trip');
+    const tripStore = useTripStore();
+    tripStore.currentTripId = 1;
+
+    const scheduleStore = useScheduleStore();
+    const setSpotDateSpy = vi.spyOn(scheduleStore, 'setSpotDate').mockResolvedValue(undefined);
+
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    const app = createApp({
+      render: () =>
+        h(SpotDoneStatus, {
+          spot: mockSpot,
+          scheduledDate: null,
+          expanded: true,
+        }),
+    });
+    app.use(pinia);
+    app.mount(el);
+
+    const toggleBtn = el.querySelector<HTMLButtonElement>('.done-toggle');
+    expect(toggleBtn).not.toBeNull();
+    toggleBtn?.click();
+
+    await new Promise((r) => setTimeout(r, 20));
+
+    const popover = document.body.querySelector('.spot-unplanned-popover');
+    expect(popover).not.toBeNull();
+
+    const dateInput = popover?.querySelector<HTMLInputElement>('input[type="date"]');
+    expect(dateInput).not.toBeNull();
+
+    if (dateInput) {
+      dateInput.value = '2026-08-12';
+      dateInput.dispatchEvent(new Event('input'));
+    }
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    const planBtn = Array.from(popover?.querySelectorAll('button') ?? []).find((btn) =>
+      btn.textContent?.includes('Für Datum einplanen')
+    );
+    expect(planBtn).toBeDefined();
+    planBtn?.click();
+
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(setSpotDateSpy).toHaveBeenCalledWith({
+      spotId: 1,
+      tripId: 1,
+      title: 'Fernsehturm',
+      date: '2026-08-12',
+      done: false,
+    });
 
     app.unmount();
     el.remove();
