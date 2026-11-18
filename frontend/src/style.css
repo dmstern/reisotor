@@ -522,11 +522,12 @@
   --shadow-card-polaroid-active:
     inset 0 1.5px 3px rgba(43, 42, 40, 0.14), 0 2px 6px rgba(43, 42, 40, 0.08);
 
-  /* Extrem dezentes Rausch-Muster (SVG feTurbulence als Daten-URI) für einen angenehm griffigen statt
-     komplett flachen/plastikigen Flächen-Eindruck auf denselben taktilen Pillen-Elementen -
-     background-blend-mode:overlay statt eigener Deckkraft, damit es sich automatisch in beide Themes
-     einfügt statt in Dark Mode zu hell/grau zu wirken (keine separate Dark-Mode-Variante nötig). */
-  --texture-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+  /* Extrem dezentes, monochromes Rausch-Muster (SVG feTurbulence + feColorMatrix saturate=0 als
+     Daten-URI) für einen angenehm griffigen statt flachen/plastikigen Flächen-Eindruck auf
+     taktilen Pillen-Tracks - niedrig dosierte Opazität + background-blend-mode:overlay, damit die
+     Körnung sowohl auf undurchsichtigen Flächen als auch auf halbtransparenten Glas-Tracks in
+     beiden Themes dezent bleibt ohne Farbrauschen zu erzeugen. */
+  --texture-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.055'/%3E%3C/svg%3E");
 
   --font-sans:
     'Fira Sans', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
