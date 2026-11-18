@@ -69,6 +69,8 @@ describe('TourSpotAssignDropdown', () => {
 
     const trigger = container.querySelector('.tour-add-spot-trigger') as HTMLButtonElement;
     expect(trigger).not.toBeNull();
+    expect(trigger.classList.contains('btn')).toBe(true);
+    expect(trigger.classList.contains('btn--secondary')).toBe(true);
     expect(trigger.textContent).toContain('Spot hinzufügen');
 
     trigger.click();
@@ -76,10 +78,12 @@ describe('TourSpotAssignDropdown', () => {
 
     const popup = document.querySelector('.tour-spot-assign-popup');
     expect(popup).not.toBeNull();
+    expect(popup?.classList.contains('picker-menu')).toBe(true);
     expect(popup?.textContent).toContain('Spot hinzufügen');
 
     const options = document.querySelectorAll('.spot-assign-option');
     expect(options.length).toBe(2);
+    expect(options[0].classList.contains('dropdown-item')).toBe(true);
     expect(options[0].textContent).toContain('Bester Spot');
     expect(options[1].textContent).toContain('Zweiter Spot');
   });

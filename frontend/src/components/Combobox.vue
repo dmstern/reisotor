@@ -625,7 +625,7 @@ defineOptions({
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .combobox {
   position: relative;
   flex: 1;
@@ -773,6 +773,7 @@ defineOptions({
 }
 
 .combobox-menu {
+  @include control-menu-surface;
   position: absolute;
   top: calc(100% + 2px);
   left: 0;
@@ -780,11 +781,9 @@ defineOptions({
   z-index: var(--z-popover, 1100);
   display: flex;
   flex-direction: column;
-  background: var(--color-surface);
   border: 1.5px solid var(--input-border-color);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  box-shadow: var(--shadow-dropdown-menu);
   transform-origin: top center;
   max-height: 240px;
   overflow: hidden;

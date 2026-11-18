@@ -119,7 +119,7 @@ function onChange(event: Event) {
   </label>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .checkbox-card {
   position: relative;
   display: flex;
@@ -135,7 +135,8 @@ function onChange(event: Event) {
     background 0.18s cubic-bezier(0.16, 1, 0.3, 1),
     border-color 0.18s ease,
     box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+    translate 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Card-Variante: Die moderne Einstellungs-Kachel */
@@ -143,25 +144,26 @@ function onChange(event: Event) {
   padding: var(--space-3) var(--space-4);
   margin: var(--space-3) 0;
   background-color: var(--color-surface);
-  /* Initial flach (wie Dropdowns/Inputs) - der 3D-Look entsteht erst bei Hover/Fokus */
-  background-image: none;
-  box-shadow: none;
+  background-image: var(--gradient-surface-3d);
+  box-shadow: var(--shadow-card);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  transition:
-    border-color 0.2s ease,
-    background-color 0.2s ease;
 }
 
 .checkbox-card--card:hover:not(.is-disabled),
 .checkbox-card--card:focus-within:not(.is-disabled) {
   background-color: color-mix(in srgb, white 2.5%, var(--color-surface));
   border-color: var(--color-primary-dark);
+  box-shadow: var(--shadow-card-hover);
+  translate: 0 -1px;
 }
 
 .checkbox-card--card:active:not(.is-disabled) {
   background-color: color-mix(in srgb, black 2%, var(--color-surface));
+  box-shadow: var(--shadow-card-active);
+  transform: translateY(1px) scale(0.99);
+  translate: 0 0;
 }
 
 .checkbox-card--card.is-checked {
@@ -177,18 +179,13 @@ function onChange(event: Event) {
 /* Muted- & Popover-Variante: Taktile Kachel für dichte Dialoge, Modals und Popover-Menüs */
 .checkbox-card--muted,
 .checkbox-card--popover {
+  @include control-3d-raised;
   padding: var(--space-3);
   margin: var(--space-2) 0;
   background-color: var(--color-hover);
-  /* Initial flach (wie Dropdowns/Inputs) - der 3D-Look entsteht erst bei Hover/Fokus */
-  background-image: none;
-  box-shadow: none;
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  transition:
-    border-color 0.2s ease,
-    background-color 0.2s ease;
 }
 
 .checkbox-card--muted:hover:not(.is-disabled),
