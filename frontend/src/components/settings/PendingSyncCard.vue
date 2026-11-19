@@ -72,6 +72,7 @@ function methodBadgeVariant(method: OutboxEntry['method']): 'success' | 'accent'
     case 'POST':
       return 'success';
     case 'PUT':
+    case 'PATCH':
       return 'accent';
     case 'DELETE':
       return 'danger';
@@ -83,6 +84,7 @@ function methodLabel(method: OutboxEntry['method']): string {
     case 'POST':
       return 'Erstellen';
     case 'PUT':
+    case 'PATCH':
       return 'Bearbeiten';
     case 'DELETE':
       return 'Löschen';

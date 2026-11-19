@@ -97,12 +97,8 @@ function openCalendarAtDate(date: string) {
   drawers.openCalendar(date);
 }
 
-/** Herkunft eines Termins: Kalender, Ausflug (Tour-Farbe), Tagebuch (Lila) oder Reise-Etappe (Reise-Farbe). */
+/** Herkunft eines Termins: Spot-Besuchstag (Kalender), Ausflug (Tour-Farbe) oder Reise-Etappe. */
 function dateSourceClass(item: ScheduledSpotItem): string {
-  if (item.type === 'diary') {
-    return 'is-diary';
-  }
-
   if (item.type !== 'tour') {
     return 'is-calendar';
   }
@@ -115,20 +111,12 @@ function jumpTitleFor(item: ScheduledSpotItem): string {
     return 'Zur Tour springen';
   }
 
-  if (item.type === 'diary') {
-    return 'Zum Tagebucheintrag springen';
-  }
-
   return 'Diesen Tag im Kalender öffnen';
 }
 
 function jumpAriaLabelFor(item: ScheduledSpotItem): string {
   if (item.type === 'tour') {
     return `Tour ${item.title ?? ''} öffnen`;
-  }
-
-  if (item.type === 'diary') {
-    return `Tagebucheintrag ${item.title ?? ''} öffnen`;
   }
 
   return `${formatDateShared(item.date)} im Kalender öffnen`;
@@ -169,15 +157,6 @@ function handleItemJump(checklistItem: DoneDateChecklistItem) {
   if (item.type === 'tour') {
     datesPopoverOpen.value = false;
     router.push(`/excursions#excursion-${item.sourceId}`);
-    return;
-  }
-
-  if (item.type === 'diary') {
-    datesPopoverOpen.value = false;
-    const tripId = tripStore.currentTripId;
-    router.push(
-      tripId ? `/trip/${tripId}/diary#entry-${item.sourceId}` : `/diary#entry-${item.sourceId}`
-    );
     return;
   }
 
@@ -295,12 +274,6 @@ function handleItemJump(checklistItem: DoneDateChecklistItem) {
         :icon="getTourRoleIconDef(findScheduledItem(item.id)?.role)"
         :size="16"
         group="categories"
-      />
-      <AppIcon
-        v-else-if="findScheduledItem(item.id)?.type === 'diary'"
-        :icon="SECTION_ICON_DEFS.diary"
-        :size="16"
-        group="navigation"
       />
       <AppIcon v-else :icon="FORM_FIELD_ICONS.date" :size="16" group="formFields" />
     </template>

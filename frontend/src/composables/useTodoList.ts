@@ -3,6 +3,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { api } from '../api/client';
 import type { TodoItem, TodoPriority, User, Period } from '../api/types';
 import { useTripStore } from '../stores/trip';
+import { useTodosStore } from '../stores/todos';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { hashHighlightId } from '../utils/hashHighlight';
 import { useToast } from './useToast';
@@ -19,11 +20,17 @@ export interface TodoFormInput {
 
 export function useTodoList(tripIdOverride?: number) {
   const tripStore = useTripStore();
+  const todosStore = useTodosStore();
   const liveSync = useLiveSyncStore();
   const { showToast } = useToast();
 
   const tripId = tripIdOverride ?? (tripStore.currentTripId as number);
-  const items = ref<TodoItem[]>([]);
+  const items = computed<TodoItem[]>({
+    get: () => todosStore.items,
+    set: (nextItems) => {
+      todosStore.items = nextItems;
+    },
+  });
   const users = ref<User[]>([]);
   const loading = ref(true);
   const highlightedIds = ref<Set<number>>(new Set());
@@ -53,11 +60,10 @@ export function useTodoList(tripIdOverride?: number) {
 
   async function load() {
     try {
-      const [itemsRes, usersRes] = await Promise.all([
-        api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
+      const [, usersRes] = await Promise.all([
+        todosStore.load(tripId),
         api.get<User[]>(`/trips/${tripId}/members`),
       ]);
-      items.value = itemsRes;
       users.value = usersRes;
     } catch {
       // Offline-Fallback: Seite rendert mit gecachten/vorherigen Daten
@@ -126,9 +132,7 @@ export function useTodoList(tripIdOverride?: number) {
       return null;
     }
 
-    const created = await api.post<TodoItem>('/todos', toBody(input));
-    items.value.push(created);
-    return created;
+    return todosStore.create(toBody(input));
   }
 
   async function quickAddToGroup(params: {
@@ -163,40 +167,22 @@ export function useTodoList(tripIdOverride?: number) {
           : undefined;
     }
 
-    const created = await api.post<TodoItem>('/todos', {
+    return todosStore.create({
       trip_id: tripId,
       title: params.label.trim(),
       assigned_to_user_id,
       period,
       priority: params.priority,
     });
-    items.value.push(created);
-    return created;
   }
 
   async function toggleDone(item: TodoItem) {
     clearFocusedTodo();
-    const updated = await api.put<TodoItem>(`/todos/${item.id}`, {
-      trip_id: tripId,
-      title: item.title,
-      assigned_to_user_id: item.assigned_to_user_id,
-      due_date: item.due_date ?? undefined,
-      period: item.period ?? undefined,
-      priority: item.priority,
-      note: item.note ?? undefined,
-      done: !item.done,
-    });
-    const idx = items.value.findIndex((i) => i.id === item.id);
-
-    if (idx !== -1) {
-      items.value[idx] = updated;
-    }
-
-    return updated;
+    return todosStore.toggleDone(item, tripId);
   }
 
   async function reassign(item: TodoItem, assigned_to_user_id: number | null) {
-    const updated = await api.put<TodoItem>(`/todos/${item.id}`, {
+    return todosStore.update(item.id, {
       trip_id: tripId,
       title: item.title,
       assigned_to_user_id,
@@ -206,32 +192,17 @@ export function useTodoList(tripIdOverride?: number) {
       note: item.note ?? undefined,
       done: !!item.done,
     });
-    const idx = items.value.findIndex((i) => i.id === item.id);
-
-    if (idx !== -1) {
-      items.value[idx] = updated;
-    }
-
-    return updated;
   }
 
   async function submitEdit(id: number, input: TodoFormInput, done: boolean): Promise<TodoItem> {
-    const updated = await api.put<TodoItem>(`/todos/${id}`, {
+    return todosStore.update(id, {
       ...toBody(input),
       done,
     });
-    const idx = items.value.findIndex((i) => i.id === updated.id);
-
-    if (idx !== -1) {
-      items.value[idx] = updated;
-    }
-
-    return updated;
   }
 
   async function remove(id: number) {
-    await api.delete(`/todos/${id}`);
-    items.value = items.value.filter((i) => i.id !== id);
+    await todosStore.remove(id);
     showToast({
       message: 'Aufgabe gelöscht. Sie befindet sich nun im Papierkorb.',
       type: 'info',

@@ -129,34 +129,6 @@ function idFromPath(path: string): number | undefined {
 
 let nextId = 1000;
 
-function syncDemoIdeaSchedule(
-  ideaId: number,
-  title: string,
-  date?: string | null,
-  tripId?: number
-) {
-  const schedule = store['/schedule'] as Record<string, unknown>[];
-  const existingIdx = schedule.findIndex((item) => item.idea_id === ideaId);
-
-  if (date) {
-    if (existingIdx !== -1) {
-      schedule[existingIdx] = { ...schedule[existingIdx], date, title };
-    } else {
-      schedule.push({
-        id: nextId++,
-        trip_id: tripId ?? 1,
-        date,
-        title,
-        idea_id: ideaId,
-        spot_id: null,
-        category: 'excursion',
-      });
-    }
-  } else if (existingIdx !== -1) {
-    schedule.splice(existingIdx, 1);
-  }
-}
-
 function delay(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 120));
 }
@@ -870,22 +842,126 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     return { liked: comment.liked, like_count: comment.like_count } as unknown as T;
   }
 
-  // --- Done toggles (/spots/:id/done, /ideas/:id/done) ---
-  const doneMatch = /^\/(spots|ideas)\/(-?\d+)\/done$/.exec(basePath);
+  // --- Done toggles (/spots/:id/done, /ideas/:id/done, /schedule/:id/done) ---
+  const doneMatch = /^\/(spots|ideas|schedule)\/(-?\d+)\/done$/.exec(basePath);
 
   if (doneMatch && method === 'POST') {
     const domain = doneMatch[1];
     const targetId = Number(doneMatch[2]);
     const coll = `/${domain}`;
     const doneVal = body?.done ? 1 : 0;
-    const existing = store[coll]?.find((item) => (item as { id: number }).id === targetId);
+    const existing = store[coll]?.find((item) => (item as { id: number }).id === targetId) as
+      (Record<string, unknown> & { dates?: Array<Record<string, unknown>> }) | undefined;
 
     if (existing) {
       existing.done = doneVal;
+
+      if (domain === 'spots' && Array.isArray(existing.dates)) {
+        existing.dates = existing.dates.map((entry) => ({ ...entry, done: doneVal }));
+      }
     }
 
     persist();
     return { done: !!doneVal } as unknown as T;
+  }
+
+  // --- Spot dates (/spots/:id/dates, /spots/:id/dates/:dateId) ---
+  const spotDateItemMatch = /^\/spots\/(-?\d+)\/dates\/(-?\d+)$/.exec(basePath);
+
+  if (spotDateItemMatch) {
+    const spotId = Number(spotDateItemMatch[1]);
+    const dateId = Number(spotDateItemMatch[2]);
+    const spot = store['/spots']?.find((item) => (item as { id: number }).id === spotId) as
+      (Record<string, unknown> & { dates?: Array<Record<string, unknown>> }) | undefined;
+
+    if (spot && Array.isArray(spot.dates)) {
+      if (method === 'PATCH') {
+        const idx = spot.dates.findIndex((entry) => entry.id === dateId);
+
+        if (idx >= 0) {
+          const current = spot.dates[idx];
+          const updatedEntry = {
+            ...current,
+            ...(body?.date !== undefined ? { date: String(body.date) } : {}),
+            ...(body?.done !== undefined ? { done: body.done ? 1 : 0 } : {}),
+          };
+          spot.dates = spot.dates.map((entry, entryIdx) =>
+            entryIdx === idx ? updatedEntry : entry
+          );
+          spot.dates.sort((left, right) => String(left.date).localeCompare(String(right.date)));
+
+          if (body?.done !== undefined) {
+            spot.done = spot.dates.some((entry) => Boolean(entry.done)) ? 1 : 0;
+          }
+
+          persist();
+          return structuredClone({
+            entry: updatedEntry,
+            dates: spot.dates,
+            spot_done: Boolean(spot.done),
+          }) as unknown as T;
+        }
+      }
+
+      if (method === 'DELETE') {
+        spot.dates = spot.dates.filter((entry) => entry.id !== dateId);
+        persist();
+        return { ok: true } as unknown as T;
+      }
+    }
+
+    return undefined as T;
+  }
+
+  const spotDatesMatch = /^\/spots\/(-?\d+)\/dates$/.exec(basePath);
+
+  if (spotDatesMatch && method === 'POST') {
+    const spotId = Number(spotDatesMatch[1]);
+    const spot = store['/spots']?.find((item) => (item as { id: number }).id === spotId) as
+      | (Record<string, unknown> & { dates?: Array<Record<string, unknown>>; trip_id?: number })
+      | undefined;
+
+    if (spot) {
+      const dateStr = String(body?.date ?? '').trim();
+      const doneVal = body?.done ? 1 : 0;
+      const datesList = Array.isArray(spot.dates) ? [...spot.dates] : [];
+      const existingIdx = datesList.findIndex((entry) => entry.date === dateStr);
+      let resultEntry: Record<string, unknown>;
+
+      if (existingIdx >= 0) {
+        resultEntry = {
+          ...datesList[existingIdx],
+          done: body?.done !== undefined ? doneVal : datesList[existingIdx].done,
+        };
+        datesList[existingIdx] = resultEntry;
+      } else {
+        resultEntry = {
+          id: nextId++,
+          trip_id: spot.trip_id ?? 1,
+          spot_id: spotId,
+          date: dateStr,
+          done: doneVal,
+          created_at: new Date().toISOString(),
+        };
+        datesList.push(resultEntry);
+      }
+
+      datesList.sort((left, right) => String(left.date).localeCompare(String(right.date)));
+      spot.dates = datesList;
+
+      if (resultEntry.done) {
+        spot.done = 1;
+      }
+
+      persist();
+      return structuredClone({
+        entry: resultEntry,
+        dates: spot.dates,
+        spot_done: Boolean(spot.done),
+      }) as unknown as T;
+    }
+
+    return undefined as T;
   }
 
   // --- Track recording endpoints (/tracks, /tracks/:id/stop, /tracks/:id/points) ---
@@ -1072,9 +1148,118 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     return structuredClone(rawList) as unknown as T;
   }
 
+  function normalizeDemoSpotDates(
+    spotId: number,
+    tripId: number,
+    rawDates: unknown[],
+    existingDates: Record<string, unknown>[] = []
+  ) {
+    const existingByDate = new Map<string, Record<string, unknown>>();
+
+    for (const entry of existingDates) {
+      if (typeof entry.date === 'string') {
+        existingByDate.set(entry.date, entry);
+      }
+    }
+
+    const deduped = new Map<string, { id?: number; date: string; done?: boolean | number }>();
+
+    for (const entry of rawDates) {
+      if (
+        !entry ||
+        typeof (entry as { date?: unknown }).date !== 'string' ||
+        String((entry as { date: string }).date).trim().length === 0
+      ) {
+        continue;
+      }
+
+      const item = entry as { id?: number; date: string; done?: boolean | number };
+      deduped.set(item.date.trim(), { ...item, date: item.date.trim() });
+    }
+
+    return [...deduped.values()]
+      .map((item) => {
+        const previous = existingByDate.get(item.date);
+        let entryDone = (previous?.done as number) ?? 0;
+
+        if (item.done !== undefined) {
+          entryDone = item.done ? 1 : 0;
+        }
+
+        return {
+          id: item.id ?? (previous?.id as number | undefined) ?? nextId++,
+          trip_id: tripId,
+          spot_id: spotId,
+          date: item.date,
+          done: entryDone,
+          created_at: (previous?.created_at as string | undefined) ?? new Date().toISOString(),
+        };
+      })
+      .sort((left, right) => left.date.localeCompare(right.date));
+  }
+
+  function syncDemoPublishedDiaryLinks(
+    linkField: 'spot_ids' | 'excursion_ids',
+    entityId: number,
+    tripId: number,
+    rawDiaryIds: unknown[]
+  ) {
+    const selectedIds = new Set(
+      rawDiaryIds.map((val) => Number(val)).filter((val) => Number.isInteger(val))
+    );
+
+    if (!Array.isArray(store['/diary'])) {
+      return;
+    }
+
+    store['/diary'] = store['/diary'].map((entry) => {
+      if ((entry.trip_id as number | undefined) !== tripId || Boolean(entry.is_draft)) {
+        return entry;
+      }
+
+      const currentIds = Array.isArray(entry[linkField]) ? (entry[linkField] as number[]) : [];
+      const shouldBeLinked = selectedIds.has(entry.id as number);
+      const isLinked = currentIds.includes(entityId);
+
+      if (shouldBeLinked === isLinked) {
+        return entry;
+      }
+
+      const nextIds = shouldBeLinked
+        ? [...currentIds, entityId]
+        : currentIds.filter((id) => id !== entityId);
+      return { ...entry, [linkField]: nextIds };
+    });
+  }
+
   if (method === 'POST') {
     const id = nextId++;
     const created: Record<string, unknown> = { ...(body ?? {}), id };
+
+    if (collection === '/spots') {
+      const tripId = (body?.trip_id as number | undefined) ?? 1;
+      const rawDates = Array.isArray(body?.dates) ? body.dates : [];
+      const normalizedDates = normalizeDemoSpotDates(id, tripId, rawDates);
+      created.dates = normalizedDates;
+      created.done = body?.done || normalizedDates.some((entry) => entry.done === 1) ? 1 : 0;
+
+      if (Array.isArray(body?.diary_ids)) {
+        syncDemoPublishedDiaryLinks('spot_ids', id, tripId, body.diary_ids);
+      }
+
+      delete created.diary_ids;
+    }
+
+    if (collection === '/ideas') {
+      const tripId = (body?.trip_id as number | undefined) ?? 1;
+      created.done = body?.done ? 1 : 0;
+
+      if (Array.isArray(body?.diary_ids)) {
+        syncDemoPublishedDiaryLinks('excursion_ids', id, tripId, body.diary_ids);
+      }
+
+      delete created.diary_ids;
+    }
 
     if (collection === '/diary') {
       const now = new Date().toISOString();
@@ -1122,28 +1307,81 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
 
     store[collection] = [...store[collection], created];
 
-    if (collection === '/ideas') {
-      syncDemoIdeaSchedule(
-        id,
-        (body?.title as string) ?? '',
-        body?.date as string | null | undefined,
-        body?.trip_id as number | undefined
-      );
-    } else if (collection === '/schedule' && body?.idea_id) {
-      const ideaId = Number(body.idea_id);
-      const existingIdea = store['/ideas']?.find((e) => e.id === ideaId);
-
-      if (existingIdea) {
-        existingIdea.date = body.date ?? null;
-      }
-    }
-
     persist();
     return created as unknown as T;
   }
 
   if (method === 'PUT') {
     const id = idFromPath(path);
+
+    if (collection === '/spots' && id != null) {
+      const existing = store['/spots']?.find((item) => (item as { id: number }).id === id);
+
+      if (existing) {
+        const tripId = (existing.trip_id as number | undefined) ?? 1;
+        const existingDates = Array.isArray(existing.dates)
+          ? (existing.dates as Record<string, unknown>[])
+          : [];
+        const nextDates = Array.isArray(body?.dates)
+          ? normalizeDemoSpotDates(id, tripId, body.dates, existingDates)
+          : existingDates;
+        let nextDone = existing.done ? 1 : 0;
+
+        if (body?.done !== undefined) {
+          nextDone = body.done ? 1 : 0;
+        } else if (Array.isArray(body?.dates) && nextDates.some((entry) => entry.done === 1)) {
+          nextDone = 1;
+        }
+
+        if (Array.isArray(body?.diary_ids)) {
+          syncDemoPublishedDiaryLinks('spot_ids', id, tripId, body.diary_ids);
+        }
+
+        const updated: Record<string, unknown> = {
+          ...existing,
+          ...(body ?? {}),
+          id,
+          dates: nextDates,
+          done: nextDone,
+        };
+        delete updated.diary_ids;
+        store['/spots'] = store['/spots'].map((item) =>
+          (item as { id: number }).id === id ? updated : item
+        );
+        persist();
+        return updated as unknown as T;
+      }
+    }
+
+    if (collection === '/ideas' && id != null) {
+      const existing = store['/ideas']?.find((item) => (item as { id: number }).id === id);
+
+      if (existing) {
+        const tripId = (existing.trip_id as number | undefined) ?? 1;
+        let nextDone = existing.done ? 1 : 0;
+
+        if (body?.done !== undefined) {
+          nextDone = body.done ? 1 : 0;
+        }
+
+        if (Array.isArray(body?.diary_ids)) {
+          syncDemoPublishedDiaryLinks('excursion_ids', id, tripId, body.diary_ids);
+        }
+
+        const updated: Record<string, unknown> = {
+          ...existing,
+          ...(body ?? {}),
+          id,
+          done: nextDone,
+        };
+        delete updated.diary_ids;
+        store['/ideas'] = store['/ideas'].map((item) =>
+          (item as { id: number }).id === id ? updated : item
+        );
+        persist();
+        return updated as unknown as T;
+      }
+    }
 
     if (collection === '/diary' && id != null) {
       const existing = store['/diary']?.find((item) => (item as { id: number }).id === id);
@@ -1220,30 +1458,6 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     );
     const updated = store[collection].find((item) => (item as { id: number }).id === id);
 
-    if (collection === '/ideas' && id != null) {
-      const updatedIdea = store['/ideas'].find((item) => (item as { id: number }).id === id) as
-        Record<string, unknown> | undefined;
-
-      if (updatedIdea) {
-        syncDemoIdeaSchedule(
-          id,
-          (updatedIdea.title as string) ?? '',
-          updatedIdea.date as string | null | undefined,
-          updatedIdea.trip_id as number | undefined
-        );
-      }
-    } else if (collection === '/schedule' && id != null) {
-      const schedItem = updated as { idea_id?: number | null; date?: string } | undefined;
-
-      if (schedItem?.idea_id != null) {
-        const idea = store['/ideas']?.find((e) => e.id === schedItem.idea_id);
-
-        if (idea) {
-          idea.date = schedItem.date ?? null;
-        }
-      }
-    }
-
     persist();
     return updated as unknown as T;
   }
@@ -1251,24 +1465,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   if (method === 'DELETE') {
     const id = idFromPath(path);
 
-    if (collection === '/schedule' && id != null) {
-      const schedItem = store['/schedule']?.find((sched) => sched.id === id) as
-        { idea_id?: number | null } | undefined;
-
-      if (schedItem?.idea_id != null) {
-        const idea = store['/ideas']?.find((e) => e.id === schedItem.idea_id);
-
-        if (idea) {
-          idea.date = null;
-        }
-      }
-    }
-
     store[collection] = store[collection].filter((item) => (item as { id: number }).id !== id);
-
-    if (collection === '/ideas' && id != null) {
-      syncDemoIdeaSchedule(id, '', null);
-    }
 
     persist();
     return undefined as T;

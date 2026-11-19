@@ -229,3 +229,354 @@ describe('diary co-editing (#93)', () => {
     expect(entries[0].images).toEqual(['https://example.com/test.jpg']);
   });
 });
+
+describe('bidirectional diary linking for ideas and spots', () => {
+  let app: FastifyInstance;
+  let db: Database.Database;
+
+  beforeAll(async () => {
+    const built = await buildTestApp();
+    app = built.app;
+    db = built.db;
+  });
+
+  async function register(username: string, email: string) {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/register',
+      payload: { username, email, password: 'correct-horse' },
+    });
+    const setCookie = res.headers['set-cookie'];
+    const cookie = Array.isArray(setCookie) ? setCookie.join('; ') : String(setCookie);
+    return { cookie, userId: res.json().id as number };
+  }
+
+  it('links/unlinks published diary entries via POST/PUT /ideas while preserving drafts and omitted diary_ids', async () => {
+    const owner = await register('link_owner', 'link_owner@example.com');
+    const member = await register('link_member', 'link_member@example.com');
+
+    const tripRes = await app.inject({
+      method: 'POST',
+      url: '/api/trips',
+      headers: { cookie: owner.cookie },
+      payload: { name: 'Link-Reise', start_date: '2026-05-01', end_date: '2026-05-10' },
+    });
+    const tripId = tripRes.json().id as number;
+
+    await app.inject({
+      method: 'POST',
+      url: `/api/trips/${tripId}/members`,
+      headers: { cookie: owner.cookie },
+      payload: { user_id: member.userId },
+    });
+
+    const otherTripRes = await app.inject({
+      method: 'POST',
+      url: '/api/trips',
+      headers: { cookie: owner.cookie },
+      payload: { name: 'Andere Reise', start_date: '2026-06-01', end_date: '2026-06-05' },
+    });
+    const otherTripId = otherTripRes.json().id as number;
+
+    const pub1 = (
+      await app.inject({
+        method: 'POST',
+        url: '/api/diary',
+        headers: { cookie: owner.cookie },
+        payload: {
+          trip_id: tripId,
+          title: 'Tag 1',
+          content: '<p>Veröffentlicht 1</p>',
+          content_format: 'html',
+          date: '2026-05-02',
+          is_draft: false,
+        },
+      })
+    ).json().id as number;
+
+    const pub2 = (
+      await app.inject({
+        method: 'POST',
+        url: '/api/diary',
+        headers: { cookie: owner.cookie },
+        payload: {
+          trip_id: tripId,
+          title: 'Tag 2',
+          content: '<p>Veröffentlicht 2</p>',
+          content_format: 'html',
+          date: '2026-05-03',
+          is_draft: false,
+        },
+      })
+    ).json().id as number;
+
+    const memberDraft = (
+      await app.inject({
+        method: 'POST',
+        url: '/api/diary',
+        headers: { cookie: member.cookie },
+        payload: {
+          trip_id: tripId,
+          title: 'Privater Entwurf',
+          content: '<p>Geheim</p>',
+          content_format: 'html',
+          date: '2026-05-02',
+          is_draft: true,
+        },
+      })
+    ).json().id as number;
+
+    const otherTripEntry = (
+      await app.inject({
+        method: 'POST',
+        url: '/api/diary',
+        headers: { cookie: owner.cookie },
+        payload: {
+          trip_id: otherTripId,
+          title: 'Fremder Trip',
+          content: '<p>Anderer Urlaub</p>',
+          content_format: 'html',
+          date: '2026-06-02',
+          is_draft: false,
+        },
+      })
+    ).json().id as number;
+
+    // 1. POST /ideas mit diary_ids (inkl. Duplikat, Entwurf und fremder Trip-ID)
+    const createIdeaRes = await app.inject({
+      method: 'POST',
+      url: '/api/ideas',
+      headers: { cookie: owner.cookie },
+      payload: {
+        trip_id: tripId,
+        title: 'Küstentour',
+        diary_ids: [pub1, pub1, memberDraft, otherTripEntry],
+      },
+    });
+    expect(createIdeaRes.statusCode).toBe(201);
+    const ideaId = createIdeaRes.json().id as number;
+
+    // Entwurf zusätzlich direkt mit der Tour verknüpfen (z. B. durch den Entwurfs-Autor)
+    db.prepare('INSERT INTO diary_excursions (entry_id, idea_id) VALUES (?, ?)').run(
+      memberDraft,
+      ideaId
+    );
+
+    let diaryList = (
+      await app.inject({
+        method: 'GET',
+        url: `/api/diary?trip_id=${tripId}`,
+        headers: { cookie: owner.cookie },
+      })
+    ).json() as Array<{ id: number; excursion_ids: number[] }>;
+    expect(diaryList.find((entry) => entry.id === pub1)?.excursion_ids).toEqual([ideaId]);
+    expect(diaryList.find((entry) => entry.id === pub2)?.excursion_ids).toEqual([]);
+
+    const otherList = (
+      await app.inject({
+        method: 'GET',
+        url: `/api/diary?trip_id=${otherTripId}`,
+        headers: { cookie: owner.cookie },
+      })
+    ).json() as Array<{ id: number; excursion_ids: number[] }>;
+    expect(otherList.find((entry) => entry.id === otherTripEntry)?.excursion_ids).toEqual([]);
+
+    // 2. PUT /ideas/:id ohne diary_ids erhält bestehende Verknüpfung
+    const updateOmittedRes = await app.inject({
+      method: 'PUT',
+      url: `/api/ideas/${ideaId}`,
+      headers: { cookie: owner.cookie },
+      payload: {
+        trip_id: tripId,
+        title: 'Küstentour Umbenannt',
+      },
+    });
+    expect(updateOmittedRes.statusCode).toBe(200);
+
+    diaryList = (
+      await app.inject({
+        method: 'GET',
+        url: `/api/diary?trip_id=${tripId}`,
+        headers: { cookie: owner.cookie },
+      })
+    ).json() as Array<{ id: number; excursion_ids: number[] }>;
+    expect(diaryList.find((entry) => entry.id === pub1)?.excursion_ids).toEqual([ideaId]);
+
+    // 3. PUT /ideas/:id mit [pub2] entfernt pub1, fügt pub2 hinzu und lässt memberDraft unberührt
+    const updateLinksRes = await app.inject({
+      method: 'PUT',
+      url: `/api/ideas/${ideaId}`,
+      headers: { cookie: owner.cookie },
+      payload: {
+        trip_id: tripId,
+        title: 'Küstentour Umbenannt',
+        diary_ids: [pub2],
+      },
+    });
+    expect(updateLinksRes.statusCode).toBe(200);
+
+    diaryList = (
+      await app.inject({
+        method: 'GET',
+        url: `/api/diary?trip_id=${tripId}`,
+        headers: { cookie: owner.cookie },
+      })
+    ).json() as Array<{ id: number; excursion_ids: number[] }>;
+    expect(diaryList.find((entry) => entry.id === pub1)?.excursion_ids).toEqual([]);
+    expect(diaryList.find((entry) => entry.id === pub2)?.excursion_ids).toEqual([ideaId]);
+
+    const draftRow = db
+      .prepare('SELECT entry_id FROM diary_excursions WHERE entry_id = ? AND idea_id = ?')
+      .get(memberDraft, ideaId);
+    expect(draftRow).toEqual({ entry_id: memberDraft });
+  });
+
+  it('links/unlinks published diary entries via POST/PUT /spots while preserving drafts and omitted diary_ids', async () => {
+    const owner = await register('spot_link_owner', 'spot_link_owner@example.com');
+    const member = await register('spot_link_member', 'spot_link_member@example.com');
+
+    const tripRes = await app.inject({
+      method: 'POST',
+      url: '/api/trips',
+      headers: { cookie: owner.cookie },
+      payload: { name: 'Spot-Link-Reise', start_date: '2026-07-01', end_date: '2026-07-10' },
+    });
+    const tripId = tripRes.json().id as number;
+
+    await app.inject({
+      method: 'POST',
+      url: `/api/trips/${tripId}/members`,
+      headers: { cookie: owner.cookie },
+      payload: { user_id: member.userId },
+    });
+
+    const pub1 = (
+      await app.inject({
+        method: 'POST',
+        url: '/api/diary',
+        headers: { cookie: owner.cookie },
+        payload: {
+          trip_id: tripId,
+          title: 'Spot-Tag 1',
+          content: '<p>Veröffentlicht</p>',
+          content_format: 'html',
+          date: '2026-07-02',
+          is_draft: false,
+        },
+      })
+    ).json().id as number;
+
+    const pub2 = (
+      await app.inject({
+        method: 'POST',
+        url: '/api/diary',
+        headers: { cookie: owner.cookie },
+        payload: {
+          trip_id: tripId,
+          title: 'Spot-Tag 2',
+          content: '<p>Veröffentlicht 2</p>',
+          content_format: 'html',
+          date: '2026-07-03',
+          is_draft: false,
+        },
+      })
+    ).json().id as number;
+
+    const memberDraft = (
+      await app.inject({
+        method: 'POST',
+        url: '/api/diary',
+        headers: { cookie: member.cookie },
+        payload: {
+          trip_id: tripId,
+          title: 'Spot Entwurf',
+          content: '<p>Privat</p>',
+          content_format: 'html',
+          date: '2026-07-02',
+          is_draft: true,
+        },
+      })
+    ).json().id as number;
+
+    // 1. POST /spots mit diary_ids
+    const createSpotRes = await app.inject({
+      method: 'POST',
+      url: '/api/spots',
+      headers: { cookie: owner.cookie },
+      payload: {
+        trip_id: tripId,
+        title: 'Aussichtspunkt',
+        category: 'Aussichtspunkt',
+        diary_ids: [pub1, memberDraft],
+      },
+    });
+    expect(createSpotRes.statusCode).toBe(201);
+    const spotId = createSpotRes.json().id as number;
+
+    db.prepare('INSERT INTO diary_spots (entry_id, spot_id) VALUES (?, ?)').run(
+      memberDraft,
+      spotId
+    );
+
+    let diaryList = (
+      await app.inject({
+        method: 'GET',
+        url: `/api/diary?trip_id=${tripId}`,
+        headers: { cookie: owner.cookie },
+      })
+    ).json() as Array<{ id: number; spot_ids: number[] }>;
+    expect(diaryList.find((entry) => entry.id === pub1)?.spot_ids).toEqual([spotId]);
+    expect(diaryList.find((entry) => entry.id === pub2)?.spot_ids).toEqual([]);
+
+    // 2. PUT /spots/:id ohne diary_ids erhält bestehende Verknüpfung
+    const updateOmittedRes = await app.inject({
+      method: 'PUT',
+      url: `/api/spots/${spotId}`,
+      headers: { cookie: owner.cookie },
+      payload: {
+        trip_id: tripId,
+        title: 'Aussichtspunkt Nord',
+        category: 'Aussichtspunkt',
+      },
+    });
+    expect(updateOmittedRes.statusCode).toBe(200);
+
+    diaryList = (
+      await app.inject({
+        method: 'GET',
+        url: `/api/diary?trip_id=${tripId}`,
+        headers: { cookie: owner.cookie },
+      })
+    ).json() as Array<{ id: number; spot_ids: number[] }>;
+    expect(diaryList.find((entry) => entry.id === pub1)?.spot_ids).toEqual([spotId]);
+
+    // 3. PUT /spots/:id mit [pub2] aktualisiert Links und lässt memberDraft unberührt
+    const updateLinksRes = await app.inject({
+      method: 'PUT',
+      url: `/api/spots/${spotId}`,
+      headers: { cookie: owner.cookie },
+      payload: {
+        trip_id: tripId,
+        title: 'Aussichtspunkt Nord',
+        category: 'Aussichtspunkt',
+        diary_ids: [pub2],
+      },
+    });
+    expect(updateLinksRes.statusCode).toBe(200);
+
+    diaryList = (
+      await app.inject({
+        method: 'GET',
+        url: `/api/diary?trip_id=${tripId}`,
+        headers: { cookie: owner.cookie },
+      })
+    ).json() as Array<{ id: number; spot_ids: number[] }>;
+    expect(diaryList.find((entry) => entry.id === pub1)?.spot_ids).toEqual([]);
+    expect(diaryList.find((entry) => entry.id === pub2)?.spot_ids).toEqual([spotId]);
+
+    const draftRow = db
+      .prepare('SELECT entry_id FROM diary_spots WHERE entry_id = ? AND spot_id = ?')
+      .get(memberDraft, spotId);
+    expect(draftRow).toEqual({ entry_id: memberDraft });
+  });
+});

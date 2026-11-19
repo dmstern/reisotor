@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import type { Excursion, Spot, TravelItem } from '../api/types';
 import { useDrawersStore } from '../stores/drawers';
+import { useDiaryStore } from '../stores/diary';
 import { useExcursionStations } from '../composables/useExcursionStations';
 import EditButton from './EditButton.vue';
 import Comments, { type CommentItem } from './Comments.vue';
@@ -16,6 +17,7 @@ import ExcursionCoverStack from './ExcursionCoverStack.vue';
 import ExcursionDoneStatus from './ExcursionDoneStatus.vue';
 import ExcursionRouteMeta from './ExcursionRouteMeta.vue';
 import ExcursionMapLinks from './ExcursionMapLinks.vue';
+import LinkedDiaryPills from './LinkedDiaryPills.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
@@ -50,6 +52,13 @@ const emit = defineEmits<{
 }>();
 
 const drawers = useDrawersStore();
+const diaryStore = useDiaryStore();
+
+const linkedDiaryEntries = computed(() =>
+  diaryStore.entries.filter(
+    (entry) => !entry.is_draft && (entry.excursion_ids ?? []).includes(props.excursion.id)
+  )
+);
 
 function onCardClick(event?: MouseEvent) {
   const target = event?.target as HTMLElement | null;
@@ -208,6 +217,14 @@ const {
           :travel-duration="travelDuration"
         />
 
+        <!-- Auf Karte anzeigen (analog zur SpotCard direkt unter dem Header) -->
+        <ExcursionMapLinks
+          v-if="expanded"
+          :has-mapped-stations="hasMappedStations"
+          :linked-tracks="linkedTracks"
+          @show-on-map="emit('show-on-map')"
+        />
+
         <!-- Tour-Notiz: Trunkiert mit Ellipsis sowohl im collapsed als auch im expanded Zustand (#235) -->
         <div v-if="excursion.note" class="tour-note-container" :class="{ 'is-expanded': expanded }">
           <RichTextDisplay
@@ -223,12 +240,11 @@ const {
           <FileAttachments domain="ideas" :entity-id="excursion.id" :editable="false" />
         </div>
 
-        <!-- Auf Karte anzeigen & verknüpfte Aufzeichnungen -->
-        <ExcursionMapLinks
-          v-if="expanded"
-          :has-mapped-stations="hasMappedStations"
-          :linked-tracks="linkedTracks"
-          @show-on-map="emit('show-on-map')"
+        <!-- Verknüpfte Aufzeichnungen & Tagebucheinträge gemeinsam als Pill-Zeile -->
+        <LinkedDiaryPills
+          v-if="expanded && (linkedTracks.length || linkedDiaryEntries.length)"
+          :tracks="linkedTracks"
+          :entries="linkedDiaryEntries"
         />
 
         <div

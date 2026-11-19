@@ -244,21 +244,47 @@ async function snapshotTripWeather(trip: TripRow, today: string) {
     addTarget(spot.lat, spot.lng, sDates);
   }
 
-  // 3. Touren-Stationen mit eigenen Koordinaten
+  // 3. Touren-Stationen mit eigenen Koordinaten (Datum direkt auf ideas.date, #800)
   const excursions = db
     .prepare(
-      `SELECT DISTINCT s.date, sp.lat, sp.lng
+      `SELECT DISTINCT i.date, sp.lat, sp.lng
        FROM ideas i
-       JOIN schedule_items s ON s.idea_id = i.id
        JOIN excursion_spots es ON es.idea_id = i.id
        JOIN spots sp ON sp.id = es.spot_id
-       WHERE i.trip_id = ? AND s.date IS NOT NULL AND i.deleted_at IS NULL AND s.deleted_at IS NULL AND sp.deleted_at IS NULL AND sp.lat IS NOT NULL AND sp.lng IS NOT NULL`
+       WHERE i.trip_id = ?
+         AND i.date IS NOT NULL
+         AND i.date != ''
+         AND i.deleted_at IS NULL
+         AND sp.deleted_at IS NULL
+         AND sp.lat IS NOT NULL
+         AND sp.lng IS NOT NULL`
     )
     .all(trip.id) as { date: string; lat: number; lng: number }[];
 
-  for (const e of excursions) {
-    if (e.date <= yesterday) {
-      addTarget(e.lat, e.lng, [e.date]);
+  for (const excursion of excursions) {
+    if (excursion.date <= yesterday) {
+      addTarget(excursion.lat, excursion.lng, [excursion.date]);
+    }
+  }
+
+  // 4. Spots mit direkten Besuchstagen (spot_dates) und eigenen Koordinaten (#800)
+  const scheduledSpotDates = db
+    .prepare(
+      `SELECT DISTINCT sd.date, sp.lat, sp.lng
+       FROM spot_dates sd
+       JOIN spots sp ON sp.id = sd.spot_id
+       WHERE sd.trip_id = ?
+         AND sd.date IS NOT NULL
+         AND sd.date != ''
+         AND sp.deleted_at IS NULL
+         AND sp.lat IS NOT NULL
+         AND sp.lng IS NOT NULL`
+    )
+    .all(trip.id) as { date: string; lat: number; lng: number }[];
+
+  for (const spotDate of scheduledSpotDates) {
+    if (spotDate.date <= yesterday) {
+      addTarget(spotDate.lat, spotDate.lng, [spotDate.date]);
     }
   }
 

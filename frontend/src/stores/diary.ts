@@ -46,6 +46,52 @@ export const useDiaryStore = defineStore('diary', () => {
     loaded.value = true;
   }
 
+  function syncLinksForExcursion(excursionId: number, diaryIds: number[]) {
+    const selectedIds = new Set(diaryIds);
+
+    entries.value = entries.value.map((entry) => {
+      if (entry.is_draft) {
+        return entry;
+      }
+
+      const currentIds = entry.excursion_ids ?? [];
+      const shouldBeLinked = selectedIds.has(entry.id);
+      const isLinked = currentIds.includes(excursionId);
+
+      if (shouldBeLinked === isLinked) {
+        return entry;
+      }
+
+      const nextIds = shouldBeLinked
+        ? [...currentIds, excursionId]
+        : currentIds.filter((id) => id !== excursionId);
+      return { ...entry, excursion_ids: nextIds };
+    });
+  }
+
+  function syncLinksForSpot(spotId: number, diaryIds: number[]) {
+    const selectedIds = new Set(diaryIds);
+
+    entries.value = entries.value.map((entry) => {
+      if (entry.is_draft) {
+        return entry;
+      }
+
+      const currentIds = entry.spot_ids ?? [];
+      const shouldBeLinked = selectedIds.has(entry.id);
+      const isLinked = currentIds.includes(spotId);
+
+      if (shouldBeLinked === isLinked) {
+        return entry;
+      }
+
+      const nextIds = shouldBeLinked
+        ? [...currentIds, spotId]
+        : currentIds.filter((id) => id !== spotId);
+      return { ...entry, spot_ids: nextIds };
+    });
+  }
+
   watch(() => liveSync.domainVersion.diary, load);
   watch(
     () => tripStore.currentTripId,
@@ -60,5 +106,7 @@ export const useDiaryStore = defineStore('diary', () => {
     loaded,
     load,
     setEntries,
+    syncLinksForExcursion,
+    syncLinksForSpot,
   };
 });

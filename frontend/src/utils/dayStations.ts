@@ -199,8 +199,26 @@ export function buildDayStations(
     }
   }
 
-  for (const e of excursions.filter((e) => e.date === date)) {
+  for (const e of excursions.filter((excursion) => excursion.date === date)) {
     for (const station of resolveStations(excursionStationKeys(e.spot_ids), spots, travelItems)) {
+      timed.push({ time: null, station });
+    }
+  }
+
+  for (const spot of spots) {
+    if (spot.category === 'Unterkunft') {
+      continue;
+    }
+
+    const hasDate = spot.dates?.some((entry) => entry.date === date);
+
+    if (!hasDate) {
+      continue;
+    }
+
+    const station = resolveStation(`spot-${spot.id}`, spots, travelItems);
+
+    if (station) {
       timed.push({ time: null, station });
     }
   }

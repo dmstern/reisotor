@@ -256,4 +256,45 @@ describe('useMapPoints', () => {
     expect(focusedExcursionTracksWithPoints.value).toHaveLength(1);
     expect(focusedExcursionTracksWithPoints.value[0].points).toHaveLength(2);
   });
+
+  it('berücksichtigt spot.dates für den Geplant-Statusfilter und dayHasContent (#800)', () => {
+    const spotsStore = useSpotsStore();
+    spotsStore.spots = [
+      {
+        id: 1,
+        trip_id: 1,
+        title: 'Geplanter Spot',
+        category: 'Aktivität',
+        lat: 38.7,
+        lng: -9.1,
+        done: 0,
+        is_home: 0,
+        dates: [{ id: 10, trip_id: 1, spot_id: 1, date: '2026-06-02', done: 0 }],
+      },
+      {
+        id: 2,
+        trip_id: 1,
+        title: 'Ungeplanter Spot',
+        category: 'Aktivität',
+        lat: 38.71,
+        lng: -9.11,
+        done: 0,
+        is_home: 0,
+        dates: [],
+      },
+    ] as unknown as Spot[];
+
+    const statusFilter = ref<('planned' | 'unplanned' | 'done')[]>(['planned']);
+    const { filteredPoints, dayHasContent } = useMapPoints({
+      travelItems: computed<TravelItem[]>(() => []),
+      scheduleItems: ref<ScheduleItem[]>([]),
+      excursionPhotoPoints: ref([]),
+      allTripPhotoPoints: ref([]),
+      statusFilter,
+    });
+
+    expect(filteredPoints.value.map((point) => point.title)).toEqual(['Geplanter Spot']);
+    expect(dayHasContent('2026-06-02')).toBe(true);
+    expect(dayHasContent('2026-06-03')).toBe(false);
+  });
 });

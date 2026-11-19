@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { useTodoList } from './useTodoList';
+import { useCalendarData } from './useCalendarData';
 import type { TodoItem } from '../api/types';
 
 function createMemoryStorage() {
@@ -68,5 +69,36 @@ describe('useTodoList', () => {
     // Period wird bei gesetztem due_date verworfen
     expect(body.period).toBeUndefined();
     expect(body.note).toBe('Notiz');
+  });
+
+  it('synchronisiert ToDos über den zentralen Store sofort mit useCalendarData', () => {
+    const list = useTodoList(1);
+    const calendar = useCalendarData();
+
+    list.items.value = [
+      {
+        id: 10,
+        trip_id: 1,
+        title: 'Reisepass einpacken',
+        priority: 'high',
+        assigned_to_user_id: null,
+        due_date: '2026-07-05',
+        note: null,
+        done: 0,
+      },
+    ];
+
+    const todoEntries = calendar.allEntries.value.filter((entry) => entry.kind === 'todo');
+    expect(todoEntries).toHaveLength(1);
+    expect(todoEntries[0]).toMatchObject({
+      todoId: 10,
+      date: '2026-07-05',
+      title: 'Reisepass einpacken',
+      done: false,
+    });
+
+    list.items.value = [{ ...list.items.value[0], done: 1 }];
+    const updatedEntries = calendar.allEntries.value.filter((entry) => entry.kind === 'todo');
+    expect(updatedEntries[0].done).toBe(true);
   });
 });

@@ -8,6 +8,7 @@ import { ACTION_ICONS } from '../../utils/actionIcons';
 // zentrierter Flex-Ausrichtung für Text, Trennpunkte und Wetter-Icons.
 const props = withDefaults(
   defineProps<{
+    id?: string;
     done?: boolean;
     partiallyDone?: boolean;
     planned?: boolean;
@@ -16,27 +17,47 @@ const props = withDefaults(
     showIcon?: boolean;
     dropdown?: boolean;
     dropdownOpen?: boolean;
+    size?: 'sm' | 'field';
+    disabled?: boolean;
   }>(),
   {
+    id: undefined,
     done: false,
     partiallyDone: false,
     planned: false,
     showIcon: true,
     dropdown: false,
     dropdownOpen: false,
+    size: 'sm',
+    disabled: false,
   }
 );
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'click', event: MouseEvent): void;
 }>();
 
+const COMPACT_ICON_SIZE_PX = 14;
+const FIELD_ICON_SIZE_PX = 16;
+
 const isDoneOrPartial = computed(() => props.done || props.partiallyDone);
 const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_ICONS.notDone));
+const iconSize = computed(() =>
+  props.size === 'field' ? FIELD_ICON_SIZE_PX : COMPACT_ICON_SIZE_PX
+);
+
+function onClick(event: MouseEvent) {
+  if (props.disabled) {
+    return;
+  }
+
+  emit('click', event);
+}
 </script>
 
 <template>
   <button
+    :id="id"
     type="button"
     class="done-toggle"
     :class="{
@@ -46,15 +67,18 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
       active: done,
       'has-dropdown': dropdown,
       'is-dropdown-open': dropdownOpen,
+      'done-toggle--field': size === 'field',
+      'is-disabled': disabled,
     }"
+    :disabled="disabled"
     :aria-pressed="dropdown ? undefined : done"
     :aria-haspopup="dropdown ? 'menu' : undefined"
     :aria-expanded="dropdown ? dropdownOpen : undefined"
     :aria-label="ariaLabel"
     :title="title"
-    @click.stop="$emit('click', $event)"
+    @click.stop="onClick"
   >
-    <AppIcon v-if="showIcon" :icon="icon" :size="14" group="actions" :active="done" />
+    <AppIcon v-if="showIcon" :icon="icon" :size="iconSize" group="actions" :active="done" />
     <span class="status-text">
       <slot />
     </span>
@@ -101,6 +125,20 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
     transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1);
 }
 
+.done-toggle--field {
+  min-height: 44px;
+  padding: var(--space-2) 14px;
+  font-size: var(--font-size-sm);
+}
+
+.done-toggle.is-disabled,
+.done-toggle:disabled {
+  opacity: 0.72;
+  cursor: default;
+  pointer-events: none;
+  box-shadow: none;
+}
+
 .done-toggle:focus-visible {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
   outline-offset: var(--focus-ring-offset, 2px);
@@ -108,7 +146,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 }
 
 @include can-hover {
-  .done-toggle:hover {
+  .done-toggle:hover:not(:disabled) {
     background-color: var(--color-control-hover-bg);
     border-color: var(--toggle-hover-border, var(--color-primary));
     color: var(--color-text);
@@ -117,7 +155,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
   }
 }
 
-.done-toggle:active {
+.done-toggle:active:not(:disabled) {
   background-color: var(--color-control-active-bg);
   transform: scale(0.98);
   translate: 0 0;
@@ -132,7 +170,7 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 }
 
 @include can-hover {
-  .done-toggle.planned:hover {
+  .done-toggle.planned:hover:not(:disabled) {
     border-color: var(--color-success);
     color: var(--color-success);
     box-shadow: var(--shadow-control-hover);
@@ -149,8 +187,8 @@ const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_
 }
 
 @include can-hover {
-  .done-toggle.active:hover,
-  .done-toggle.status-done:hover {
+  .done-toggle.active:hover:not(:disabled),
+  .done-toggle.status-done:hover:not(:disabled) {
     background-color: color-mix(in srgb, var(--color-success) 22%, transparent);
     box-shadow: var(--shadow-control-hover);
   }

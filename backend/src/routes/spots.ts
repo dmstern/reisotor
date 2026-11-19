@@ -14,6 +14,21 @@ import { recordActivity } from '../activity.js';
 import { sanitizeHtml } from '../utils/sanitizeHtml.js';
 import { ensureTripCategory } from './tripCategories.js';
 import { isUserRestricted } from '../registrationConfig.js';
+import { syncPublishedDiaryLinksForSpot } from '../utils/diaryLinks.js';
+
+interface SpotDateInput {
+  date: string;
+  done?: boolean | number;
+}
+
+interface SpotDateRow {
+  id: number;
+  trip_id: number;
+  spot_id: number;
+  date: string;
+  done: number;
+  created_at: string;
+}
 
 interface SpotBody {
   trip_id: number;
@@ -41,6 +56,9 @@ interface SpotBody {
   amount?: number;
   paid_by_user_id?: number | null;
   link?: string | null;
+  dates?: SpotDateInput[];
+  diary_ids?: number[];
+  done?: boolean | number;
 }
 
 interface SpotRow {
@@ -178,18 +196,92 @@ const countSpotCommentLikesStmt = db.prepare(
   'SELECT COUNT(*) as count FROM spot_comment_likes WHERE comment_id = ?'
 );
 
-const hasScheduleDateStmt = db.prepare(
-  `SELECT 1 FROM schedule_items WHERE spot_id = ? AND deleted_at IS NULL
-   UNION
-   SELECT 1 FROM schedule_items
-     JOIN excursion_spots ON excursion_spots.idea_id = schedule_items.idea_id
-     WHERE excursion_spots.spot_id = ? AND schedule_items.deleted_at IS NULL
-   LIMIT 1`
-);
 const updateSpotDoneStmt = db.prepare('UPDATE spots SET done = ? WHERE id = ?');
-const updateScheduleDoneBySpotStmt = db.prepare(
-  'UPDATE schedule_items SET done = ? WHERE spot_id = ? AND deleted_at IS NULL'
+const updateSpotDatesDoneBySpotStmt = db.prepare(
+  'UPDATE spot_dates SET done = ? WHERE spot_id = ?'
 );
+const selectSpotDateByIdStmt = db.prepare('SELECT * FROM spot_dates WHERE id = ?');
+const selectSpotDateBySpotAndDateStmt = db.prepare(
+  'SELECT * FROM spot_dates WHERE spot_id = ? AND date = ?'
+);
+const selectSpotDatesBySpotStmt = db.prepare(
+  'SELECT * FROM spot_dates WHERE spot_id = ? ORDER BY date ASC, id ASC'
+);
+const upsertSpotDateStmt = db.prepare(
+  `INSERT INTO spot_dates (trip_id, spot_id, date, done)
+   VALUES (?, ?, ?, ?)
+   ON CONFLICT(spot_id, date) DO UPDATE SET done = excluded.done`
+);
+const upsertSpotDateKeepDoneStmt = db.prepare(
+  `INSERT INTO spot_dates (trip_id, spot_id, date, done)
+   VALUES (?, ?, ?, 0)
+   ON CONFLICT(spot_id, date) DO NOTHING`
+);
+const deleteSpotDateStmt = db.prepare('DELETE FROM spot_dates WHERE id = ? AND spot_id = ?');
+const updateSpotDateStmt = db.prepare('UPDATE spot_dates SET date = ?, done = ? WHERE id = ?');
+
+function datesForSpots(spotIds: number[]): Map<number, SpotDateRow[]> {
+  const map = new Map<number, SpotDateRow[]>();
+
+  if (!spotIds.length) {
+    return map;
+  }
+
+  const placeholders = spotIds.map(() => '?').join(',');
+  const rows = db
+    .prepare(
+      `SELECT * FROM spot_dates WHERE spot_id IN (${placeholders}) ORDER BY date ASC, id ASC`
+    )
+    .all(...spotIds) as SpotDateRow[];
+
+  for (const row of rows) {
+    const list = map.get(row.spot_id) ?? [];
+    list.push(row);
+    map.set(row.spot_id, list);
+  }
+
+  return map;
+}
+
+function serializeSpot(row: Record<string, unknown>, preloadedDates?: SpotDateRow[]) {
+  const id = Number(row.id);
+  const dates = preloadedDates ?? (selectSpotDatesBySpotStmt.all(id) as SpotDateRow[]);
+  return { ...row, dates };
+}
+
+function syncSpotDates(spotId: number, tripId: number, dates: SpotDateInput[]) {
+  const normalized = new Map<string, boolean | undefined>();
+
+  for (const entry of dates) {
+    const trimmed = entry.date?.trim();
+
+    if (!trimmed) {
+      continue;
+    }
+
+    normalized.set(trimmed, entry.done !== undefined ? Boolean(entry.done) : undefined);
+  }
+
+  const syncTx = db.transaction(() => {
+    const existingRows = selectSpotDatesBySpotStmt.all(spotId) as SpotDateRow[];
+
+    for (const row of existingRows) {
+      if (!normalized.has(row.date)) {
+        deleteSpotDateStmt.run(row.id, spotId);
+      }
+    }
+
+    for (const [date, doneVal] of normalized.entries()) {
+      if (doneVal !== undefined) {
+        upsertSpotDateStmt.run(tripId, spotId, date, doneVal ? 1 : 0);
+      } else {
+        upsertSpotDateKeepDoneStmt.run(tripId, spotId, date);
+      }
+    }
+  });
+
+  syncTx();
+}
 
 export const spotsRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/spots', async (req, reply) => {
@@ -201,7 +293,9 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       return;
     }
 
-    return selectSpotsByTripStmt.all(req.query.trip_id);
+    const rows = selectSpotsByTripStmt.all(req.query.trip_id) as Record<string, unknown>[];
+    const datesMap = datesForSpots(rows.map((row) => Number(row.id)));
+    return rows.map((row) => serializeSpot(row, datesMap.get(Number(row.id)) ?? []));
   });
 
   // SECURITY AUDIT (Sentinel): Live-Vorschau (Titel/Foto) für ExcursionsView.vue's Spot-Anlegen-Formular,
@@ -451,15 +545,32 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
         budgetExpenseId,
         spotLink
       );
-    recordActivity(
-      trip_id,
-      'spots',
-      result.lastInsertRowid as number,
-      'created',
-      req.session.userId!
-    );
+    const createdSpotId = result.lastInsertRowid as number;
+
+    if (Array.isArray(body.dates) && body.dates.length > 0) {
+      syncSpotDates(createdSpotId, trip_id, body.dates);
+    }
+
+    if (body.done || body.dates?.some((entry) => Boolean(entry.done))) {
+      updateSpotDoneStmt.run(1, createdSpotId);
+    }
+
+    if (Array.isArray(body.diary_ids)) {
+      const diaryLinksChanged = syncPublishedDiaryLinksForSpot(
+        createdSpotId,
+        trip_id,
+        body.diary_ids
+      );
+
+      if (diaryLinksChanged) {
+        recordActivity(trip_id, 'diary', createdSpotId, 'updated', req.session.userId!);
+      }
+    }
+
+    recordActivity(trip_id, 'spots', createdSpotId, 'created', req.session.userId!);
     reply.code(201);
-    return selectSpotByIdStmt.get(result.lastInsertRowid);
+    const createdRow = selectSpotByIdStmt.get(createdSpotId) as Record<string, unknown>;
+    return serializeSpot(createdRow);
   });
 
   app.put<{ Params: { id: string }; Body: SpotBody }>('/spots/:id', async (req, reply) => {
@@ -578,6 +689,28 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       deleteBudgetItemStmt.run(staleIdToDelete);
     }
 
+    if (Array.isArray(body.dates)) {
+      syncSpotDates(existing.id, existing.trip_id, body.dates);
+    }
+
+    if (body.done !== undefined) {
+      updateSpotDoneStmt.run(body.done ? 1 : 0, existing.id);
+    } else if (Array.isArray(body.dates) && body.dates.some((entry) => Boolean(entry.done))) {
+      updateSpotDoneStmt.run(1, existing.id);
+    }
+
+    if (Array.isArray(body.diary_ids)) {
+      const diaryLinksChanged = syncPublishedDiaryLinksForSpot(
+        existing.id,
+        existing.trip_id,
+        body.diary_ids
+      );
+
+      if (diaryLinksChanged) {
+        recordActivity(existing.trip_id, 'diary', existing.id, 'updated', req.session.userId!);
+      }
+    }
+
     recordActivity(
       existing.trip_id,
       'spots',
@@ -585,17 +718,11 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       'updated',
       req.session.userId!
     );
-    return selectSpotByIdStmt.get(req.params.id);
+    const updatedRow = selectSpotByIdStmt.get(req.params.id) as Record<string, unknown>;
+    return serializeSpot(updatedRow);
   });
 
-  // "Gemacht"-Status (#106): setzbar nur, wenn der Spot bereits über einen verknüpften
-  // schedule_items-Termin ein Datum trägt - ein Spot/eine Tour darf nicht gleichzeitig "gemacht" UND
-  // ohne Datum sein (eindeutige Statuskette in Planung -> geplant -> gemacht). Das Datum selbst wird
-  // NICHT hier gesetzt (bleibt Aufgabe des Kalenders/scheduleStore.setSpotDate), das Frontend führt
-  // vor einem Aufruf mit done=true immer erst durch den Kalender-Bestätigungs-Flow (SpotCard.vue/
-  // ScheduleView.vue), damit ein Datum sicher schon existiert. Eigener Endpunkt statt Teil von
-  // PUT /spots/:id, damit ein Toggle nicht das gesamte Formular erneut mitschicken muss - analog zum
-  // bestehenden /like-Toggle.
+  // "Gemacht"-Status (#800): unabhängig vom gesetzten Datum jederzeit umschaltbar.
   app.post<{ Params: { id: string }; Body: { done: boolean } }>(
     '/spots/:id/done',
     async (req, reply) => {
@@ -611,25 +738,135 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       }
 
       const done = req.body.done ? 1 : 0;
+      updateSpotDoneStmt.run(done, req.params.id);
+      updateSpotDatesDoneBySpotStmt.run(done, req.params.id);
+      recordActivity(spot.trip_id, 'spots', spot.id, 'updated', req.session.userId!);
+      return { done: done === 1 };
+    }
+  );
 
-      if (done) {
-        // Zwei Wege zu einem Datum: ein direkt mit dem Spot verknüpfter Termin (normales Einplanen,
-        // siehe schedule_items.spot_id, auch DiaryView.vue's "Spots zuordnen"-Picker seit #216) ODER
-        // ein Termin über eine Tour, in der dieser Spot als Station steckt (z. B. routes/ideas.ts's
-        // plan-spot).
-        const hasDate = hasScheduleDateStmt.get(req.params.id, req.params.id);
+  // Besuchstage direkt am Spot (#800)
+  app.post<{ Params: { id: string }; Body: { date: string; done?: boolean } }>(
+    '/spots/:id/dates',
+    async (req, reply) => {
+      const spot = selectSpotTripIdStmt.get(req.params.id) as
+        { id: number; trip_id: number } | undefined;
 
-        if (!hasDate) {
+      if (!spot) {
+        return reply.code(404).send({ error: 'Nicht gefunden' });
+      }
+
+      if (!requireTripMember(reply, spot.trip_id, req.session.userId)) {
+        return;
+      }
+
+      const trimmedDate = req.body.date?.trim();
+
+      if (!trimmedDate) {
+        return reply.code(400).send({ error: 'Datum ist erforderlich' });
+      }
+
+      const existingEntry = selectSpotDateBySpotAndDateStmt.get(spot.id, trimmedDate) as
+        SpotDateRow | undefined;
+
+      if (req.body.done !== undefined) {
+        upsertSpotDateStmt.run(spot.trip_id, spot.id, trimmedDate, req.body.done ? 1 : 0);
+      } else {
+        upsertSpotDateKeepDoneStmt.run(spot.trip_id, spot.id, trimmedDate);
+      }
+
+      const savedEntry = selectSpotDateBySpotAndDateStmt.get(spot.id, trimmedDate) as SpotDateRow;
+      const allDates = selectSpotDatesBySpotStmt.all(spot.id) as SpotDateRow[];
+
+      if (savedEntry.done === 1) {
+        updateSpotDoneStmt.run(1, spot.id);
+      }
+
+      const spotRow = selectSpotByIdStmt.get(spot.id) as { done: number };
+      recordActivity(spot.trip_id, 'spots', spot.id, 'updated', req.session.userId!);
+      reply.code(existingEntry ? 200 : 201);
+      return { entry: savedEntry, dates: allDates, spot_done: spotRow.done === 1 };
+    }
+  );
+
+  app.patch<{ Params: { id: string; dateId: string }; Body: { date?: string; done?: boolean } }>(
+    '/spots/:id/dates/:dateId',
+    async (req, reply) => {
+      const spot = selectSpotTripIdStmt.get(req.params.id) as
+        { id: number; trip_id: number } | undefined;
+
+      if (!spot) {
+        return reply.code(404).send({ error: 'Nicht gefunden' });
+      }
+
+      if (!requireTripMember(reply, spot.trip_id, req.session.userId)) {
+        return;
+      }
+
+      const existingEntry = selectSpotDateByIdStmt.get(req.params.dateId) as
+        SpotDateRow | undefined;
+
+      if (!existingEntry || existingEntry.spot_id !== spot.id) {
+        return reply.code(404).send({ error: 'Besuchstag nicht gefunden' });
+      }
+
+      const nextDate = req.body.date !== undefined ? req.body.date.trim() : existingEntry.date;
+
+      if (!nextDate) {
+        return reply.code(400).send({ error: 'Datum darf nicht leer sein' });
+      }
+
+      const nextDone = req.body.done !== undefined ? (req.body.done ? 1 : 0) : existingEntry.done;
+
+      if (nextDate !== existingEntry.date) {
+        const duplicate = selectSpotDateBySpotAndDateStmt.get(spot.id, nextDate) as
+          SpotDateRow | undefined;
+
+        if (duplicate) {
           return reply
-            .code(400)
-            .send({ error: 'Für den Status "gemacht" muss zuerst ein Datum gesetzt werden.' });
+            .code(409)
+            .send({ error: 'Dieses Datum ist für den Spot bereits eingetragen.' });
         }
       }
 
-      updateSpotDoneStmt.run(done, req.params.id);
-      updateScheduleDoneBySpotStmt.run(done, req.params.id);
+      updateSpotDateStmt.run(nextDate, nextDone, existingEntry.id);
+
+      const allDates = selectSpotDatesBySpotStmt.all(spot.id) as SpotDateRow[];
+
+      if (req.body.done !== undefined) {
+        const anyDone = allDates.some((entry) => entry.done === 1);
+        updateSpotDoneStmt.run(anyDone ? 1 : 0, spot.id);
+      }
+
+      const updatedEntry = selectSpotDateByIdStmt.get(existingEntry.id) as SpotDateRow;
+      const spotRow = selectSpotByIdStmt.get(spot.id) as { done: number };
       recordActivity(spot.trip_id, 'spots', spot.id, 'updated', req.session.userId!);
-      return { done: done === 1 };
+      return { entry: updatedEntry, dates: allDates, spot_done: spotRow.done === 1 };
+    }
+  );
+
+  app.delete<{ Params: { id: string; dateId: string } }>(
+    '/spots/:id/dates/:dateId',
+    async (req, reply) => {
+      const spot = selectSpotTripIdStmt.get(req.params.id) as
+        { id: number; trip_id: number } | undefined;
+
+      if (!spot) {
+        return reply.code(404).send({ error: 'Nicht gefunden' });
+      }
+
+      if (!requireTripMember(reply, spot.trip_id, req.session.userId)) {
+        return;
+      }
+
+      const result = deleteSpotDateStmt.run(req.params.dateId, spot.id);
+
+      if (result.changes === 0) {
+        return reply.code(404).send({ error: 'Besuchstag nicht gefunden' });
+      }
+
+      recordActivity(spot.trip_id, 'spots', spot.id, 'updated', req.session.userId!);
+      return reply.code(204).send();
     }
   );
 

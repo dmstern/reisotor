@@ -15,8 +15,6 @@ import type { IconDef } from '../utils/icon';
 import { usePersistedRef } from './usePersistedRef';
 import { useSpotsStore } from '../stores/spots';
 import { useExcursionsStore } from '../stores/excursions';
-import { useScheduleStore } from '../stores/schedule';
-import { useDiaryStore } from '../stores/diary';
 import { useIconStyleStore } from '../stores/iconStyle';
 import { useLiveSyncStore } from '../stores/liveSync';
 import type { SpotAccommodationDistanceInfo } from '../utils/spotAccommodationDistance';
@@ -53,8 +51,6 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
 
   const spotsStore = useSpotsStore();
   const excursionsStore = useExcursionsStore();
-  const scheduleStore = useScheduleStore();
-  const diaryStore = useDiaryStore();
   const iconStyle = useIconStyleStore();
   const liveSync = useLiveSyncStore();
 
@@ -93,15 +89,17 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
   const spotScheduledDates = computed(() => {
     const map = new Map<number, string>();
 
-    for (const item of scheduleStore.items) {
-      if (item.spot_id == null) {
-        continue;
-      }
+    for (const spot of spotsStore.spots) {
+      for (const entry of spot.dates ?? []) {
+        if (!entry.date) {
+          continue;
+        }
 
-      const existing = map.get(item.spot_id);
+        const existing = map.get(spot.id);
 
-      if (!existing || item.date < existing) {
-        map.set(item.spot_id, item.date);
+        if (!existing || entry.date < existing) {
+          map.set(spot.id, entry.date);
+        }
       }
     }
 
@@ -115,20 +113,6 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
 
         if (!existing || excursion.date < existing) {
           map.set(spotId, excursion.date);
-        }
-      }
-    }
-
-    for (const entry of diaryStore.entries) {
-      if (!entry.date) {
-        continue;
-      }
-
-      for (const spotId of entry.spot_ids ?? []) {
-        const existing = map.get(spotId);
-
-        if (!existing || entry.date < existing) {
-          map.set(spotId, entry.date);
         }
       }
     }

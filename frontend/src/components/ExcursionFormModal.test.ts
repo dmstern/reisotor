@@ -119,4 +119,32 @@ describe('ExcursionFormModal', () => {
     expect(roleSelect.value).toBe('arrival');
     cleanUp();
   });
+
+  it('places the date field below the role field and renders an editable Gemacht status toggle', async () => {
+    const { cleanUp } = mountModal({
+      show: true,
+      excursion: { ...dummyExcursion, done: 1 },
+      users: [dummyUser],
+    });
+    await nextTick();
+
+    const roleSelect = document.querySelector('select') as HTMLSelectElement;
+    const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+    expect(roleSelect).not.toBeNull();
+    expect(dateInput).not.toBeNull();
+    // Datum-Feld steht im DOM nach dem Rollen-Feld
+    expect(
+      roleSelect.compareDocumentPosition(dateInput) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+
+    const doneToggle = document.querySelector('.done-toggle') as HTMLButtonElement;
+    expect(doneToggle).not.toBeNull();
+    expect(doneToggle.textContent).toContain('Gemacht');
+    expect(doneToggle.getAttribute('aria-pressed')).toBe('true');
+
+    doneToggle.click();
+    await nextTick();
+    expect(doneToggle.getAttribute('aria-pressed')).toBe('false');
+    cleanUp();
+  });
 });

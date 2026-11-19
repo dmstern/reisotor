@@ -4,8 +4,8 @@ import { createApp, h } from 'vue';
 import { createPinia, setActivePinia, getActivePinia } from 'pinia';
 import { renderToString } from 'vue/server-renderer';
 import SpotDoneStatus from './SpotDoneStatus.vue';
-import type { Spot, ScheduleItem, Excursion } from '../api/types';
-import { useScheduleStore } from '../stores/schedule';
+import type { Spot, Excursion } from '../api/types';
+import { useSpotsStore } from '../stores/spots';
 
 const routerPush = vi.fn();
 vi.mock('vue-router', async (importOriginal) => ({
@@ -34,7 +34,7 @@ describe('SpotDoneStatus', () => {
     setActivePinia(createPinia());
   });
 
-  const mockSpot: Spot = {
+  const mockSpot = {
     id: 1,
     trip_id: 1,
     title: 'Fernsehturm',
@@ -43,7 +43,8 @@ describe('SpotDoneStatus', () => {
     lng: 13.4094,
     created_by: 1,
     is_home: 0,
-  } as Spot;
+    dates: [],
+  } as unknown as Spot;
 
   function mountComponent(props: { spot: Spot; scheduledDate: string | null; expanded: boolean }) {
     const app = createApp({
@@ -65,19 +66,13 @@ describe('SpotDoneStatus', () => {
   });
 
   it('renders planned date label when scheduledDate is provided', async () => {
-    const scheduleStore = useScheduleStore();
-    scheduleStore.items = [
-      {
-        id: 101,
-        trip_id: 1,
-        spot_id: 1,
-        day_date: '2026-06-12',
-        completed: 0,
-      } as unknown as ScheduleItem,
-    ];
+    const plannedSpot: Spot = {
+      ...mockSpot,
+      dates: [{ id: 101, trip_id: 1, spot_id: 1, date: '2026-06-12', done: 0, created_at: '' }],
+    };
 
     const html = await mountComponent({
-      spot: mockSpot,
+      spot: plannedSpot,
       scheduledDate: '2026-06-12',
       expanded: false,
     });
@@ -95,23 +90,17 @@ describe('SpotDoneStatus', () => {
     const drawers = useDrawersStore();
     const openCalendarSpy = vi.spyOn(drawers, 'openCalendar').mockImplementation(() => {});
 
-    const scheduleStore = useScheduleStore();
-    scheduleStore.items = [
-      {
-        id: 101,
-        trip_id: 1,
-        spot_id: 1,
-        date: '2026-06-12',
-        completed: 0,
-      } as unknown as ScheduleItem,
-    ];
+    const plannedSpot: Spot = {
+      ...mockSpot,
+      dates: [{ id: 101, trip_id: 1, spot_id: 1, date: '2026-06-12', done: 0, created_at: '' }],
+    };
 
     const el = document.createElement('div');
     document.body.appendChild(el);
     const app = createApp({
       render: () =>
         h(SpotDoneStatus, {
-          spot: mockSpot,
+          spot: plannedSpot,
           scheduledDate: '2026-06-12',
           expanded: true,
         }),
@@ -142,25 +131,27 @@ describe('SpotDoneStatus', () => {
   it('toggles done state via checklist item in dates popover when 1 date is planned', async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
-    const scheduleStore = useScheduleStore();
-    const setDoneSpy = vi.spyOn(scheduleStore, 'setDone').mockResolvedValue(undefined as never);
+    const spotsStore = useSpotsStore();
+    const updateDateSpy = vi.spyOn(spotsStore, 'updateDate').mockResolvedValue({
+      id: 101,
+      trip_id: 1,
+      spot_id: 1,
+      date: '2026-06-12',
+      done: 1,
+      created_at: '',
+    });
 
-    scheduleStore.items = [
-      {
-        id: 101,
-        trip_id: 1,
-        spot_id: 1,
-        date: '2026-06-12',
-        completed: 0,
-      } as unknown as ScheduleItem,
-    ];
+    const plannedSpot: Spot = {
+      ...mockSpot,
+      dates: [{ id: 101, trip_id: 1, spot_id: 1, date: '2026-06-12', done: 0, created_at: '' }],
+    };
 
     const el = document.createElement('div');
     document.body.appendChild(el);
     const app = createApp({
       render: () =>
         h(SpotDoneStatus, {
-          spot: mockSpot,
+          spot: plannedSpot,
           scheduledDate: '2026-06-12',
           expanded: true,
         }),
@@ -177,7 +168,7 @@ describe('SpotDoneStatus', () => {
     expect(checkItem).not.toBeNull();
     checkItem?.click();
 
-    expect(setDoneSpy).toHaveBeenCalledWith(101, true);
+    expect(updateDateSpy).toHaveBeenCalledWith(1, 101, { done: true });
 
     app.unmount();
     el.remove();
@@ -218,12 +209,7 @@ describe('SpotDoneStatus', () => {
     expect(htmlCollapsed).toContain('2x geplant');
   });
 
-  it('renders "Geplant an 3 Tagen" when spot has 1 tour and 2 schedule items', async () => {
-    const scheduleStore = useScheduleStore();
-    scheduleStore.items = [
-      { id: 101, trip_id: 1, spot_id: 1, date: '2026-10-27' } as unknown as ScheduleItem,
-      { id: 102, trip_id: 1, spot_id: 1, date: '2026-10-28' } as unknown as ScheduleItem,
-    ];
+  it('renders "Geplant an 3 Tagen" when spot has 1 tour and 2 spot dates', async () => {
     const { useExcursionsStore } = await import('../stores/excursions');
     const excursionsStore = useExcursionsStore();
     excursionsStore.excursions = [
@@ -236,8 +222,16 @@ describe('SpotDoneStatus', () => {
       } as unknown as Excursion,
     ];
 
+    const multiSpot: Spot = {
+      ...mockSpot,
+      dates: [
+        { id: 101, trip_id: 1, spot_id: 1, date: '2026-10-27', done: 0, created_at: '' },
+        { id: 102, trip_id: 1, spot_id: 1, date: '2026-10-28', done: 0, created_at: '' },
+      ],
+    };
+
     const html = await mountComponent({
-      spot: mockSpot,
+      spot: multiSpot,
       scheduledDate: '2026-10-27',
       expanded: true,
     });
@@ -314,8 +308,15 @@ describe('SpotDoneStatus', () => {
     const tripStore = useTripStore();
     tripStore.currentTripId = 1;
 
-    const scheduleStore = useScheduleStore();
-    const setSpotDateSpy = vi.spyOn(scheduleStore, 'setSpotDate').mockResolvedValue(undefined);
+    const spotsStore = useSpotsStore();
+    const addDateSpy = vi.spyOn(spotsStore, 'addDate').mockResolvedValue({
+      id: 201,
+      trip_id: 1,
+      spot_id: 1,
+      date: '2026-08-12',
+      done: 0,
+      created_at: '',
+    });
 
     const el = document.createElement('div');
     document.body.appendChild(el);
@@ -357,13 +358,7 @@ describe('SpotDoneStatus', () => {
 
     await new Promise((r) => setTimeout(r, 10));
 
-    expect(setSpotDateSpy).toHaveBeenCalledWith({
-      spotId: 1,
-      tripId: 1,
-      title: 'Fernsehturm',
-      date: '2026-08-12',
-      done: false,
-    });
+    expect(addDateSpy).toHaveBeenCalledWith(1, '2026-08-12', false);
 
     app.unmount();
     el.remove();

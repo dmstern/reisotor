@@ -110,13 +110,15 @@ const {
 } = layout;
 
 // 2. Filtering, Searching, Sorting & Grouping
-// spotScheduledDates vorab aus Schedule/Excursion ableiten für useAccommodationDistances
+// spotScheduledDates vorab aus Spot-Besuchstagen & Touren ableiten für useAccommodationDistances
 const spotScheduledDatesPreview = computed(() => {
   const map = new Map<number, string>();
 
-  for (const item of scheduleStore.items) {
-    if (item.spot_id != null && (!map.has(item.spot_id) || item.date < map.get(item.spot_id)!)) {
-      map.set(item.spot_id, item.date);
+  for (const spot of spotsStore.spots) {
+    for (const entry of spot.dates ?? []) {
+      if (entry.date && (!map.has(spot.id) || entry.date < map.get(spot.id)!)) {
+        map.set(spot.id, entry.date);
+      }
     }
   }
 
@@ -125,16 +127,6 @@ const spotScheduledDatesPreview = computed(() => {
       for (const id of excursion.spot_ids) {
         if (!map.has(id) || excursion.date < map.get(id)!) {
           map.set(id, excursion.date);
-        }
-      }
-    }
-  }
-
-  for (const entry of diaryStore.entries) {
-    if (entry.date) {
-      for (const id of entry.spot_ids ?? []) {
-        if (!map.has(id) || entry.date < map.get(id)!) {
-          map.set(id, entry.date);
         }
       }
     }
@@ -1062,9 +1054,13 @@ watch(
     }
 
     const matchingExcursions = excursionsStore.excursions.filter((e) => e.date === date);
-    const matchingSpotIds = scheduleStore.items
+    const matchingVisitSpotIds = spotsStore.spots
+      .filter((spot) => spot.dates?.some((entry) => entry.date === date))
+      .map((spot) => spot.id);
+    const matchingScheduleSpotIds = scheduleStore.items
       .filter((item) => item.date === date && item.spot_id != null)
       .map((item) => item.spot_id as number);
+    const matchingSpotIds = [...matchingVisitSpotIds, ...matchingScheduleSpotIds];
     const matchingDiarySpotIds = diaryStore.entries
       .filter((entry) => entry.date === date && Array.isArray(entry.spot_ids))
       .flatMap((entry) => entry.spot_ids);

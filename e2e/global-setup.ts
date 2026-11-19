@@ -34,15 +34,12 @@ export default async function globalSetup() {
       'SELECT date, time, title, note, location FROM schedule_items WHERE trip_id = ? ORDER BY date, time'
     )
     .all(trip.id);
-  // Ein Ausflug hat kein eigenes Datums-Feld mehr – "geplant"/"in Planung" ergibt sich aus einem
-  // verknüpften Kalender-Termin (schedule_items.idea_id), siehe backend/src/routes/ideas.ts.
   const ideas = db
     .prepare(
-      `SELECT ideas.title AS title, schedule_items.date AS date
+      `SELECT id, title, date
        FROM ideas
-       LEFT JOIN schedule_items ON schedule_items.idea_id = ideas.id
-       WHERE ideas.trip_id = ?
-       ORDER BY schedule_items.date`
+       WHERE trip_id = ? AND deleted_at IS NULL
+       ORDER BY date`
     )
     .all(trip.id);
   db.close();

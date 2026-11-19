@@ -75,15 +75,9 @@ const TRASH_CONFIG: TrashConfig[] = [
     type: 'excursion',
     table: 'ideas',
     label: 'Ausflug',
-    // Der Kalender-Termin, der den Ausflug als "geplant" markiert, wurde beim Löschen mit
-    // weggelöscht (routes/ideas.ts) – ohne diese Kopplung bliebe er dauerhaft im Papierkorb,
-    // obwohl der Ausflug selbst schon wiederhergestellt ist. Seit #176 kann eine Tour (role gesetzt,
-    // ehemalige Reise-Etappe) zusätzlich eine eigene budget_expense_id tragen - restoreLinkedBudgetExpense()
-    // ist bei einer normalen Tour ohne Budget-Sync ein No-Op (gleiches Muster wie bei 'spot').
+    // Seit #176 kann eine Tour (role gesetzt, ehemalige Reise-Etappe) eigene budget_expense_ids
+    // tragen - restoreLinkedBudgetExpense() ist bei einer normalen Tour ohne Budget-Sync ein No-Op.
     onRestore: (id) => {
-      db.prepare(
-        'UPDATE schedule_items SET deleted_at = NULL WHERE idea_id = ? AND deleted_at IS NOT NULL'
-      ).run(id);
       restoreLinkedBudgetExpense('ideas', id);
       const legs = db
         .prepare('SELECT budget_expense_id FROM excursion_legs WHERE idea_id = ?')

@@ -1,5 +1,6 @@
 import type {
   CalendarEntry,
+  DiaryEntry,
   Excursion,
   ScheduleItem,
   Spot,
@@ -9,6 +10,8 @@ import type {
 } from '../api/types';
 import { excursionStationKeys, resolveStations } from './excursionStations';
 import { spotCategoryMeta } from './spotCategory';
+import { travelTypeIconDef } from './travelTypeIcon';
+import { SECTION_ICON_DEFS } from './sectionIcons';
 import type { IconDef } from './icon';
 
 export interface CalendarLookupMaps {
@@ -30,7 +33,7 @@ export function resolveScheduleItemIcons(
   if (item.spot_id != null) {
     const spot = maps?.spotMap
       ? maps.spotMap.get(item.spot_id)
-      : spots.find((spot) => spot.id === item.spot_id);
+      : spots.find((targetSpot) => targetSpot.id === item.spot_id);
 
     if (spot) {
       const meta = spotCategoryMeta(spot.category);
@@ -63,9 +66,6 @@ export function resolveScheduleItemIcons(
   return { icon: undefined, iconDef: undefined };
 }
 
-// Icon-Override für einen mit Spot/Tour verknüpften Termin: bei einem verknüpften Spot dessen
-// eigenes Kategorie-Icon, bei einer verknüpften Tour mit genau einer Spot-Station deren Icon
-// (sonst das generische 🎒 aus SCHEDULE_CATEGORY_META).
 export function resolveScheduleItemIcon(
   item: ScheduleItem,
   spots: Spot[],
@@ -75,8 +75,6 @@ export function resolveScheduleItemIcon(
   return resolveScheduleItemIcons(item, spots, excursions, travelItems).icon;
 }
 
-// Tabler-Pendant zu resolveScheduleItemIcon() oben (siehe CalendarEntry.iconDef, api/types.ts) -
-// dieselbe Verknüpfungs-Logik, nur .tabler statt .icon.
 export function resolveScheduleItemIconDef(
   item: ScheduleItem,
   spots: Spot[],
@@ -128,16 +126,12 @@ export function scheduleItemToEntry(
     maps = rest[1];
   }
 
-  const linked = item.spot_id != null || item.idea_id != null;
-  let linkedExcursion: Excursion | undefined;
-
-  if (item.idea_id != null) {
-    if (maps?.excursionMap) {
-      linkedExcursion = maps.excursionMap.get(item.idea_id);
-    } else {
-      linkedExcursion = excursions.find((e) => e.id === item.idea_id);
-    }
-  }
+  const linkedExcursion =
+    item.idea_id != null
+      ? maps?.excursionMap
+        ? maps.excursionMap.get(item.idea_id)
+        : excursions.find((e) => e.id === item.idea_id)
+      : undefined;
 
   const icons = resolveScheduleItemIcons(
     item,
@@ -148,11 +142,11 @@ export function scheduleItemToEntry(
     linkedExcursion
   );
 
-  let resolvedCategory = item.category;
+  let resolvedCategory = item.category || 'other';
 
   if (linkedExcursion?.role) {
     resolvedCategory = 'travel';
-  } else if (linked) {
+  } else if (item.idea_id != null) {
     resolvedCategory = 'excursion';
   }
 
@@ -166,15 +160,6 @@ export function scheduleItemToEntry(
     title: item.title,
     note: item.note,
     location: item.location,
-    // Mit Spot/Tour verknüpfte Termine übernehmen bewusst die "Ausflug"-Kategorie (einheitliche
-    // orange Rahmenfarbe) statt einer eigenen – exakt dieselbe Optik, die verknüpfte Termine schon
-    // vor der Einführung dieser Verknüpfung hatten (damals als eigenständige "Ausflug"-Einträge).
-    // Eine Tour mit gesetzter role (ehemalige Reise-Etappe, #176) bekommt stattdessen weiterhin die
-    // eigene "Reise"-Kategorie (grün/✈️) - dieselbe Optik wie vor der Zusammenlegung, nur jetzt aus
-    // demselben schedule_items-Eintrag abgeleitet statt aus einem eigenen, zweiten Kalender-Eintrag
-    // (siehe entfernte buildTravelEntries()): jede Tour hat GENAU einen Kalender-Eintrag, sonst
-    // erschien eine terminierte Reise-Etappe früher doppelt (einmal als Ausflug-, einmal als
-    // Reise-Eintrag).
     category: resolvedCategory,
     icon: icons.icon,
     iconDef: icons.iconDef,
@@ -182,8 +167,161 @@ export function scheduleItemToEntry(
     spotId: item.spot_id,
     todoId: null,
     scheduleItem: item,
-    done: false,
+    done: Boolean(item.done),
   };
+}
+
+function tourToCalendarEntry(
+  excursion: Excursion,
+  spots: Spot[],
+  travelItems: TravelItem[],
+  maps?: CalendarLookupMaps
+): CalendarEntry | null {
+  if (!excursion.date) {
+    return null;
+  }
+
+  if (excursion.role) {
+    const transportIcon = excursion.transport_type
+      ? travelTypeIconDef(excursion.transport_type)
+      : undefined;
+    return {
+      key: `travel-${excursion.id}`,
+      kind: 'travel',
+      date: excursion.date,
+      endDate: excursion.date,
+      time: excursion.departure_time ?? null,
+      endTime: excursion.arrival_time ?? null,
+      title: excursion.title,
+      note: excursion.note,
+      location: null,
+      category: 'travel',
+      icon: transportIcon?.emoji,
+      iconDef: transportIcon,
+      ideaId: excursion.id,
+      spotId: null,
+      todoId: null,
+      scheduleItem: null,
+      done: Boolean(excursion.done),
+    };
+  }
+
+  const stations = resolveStations(
+    excursionStationKeys(excursion.spot_ids),
+    spots,
+    travelItems,
+    maps?.spotMap,
+    maps?.travelMap
+  );
+  const singleStationIcon = stations.length === 1 ? stations[0] : undefined;
+
+  return {
+    key: `excursion-${excursion.id}`,
+    kind: 'excursion',
+    date: excursion.date,
+    endDate: excursion.date,
+    time: excursion.departure_time ?? null,
+    endTime: excursion.arrival_time ?? null,
+    title: excursion.title,
+    note: excursion.note,
+    location: null,
+    category: 'excursion',
+    icon: singleStationIcon?.icon,
+    iconDef: singleStationIcon?.tabler,
+    ideaId: excursion.id,
+    spotId: null,
+    todoId: null,
+    scheduleItem: null,
+    done: Boolean(excursion.done),
+  };
+}
+
+/** Direkte Kalender-Projektion für alle Touren mit gesetztem Datum (#800). */
+export function buildTourEntries(
+  excursions: Excursion[],
+  spots: Spot[],
+  travelItems: TravelItem[] = [],
+  maps?: CalendarLookupMaps
+): CalendarEntry[] {
+  const entries: CalendarEntry[] = [];
+
+  for (const excursion of excursions) {
+    const entry = tourToCalendarEntry(excursion, spots, travelItems, maps);
+
+    if (entry) {
+      entries.push(entry);
+    }
+  }
+
+  return entries;
+}
+
+/** Direkte Kalender-Projektion für Spots mit Besuchstagen (spot_dates, #800). */
+export function buildSpotEntries(spots: Spot[]): CalendarEntry[] {
+  const entries: CalendarEntry[] = [];
+
+  for (const spot of spots) {
+    if (spot.category === 'Unterkunft' || !spot.dates?.length) {
+      continue;
+    }
+
+    const meta = spotCategoryMeta(spot.category);
+
+    for (const dateEntry of spot.dates) {
+      if (!dateEntry.date) {
+        continue;
+      }
+
+      entries.push({
+        key: `spot-date-${dateEntry.id}`,
+        kind: 'spot',
+        date: dateEntry.date,
+        endDate: dateEntry.date,
+        time: null,
+        endTime: null,
+        title: spot.title,
+        note: spot.note,
+        location: spot.address,
+        category: 'spot',
+        icon: meta.icon,
+        iconDef: meta.tabler,
+        ideaId: null,
+        spotId: spot.id,
+        spotDateId: dateEntry.id,
+        todoId: null,
+        scheduleItem: null,
+        done: Boolean(dateEntry.done),
+      });
+    }
+  }
+
+  return entries;
+}
+
+/** Direkte Kalender-Projektion für veröffentlichte Tagebucheinträge (#800.3). */
+export function buildDiaryEntries(diaryEntries: DiaryEntry[]): CalendarEntry[] {
+  return diaryEntries
+    .filter((entry) => !entry.is_draft && Boolean(entry.date))
+    .map((entry) => ({
+      key: `diary-${entry.id}`,
+      kind: 'diary' as const,
+      date: entry.date,
+      endDate: entry.date,
+      time: null,
+      endTime: null,
+      title: entry.title?.trim() || 'Tagebucheintrag',
+      note: null,
+      location: null,
+      category: 'diary' as const,
+      icon: SECTION_ICON_DEFS.diary.emoji,
+      iconDef: SECTION_ICON_DEFS.diary,
+      ideaId: null,
+      spotId: null,
+      todoId: null,
+      diaryEntryId: entry.id,
+      scheduleItem: null,
+      done: false,
+    }));
 }
 
 // Urlaub-Stammdaten erscheinen automatisch als (nicht editierbare) Kalender-Items der Kategorie
@@ -236,10 +374,10 @@ export function buildTripEntries(trip: Trip | null): CalendarEntry[] {
   return entries;
 }
 
-// Aufgaben mit Fälligkeitsdatum erscheinen automatisch (nicht editierbar) im Kalender (Batch 9).
+// Aufgaben mit Fälligkeitsdatum erscheinen automatisch im Kalender (Batch 9).
 export function buildTodoEntries(todos: TodoItem[]): CalendarEntry[] {
   return todos
-    .filter((todo): todo is TodoItem & { due_date: string } => !!todo.due_date)
+    .filter((todo): todo is TodoItem & { due_date: string } => Boolean(todo.due_date))
     .map((todo) => ({
       key: `todo-${todo.id}`,
       kind: 'todo' as const,
@@ -255,7 +393,7 @@ export function buildTodoEntries(todos: TodoItem[]): CalendarEntry[] {
       spotId: null,
       todoId: todo.id,
       scheduleItem: null,
-      done: !!todo.done,
+      done: Boolean(todo.done),
     }));
 }
 
@@ -266,6 +404,7 @@ export interface BuildAllEntriesOptions {
   travelItems: TravelItem[];
   excursions: Excursion[];
   spots: Spot[];
+  diaryEntries?: DiaryEntry[];
 }
 
 export function buildAllEntries(options: BuildAllEntriesOptions): CalendarEntry[];
@@ -274,14 +413,24 @@ export function buildAllEntries(
   items: ScheduleItem[],
   trip: Trip | null,
   todos: TodoItem[],
-  ...rest: [travelItems: TravelItem[], excursions: Excursion[], spots: Spot[]]
+  ...rest: [
+    travelItems: TravelItem[],
+    excursions: Excursion[],
+    spots: Spot[],
+    diaryEntries?: DiaryEntry[],
+  ]
 ): CalendarEntry[];
 
 export function buildAllEntries(
   itemsOrOptions: ScheduleItem[] | BuildAllEntriesOptions,
   tripArg?: Trip | null,
   todosArg?: TodoItem[],
-  ...rest: [travelItems?: TravelItem[], excursions?: Excursion[], spots?: Spot[]]
+  ...rest: [
+    travelItems?: TravelItem[],
+    excursions?: Excursion[],
+    spots?: Spot[],
+    diaryEntries?: DiaryEntry[],
+  ]
 ): CalendarEntry[] {
   let items: ScheduleItem[];
   let trip: Trip | null;
@@ -289,6 +438,7 @@ export function buildAllEntries(
   let travelItems: TravelItem[];
   let excursions: Excursion[];
   let spots: Spot[];
+  let diaryEntries: DiaryEntry[];
 
   if (!Array.isArray(itemsOrOptions)) {
     items = itemsOrOptions.items;
@@ -297,6 +447,7 @@ export function buildAllEntries(
     travelItems = itemsOrOptions.travelItems;
     excursions = itemsOrOptions.excursions;
     spots = itemsOrOptions.spots;
+    diaryEntries = itemsOrOptions.diaryEntries ?? [];
   } else {
     items = itemsOrOptions;
     trip = tripArg ?? null;
@@ -304,9 +455,9 @@ export function buildAllEntries(
     travelItems = rest[0] ?? [];
     excursions = rest[1] ?? [];
     spots = rest[2] ?? [];
+    diaryEntries = rest[3] ?? [];
   }
 
-  // Erstelle Maps für O(1) Lookups bei der Iteration über alle Kalender-Termine
   const spotMap = new Map<number, Spot>();
 
   for (const spot of spots) {
@@ -315,8 +466,8 @@ export function buildAllEntries(
 
   const excursionMap = new Map<number, Excursion>();
 
-  for (const e of excursions) {
-    excursionMap.set(e.id, e);
+  for (const excursion of excursions) {
+    excursionMap.set(excursion.id, excursion);
   }
 
   const travelMap = new Map<number, TravelItem>();
@@ -329,6 +480,9 @@ export function buildAllEntries(
 
   return [
     ...items.map((item) => scheduleItemToEntry(item, spots, excursions, travelItems, maps)),
+    ...buildTourEntries(excursions, spots, travelItems, maps),
+    ...buildSpotEntries(spots),
+    ...buildDiaryEntries(diaryEntries),
     ...buildTripEntries(trip),
     ...buildTodoEntries(todos),
   ];

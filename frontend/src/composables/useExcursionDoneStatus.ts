@@ -82,11 +82,10 @@ export function useExcursionDoneStatus(
   async function submitUnplannedDone() {
     const excursion = toValue(options.excursion);
 
-    if (!unplannedDoneDate.value) {
-      return;
+    if (unplannedDoneDate.value) {
+      await excursionsStore.setDate(excursion.id, unplannedDoneDate.value);
     }
 
-    await excursionsStore.setDate(excursion.id, unplannedDoneDate.value);
     await excursionsStore.setDone(excursion.id, true);
     unplannedPopoverOpen.value = false;
   }

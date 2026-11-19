@@ -3,13 +3,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { ref } from 'vue';
 import { useSpotDoneStatus } from './useSpotDoneStatus';
-import { useScheduleStore } from '../stores/schedule';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
-import { useDiaryStore } from '../stores/diary';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
-import type { Excursion, ScheduleItem, Spot } from '../api/types';
+import type { Excursion, Spot } from '../api/types';
 
 vi.mock('../api/client', () => ({
   api: {
@@ -33,12 +31,9 @@ function createMockSpot(partial: Partial<Spot>): Spot {
     title: 'Test Spot',
     category: 'Aktivität',
     done: 0,
+    dates: [],
     ...partial,
   } as Spot;
-}
-
-function createMockScheduleItem(partial: Partial<ScheduleItem>): ScheduleItem {
-  return partial as unknown as ScheduleItem;
 }
 
 function createMockExcursion(partial: Partial<Excursion>): Excursion {
@@ -75,13 +70,16 @@ describe('useSpotDoneStatus', () => {
   });
 
   it('berechnet Erledigt- und Teil-Erledigt-Status für mehrere geplante Termine', () => {
-    const scheduleStore = useScheduleStore();
-    scheduleStore.items = [
-      createMockScheduleItem({ id: 101, spot_id: 1, date: '2026-07-02', done: 0, trip_id: 10 }),
-      createMockScheduleItem({ id: 102, spot_id: 1, date: '2026-07-01', done: 1, trip_id: 10 }),
-    ];
-
-    const spot = ref(createMockSpot({ id: 1, done: 0 }));
+    const spot = ref(
+      createMockSpot({
+        id: 1,
+        done: 0,
+        dates: [
+          { id: 101, trip_id: 10, spot_id: 1, date: '2026-07-02', done: 0, created_at: '' },
+          { id: 102, trip_id: 10, spot_id: 1, date: '2026-07-01', done: 1, created_at: '' },
+        ],
+      })
+    );
     const scheduledDate = ref<string | null>('2026-07-01');
 
     const {
@@ -102,20 +100,33 @@ describe('useSpotDoneStatus', () => {
     expect(isSpotDone.value).toBe(false);
 
     // Beide erledigt
-    scheduleStore.items = scheduleStore.items.map((i) => ({ ...i, done: 1 }));
+    spot.value = createMockSpot({
+      id: 1,
+      done: 1,
+      dates: (spot.value.dates ?? []).map((entry) => ({ ...entry, done: 1 })),
+    });
     expect(allItemsDone.value).toBe(true);
     expect(isSpotDone.value).toBe(true);
     expect(isSpotPartiallyDone.value).toBe(false);
   });
 
   it('öffnet Popover bei 1 Termin und toggelt via toggleScheduledItemDone', async () => {
-    const scheduleStore = useScheduleStore();
-    scheduleStore.items = [
-      createMockScheduleItem({ id: 101, spot_id: 1, date: '2026-07-01', done: 0, trip_id: 10 }),
-    ];
-    const setDoneSpy = vi.spyOn(scheduleStore, 'setDone').mockResolvedValue({ done: true });
+    const spotsStore = useSpotsStore();
+    const updateDateSpy = vi.spyOn(spotsStore, 'updateDate').mockResolvedValue({
+      id: 101,
+      trip_id: 10,
+      spot_id: 1,
+      date: '2026-07-01',
+      done: 1,
+      created_at: '',
+    });
 
-    const spot = ref(createMockSpot({ id: 1 }));
+    const spot = ref(
+      createMockSpot({
+        id: 1,
+        dates: [{ id: 101, trip_id: 10, spot_id: 1, date: '2026-07-01', done: 0, created_at: '' }],
+      })
+    );
     const scheduledDate = ref<string | null>('2026-07-01');
 
     const { onToggleDone, datesPopoverOpen, scheduledItemsForSpot, toggleScheduledItemDone } =
@@ -125,16 +136,14 @@ describe('useSpotDoneStatus', () => {
     expect(datesPopoverOpen.value).toBe(true);
 
     await toggleScheduledItemDone(scheduledItemsForSpot.value[0]);
-    expect(setDoneSpy).toHaveBeenCalledWith(101, true);
+    expect(updateDateSpy).toHaveBeenCalledWith(1, 101, { done: true });
   });
 
   it('öffnet Popover bei Fallback-scheduledDate und hakt über toggleScheduledItemDone ab', async () => {
-    const scheduleStore = useScheduleStore();
-    scheduleStore.items = [];
     const spotsStore = useSpotsStore();
     const spotDoneSpy = vi.spyOn(spotsStore, 'setDone').mockResolvedValue();
 
-    const spot = ref(createMockSpot({ id: 1, done: 0 }));
+    const spot = ref(createMockSpot({ id: 1, done: 0, dates: [] }));
     const scheduledDate = ref<string | null>('2026-07-01');
 
     const { onToggleDone, datesPopoverOpen, scheduledItemsForSpot, toggleScheduledItemDone } =
@@ -148,10 +157,7 @@ describe('useSpotDoneStatus', () => {
   });
 
   it('öffnet Popover bei >1 Terminen bzw. bei ungeplanten Spots', async () => {
-    const scheduleStore = useScheduleStore();
-    scheduleStore.items = [];
-
-    const spot = ref(createMockSpot({ id: 1, done: 0 }));
+    const spot = ref(createMockSpot({ id: 1, done: 0, dates: [] }));
     const scheduledDate = ref<string | null>(null);
 
     const { onToggleDone, unplannedPopoverOpen, datesPopoverOpen } = useSpotDoneStatus({
@@ -165,17 +171,27 @@ describe('useSpotDoneStatus', () => {
     expect(datesPopoverOpen.value).toBe(false);
 
     // Multi-Termine -> Dates Popover öffnet
-    scheduleStore.items = [
-      createMockScheduleItem({ id: 1, spot_id: 1, date: '2026-07-01', trip_id: 10 }),
-      createMockScheduleItem({ id: 2, spot_id: 1, date: '2026-07-02', trip_id: 10 }),
-    ];
+    spot.value = createMockSpot({
+      id: 1,
+      dates: [
+        { id: 1, trip_id: 10, spot_id: 1, date: '2026-07-01', done: 0, created_at: '' },
+        { id: 2, trip_id: 10, spot_id: 1, date: '2026-07-02', done: 0, created_at: '' },
+      ],
+    });
     await onToggleDone();
     expect(datesPopoverOpen.value).toBe(true);
   });
 
-  it('submitUnplannedDone ruft scheduleStore.setSpotDate auf', async () => {
-    const scheduleStore = useScheduleStore();
-    const setSpotDateSpy = vi.spyOn(scheduleStore, 'setSpotDate').mockResolvedValue(undefined);
+  it('submitUnplannedDone ruft spotsStore.addDate auf wenn Datum gesetzt ist', async () => {
+    const spotsStore = useSpotsStore();
+    const addDateSpy = vi.spyOn(spotsStore, 'addDate').mockResolvedValue({
+      id: 201,
+      trip_id: 10,
+      spot_id: 1,
+      date: '2026-07-10',
+      done: 1,
+      created_at: '',
+    });
     const tripStore = useTripStore();
     tripStore.currentTripId = 10;
 
@@ -192,19 +208,43 @@ describe('useSpotDoneStatus', () => {
 
     await submitUnplannedDone();
 
-    expect(setSpotDateSpy).toHaveBeenCalledWith({
-      spotId: 1,
-      tripId: 10,
-      title: 'Museum',
-      date: '2026-07-10',
-      done: true,
-    });
+    expect(addDateSpy).toHaveBeenCalledWith(1, '2026-07-10', true);
     expect(unplannedPopoverOpen.value).toBe(false);
   });
 
-  it('submitUnplannedPlan ruft scheduleStore.setSpotDate mit done: false auf', async () => {
-    const scheduleStore = useScheduleStore();
-    const setSpotDateSpy = vi.spyOn(scheduleStore, 'setSpotDate').mockResolvedValue(undefined);
+  it('submitUnplannedDone erlaubt Besucht-Status ohne Datum über spotsStore.setDone', async () => {
+    const spotsStore = useSpotsStore();
+    const addDateSpy = vi.spyOn(spotsStore, 'addDate');
+    const setDoneSpy = vi.spyOn(spotsStore, 'setDone').mockResolvedValue();
+
+    const spot = ref(createMockSpot({ id: 1, title: 'Museum', done: 0 }));
+    const scheduledDate = ref<string | null>(null);
+
+    const { unplannedDoneDate, submitUnplannedDone, unplannedPopoverOpen } = useSpotDoneStatus({
+      spot,
+      scheduledDate,
+    });
+
+    unplannedPopoverOpen.value = true;
+    unplannedDoneDate.value = '';
+
+    await submitUnplannedDone();
+
+    expect(addDateSpy).not.toHaveBeenCalled();
+    expect(setDoneSpy).toHaveBeenCalledWith(1, true);
+    expect(unplannedPopoverOpen.value).toBe(false);
+  });
+
+  it('submitUnplannedPlan ruft spotsStore.addDate mit done: false auf', async () => {
+    const spotsStore = useSpotsStore();
+    const addDateSpy = vi.spyOn(spotsStore, 'addDate').mockResolvedValue({
+      id: 202,
+      trip_id: 10,
+      spot_id: 1,
+      date: '2026-07-11',
+      done: 0,
+      created_at: '',
+    });
     const tripStore = useTripStore();
     tripStore.currentTripId = 10;
 
@@ -221,13 +261,7 @@ describe('useSpotDoneStatus', () => {
 
     await submitUnplannedPlan();
 
-    expect(setSpotDateSpy).toHaveBeenCalledWith({
-      spotId: 1,
-      tripId: 10,
-      title: 'Museum',
-      date: '2026-07-11',
-      done: false,
-    });
+    expect(addDateSpy).toHaveBeenCalledWith(1, '2026-07-11', false);
     expect(unplannedPopoverOpen.value).toBe(false);
   });
 
@@ -312,11 +346,8 @@ describe('useSpotDoneStatus', () => {
     expect(isSpotDone.value).toBe(true);
   });
 
-  it('erfasst und zählt gemischte Daten aus Tour und Kalendertermin', async () => {
-    const scheduleStore = useScheduleStore();
-    scheduleStore.items = [
-      createMockScheduleItem({ id: 101, spot_id: 1, date: '2026-10-27', done: 0, trip_id: 10 }),
-    ];
+  it('erfasst und zählt gemischte Daten aus Spot-Datum und Tour', async () => {
+    const spotsStore = useSpotsStore();
     const excursionsStore = useExcursionsStore();
     excursionsStore.excursions = [
       createMockExcursion({
@@ -328,10 +359,23 @@ describe('useSpotDoneStatus', () => {
       }),
     ];
 
-    const schedSetDoneSpy = vi.spyOn(scheduleStore, 'setDone').mockResolvedValue({ done: true });
+    const spotUpdateDateSpy = vi.spyOn(spotsStore, 'updateDate').mockResolvedValue({
+      id: 101,
+      trip_id: 10,
+      spot_id: 1,
+      date: '2026-10-27',
+      done: 1,
+      created_at: '',
+    });
     const excSetDoneSpy = vi.spyOn(excursionsStore, 'setDone').mockResolvedValue(undefined);
 
-    const spot = ref(createMockSpot({ id: 1, done: 0 }));
+    const spot = ref(
+      createMockSpot({
+        id: 1,
+        done: 0,
+        dates: [{ id: 101, trip_id: 10, spot_id: 1, date: '2026-10-27', done: 0, created_at: '' }],
+      })
+    );
     const scheduledDate = ref<string | null>('2026-10-27');
 
     const { scheduledItemsForSpot, totalItemsCount, toggleScheduledItemDone } = useSpotDoneStatus({
@@ -341,42 +385,15 @@ describe('useSpotDoneStatus', () => {
 
     expect(totalItemsCount.value).toBe(2);
     expect(scheduledItemsForSpot.value.map((i) => i.date)).toEqual(['2026-10-27', '2026-11-08']);
-    expect(scheduledItemsForSpot.value[0].type).toBe('schedule');
+    expect(scheduledItemsForSpot.value[0].type).toBe('spotDate');
     expect(scheduledItemsForSpot.value[1].type).toBe('tour');
 
-    // Togglen des Termins
+    // Togglen des Spot-Datums
     await toggleScheduledItemDone(scheduledItemsForSpot.value[0]);
-    expect(schedSetDoneSpy).toHaveBeenCalledWith(101, true);
+    expect(spotUpdateDateSpy).toHaveBeenCalledWith(1, 101, { done: true });
 
     // Togglen der Tour
     await toggleScheduledItemDone(scheduledItemsForSpot.value[1]);
     expect(excSetDoneSpy).toHaveBeenCalledWith(201, true);
-  });
-
-  it('leitet Termine dynamisch aus Tagebucheinträgen ab', () => {
-    const diaryStore = useDiaryStore();
-    diaryStore.entries = [
-      {
-        id: 77,
-        trip_id: 10,
-        author_id: 1,
-        title: 'Toller Strandtag',
-        date: '2026-08-15',
-        spot_ids: [1],
-      } as any,
-    ];
-
-    const spot = ref(createMockSpot({ id: 1, done: 0 }));
-    const scheduledDate = ref<string | null>(null);
-
-    const { scheduledItemsForSpot, totalItemsCount, isSpotDone } = useSpotDoneStatus({
-      spot,
-      scheduledDate,
-    });
-
-    expect(totalItemsCount.value).toBe(1);
-    expect(scheduledItemsForSpot.value[0].date).toBe('2026-08-15');
-    expect(scheduledItemsForSpot.value[0].type).toBe('diary');
-    expect(isSpotDone.value).toBe(true);
   });
 });

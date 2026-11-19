@@ -1,12 +1,12 @@
 import { ref, computed, watch, nextTick, type Ref } from 'vue';
 import { api } from '../api/client';
-import type { ScheduleItem, Spot, User } from '../api/types';
+import type { Spot, User } from '../api/types';
 import { useSpotsStore } from '../stores/spots';
-import { useScheduleStore } from '../stores/schedule';
 import { useTripStore } from '../stores/trip';
 import { useAuthStore } from '../stores/auth';
 import { useDrawersStore } from '../stores/drawers';
 import { useExcursionsStore } from '../stores/excursions';
+import { useDiaryStore } from '../stores/diary';
 import { useDraftAutosave } from './useDraftAutosave';
 import { useToast } from './useToast';
 import { parseLatLngFromMapsLink, tilePreviewUrl, buildGoogleMapsLink } from '../utils/googleMaps';
@@ -20,7 +20,6 @@ import {
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { normalizeWebUrl } from '../utils/linkLabel';
 import { isEmptyRichText } from '../utils/richText';
-import { isAutoCreatedUnmodifiedScheduleItem } from '../utils/scheduleSpotUnlink';
 import { isBookingLink } from '../utils/locationInputClassifier';
 import type LocationPicker from '../components/LocationPicker.vue';
 import type { PlaceSearchResult } from '../components/LocationPicker.vue';
@@ -42,9 +41,12 @@ export interface SpotFormData {
   amount: string;
   paid_by_user_id: string;
   link: string;
+  done: boolean;
   tourTitles: string[];
   scheduledDates: string[];
+  scheduledDateDone: Record<string, boolean>;
   scheduledDate?: string;
+  diary_ids: number[];
 }
 
 export const SPOT_SIDE_OPTIONS = [
@@ -79,9 +81,12 @@ export function emptySpotForm(): SpotFormData {
     amount: '',
     paid_by_user_id: '',
     link: '',
+    done: false,
     tourTitles: [] as string[],
     scheduledDates: [] as string[],
+    scheduledDateDone: {} as Record<string, boolean>,
     scheduledDate: '',
+    diary_ids: [] as number[],
   };
 }
 
@@ -156,14 +161,14 @@ export interface UseSpotFormOptions {
 }
 
 export function useSpotForm(options: UseSpotFormOptions) {
-  const { tripId, users, spotScheduledDates } = options;
+  const { tripId, users } = options;
 
   const spotsStore = useSpotsStore();
-  const scheduleStore = useScheduleStore();
   const tripStore = useTripStore();
   const auth = useAuthStore();
   const drawers = useDrawersStore();
   const excursionsStore = useExcursionsStore();
+  const diaryStore = useDiaryStore();
   const { showToast } = useToast();
 
   const showSpotForm = ref(false);
@@ -366,6 +371,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
     const category = initialCategory ?? '';
     spotForm.value.category = category;
     spotForm.value.is_home = isHomeCategory(category);
+    spotForm.value.done = Boolean(spotForm.value.done);
     showSpotLocationSection.value = category === 'Unterkunft' || isHomeCategory(category);
 
     if (initialTourTitle) {
@@ -380,8 +386,17 @@ export function useSpotForm(options: UseSpotFormOptions) {
       spotForm.value.scheduledDate
     ) {
       spotForm.value.scheduledDates = [spotForm.value.scheduledDate];
+      spotForm.value.scheduledDate = '';
     } else if (!Array.isArray(spotForm.value.scheduledDates)) {
       spotForm.value.scheduledDates = [];
+    }
+
+    if (!spotForm.value.scheduledDateDone || typeof spotForm.value.scheduledDateDone !== 'object') {
+      spotForm.value.scheduledDateDone = {};
+    }
+
+    if (!Array.isArray(spotForm.value.diary_ids)) {
+      spotForm.value.diary_ids = [];
     }
 
     showSpotScheduleSection.value =
@@ -389,58 +404,45 @@ export function useSpotForm(options: UseSpotFormOptions) {
     showSpotForm.value = true;
   }
 
-  const editSpotScheduledItems = computed(() => {
-    if (!editingSpot.value) {
-      return [];
-    }
-
-    return scheduleStore.items.filter((i) => i.spot_id === editingSpot.value!.id);
-  });
-
-  async function toggleScheduledItemDone(item: ScheduleItem) {
-    await scheduleStore.setDone(item.id, !item.done);
+  function isScheduledDateDone(date: string): boolean {
+    return Boolean(activeSpotForm.value.scheduledDateDone?.[date]);
   }
 
-  async function removeScheduledItemFromSpot(item: ScheduleItem) {
-    if (!editingSpot.value) {
+  function toggleScheduledDateDone(date: string) {
+    const form = activeSpotForm.value;
+    const currentMap = form.scheduledDateDone ?? {};
+    const nextDone = !Boolean(currentMap[date]);
+    form.scheduledDateDone = { ...currentMap, [date]: nextDone };
+    form.done = form.scheduledDates.some((scheduledDate) =>
+      Boolean(form.scheduledDateDone?.[scheduledDate])
+    );
+  }
+
+  function removeScheduledDate(date: string) {
+    const form = activeSpotForm.value;
+
+    if (!Array.isArray(form.scheduledDates)) {
       return;
     }
 
-    const isAutoUnmodified = isAutoCreatedUnmodifiedScheduleItem(item, editingSpot.value.title);
+    form.scheduledDates = form.scheduledDates.filter((scheduledDate) => scheduledDate !== date);
+    form.scheduledDate = '';
 
-    if (isAutoUnmodified) {
-      await scheduleStore.remove(item.id);
-      showToast({
-        message: 'Termin wurde gelöscht, da er vorher automatisch vom Reisotor angelegt wurde.',
-        type: 'info',
-      });
-    } else {
-      await scheduleStore.update(item.id, {
-        trip_id: item.trip_id,
-        date: item.date,
-        end_date: item.end_date,
-        time: item.time ?? undefined,
-        end_time: item.end_time ?? undefined,
-        title: item.title,
-        note: item.note ?? undefined,
-        location: item.location ?? undefined,
-        maps_link: item.maps_link ?? undefined,
-        lat: item.lat ?? undefined,
-        lng: item.lng ?? undefined,
-        spot_id: null,
-        idea_id: item.idea_id,
-      });
-      showToast({
-        message:
-          'Termin-Verknüpfung entfernt. Der Termin selbst lässt sich noch im Kalender bearbeiten.',
-        type: 'info',
-      });
+    if (form.scheduledDateDone && date in form.scheduledDateDone) {
+      const nextMap = { ...form.scheduledDateDone };
+      delete nextMap[date];
+      form.scheduledDateDone = nextMap;
+    }
+
+    if (form.scheduledDates.length > 0) {
+      form.done = form.scheduledDates.some((scheduledDate) =>
+        Boolean(form.scheduledDateDone?.[scheduledDate])
+      );
     }
   }
 
-  function openScheduledItemDetail(item: ScheduleItem) {
-    drawers.openCalendar();
-    scheduleStore.openDetail(item);
+  function openScheduledDateInCalendar(date: string) {
+    drawers.openCalendar(date);
   }
 
   const spotPickerCenter = computed(() => {
@@ -501,7 +503,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
         !!val.address ||
         (val.lat != null && val.lng != null);
       showSpotScheduleSection.value =
-        editSpotForm.value.tourTitles.length > 0 || editSpotScheduledItems.value.length > 0;
+        editSpotForm.value.tourTitles.length > 0 || editSpotForm.value.scheduledDates.length > 0;
     } else {
       showEditSpotLocationSection.value = false;
       showSpotScheduleSection.value = false;
@@ -564,6 +566,13 @@ export function useSpotForm(options: UseSpotFormOptions) {
       (e) => e.title.toLowerCase() === title.trim().toLowerCase()
     );
     return !!tour?.role;
+  }
+
+  function isTourDone(title: string): boolean {
+    const tour = excursionsStore.excursions.find(
+      (e) => e.title.toLowerCase() === title.trim().toLowerCase()
+    );
+    return Boolean(tour?.done);
   }
 
   function removeTourTitle(title: string) {
@@ -668,49 +677,27 @@ export function useSpotForm(options: UseSpotFormOptions) {
     }
   }
 
-  async function submitAddSpotToDate() {
+  function submitAddSpotToDate() {
     const date = addScheduleDateVal.value;
 
     if (!date || !/^[1-9]\d{3}-\d{2}-\d{2}$/.test(date)) {
       return;
     }
 
-    if (editingSpot.value !== null) {
-      if (!tripStore.currentTripId) {
-        return;
-      }
+    const form = activeSpotForm.value;
 
-      await scheduleStore.create({
-        trip_id: tripStore.currentTripId,
-        date,
-        title: editingSpot.value.title,
-        spot_id: editingSpot.value.id,
-        auto_created: 1,
-        user_modified: 0,
-      });
-    } else {
-      if (!Array.isArray(spotForm.value.scheduledDates)) {
-        spotForm.value.scheduledDates = [];
-      }
+    if (!Array.isArray(form.scheduledDates)) {
+      form.scheduledDates = [];
+    }
 
-      if (!spotForm.value.scheduledDates.includes(date)) {
-        spotForm.value.scheduledDates.push(date);
-        spotForm.value.scheduledDates.sort();
-      }
+    if (!form.scheduledDates.includes(date)) {
+      const inheritDone = form.scheduledDates.length === 0 && Boolean(form.done);
+      form.scheduledDates = [...form.scheduledDates, date].sort();
+      form.scheduledDateDone = { ...(form.scheduledDateDone ?? {}), [date]: inheritDone };
     }
 
     addScheduleDateVal.value = '';
     addSchedulePopoverOpen.value = false;
-  }
-
-  function removeScheduledDateFromNewSpot(date: string) {
-    if (!Array.isArray(spotForm.value.scheduledDates)) {
-      return;
-    }
-
-    spotForm.value.scheduledDates = spotForm.value.scheduledDates.filter(
-      (scheduledDate) => scheduledDate !== date
-    );
   }
 
   const spotReferencePoints = computed(() =>
@@ -937,6 +924,19 @@ export function useSpotForm(options: UseSpotFormOptions) {
       }
     }
 
+    let normalizedDates = Array.isArray(formData.scheduledDates) ? formData.scheduledDates : [];
+
+    if (normalizedDates.length === 0 && formData.scheduledDate) {
+      normalizedDates = [formData.scheduledDate];
+    }
+
+    const datesPayload = normalizedDates.map((date) => ({
+      date,
+      done: Boolean(formData.scheduledDateDone?.[date]),
+    }));
+    const effectiveDone =
+      datesPayload.length > 0 ? datesPayload.some((entry) => entry.done) : Boolean(formData.done);
+
     return {
       trip_id: tripId,
       title: formData.title.trim(),
@@ -957,6 +957,9 @@ export function useSpotForm(options: UseSpotFormOptions) {
       amount: formData.amount ? Number(formData.amount) : undefined,
       paid_by_user_id: paidByUserId,
       link: formData.link?.trim() ? normalizeWebUrl(formData.link) : null,
+      done: effectiveDone,
+      dates: datesPayload,
+      diary_ids: Array.isArray(formData.diary_ids) ? formData.diary_ids : [],
     };
   }
 
@@ -1083,6 +1086,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
       spotPendingFixId.value != null
         ? await spotsStore.update(spotPendingFixId.value, body)
         : await spotsStore.create(body);
+    diaryStore.syncLinksForSpot(result.id, body.diary_ids);
     drawers.touchLocations();
 
     if (body.maps_link && result.lat == null && !spotManualPin.value) {
@@ -1093,25 +1097,6 @@ export function useSpotForm(options: UseSpotFormOptions) {
     }
 
     await syncSpotTours(result.id, spotForm.value.tourTitles);
-    let datesToSchedule: string[] = [];
-
-    if (spotForm.value.scheduledDates?.length) {
-      datesToSchedule = spotForm.value.scheduledDates;
-    } else if (spotForm.value.scheduledDate) {
-      datesToSchedule = [spotForm.value.scheduledDate];
-    }
-
-    for (const schedDate of datesToSchedule) {
-      await scheduleStore.create({
-        trip_id: tripId,
-        date: schedDate,
-        title: result.title,
-        spot_id: result.id,
-        auto_created: 1,
-        user_modified: 0,
-      });
-    }
-
     closeSpotForm();
     return result;
   }
@@ -1194,33 +1179,55 @@ export function useSpotForm(options: UseSpotFormOptions) {
     isFetchingSpotPreview.value = false;
     spotTitleTouched.value = false;
     selectedSpotCity.value = null;
-    spotPreviewImages.value = spot.image_url ? [spot.image_url] : [];
-    const isZuhause = isHomeCategory(spot.category);
+    const latestSpot = spotsStore.spots.find((item) => item.id === spot.id) ?? spot;
+    spotPreviewImages.value = latestSpot.image_url ? [latestSpot.image_url] : [];
+    const isZuhause = isHomeCategory(latestSpot.category);
+    const existingDates = latestSpot.dates ?? [];
+    const scheduledDates = existingDates.map((entry) => entry.date).sort();
+    const scheduledDateDone: Record<string, boolean> = {};
+
+    for (const entry of existingDates) {
+      scheduledDateDone[entry.date] = Boolean(entry.done);
+    }
+
+    const initialDone =
+      scheduledDates.length > 0
+        ? scheduledDates.some((date) => scheduledDateDone[date])
+        : Boolean(latestSpot.done);
+
     editSpotForm.value = {
-      title: spot.title,
-      image_url: spot.image_url ?? '',
-      maps_link: spot.maps_link ?? '',
-      note: spot.note ?? '',
-      category: spot.category ?? '',
-      is_home: isZuhause ? true : !!spot.is_home,
-      address: spot.address ?? '',
-      start_date: spot.start_date ?? '',
-      end_date: spot.end_date ?? '',
-      checkin: spot.checkin ?? '',
-      checkout: spot.checkout ?? '',
-      contact: spot.contact ?? '',
-      amount: spot.amount != null ? String(spot.amount) : '',
-      paid_by_user_id: spot.paid_by_user_id != null ? String(spot.paid_by_user_id) : '',
-      link: spot.link ?? '',
-      tourTitles: tourTitlesFor(spot.id),
-      scheduledDates: [],
-      scheduledDate: spotScheduledDates.value.get(spot.id) ?? '',
+      title: latestSpot.title,
+      image_url: latestSpot.image_url ?? '',
+      maps_link: latestSpot.maps_link ?? '',
+      note: latestSpot.note ?? '',
+      category: latestSpot.category ?? '',
+      is_home: isZuhause ? true : !!latestSpot.is_home,
+      address: latestSpot.address ?? '',
+      start_date: latestSpot.start_date ?? '',
+      end_date: latestSpot.end_date ?? '',
+      checkin: latestSpot.checkin ?? '',
+      checkout: latestSpot.checkout ?? '',
+      contact: latestSpot.contact ?? '',
+      amount: latestSpot.amount != null ? String(latestSpot.amount) : '',
+      paid_by_user_id: latestSpot.paid_by_user_id != null ? String(latestSpot.paid_by_user_id) : '',
+      link: latestSpot.link ?? '',
+      done: initialDone,
+      tourTitles: tourTitlesFor(latestSpot.id),
+      scheduledDates,
+      scheduledDateDone,
+      scheduledDate: '',
+      diary_ids: diaryStore.entries
+        .filter((entry) => !entry.is_draft && (entry.spot_ids ?? []).includes(latestSpot.id))
+        .map((entry) => entry.id),
     };
-    const pin = spot.lat != null && spot.lng != null ? { lat: spot.lat, lng: spot.lng } : null;
+    const pin =
+      latestSpot.lat != null && latestSpot.lng != null
+        ? { lat: latestSpot.lat, lng: latestSpot.lng }
+        : null;
     editSpotManualPin.value = pin;
     spotManualPin.value = pin;
     editSpotLocationError.value = false;
-    editingSpot.value = spot;
+    editingSpot.value = latestSpot;
   }
 
   async function submitEditSpot() {
@@ -1235,6 +1242,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
 
     const body = spotToBody(editSpotForm.value, editSpotManualPin.value, editingSpot.value);
     const updated = await spotsStore.update(editingSpot.value.id, body);
+    diaryStore.syncLinksForSpot(editingSpot.value.id, body.diary_ids);
     drawers.touchLocations();
 
     if (body.maps_link && updated.lat == null && !editSpotManualPin.value) {
@@ -1350,17 +1358,16 @@ export function useSpotForm(options: UseSpotFormOptions) {
     showSpotLocationSection,
     showEditSpotLocationSection,
     showSpotScheduleSection,
-    editSpotScheduledItems,
-    toggleScheduledItemDone,
-    removeScheduledItemFromSpot,
-    openScheduledItemDetail,
+    isScheduledDateDone,
+    toggleScheduledDateDone,
+    removeScheduledDate,
+    openScheduledDateInCalendar,
     addSchedulePopoverOpen,
     addScheduleDateVal,
     addScheduleBtnRef,
     addScheduleMenuStyle,
     toggleAddSchedulePopover,
     submitAddSpotToDate,
-    removeScheduledDateFromNewSpot,
     allTourTitles,
     tourTitlesFor,
     removeTourTitle,
@@ -1369,6 +1376,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
     createTourAssignment,
     getTourDate,
     isTourTravel,
+    isTourDone,
     onSpotMapsLinkUpdate,
     onSpotLocationSelect,
     spotLocationPickerRef,

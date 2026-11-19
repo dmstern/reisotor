@@ -129,6 +129,28 @@ describe('useExcursionDoneStatus', () => {
     expect(unplannedPopoverOpen.value).toBe(false);
   });
 
+  it('markiert ungeplante Tour auch ohne Datum als done in submitUnplannedDone', async () => {
+    const excursionsStore = useExcursionsStore();
+    const setDateSpy = vi.spyOn(excursionsStore, 'setDate').mockResolvedValue();
+    const setDoneSpy = vi.spyOn(excursionsStore, 'setDone').mockResolvedValue();
+
+    const excursion = ref(createMockExcursion({ done: 0, date: null }));
+    const { submitUnplannedDone, unplannedDoneDate, unplannedPopoverOpen } = useExcursionDoneStatus(
+      {
+        excursion,
+      }
+    );
+
+    unplannedPopoverOpen.value = true;
+    unplannedDoneDate.value = '';
+
+    await submitUnplannedDone();
+
+    expect(setDateSpy).not.toHaveBeenCalled();
+    expect(setDoneSpy).toHaveBeenCalledWith(10, true);
+    expect(unplannedPopoverOpen.value).toBe(false);
+  });
+
   it('plant Tour in submitUnplannedPlan nur auf Datum ohne done zu setzen', async () => {
     const excursionsStore = useExcursionsStore();
     const setDateSpy = vi.spyOn(excursionsStore, 'setDate').mockResolvedValue();

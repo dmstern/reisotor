@@ -30,6 +30,24 @@ defineEmits<{
 const categoryMeta = computed(
   () => SCHEDULE_CATEGORY_META[props.entry.category] ?? SCHEDULE_CATEGORY_META.other
 );
+
+const jumpLabel = computed<string | undefined>(() => {
+  switch (props.entry.kind) {
+    case 'todo':
+      return 'Zur To-do-Liste springen';
+    case 'excursion':
+    case 'travel':
+      return 'Zur Tour springen';
+    case 'spot':
+      return 'Zum Spot springen';
+    case 'diary':
+      return 'Zum Tagebucheintrag springen';
+    default:
+      return undefined;
+  }
+});
+
+const hasObjectJump = computed(() => jumpLabel.value !== undefined);
 </script>
 
 <template>
@@ -38,8 +56,8 @@ const categoryMeta = computed(
     class="item clickable animate-cascade"
     :class="{ 'item--todo': entry.kind === 'todo' }"
     tabindex="0"
-    :title="entry.kind === 'todo' ? 'Zur To-do-Liste springen' : undefined"
-    :aria-label="entry.kind === 'todo' ? `${entry.title} – Zur To-do-Liste springen` : undefined"
+    :title="jumpLabel"
+    :aria-label="jumpLabel ? `${entry.title} – ${jumpLabel}` : undefined"
     :style="{
       '--stagger-delay': index != null ? `${index * 40}ms` : undefined,
       '--entry-cat-color': categoryMeta.color,
@@ -89,12 +107,7 @@ const categoryMeta = computed(
     </div>
 
     <div class="item-actions">
-      <span
-        v-if="entry.kind === 'todo'"
-        class="todo-nav-indicator"
-        title="Zur To-do-Liste springen"
-        aria-hidden="true"
-      >
+      <span v-if="hasObjectJump" class="todo-nav-indicator" :title="jumpLabel" aria-hidden="true">
         <AppIcon :icon="ACTION_ICONS.arrowRight" :size="16" group="actions" />
       </span>
       <CalendarExportDropdown :entry="entry" variant="ghost" />

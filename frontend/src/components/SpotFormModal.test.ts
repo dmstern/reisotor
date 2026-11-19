@@ -406,4 +406,51 @@ describe('SpotFormModal', () => {
 
     cleanUp();
   });
+
+  it('does not render a separate Besucht status field in the spot modal', async () => {
+    const { cleanUp } = mountModal({
+      show: true,
+      spot: { ...dummySpot, done: 1 },
+      tripId: 1,
+      users: [dummyUser],
+      spotScheduledDates: new Map(),
+    });
+    await nextTick();
+
+    expect(document.querySelector('.done-status-field')).toBeNull();
+    cleanUp();
+  });
+
+  it('allows toggling visited state directly on date chips in create mode', async () => {
+    const { cleanUp } = mountModal({
+      show: true,
+      spot: null,
+      tripId: 1,
+      users: [dummyUser],
+      spotScheduledDates: new Map(),
+    });
+    await nextTick();
+
+    const addScheduleBtn = document.querySelector('.add-schedule-btn') as HTMLButtonElement;
+    addScheduleBtn.click();
+    await nextTick();
+
+    const dateInput = document.querySelector(
+      '.add-schedule-popover input[type="date"]'
+    ) as HTMLInputElement;
+    dateInput.value = '2026-10-22';
+    dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+    dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+    await nextTick();
+
+    const chip = document.querySelector('.assign-chip--schedule') as HTMLElement;
+    const chipToggle = chip.querySelector('.assign-chip-done-toggle') as HTMLButtonElement;
+    expect(chipToggle).not.toBeNull();
+    expect(chip.classList.contains('is-done')).toBe(false);
+
+    chipToggle.click();
+    await nextTick();
+    expect(chip.classList.contains('is-done')).toBe(true);
+    cleanUp();
+  });
 });

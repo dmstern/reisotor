@@ -1,10 +1,7 @@
 import { computed, toValue, type ComputedRef, type MaybeRefOrGetter, type Ref } from 'vue';
-import type { DiaryEntry, Excursion, IdeaRole, ScheduleItem, Spot } from '../api/types';
-import { useScheduleStore } from '../stores/schedule';
+import type { Excursion, IdeaRole, Spot } from '../api/types';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
-import { useDiaryStore } from '../stores/diary';
-import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import {
   DATES_POPOVER_WIDTH_PX,
@@ -20,7 +17,7 @@ export interface ScheduledSpotItem {
   id: string | number;
   date: string;
   done: boolean | number;
-  type: 'schedule' | 'tour' | 'prop' | 'diary';
+  type: 'spotDate' | 'tour' | 'prop';
   sourceId: number;
   title?: string;
   /** Nur bei type 'tour': Reiserolle (Anreise/Abreise/Weiterreise) bzw. null für Ausflüge. */
@@ -51,18 +48,18 @@ export interface UseSpotDoneStatusReturn {
   openCalendarConfirmDone: () => void;
 }
 
-function collectScheduleItems(spotId: number, items: ScheduleItem[]): ScheduledSpotItem[] {
+function collectSpotDateItems(spot: Spot): ScheduledSpotItem[] {
   const result: ScheduledSpotItem[] = [];
 
-  for (const item of items) {
-    if (item.spot_id === spotId && item.date) {
+  for (const entry of spot.dates ?? []) {
+    if (entry.date) {
       result.push({
-        id: item.id,
-        date: item.date,
-        done: !!item.done,
-        type: 'schedule',
-        sourceId: item.id,
-        title: item.title,
+        id: entry.id,
+        date: entry.date,
+        done: Boolean(entry.done),
+        type: 'spotDate',
+        sourceId: entry.id,
+        title: spot.title,
       });
     }
   }
@@ -78,7 +75,7 @@ function collectTourItems(spotId: number, excursions: Excursion[]): ScheduledSpo
       result.push({
         id: `tour-${excursion.id}`,
         date: excursion.date,
-        done: !!excursion.done,
+        done: Boolean(excursion.done),
         type: 'tour',
         sourceId: excursion.id,
         title: excursion.title,
@@ -90,31 +87,9 @@ function collectTourItems(spotId: number, excursions: Excursion[]): ScheduledSpo
   return result;
 }
 
-function collectDiaryItems(spotId: number, entries: DiaryEntry[]): ScheduledSpotItem[] {
-  const result: ScheduledSpotItem[] = [];
-
-  for (const entry of entries) {
-    if (entry.date && (entry.spot_ids ?? []).includes(spotId)) {
-      result.push({
-        id: `diary-${entry.id}`,
-        date: entry.date,
-        done: true,
-        type: 'diary',
-        sourceId: entry.id,
-        title: entry.title || 'Tagebucheintrag',
-      });
-    }
-  }
-
-  return result;
-}
-
 export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDoneStatusReturn {
-  const scheduleStore = useScheduleStore();
   const excursionsStore = useExcursionsStore();
   const spotsStore = useSpotsStore();
-  const diaryStore = useDiaryStore();
-  const tripStore = useTripStore();
   const drawers = useDrawersStore();
 
   const {
@@ -129,9 +104,8 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
   const scheduledItemsForSpot = computed<ScheduledSpotItem[]>(() => {
     const spot = toValue(options.spot);
     const result: ScheduledSpotItem[] = [
-      ...collectScheduleItems(spot.id, scheduleStore.items),
+      ...collectSpotDateItems(spot),
       ...collectTourItems(spot.id, excursionsStore.excursions),
-      ...collectDiaryItems(spot.id, diaryStore.entries),
     ];
 
     if (result.length === 0) {
@@ -141,7 +115,7 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
         result.push({
           id: `prop-${fallbackDate}`,
           date: fallbackDate,
-          done: !!spot.done,
+          done: Boolean(spot.done),
           type: 'prop',
           sourceId: spot.id,
           title: spot.title,
@@ -160,7 +134,7 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
 
   const totalItemsCount = computed(() => scheduledItemsForSpot.value.length);
   const doneItemsCount = computed(
-    () => scheduledItemsForSpot.value.filter((item) => !!item.done).length
+    () => scheduledItemsForSpot.value.filter((item) => Boolean(item.done)).length
   );
   const allItemsDone = computed(
     () => totalItemsCount.value > 0 && doneItemsCount.value === totalItemsCount.value
@@ -171,7 +145,7 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
     }
 
     const spot = toValue(options.spot);
-    return !!spot.done;
+    return Boolean(spot.done);
   });
   const isSpotPartiallyDone = computed(() => {
     return totalItemsCount.value > 1 && doneItemsCount.value > 0 && !allItemsDone.value;
@@ -208,40 +182,34 @@ export function useSpotDoneStatus(options: UseSpotDoneStatusOptions): UseSpotDon
   }
 
   async function toggleScheduledItemDone(item: ScheduledSpotItem) {
-    if (item.type === 'tour') {
-      const spot = toValue(options.spot);
+    const spot = toValue(options.spot);
 
+    if (item.type === 'tour') {
       if (spot.done) {
         await spotsStore.setDone(spot.id, false);
       }
 
       await excursionsStore.setDone(item.sourceId, !item.done);
-    } else if (item.type === 'schedule') {
-      await scheduleStore.setDone(item.sourceId, !item.done);
+    } else if (item.type === 'spotDate') {
+      await spotsStore.updateDate(spot.id, item.sourceId, { done: !item.done });
     } else {
-      const spot = toValue(options.spot);
       await spotsStore.setDone(spot.id, !item.done);
     }
   }
 
   async function saveUnplannedDate(done: boolean) {
-    if (!unplannedDoneDate.value) {
+    const spot = toValue(options.spot);
+
+    if (unplannedDoneDate.value) {
+      await spotsStore.addDate(spot.id, unplannedDoneDate.value, done);
+      unplannedPopoverOpen.value = false;
       return;
     }
 
-    const spot = toValue(options.spot);
-
-    if (tripStore.currentTripId != null) {
-      await scheduleStore.setSpotDate({
-        spotId: spot.id,
-        tripId: tripStore.currentTripId,
-        title: spot.title,
-        date: unplannedDoneDate.value,
-        done,
-      });
+    if (done) {
+      await spotsStore.setDone(spot.id, true);
+      unplannedPopoverOpen.value = false;
     }
-
-    unplannedPopoverOpen.value = false;
   }
 
   async function submitUnplannedDone() {

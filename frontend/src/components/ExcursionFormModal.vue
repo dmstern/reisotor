@@ -3,6 +3,7 @@ import { ref, toRef, watch } from 'vue';
 import type { Excursion, IdeaRole, LocationTrack, User } from '../api/types';
 import Modal from './Modal.vue';
 import FormField from './FormField.vue';
+import DoneStatusField from './DoneStatusField.vue';
 import Input from './primitives/Input.vue';
 import Select from './primitives/Select.vue';
 import Button from './primitives/Button.vue';
@@ -13,6 +14,7 @@ import FileAttachments from './FileAttachments.vue';
 import DraftStatusBar from './DraftStatusBar.vue';
 import RichTextEditor from './RichTextEditor.vue';
 import TrackShareWarningModal from './TrackShareWarningModal.vue';
+import DiaryEntryPicker from './DiaryEntryPicker.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -78,6 +80,7 @@ const {
   editExcursionDraft,
   isEditTourTitleModified,
   isEditTourDateModified,
+  isEditTourDoneModified,
   isEditTourNoteModified,
   isEditTourRoleModified,
   isExcursionModalDirty,
@@ -223,19 +226,16 @@ defineExpose({
         <RichTextEditor v-model="activeExcursionForm.note" placeholder="Notiz" compact expandable />
       </FormField>
       <FormField
-        icon="date"
-        label="Datum (sonst „In Planung“)"
-        :modified="isEditTourDateModified"
-        v-slot="{ modified }"
+        icon="tour"
+        label="Rolle"
+        :modified="isEditTourRoleModified"
+        v-slot="{ id, modified }"
       >
-        <Input v-model="activeExcursionForm.date" type="date" :modified="modified" />
-      </FormField>
-      <FormField icon="tour" label="Rolle" :modified="isEditTourRoleModified" v-slot="{ modified }">
-        <Select v-model="activeExcursionForm.role" :modified="modified">
+        <Select :id="id" v-model="activeExcursionForm.role" :modified="modified">
           <option value="">🎒 Ausflug</option>
-          <option v-for="r in TRAVEL_ROLE_OPTIONS" :key="r" :value="r">
-            {{ TRAVEL_ROLE_META[r].icon }} {{ TRAVEL_ROLE_META[r].label }} ({{
-              TRAVEL_ROLE_META[r].hint
+          <option v-for="roleOption in TRAVEL_ROLE_OPTIONS" :key="roleOption" :value="roleOption">
+            {{ TRAVEL_ROLE_META[roleOption].icon }} {{ TRAVEL_ROLE_META[roleOption].label }} ({{
+              TRAVEL_ROLE_META[roleOption].hint
             }})
           </option>
         </Select>
@@ -248,6 +248,33 @@ defineExpose({
         Tipp: Ordne mindestens zwei Stationen zu, um Teilstrecken, Zeiten und die Route auf der
         Karte zu planen. Du kannst das auch später ergänzen.
       </p>
+      <div class="tour-date-status-row">
+        <FormField
+          icon="date"
+          label="Datum (sonst „In Planung“)"
+          class="tour-date-field"
+          :modified="isEditTourDateModified"
+          v-slot="{ id, modified }"
+        >
+          <Input :id="id" v-model="activeExcursionForm.date" type="date" :modified="modified" />
+        </FormField>
+        <DoneStatusField
+          class="tour-done-field"
+          :done="activeExcursionForm.done"
+          :planned="Boolean(activeExcursionForm.date)"
+          toggle-label="Gemacht"
+          :modified="isEditTourDoneModified"
+          :aria-label="
+            activeExcursionForm.done
+              ? 'Tour nicht mehr als gemacht markieren'
+              : 'Tour als gemacht markieren'
+          "
+          :title="
+            activeExcursionForm.done ? 'Als nicht gemacht markieren' : 'Als gemacht markieren'
+          "
+          @toggle="activeExcursionForm.done = !activeExcursionForm.done"
+        />
+      </div>
       <CollapsibleFieldset
         :model-value="
           editingExcursion !== null ? showEditExcursionSpotsSection : showExcursionSpotsSection
@@ -341,6 +368,11 @@ defineExpose({
           </ul>
         </div>
       </CollapsibleFieldset>
+      <DiaryEntryPicker
+        v-model="activeExcursionForm.diary_ids"
+        :dates="activeExcursionForm.date ? [activeExcursionForm.date] : []"
+        id-prefix="tour-diary"
+      />
       <FileAttachments
         v-if="editingExcursion"
         domain="ideas"
@@ -401,6 +433,22 @@ defineExpose({
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+.tour-date-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.tour-date-field {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.tour-done-field {
+  flex: 0 0 auto;
 }
 
 .actions-row {

@@ -2,6 +2,7 @@
 import { computed, ref, type ComponentPublicInstance } from 'vue';
 import type { Spot } from '../api/types';
 import { useDrawersStore } from '../stores/drawers';
+import { useDiaryStore } from '../stores/diary';
 import CategoryChip from './CategoryChip.vue';
 import EditButton from './EditButton.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
@@ -19,6 +20,7 @@ import Card from './primitives/Card.vue';
 import SpotCoverImage from './SpotCoverImage.vue';
 import SpotDetails from './SpotDetails.vue';
 import SpotDoneStatus from './SpotDoneStatus.vue';
+import LinkedDiaryPills from './LinkedDiaryPills.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { travelTypeIconDef } from '../utils/travelTypeIcon';
@@ -79,6 +81,13 @@ const emit = defineEmits<{
 
 const showComments = ref(false);
 const drawers = useDrawersStore();
+const diaryStore = useDiaryStore();
+
+const linkedDiaryEntries = computed(() =>
+  diaryStore.entries.filter(
+    (entry) => !entry.is_draft && (entry.spot_ids ?? []).includes(props.spot.id)
+  )
+);
 
 // Klick auf die Karte klappt sie nur auf-/zu, statt einen Modal-Dialog zu öffnen
 const cardRoot = ref<ComponentPublicInstance | HTMLElement | null>(null);
@@ -235,6 +244,11 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
         :payer-label="payerLabel"
         :has-multiple-members="hasMultipleMembers"
         :accommodation-distance="accommodationDistance"
+      />
+
+      <LinkedDiaryPills
+        v-if="expanded && linkedDiaryEntries.length"
+        :entries="linkedDiaryEntries"
       />
 
       <div class="card-actions-wrapper" :class="{ 'is-expanded': expanded }">

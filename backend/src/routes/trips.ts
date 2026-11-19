@@ -144,51 +144,33 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
 
     if (req.body.create_default_entries === true) {
       const insertIdeaStmt = db.prepare(
-        "INSERT INTO ideas (trip_id, title, role, note_format, created_by) VALUES (?, ?, ?, 'html', ?)"
-      );
-      const insertScheduleIdeaStmt = db.prepare(
-        'INSERT INTO schedule_items (trip_id, date, title, idea_id) VALUES (?, ?, ?, ?)'
+        "INSERT INTO ideas (trip_id, title, role, date, note_format, created_by) VALUES (?, ?, ?, ?, 'html', ?)"
       );
       const insertSpotStmt = db.prepare(
         "INSERT INTO spots (trip_id, title, category, is_home, note_format, created_by) VALUES (?, ?, ?, 1, 'html', ?)"
       );
 
       // Anreise-Tour
-      const arrivalResult = insertIdeaStmt.run(tripId, 'Anreise', 'arrival', req.session.userId);
+      const arrivalResult = insertIdeaStmt.run(
+        tripId,
+        'Anreise',
+        'arrival',
+        start_date ?? null,
+        req.session.userId
+      );
       const arrivalId = arrivalResult.lastInsertRowid as number;
       recordActivity(tripId, 'ideas', arrivalId, 'created', req.session.userId!);
-
-      if (start_date) {
-        const scheduleResult = insertScheduleIdeaStmt.run(tripId, start_date, 'Anreise', arrivalId);
-        recordActivity(
-          tripId,
-          'schedule',
-          scheduleResult.lastInsertRowid as number,
-          'created',
-          req.session.userId!
-        );
-      }
 
       // Abreise-Tour
       const departureResult = insertIdeaStmt.run(
         tripId,
         'Abreise',
         'departure',
+        end_date ?? null,
         req.session.userId
       );
       const departureId = departureResult.lastInsertRowid as number;
       recordActivity(tripId, 'ideas', departureId, 'created', req.session.userId!);
-
-      if (end_date) {
-        const scheduleResult = insertScheduleIdeaStmt.run(tripId, end_date, 'Abreise', departureId);
-        recordActivity(
-          tripId,
-          'schedule',
-          scheduleResult.lastInsertRowid as number,
-          'created',
-          req.session.userId!
-        );
-      }
 
       // Zuhause-Spot
       const homeResult = insertSpotStmt.run(tripId, 'Zuhause', 'Zuhause', req.session.userId);

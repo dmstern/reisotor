@@ -44,10 +44,6 @@ const updateScheduleStmt = db.prepare(
    WHERE id = ?`
 );
 const updateScheduleDoneStmt = db.prepare('UPDATE schedule_items SET done = ? WHERE id = ?');
-const countDoneScheduleItemsBySpotStmt = db.prepare(
-  'SELECT COUNT(*) as count FROM schedule_items WHERE spot_id = ? AND done = 1 AND deleted_at IS NULL'
-);
-const updateSpotDoneStmt = db.prepare('UPDATE spots SET done = ? WHERE id = ?');
 const softDeleteScheduleStmt = db.prepare(
   'UPDATE schedule_items SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL'
 );
@@ -116,10 +112,6 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
       user_modified ? 1 : 0,
       req.body.done ? 1 : 0
     );
-
-    if (spot_id && req.body.done) {
-      updateSpotDoneStmt.run(1, spot_id);
-    }
 
     recordActivity(
       trip_id,
@@ -203,11 +195,6 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(404).send({ error: 'Nicht gefunden' });
     }
 
-    if (spot_id) {
-      const countRow = countDoneScheduleItemsBySpotStmt.get(spot_id) as { count: number };
-      updateSpotDoneStmt.run(countRow.count > 0 ? 1 : 0, spot_id);
-    }
-
     recordActivity(
       existingItem.trip_id,
       'schedule',
@@ -222,7 +209,7 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
     '/schedule/:id/done',
     async (req, reply) => {
       const existing = selectScheduleItemByIdStmt.get(req.params.id) as
-        { id: number; trip_id: number; spot_id: number | null } | undefined;
+        { id: number; trip_id: number } | undefined;
 
       if (!existing) {
         return reply.code(404).send({ error: 'Nicht gefunden' });
@@ -234,20 +221,8 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
 
       const done = req.body.done ? 1 : 0;
       updateScheduleDoneStmt.run(done, req.params.id);
-
-      let spotDone: boolean | undefined;
-
-      if (existing.spot_id) {
-        const countRow = countDoneScheduleItemsBySpotStmt.get(existing.spot_id) as {
-          count: number;
-        };
-        const isDone = countRow.count > 0;
-        updateSpotDoneStmt.run(isDone ? 1 : 0, existing.spot_id);
-        spotDone = isDone;
-      }
-
       recordActivity(existing.trip_id, 'schedule', existing.id, 'updated', req.session.userId!);
-      return { done: done === 1, spot_id: existing.spot_id, spot_done: spotDone };
+      return { done: done === 1 };
     }
   );
 

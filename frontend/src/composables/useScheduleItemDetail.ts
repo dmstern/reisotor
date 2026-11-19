@@ -93,6 +93,10 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
     return null;
   });
 
+  const viewingLinkedEntityImageUrl = computed(
+    () => viewingLinkedSpot.value?.image_url ?? viewingLinkedExcursion.value?.image_url ?? null
+  );
+
   const viewingCollageImages = computed<string[]>(() => {
     if (viewingImageUrl.value) {
       return [];
@@ -242,7 +246,7 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
         : null;
 
       drawers.openMapAt(`spot-${entry.spotId}`);
-      drawers.calendarOpen = false;
+      drawers.restoreMaximized();
       router
         .push({
           path,
@@ -252,7 +256,7 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
         .catch(() => {});
     } else if (entry.ideaId != null) {
       drawers.openMapForExcursion(entry.ideaId);
-      drawers.calendarOpen = false;
+      drawers.restoreMaximized();
       router
         .push({
           path,
@@ -265,7 +269,7 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
 
   function openAccommodationSpot(spotId: number) {
     drawers.openMapAt(`spot-${spotId}`);
-    drawers.calendarOpen = false;
+    drawers.restoreMaximized();
     const path = tripStore.currentTripId
       ? `/trip/${tripStore.currentTripId}/excursions`
       : '/excursions';
@@ -292,12 +296,29 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
     viewingItem.value = null;
   }
 
+  const viewingLinkedEntityIconGroup = computed<'categories' | 'navigation'>(() => {
+    const entry = viewingEntry.value;
+
+    if (
+      entry &&
+      entry.spotId == null &&
+      entry.ideaId != null &&
+      !viewingLinkedExcursion.value?.role
+    ) {
+      return 'navigation';
+    }
+
+    return 'categories';
+  });
+
   return {
     viewingItem,
     viewingEntry,
     viewingLinkedSpot,
     viewingLinkedExcursion,
     viewingImageUrl,
+    viewingLinkedEntityImageUrl,
+    viewingLinkedEntityIconGroup,
     viewingCollageImages,
     viewingCategoryInfo,
     viewingWeatherEntry,

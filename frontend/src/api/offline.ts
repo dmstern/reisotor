@@ -11,7 +11,7 @@ export interface OutboxEntryError {
 
 export interface OutboxEntry {
   id: string;
-  method: 'POST' | 'PUT' | 'DELETE';
+  method: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   path: string;
   body?: unknown;
   /** Nur bei POST gesetzt: die client-seitig vergebene, negative Platzhalter-id (siehe nextTempId),

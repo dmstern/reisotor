@@ -245,7 +245,8 @@ export const DEMO_LEGAL_CONFIG: LegalConfig = {
   hostingLocation: 'GitHub Pages',
 };
 
-export type ScheduleCategory = 'trip' | 'excursion' | 'todo' | 'travel' | 'other';
+export type ScheduleCategory =
+  'trip' | 'excursion' | 'todo' | 'travel' | 'spot' | 'diary' | 'other';
 
 /** Zeitraum, in dem ein Einkaufs-/ToDo-Eintrag erledigt werden soll: vor oder während des Urlaubs. */
 export type Period = 'before' | 'during';
@@ -264,33 +265,25 @@ export interface ScheduleItem {
   lat: number | null;
   lng: number | null;
   category: ScheduleCategory;
-  /** Verknüpfter Spot (aus der Spots-Übersicht) statt Freitext-Standort – schließt sich mit
-   *  idea_id gegenseitig aus (siehe ScheduleView.vue's Verknüpfungs-Auswahl). */
+  /** Optionale Orts-Referenz auf einen Spot (#800: rein informativ für den Termin). */
   spot_id: number | null;
-  /** Verknüpfte Tour (Ausflug) – z. B. wenn die Tour auf einen Kalendertag gezogen wurde
-   *  (drawers/excursionsStore.setDate) statt manuell einen Termin anzulegen. */
+  /** Veraltet (nur noch für Migration/Abwärtskompatibilität im Backend): Touren erscheinen direkt. */
   idea_id: number | null;
-  /** Ob der Termin automatisch vom Reisotor durch das Einplanen eines Spots angelegt wurde */
+  /** Veraltet (nur noch für Migration): wird von manuellen Terminen nicht mehr genutzt. */
   auto_created?: number | boolean | null;
-  /** Ob der Termin nach der automatischen Anlage vom Nutzer editiert/angefasst wurde */
+  /** Veraltet (nur noch für Migration): wird von manuellen Terminen nicht mehr genutzt. */
   user_modified?: number | boolean | null;
   /** Ob der Termin als erledigt / besucht markiert wurde */
   done?: number | boolean | null;
 }
 
-/** Vereinheitlichte Darstellung für die Kalenderansicht: entweder ein echter Kalender-Termin
- *  (scheduleItem gesetzt) oder ein synthetischer, nicht editierbarer Eintrag wie Urlaub-Start/-Ende
- *  (scheduleItem null), der nur zur Ursprungssicht springt statt inline editierbar zu sein. Ein mit
- *  Spot/Tour verknüpfter Termin bleibt trotzdem 'schedule' (editierbar) – nur seine Optik (Icon,
- *  Kategorie-Farbe) übernimmt die des verknüpften Objekts, siehe calendarEntries.ts. */
+/** Vereinheitlichte Darstellung für die Kalenderansicht (#800: direkte Kalender-Projektion):
+ *  - 'schedule': ein echter, manuell angelegter Kalender-Termin (+ Termin, öffnet Detail-Modal)
+ *  - 'trip', 'todo', 'excursion', 'travel', 'spot', 'diary': direkt projizierte Domänen-Objekte
+ *    (Klick springt direkt zur Ursprungs-Ansicht, rechts wird ein →-Pfeil angezeigt). */
 export interface CalendarEntry {
   key: string;
-  /** Herkunft des Eintrags: 'schedule' ist ein echter, editierbarer Kalender-Termin (auch wenn er
-   *  mit einem Spot/einer Tour verknüpft ist, inkl. einer Tour mit gesetzter role - siehe deren
-   *  eigene `category: 'travel'` unten statt eines eigenen kind); 'trip' und 'todo' sind
-   *  synthetische, nicht editierbare Einträge aus anderen Sichten (Architekturregel Batch 3: nur
-   *  lesend/verknüpfend, mit Sprung-Button zur Ursprungssicht). */
-  kind: 'schedule' | 'trip' | 'todo';
+  kind: 'schedule' | 'trip' | 'todo' | 'excursion' | 'travel' | 'spot' | 'diary';
   date: string;
   endDate: string;
   time: string | null;
@@ -299,25 +292,14 @@ export interface CalendarEntry {
   note: string | null;
   location: string | null;
   category: ScheduleCategory;
-  /** Icon-Override statt SCHEDULE_CATEGORY_META[category].icon – für Termine, die mit einem Spot
-   *  (dessen Kategorie-Emoji) oder einer Tour mit genau einer Spot-Station (deren Emoji statt des
-   *  generischen 🎒) verknüpft sind, siehe scheduleItemToEntry. Die Rahmenfarbe bleibt bewusst
-   *  einheitlich Ausflug-orange (category bleibt 'excursion'). */
   icon?: string;
-  /** Tabler-Pendant zu icon, für AppIcon.vue (siehe utils/icon.ts) - additiv wie bei den übrigen
-   *  Registries, gesetzt in utils/calendarEntries.ts's resolveScheduleItemIconDef(). Fehlt icon
-   *  (kein Override), bleibt auch iconDef unbesetzt - der Aufrufer fällt dann auf
-   *  SCHEDULE_CATEGORY_META[category].tabler zurück, genau wie icon auf .icon zurückfällt. */
   iconDef?: IconDef;
   ideaId: number | null;
-  /** Verknüpfter Spot, falls der Termin (siehe scheduleItem.spot_id) direkt mit einem Spot statt
-   *  einer Tour verknüpft ist. */
   spotId: number | null;
+  spotDateId?: number | null;
   todoId: number | null;
+  diaryEntryId?: number | null;
   scheduleItem: ScheduleItem | null;
-  /** Nur für kind 'todo' aussagekräftig (TodoItem.done) – speist die Checkbox in
-   *  CalendarWeek.vue's Kompaktzelle, die selbst keinen Zugriff auf die vollständige
-   *  Todo-Liste hat. Bei anderen kinds schlicht false/irrelevant. */
   done: boolean;
 }
 
@@ -517,6 +499,15 @@ export interface TravelItem {
   legs?: ExcursionLeg[];
 }
 
+export interface SpotDateEntry {
+  id: number;
+  trip_id: number;
+  spot_id: number;
+  date: string;
+  done: 0 | 1;
+  created_at?: string;
+}
+
 export interface Spot {
   id: number;
   trip_id: number;
@@ -546,9 +537,9 @@ export interface Spot {
   paid_by_user_id: number | null;
   budget_expense_id: number | null;
   link?: string | null;
-  /** Unabhängig von der aus schedule_items abgeleiteten geplant/ungeplant-Anzeige: explizit als
-   *  tatsächlich besucht markiert, auch für spontane, nie geplante Besuche nutzbar (siehe
-   *  stores/spots.ts's setDone()). */
+  /** Direkte Besuchstage des Spots (#800: Tabelle spot_dates). */
+  dates?: SpotDateEntry[];
+  /** Unabhängig von Besuchstagen: explizit als tatsächlich besucht markiert (#800). */
   done: 0 | 1;
   /** Nur clientseitig gesetzt, siehe PackingItem._pending oben. */
   _pending?: boolean;

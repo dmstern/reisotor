@@ -2,8 +2,7 @@
 import type { useScheduleItemDetail } from '../composables/useScheduleItemDetail';
 import DetailModal from './DetailModal.vue';
 import DetailRow from './primitives/DetailRow.vue';
-import Badge from './primitives/Badge.vue';
-import Button from './primitives/Button.vue';
+import LinkedEntityButton from './primitives/LinkedEntityButton.vue';
 import AppIcon from './AppIcon.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
@@ -11,8 +10,6 @@ import FileAttachments from './FileAttachments.vue';
 import MapsAppPicker from './MapsAppPicker.vue';
 import CalendarExportDropdown from './CalendarExportDropdown.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
-import { ACTION_ICONS } from '../utils/actionIcons';
-import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { formatDate } from '../utils/dateFormat';
 import { isEmptyRichText } from '../utils/richText';
 
@@ -72,10 +69,6 @@ const emit = defineEmits<{
           }}°
         </template>
       </span>
-      <Badge v-if="detail.viewingItem.value?.auto_created" variant="primary" size="sm">
-        <AppIcon :icon="ACTION_ICONS.sparkles" :size="12" group="actions" />
-        Automatisch angelegt
-      </Badge>
     </template>
 
     <DetailRow v-if="detail.viewingItem.value?.time" label="Zeit">
@@ -108,36 +101,18 @@ const emit = defineEmits<{
 
     <DetailRow
       v-if="detail.linkedTitleFor(detail.viewingEntry.value)"
-      :label="detail.viewingEntry.value?.spotId != null ? 'Verknüpfter Ort' : 'Verknüpfte Tour'"
+      label="Verknüpfter Ort"
       tag="div"
       class="linked-entity-row"
     >
-      <Button
-        variant="secondary"
-        size="sm"
+      <LinkedEntityButton
+        :label="detail.linkedTitleFor(detail.viewingEntry.value)!"
+        :image-url="detail.viewingLinkedEntityImageUrl.value"
+        :icon="detail.viewingEntry.value?.iconDef ?? FORM_FIELD_ICONS.location"
+        :icon-group="detail.viewingLinkedEntityIconGroup.value"
         class="linked-entity-btn"
         @click="detail.navigateToLinkedEntity"
-      >
-        <AppIcon
-          :icon="
-            detail.viewingEntry.value?.iconDef ??
-            (detail.viewingEntry.value?.spotId != null
-              ? FORM_FIELD_ICONS.location
-              : SECTION_ICON_DEFS.excursions)
-          "
-          :size="15"
-          group="categories"
-        />
-        <span class="linked-entity-title">{{
-          detail.linkedTitleFor(detail.viewingEntry.value)
-        }}</span>
-        <AppIcon
-          :icon="ACTION_ICONS.scrollRight"
-          :size="12"
-          group="actions"
-          class="linked-entity-chevron"
-        />
-      </Button>
+      />
     </DetailRow>
 
     <RichTextDisplay
@@ -207,32 +182,6 @@ const emit = defineEmits<{
   align-items: flex-start;
   gap: var(--space-1);
   min-width: 0;
-}
-
-.linked-entity-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  max-width: 100%;
-  min-width: 0;
-}
-
-.linked-entity-btn :deep(.app-icon) {
-  flex-shrink: 0;
-}
-
-.linked-entity-title {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.linked-entity-chevron {
-  margin-left: var(--space-1);
-  opacity: 0.6;
-  flex-shrink: 0;
 }
 
 .detail-actions {

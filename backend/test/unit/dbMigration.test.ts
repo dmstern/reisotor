@@ -4,12 +4,7 @@ import path from 'node:path';
 import Database from 'better-sqlite3';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Reproduziert den Schema-Stand einer bereits laufenden Prod-Instanz VOR der Migration, die
-// ideas.date durch einen verknüpften schedule_items-Termin ersetzt (siehe db/index.ts): ein
-// Ausflug mit gesetztem Datum, aber noch ohne Termin. Die Migration muss dafür einen Termin
-// nachziehen, bevor die Spalte gelöscht wird - sonst geht das Datum echter Nutzerdaten beim
-// Deploy stillschweigend verloren.
-describe('ideas.date -> schedule_items Backfill-Migration', () => {
+describe('Direkte Kalender-Projektion Migration (#800)', () => {
   let dbPath: string | undefined;
 
   beforeEach(() => {
@@ -24,15 +19,18 @@ describe('ideas.date -> schedule_items Backfill-Migration', () => {
     }
   });
 
-  it('überträgt ein gesetztes ideas.date in einen schedule_items-Termin statt es beim Spalten-Drop zu verlieren', async () => {
-    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-migration-test-'));
+  it('migriert shadow schedule_items (idea_id und auto_created spot_id) nach ideas.date und spot_dates', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-migration-test-800-'));
     dbPath = path.join(dir, 'legacy.sqlite');
 
     const legacy = new Database(dbPath);
     legacy.exec(`
       CREATE TABLE trips (id INTEGER PRIMARY KEY, name TEXT NOT NULL, start_date TEXT NOT NULL, end_date TEXT NOT NULL);
-      CREATE TABLE ideas (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT NOT NULL, date TEXT);
-      CREATE TABLE schedule_items (id INTEGER PRIMARY KEY, trip_id INTEGER, date TEXT NOT NULL, time TEXT, title TEXT NOT NULL, note TEXT, idea_id INTEGER);
+      CREATE TABLE ideas (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT NOT NULL, done INTEGER NOT NULL DEFAULT 0, deleted_at TEXT);
+      CREATE TABLE spots (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT NOT NULL, done INTEGER NOT NULL DEFAULT 0, deleted_at TEXT);
+      CREATE TABLE diary_entries (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT NOT NULL, date TEXT, is_draft INTEGER NOT NULL DEFAULT 0, deleted_at TEXT, created_at TEXT DEFAULT '2026-08-04');
+      CREATE TABLE diary_spots (entry_id INTEGER NOT NULL, spot_id INTEGER NOT NULL);
+      CREATE TABLE schedule_items (id INTEGER PRIMARY KEY, trip_id INTEGER, date TEXT NOT NULL, time TEXT, end_date TEXT, end_time TEXT, title TEXT NOT NULL, note TEXT, location TEXT, idea_id INTEGER, spot_id INTEGER, auto_created INTEGER DEFAULT 0, user_modified INTEGER DEFAULT 0, done INTEGER NOT NULL DEFAULT 0, deleted_at TEXT);
     `);
     legacy
       .prepare(
@@ -41,25 +39,78 @@ describe('ideas.date -> schedule_items Backfill-Migration', () => {
       .run();
     legacy
       .prepare(
-        `INSERT INTO ideas (id, trip_id, title, date) VALUES (1, 1, 'Bootstour', '2026-08-05')`
+        `INSERT INTO ideas (id, trip_id, title, done) VALUES (1, 1, 'Bootstour', 0), (2, 1, 'Stadtführung', 0)`
       )
       .run();
+    legacy
+      .prepare(
+        `INSERT INTO spots (id, trip_id, title, done) VALUES (10, 1, 'Aussichtspunkt', 0), (11, 1, 'Tagebuch-Spot', 1)`
+      )
+      .run();
+    legacy
+      .prepare(
+        `INSERT INTO schedule_items (id, trip_id, date, time, title, idea_id, spot_id, auto_created, user_modified, done)
+         VALUES
+           (101, 1, '2026-08-05', NULL, 'Bootstour', 1, NULL, 0, 0, 1),
+           (102, 1, '2026-08-06', '14:00', 'Stadtführung', 2, NULL, 0, 1, 0),
+           (103, 1, '2026-08-07', NULL, 'Aussichtspunkt', NULL, 10, 1, 0, 1),
+           (104, 1, '2026-08-08', '19:30', 'Abendessen am Aussichtspunkt', NULL, 10, 0, 1, 0)`
+      )
+      .run();
+    legacy
+      .prepare(
+        `INSERT INTO diary_entries (id, trip_id, title, date, is_draft) VALUES (200, 1, 'Toller Tag', '2026-08-09', 0)`
+      )
+      .run();
+    legacy.prepare(`INSERT INTO diary_spots (entry_id, spot_id) VALUES (200, 11)`).run();
     legacy.close();
 
     process.env.DB_PATH = dbPath;
     const { db } = await import('../../src/db/index.js');
 
-    const ideaColumns = db.prepare('PRAGMA table_info(ideas)').all() as { name: string }[];
-    expect(ideaColumns.some((c) => c.name === 'date')).toBe(false);
+    const idea1 = db.prepare('SELECT date, done FROM ideas WHERE id = 1').get() as {
+      date: string | null;
+      done: number;
+    };
+    expect(idea1).toEqual({ date: '2026-08-05', done: 1 });
 
-    const scheduleRow = db
-      .prepare('SELECT trip_id, date, title, idea_id FROM schedule_items WHERE idea_id = 1')
-      .get() as { trip_id: number; date: string; title: string; idea_id: number } | undefined;
+    const idea2 = db.prepare('SELECT date, done FROM ideas WHERE id = 2').get() as {
+      date: string | null;
+      done: number;
+    };
+    expect(idea2).toEqual({ date: '2026-08-06', done: 0 });
 
-    expect(scheduleRow).toEqual({ trip_id: 1, date: '2026-08-05', title: 'Bootstour', idea_id: 1 });
+    // Reiner Schatten-Termin der Tour (101) & auto_created Spot-Termin (103) wurden entfernt
+    expect(db.prepare('SELECT id FROM schedule_items WHERE id = 101').get()).toBeUndefined();
+    expect(db.prepare('SELECT id FROM schedule_items WHERE id = 103').get()).toBeUndefined();
+
+    // Manuell bearbeiteter Termin (102) bleibt ohne idea_id erhalten, manueller Spot-Termin (104) bleibt erhalten
+    const keptTourItem = db
+      .prepare('SELECT id, idea_id, time FROM schedule_items WHERE id = 102')
+      .get() as {
+      id: number;
+      idea_id: number | null;
+      time: string;
+    };
+    expect(keptTourItem).toEqual({ id: 102, idea_id: null, time: '14:00' });
+    expect(db.prepare('SELECT id FROM schedule_items WHERE id = 104').get()).toBeDefined();
+
+    // spot_dates enthält Besuchstage aus schedule_items UND Tagebuch-Verknüpfung
+    const spot10Dates = db
+      .prepare('SELECT date, done FROM spot_dates WHERE spot_id = 10 ORDER BY date')
+      .all() as { date: string; done: number }[];
+    expect(spot10Dates).toEqual([
+      { date: '2026-08-07', done: 1 },
+      { date: '2026-08-08', done: 0 },
+    ]);
+
+    const spot11Dates = db
+      .prepare('SELECT date, done FROM spot_dates WHERE spot_id = 11')
+      .all() as { date: string; done: number }[];
+    expect(spot11Dates).toEqual([{ date: '2026-08-09', done: 1 }]);
   });
 
-  it('überträgt spots.done auf verknüpfte schedule_items bei der Migration', async () => {
+  it('überträgt spots.done auf verknüpfte spot_dates und modifizierte schedule_items bei der Migration', async () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-migration-test-done-'));
     dbPath = path.join(dir, 'legacy.sqlite');
 
@@ -67,7 +118,7 @@ describe('ideas.date -> schedule_items Backfill-Migration', () => {
     legacy.exec(`
       CREATE TABLE trips (id INTEGER PRIMARY KEY, name TEXT NOT NULL, start_date TEXT NOT NULL, end_date TEXT NOT NULL);
       CREATE TABLE spots (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT NOT NULL, done INTEGER NOT NULL DEFAULT 1);
-      CREATE TABLE schedule_items (id INTEGER PRIMARY KEY, trip_id INTEGER, date TEXT NOT NULL, title TEXT NOT NULL, spot_id INTEGER);
+      CREATE TABLE schedule_items (id INTEGER PRIMARY KEY, trip_id INTEGER, date TEXT NOT NULL, time TEXT, title TEXT NOT NULL, spot_id INTEGER);
     `);
     legacy
       .prepare(
@@ -79,7 +130,10 @@ describe('ideas.date -> schedule_items Backfill-Migration', () => {
       .run();
     legacy
       .prepare(
-        `INSERT INTO schedule_items (id, trip_id, date, title, spot_id) VALUES (100, 1, '2026-08-03', 'Museum', 10)`
+        `INSERT INTO schedule_items (id, trip_id, date, time, title, spot_id)
+         VALUES
+           (100, 1, '2026-08-03', NULL, 'Museum', 10),
+           (101, 1, '2026-08-04', '10:00', 'Museum mit Führung', 10)`
       )
       .run();
     legacy.close();
@@ -87,10 +141,125 @@ describe('ideas.date -> schedule_items Backfill-Migration', () => {
     process.env.DB_PATH = dbPath;
     const { db } = await import('../../src/db/index.js');
 
-    const scheduleRow = db.prepare('SELECT id, done FROM schedule_items WHERE id = 100').get() as
+    // Unmodifizierter Alt-Termin (100) wird nach spot_dates (done=1) migriert und aus schedule_items entfernt
+    expect(db.prepare('SELECT id FROM schedule_items WHERE id = 100').get()).toBeUndefined();
+    const spotDateRow = db
+      .prepare('SELECT date, done FROM spot_dates WHERE spot_id = 10 AND date = ?')
+      .get('2026-08-03') as { date: string; done: number } | undefined;
+    expect(spotDateRow).toEqual({ date: '2026-08-03', done: 1 });
+
+    // Modifizierter Termin (101) bleibt in schedule_items erhalten und übernimmt spots.done
+    const scheduleRow = db.prepare('SELECT id, done FROM schedule_items WHERE id = 101').get() as
       { id: number; done: number } | undefined;
 
     expect(scheduleRow?.done).toBe(1);
+  });
+
+  it('schützt bearbeitete auto_created-Spot-Termine und bereinigt unmodifizierte Alt-Termine (#800)', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'reisotor-migration-test-legacy-auto-'));
+    dbPath = path.join(dir, 'legacy.sqlite');
+
+    const legacy = new Database(dbPath);
+    legacy.exec(`
+      CREATE TABLE trips (id INTEGER PRIMARY KEY, name TEXT NOT NULL, start_date TEXT NOT NULL, end_date TEXT NOT NULL);
+      CREATE TABLE ideas (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT NOT NULL, done INTEGER NOT NULL DEFAULT 0, deleted_at TEXT);
+      CREATE TABLE spots (id INTEGER PRIMARY KEY, trip_id INTEGER, title TEXT NOT NULL, category TEXT, maps_link TEXT, done INTEGER NOT NULL DEFAULT 0, deleted_at TEXT);
+      CREATE TABLE schedule_items (
+        id INTEGER PRIMARY KEY,
+        trip_id INTEGER,
+        date TEXT NOT NULL,
+        time TEXT,
+        end_date TEXT,
+        end_time TEXT,
+        title TEXT NOT NULL,
+        note TEXT,
+        location TEXT,
+        maps_link TEXT,
+        idea_id INTEGER,
+        spot_id INTEGER,
+        auto_created INTEGER DEFAULT 0,
+        user_modified INTEGER DEFAULT 0,
+        done INTEGER NOT NULL DEFAULT 0,
+        deleted_at TEXT
+      );
+    `);
+    legacy
+      .prepare(
+        `INSERT INTO trips (id, name, start_date, end_date) VALUES (1, 'Lissabon', '2026-09-01', '2026-09-10')`
+      )
+      .run();
+    legacy
+      .prepare(`INSERT INTO ideas (id, trip_id, title, done) VALUES (1, 1, 'Altstadt-Tour', 0)`)
+      .run();
+    legacy
+      .prepare(
+        `INSERT INTO spots (id, trip_id, title, category, maps_link, done)
+         VALUES
+           (10, 1, 'Castelo', 'Sehenswürdigkeit', 'https://maps.google.com/?q=castelo', 0),
+           (11, 1, 'Hotel Alfama', 'Unterkunft', NULL, 0)`
+      )
+      .run();
+    legacy
+      .prepare(
+        `INSERT INTO schedule_items (id, trip_id, date, time, end_date, title, note, maps_link, idea_id, spot_id, auto_created, user_modified, done)
+         VALUES
+           -- Unmodifizierter auto_created=1-Termin mit vom Spot kopiertem maps_link & leerem <p></p> -> löschen
+           (201, 1, '2026-09-02', NULL, '2026-09-02', 'Castelo', '<p></p>', 'https://maps.google.com/?q=castelo', NULL, 10, 1, 0, 0),
+           -- Unmodifizierter Alt-Termin aus Version vor auto_created (auto_created=0) -> löschen (kein Duplikat)
+           (202, 1, '2026-09-03', NULL, NULL, 'Castelo', NULL, NULL, NULL, 10, 0, 0, 1),
+           -- Bearbeiteter auto_created=1-Termin ohne user_modified-Flag (Uhrzeit gesetzt) -> behalten!
+           (203, 1, '2026-09-04', '11:30', NULL, 'Castelo', NULL, NULL, NULL, 10, 1, 0, 0),
+           -- Bearbeiteter auto_created=1-Termin ohne user_modified-Flag (Titel geändert) -> behalten!
+           (204, 1, '2026-09-05', NULL, NULL, 'Castelo Sonnenuntergang', NULL, NULL, NULL, 10, 1, 0, 0),
+           -- Unterkunft-Termin -> behalten (Unterkünfte werden nicht über spot_dates projiziert)
+           (205, 1, '2026-09-01', NULL, NULL, 'Hotel Alfama', NULL, NULL, NULL, 11, 1, 0, 0),
+           -- Tour-Termin mit geändertem Titel ohne user_modified=1 -> entkoppeln & behalten!
+           (206, 1, '2026-09-06', NULL, NULL, 'Altstadt-Tour Spezial', NULL, NULL, 1, NULL, 0, 0, 0)`
+      )
+      .run();
+    legacy.close();
+
+    process.env.DB_PATH = dbPath;
+    const { db } = await import('../../src/db/index.js');
+
+    expect(db.prepare('SELECT id FROM schedule_items WHERE id = 201').get()).toBeUndefined();
+    expect(db.prepare('SELECT id FROM schedule_items WHERE id = 202').get()).toBeUndefined();
+
+    expect(db.prepare('SELECT id, time FROM schedule_items WHERE id = 203').get()).toEqual({
+      id: 203,
+      time: '11:30',
+    });
+    expect(db.prepare('SELECT id, title FROM schedule_items WHERE id = 204').get()).toEqual({
+      id: 204,
+      title: 'Castelo Sonnenuntergang',
+    });
+    expect(db.prepare('SELECT id, spot_id FROM schedule_items WHERE id = 205').get()).toEqual({
+      id: 205,
+      spot_id: 11,
+    });
+    expect(
+      db.prepare('SELECT id, idea_id, title FROM schedule_items WHERE id = 206').get()
+    ).toEqual({
+      id: 206,
+      idea_id: null,
+      title: 'Altstadt-Tour Spezial',
+    });
+
+    const spot10Dates = db
+      .prepare('SELECT date, done FROM spot_dates WHERE spot_id = 10 ORDER BY date')
+      .all() as { date: string; done: number }[];
+    expect(spot10Dates).toEqual([
+      { date: '2026-09-02', done: 0 },
+      { date: '2026-09-03', done: 1 },
+      { date: '2026-09-04', done: 0 },
+      { date: '2026-09-05', done: 0 },
+    ]);
+    expect(db.prepare('SELECT * FROM spot_dates WHERE spot_id = 11').all()).toEqual([]);
+
+    const idea1 = db.prepare('SELECT date FROM ideas WHERE id = 1').get() as {
+      date: string | null;
+    };
+    expect(idea1.date).toBe('2026-09-06');
   });
 });
 
