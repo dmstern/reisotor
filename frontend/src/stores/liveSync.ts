@@ -132,7 +132,7 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
     // lokalem UI-Zustand in die Quere (z. B. dem 60s-Undo-Platzhalter direkt nach dem eigenen
     // Löschen, siehe useUndoableDelete.ts – ein sofortiger Refetch überschreibt dessen lokale Liste,
     // bevor der Platzhalter je sichtbar wird). Gilt genauso für die Notification-Inbox unten.
-    if (row.actor_user_id === auth.user?.id) {
+    if (auth.user?.id == null || row.actor_user_id === auth.user.id) {
       return;
     }
 
@@ -152,6 +152,12 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
   // Holt nach, was passiert ist, während kein Stream offen war (frischer Seitenaufruf, Tab war
   // geschlossen, kurzer Verbindungsabbruch) – ohne das wären Nav-Punkte nach einem Reload immer leer.
   async function backfill(tripId: number) {
+    const currentUserId = auth.user?.id;
+
+    if (currentUserId == null) {
+      return;
+    }
+
     const oldestSeen = LIVE_DOMAINS.map((domain) => loadSeenAt(tripId, domain)).sort()[0];
     let rows: ActivityRow[] = [];
 
@@ -168,7 +174,7 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
         continue;
       }
 
-      if (row.actor_user_id === auth.user?.id) {
+      if (row.actor_user_id === currentUserId) {
         continue;
       }
 

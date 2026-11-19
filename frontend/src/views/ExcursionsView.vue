@@ -82,7 +82,8 @@ const isDesktop = useIsDesktop();
 const tripMapRef = ref<InstanceType<typeof TripMap> | null>(null);
 const users = ref<User[]>([]);
 const loading = ref(true);
-const highlightedIds = ref<Set<number>>(new Set());
+const highlightedSpotIds = ref<Set<number>>(new Set());
+const highlightedExcursionIds = ref<Set<number>>(new Set());
 const travelItems = computed(() => deriveTravelItems(excursionsStore.excursions, spotsStore.spots));
 
 // 1. Layout & Responsive Bottom Sheet
@@ -142,7 +143,8 @@ const { spotAccommodationDistances } = useAccommodationDistances({
 const filter = useExcursionsFilter({
   route,
   router,
-  highlightedIds,
+  highlightedSpotIds,
+  highlightedExcursionIds,
   spotAccommodationDistances,
 });
 const {
@@ -955,8 +957,6 @@ async function onFocusSpotFromMap(spotId: number) {
     sheetState.value = 'partial';
   }
 
-  highlightedIds.value = new Set([spotId]);
-
   await nextTick();
   await openSpotWithScroll(spotId);
 }
@@ -971,8 +971,6 @@ async function onFocusExcursionFromMap(excursionId: number) {
   if (sheetState.value === 'collapsed' || sheetState.value === 'full') {
     sheetState.value = 'partial';
   }
-
-  highlightedIds.value = new Set([excursionId]);
 
   await nextTick();
   await openExcursionWithScroll(excursionId);
@@ -1042,12 +1040,14 @@ watch(
   }
 );
 
-const dayFocusHighlightedIds = ref<Set<number>>(new Set());
+const dayFocusSpotIds = ref<Set<number>>(new Set());
+const dayFocusExcursionIds = ref<Set<number>>(new Set());
 
 watch(
   () => drawers.mapFocusDate,
   (date) => {
-    dayFocusHighlightedIds.value = new Set();
+    dayFocusSpotIds.value = new Set();
+    dayFocusExcursionIds.value = new Set();
 
     if (!date) {
       return;
@@ -1065,21 +1065,23 @@ watch(
       .filter((entry) => entry.date === date && Array.isArray(entry.spot_ids))
       .flatMap((entry) => entry.spot_ids);
 
-    const next = new Set<number>();
+    const nextExcursionIds = new Set<number>();
+    const nextSpotIds = new Set<number>();
 
-    for (const e of matchingExcursions) {
-      next.add(e.id);
+    for (const excursion of matchingExcursions) {
+      nextExcursionIds.add(excursion.id);
     }
 
-    for (const sid of matchingSpotIds) {
-      next.add(sid);
+    for (const spotId of matchingSpotIds) {
+      nextSpotIds.add(spotId);
     }
 
-    for (const sid of matchingDiarySpotIds) {
-      next.add(sid);
+    for (const spotId of matchingDiarySpotIds) {
+      nextSpotIds.add(spotId);
     }
 
-    dayFocusHighlightedIds.value = next;
+    dayFocusExcursionIds.value = nextExcursionIds;
+    dayFocusSpotIds.value = nextSpotIds;
 
     nextTick(() => {
       if (groupMode.value === 'tours' && matchingExcursions.length > 0) {
@@ -1095,7 +1097,8 @@ watch(
       const el = getSpotElement(sid, expandedExcursionId.value);
       scrollToSpot(el ?? sid);
     });
-  }
+  },
+  { immediate: true }
 );
 
 // Hash Watcher
@@ -1702,10 +1705,8 @@ onUnmounted(() => {
                 :ref="(el) => setTourCardRef(grp.category, grp.excursion!.id, el)"
                 class="tour-group-card"
                 :excursion="grp.excursion"
-                :highlighted="
-                  highlightedIds.has(grp.excursion.id) ||
-                  dayFocusHighlightedIds.has(grp.excursion.id)
-                "
+                :highlighted="highlightedExcursionIds.has(grp.excursion.id)"
+                :focused="dayFocusExcursionIds.has(grp.excursion.id)"
                 :creator-label="creatorLabel(grp.excursion.created_by)"
                 :like-count="excursionLikesFor(grp.excursion.id).length"
                 :liked="excursionLikedByMe(grp.excursion.id)"
@@ -1752,8 +1753,8 @@ onUnmounted(() => {
                     :cols="getTourCols(grp.excursion.id)"
                     :rows="getTourRows(grp.excursion, grp.items)"
                     :expanded-spot-id="expandedSpotId"
-                    :highlighted-ids="highlightedIds"
-                    :day-focus-highlighted-ids="dayFocusHighlightedIds"
+                    :highlighted-ids="highlightedSpotIds"
+                    :day-focus-highlighted-ids="dayFocusSpotIds"
                     :spot-scheduled-dates="spotScheduledDates"
                     :users="users"
                     :spot-comment-items-for="spotCommentItemsFor"
@@ -1789,10 +1790,8 @@ onUnmounted(() => {
                         class="staggered-spot"
                         :style="[{ '--stagger-idx': index, '--stagger-total': grp.items.length }]"
                         :spot="item.spot"
-                        :highlighted="
-                          highlightedIds.has(item.spot.id) ||
-                          dayFocusHighlightedIds.has(item.spot.id)
-                        "
+                        :highlighted="highlightedSpotIds.has(item.spot.id)"
+                        :focused="dayFocusSpotIds.has(item.spot.id)"
                         :expanded="expandedSpotId === item.spot.id"
                         :scheduled-date="spotScheduledDates.get(item.spot.id) ?? null"
                         :creator-label="creatorLabel(item.spot.created_by)"

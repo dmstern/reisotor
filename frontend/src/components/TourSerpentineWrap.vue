@@ -175,9 +175,8 @@ function creatorLabel(userId: number | null | undefined): string | null {
                   },
                 ]"
                 :spot="cell.spot"
-                :highlighted="
-                  highlightedIds.has(cell.spot.id) || dayFocusHighlightedIds.has(cell.spot.id)
-                "
+                :highlighted="highlightedIds.has(cell.spot.id)"
+                :focused="dayFocusHighlightedIds.has(cell.spot.id)"
                 :expanded="expandedSpotId === cell.spot.id"
                 :scheduled-date="spotScheduledDates.get(cell.spot.id) ?? null"
                 :creator-label="creatorLabel(cell.spot.created_by)"

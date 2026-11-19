@@ -34,6 +34,7 @@ const props = withDefaults(
     entry: DiaryEntry;
     index?: number;
     highlighted?: boolean;
+    focused?: boolean;
     authorName?: string;
     authorAvatar?: string;
     coEditors?: CoEditor[];
@@ -50,6 +51,7 @@ const props = withDefaults(
   {
     index: 0,
     highlighted: false,
+    focused: false,
     authorName: '?',
     authorAvatar: '❓',
     coEditors: () => [],
@@ -120,6 +122,7 @@ function excursionTooltip(ex: Excursion): string {
     class="entry animate-cascade"
     :style="{ '--stagger-delay': `${index * 60}ms` }"
     :highlight="highlighted"
+    :focused="focused"
   >
     <header class="entry-head">
       <span class="avatar">{{ entry.author_avatar ?? authorAvatar }}</span>
@@ -130,8 +133,8 @@ function excursionTooltip(ex: Excursion): string {
           <span v-if="coEditors.length" class="edited-by">
             · bearbeitet von
             <span v-for="(u, i) in coEditors" :key="u.id" class="edited-by-user">
-              <span class="edited-by-avatar">{{ u.avatar }}</span
-              >{{ u.username }}<template v-if="i < coEditors.length - 1">, </template>
+              <span class="edited-by-avatar">{{ u.avatar }}</span>{{ u.username
+              }}<template v-if="i < coEditors.length - 1">, </template>
             </span>
           </span>
           <span v-else-if="entry.updated_at"> (bearbeitet)</span>

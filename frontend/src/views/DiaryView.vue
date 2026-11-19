@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import type { DiaryEntry } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
@@ -26,6 +26,7 @@ import { useDiaryEntityLinks } from '../composables/useDiaryEntityLinks';
 import { useDiaryPreview } from '../composables/useDiaryPreview';
 
 const route = useRoute();
+const router = useRouter();
 const auth = useAuthStore();
 const tripStore = useTripStore();
 const diaryStore = useDiaryStore();
@@ -95,6 +96,24 @@ const showNewModal = ref(false);
 const editingEntry = ref<DiaryEntry | null>(null);
 const focusedEntryId = ref<number | null>(null);
 
+function clearFocusedEntry(event?: MouseEvent) {
+  if (focusedEntryId.value == null) {
+    return;
+  }
+
+  const target = event?.target as HTMLElement | null;
+
+  if (target?.closest('a, button')) {
+    return;
+  }
+
+  focusedEntryId.value = null;
+
+  if (router.currentRoute.value.name === 'diary' && route.hash.startsWith('#entry-')) {
+    void router.replace({ path: route.path, query: route.query, hash: '' });
+  }
+}
+
 function scrollToHashEntry(hash: string) {
   const id = hashHighlightId(hash, 'entry');
   focusedEntryId.value = id;
@@ -112,7 +131,12 @@ function scrollToHashEntry(hash: string) {
 watch(
   () => [route.hash, loading.value, entries.value.length] as const,
   ([hash, isLoading]) => {
-    if (!isLoading && hash) {
+    if (!hash) {
+      focusedEntryId.value = null;
+      return;
+    }
+
+    if (!isLoading) {
       scrollToHashEntry(hash);
     }
   },
@@ -120,7 +144,13 @@ watch(
 );
 
 function openNewEntry() {
+  clearFocusedEntry();
   showNewModal.value = true;
+}
+
+function startEditEntry(entry: DiaryEntry) {
+  clearFocusedEntry();
+  editingEntry.value = entry;
 }
 
 function onEntryCreated(created: DiaryEntry) {
@@ -174,7 +204,8 @@ onMounted(() => {
         :key="entry.id"
         :entry="entry"
         :index="index"
-        :highlighted="highlightedIds.has(entry.id) || focusedEntryId === entry.id"
+        :highlighted="highlightedIds.has(entry.id)"
+        :focused="focusedEntryId === entry.id"
         :author-name="entry.author_username ?? author(entry.author_id)?.username ?? '?'"
         :author-avatar="entry.author_avatar ?? author(entry.author_id)?.avatar ?? '❓'"
         :co-editors="coEditorsFor(entry)"
@@ -187,7 +218,8 @@ onMounted(() => {
         :comment-count="commentsFor(entry.id).length"
         :comments="commentItemsFor(entry.id)"
         :comments-open="openComments.has(entry.id)"
-        @edit="editingEntry = entry"
+        @click="clearFocusedEntry"
+        @edit="startEditEntry(entry)"
         @preview-images="
           (images, idx) =>
             openDiaryPreview(images, idx, !auth.user?.restricted, (i) =>

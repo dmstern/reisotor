@@ -31,11 +31,14 @@ const props = withDefaults(
     stations: Spot[];
     travelItems: TravelItem[];
     highlighted?: boolean;
+    focused?: boolean;
     expanded: boolean;
     /** Semantisches HTML-Überschriften-Tag für den Card-Titel (Standard: 'h3') */
     headingTag?: 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
   }>(),
   {
+    highlighted: false,
+    focused: false,
     headingTag: 'h3',
   }
 );
@@ -112,6 +115,7 @@ const {
     }"
     :highlight="highlighted"
     :map-focused="isMapFocused"
+    :focused="focused"
     @click="onCardClick"
   >
     <div class="tour-card-main">

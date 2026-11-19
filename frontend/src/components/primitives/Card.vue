@@ -38,6 +38,8 @@ const props = withDefaults(
     highlight?: boolean;
     /** Hebt die Karte mit einem eleganten Brand-Fokus-Rand hervor (.is-map-focused), wenn sie auf der Karte fokussiert ist. */
     mapFocused?: boolean;
+    /** Hebt die Karte als aktives Sprung-/Fokus-Ziel im Brand-Fokus-Rand hervor (ohne grünes Live-Sync-Sparkle). */
+    focused?: boolean;
     /** Akzentfarbe für die 'tile'-Variante (Hex oder CSS var). */
     tileColor?: string;
     /** Alpha-Hex für den Box-Shadow der 'tile'-Variante (Standard: TILE_SHADOW_ALPHA aus widgetColors.ts). */
@@ -57,6 +59,7 @@ const props = withDefaults(
     bannerPosition: 'auto',
     highlight: false,
     mapFocused: false,
+    focused: false,
     tileColor: '#9141AC',
     tileShadowAlpha: TILE_SHADOW_ALPHA,
     tag: 'div',
@@ -196,7 +199,7 @@ const isNewHighlight = computed(() => {
         'card--expandable': expandable,
         'card--interactive': interactive,
         'new-highlight': isNewHighlight,
-        'is-map-focused': mapFocused,
+        'is-map-focused': mapFocused || focused,
         'card--has-banner': bannerUrl || $slots.banner,
         'card--banner-left': (bannerUrl || $slots.banner) && effectiveBannerPosition === 'left',
       },

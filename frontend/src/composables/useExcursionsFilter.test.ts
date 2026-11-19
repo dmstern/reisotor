@@ -261,4 +261,23 @@ describe('useExcursionsFilter', () => {
     excursionsStore.excursions = [];
     expect(filter.spotGroups.value.length).toBe(0);
   });
+
+  it('trennt highlightedSpotIds und highlightedExcursionIds sauber und leert gesehene Highlights beim Moduswechsel', () => {
+    const highlightedSpotIds = { value: new Set([99]) };
+    const highlightedExcursionIds = { value: new Set([88]) };
+
+    const filter = useExcursionsFilter({
+      route: mockRoute,
+      router: mockRouter,
+      highlightedSpotIds: highlightedSpotIds as never,
+      highlightedExcursionIds: highlightedExcursionIds as never,
+    });
+
+    filter.markSeenForGroupMode('category');
+    expect([...highlightedSpotIds.value]).toEqual([]);
+    expect([...highlightedExcursionIds.value]).toEqual([88]);
+
+    filter.markSeenForGroupMode('tours');
+    expect([...highlightedExcursionIds.value]).toEqual([]);
+  });
 });
