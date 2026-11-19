@@ -45,11 +45,11 @@ describe('ScheduleLocationFields', () => {
     return renderToString(app);
   }
 
-  it('rendert Spots und Touren in der Verknüpfungs-Auswahl', async () => {
+  it('rendert ausschließlich Spots in der optionalen Orts-Auswahl (ohne Touren)', async () => {
     const html = await render();
     expect(html).toContain('Brandenburger Tor');
-    expect(html).toContain('Spreefahrt');
-    expect(html).toContain('Kein Spot/keine Tour verknüpft');
+    expect(html).not.toContain('Spreefahrt');
+    expect(html).toContain('Keinen Spot als Ort wählen');
   });
 
   it('zeigt Freitext-Ort und Maps-Link, wenn keine Verknüpfung gewählt ist', async () => {

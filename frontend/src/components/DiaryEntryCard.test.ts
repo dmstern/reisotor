@@ -4,7 +4,7 @@ import { createApp, h, nextTick } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { renderToString } from 'vue/server-renderer';
 import DiaryEntryCard from './DiaryEntryCard.vue';
-import { useScheduleStore } from '../stores/schedule';
+import { useSpotsStore } from '../stores/spots';
 import { useDrawersStore } from '../stores/drawers';
 import type { DiaryEntry, Spot, Excursion } from '../api/types';
 
@@ -128,15 +128,15 @@ describe('DiaryEntryCard', () => {
   it('zeigt neutralen Tooltip ohne Warn-Badge an Spot-Chip, wenn Spot-Termin vom Tagebuch-Datum abweicht', async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
-    const scheduleStore = useScheduleStore();
-    scheduleStore.items = [
-      {
-        id: 200,
-        trip_id: 1,
-        spot_id: 42,
-        date: '2026-08-20',
-      } as any,
-    ];
+    const spotsStore = useSpotsStore();
+    const spotWithDate = {
+      id: 42,
+      trip_id: 1,
+      title: 'Aussichtspunkt',
+      category: 'viewpoint',
+      dates: [{ id: 200, trip_id: 1, spot_id: 42, date: '2026-08-20', done: 0, created_at: '' }],
+    } as unknown as Spot;
+    spotsStore.spots = [spotWithDate];
 
     const app = createApp({
       render: () =>
@@ -144,14 +144,7 @@ describe('DiaryEntryCard', () => {
           entry: dummyEntry, // date: 2026-08-10
           authorName: 'Daniel',
           authorAvatar: '🦊',
-          spots: [
-            {
-              id: 42,
-              trip_id: 1,
-              title: 'Aussichtspunkt',
-              category: 'viewpoint',
-            } as unknown as Spot,
-          ],
+          spots: [spotWithDate],
         }),
     });
     app.use(pinia);

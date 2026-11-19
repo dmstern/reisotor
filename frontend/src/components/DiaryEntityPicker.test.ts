@@ -6,7 +6,6 @@ import { renderToString } from 'vue/server-renderer';
 import DiaryEntityPicker from './DiaryEntityPicker.vue';
 import { useSpotsStore } from '../stores/spots';
 import { useExcursionsStore } from '../stores/excursions';
-import { useScheduleStore } from '../stores/schedule';
 import type { Spot, Excursion } from '../api/types';
 
 describe('DiaryEntityPicker', () => {
@@ -15,7 +14,6 @@ describe('DiaryEntityPicker', () => {
     setActivePinia(pinia);
     const spotsStore = useSpotsStore();
     const excursionsStore = useExcursionsStore();
-    const scheduleStore = useScheduleStore();
 
     spotsStore.spots = [
       {
@@ -23,6 +21,7 @@ describe('DiaryEntityPicker', () => {
         trip_id: 1,
         title: 'Eiffelturm',
         category: 'viewpoint',
+        dates: [],
       } as unknown as Spot,
     ];
     excursionsStore.excursions = [
@@ -34,7 +33,6 @@ describe('DiaryEntityPicker', () => {
         spot_ids: [],
       } as unknown as Excursion,
     ];
-    scheduleStore.items = [];
 
     const app = createApp({
       render: () =>
@@ -85,7 +83,6 @@ describe('DiaryEntityPicker', () => {
     setActivePinia(pinia);
     const spotsStore = useSpotsStore();
     const excursionsStore = useExcursionsStore();
-    const scheduleStore = useScheduleStore();
 
     spotsStore.spots = [
       {
@@ -93,17 +90,10 @@ describe('DiaryEntityPicker', () => {
         trip_id: 1,
         title: 'Eiffelturm',
         category: 'viewpoint',
+        dates: [{ id: 101, trip_id: 1, spot_id: 10, date: '2026-06-20', done: 0, created_at: '' }],
       } as unknown as Spot,
     ];
     excursionsStore.excursions = [];
-    scheduleStore.items = [
-      {
-        id: 101,
-        trip_id: 1,
-        spot_id: 10,
-        date: '2026-06-20',
-      } as any,
-    ];
 
     const app = createApp({
       render: () =>
@@ -127,7 +117,6 @@ describe('DiaryEntityPicker', () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const spotsStore = useSpotsStore();
-    const scheduleStore = useScheduleStore();
 
     spotsStore.spots = [
       {
@@ -135,15 +124,8 @@ describe('DiaryEntityPicker', () => {
         trip_id: 1,
         title: 'Eiffelturm',
         category: 'viewpoint',
+        dates: [{ id: 101, trip_id: 1, spot_id: 10, date: '2026-06-20', done: 0, created_at: '' }],
       } as unknown as Spot,
-    ];
-    scheduleStore.items = [
-      {
-        id: 101,
-        trip_id: 1,
-        spot_id: 10,
-        date: '2026-06-20',
-      } as any,
     ];
 
     const app = createApp({

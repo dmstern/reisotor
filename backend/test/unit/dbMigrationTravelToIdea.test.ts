@@ -100,11 +100,12 @@ describe('travel_items -> ideas Vollmigration (#176)', () => {
 
     const idea = db
       .prepare(
-        'SELECT id, title, role, transport_type, departure_time, arrival_time, amount, budget_expense_id FROM ideas WHERE title = ?'
+        'SELECT id, title, date, role, transport_type, departure_time, arrival_time, amount, budget_expense_id FROM ideas WHERE title = ?'
       )
       .get('Anreise mit dem Bus') as {
       id: number;
       title: string;
+      date: string | null;
       role: string;
       transport_type: string;
       departure_time: string;
@@ -114,6 +115,7 @@ describe('travel_items -> ideas Vollmigration (#176)', () => {
     };
     expect(idea).toMatchObject({
       title: 'Anreise mit dem Bus',
+      date: '2026-08-04',
       role: 'arrival',
       transport_type: 'bus',
       departure_time: '08:00',
@@ -130,11 +132,11 @@ describe('travel_items -> ideas Vollmigration (#176)', () => {
       .all(idea.id) as { title: string }[];
     expect(stations.map((s) => s.title)).toEqual(['Zuhause', 'Flughafen Palma']);
 
-    // Kalender-Termin aus travel_items.date nachgezogen statt stillschweigend verloren zu gehen.
-    const schedule = db
-      .prepare('SELECT date, title FROM schedule_items WHERE idea_id = ?')
-      .get(idea.id) as { date: string; title: string } | undefined;
-    expect(schedule).toEqual({ date: '2026-08-04', title: 'Anreise mit dem Bus' });
+    // Datum lebt nach #800 direkt auf ideas.date; etwaiger schedule_items-Schatten wird bereinigt.
+    const shadowSchedule = db
+      .prepare('SELECT COUNT(*) c FROM schedule_items WHERE idea_id = ?')
+      .get(idea.id) as { c: number };
+    expect(shadowSchedule.c).toBe(0);
 
     // Budget-Ausgabe umgehängt (dieselbe Zeile, id 100) statt dupliziert.
     expect(idea.budget_expense_id).toBe(100);
