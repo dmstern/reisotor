@@ -556,10 +556,10 @@
   --control-gap-xs: var(--space-1);
   --control-gap-sm: 6px;
   --control-gap-md: var(--space-2);
-  --control-radius-xs: 8px;
-  --control-radius-sm: 9.5px;
-  --control-radius-md: var(--radius-btn);
-  --control-radius-lg: 14px;
+  --control-radius-xs: 6.5px;
+  --control-radius-sm: 8px;
+  --control-radius-md: 10px;
+  --control-radius-lg: 11.5px;
   --control-radius-xs-squircle: var(--control-radius-xs);
   --control-radius-sm-squircle: var(--control-radius-sm);
   --control-radius-md-squircle: var(--control-radius-md);

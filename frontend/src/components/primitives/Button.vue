@@ -233,7 +233,7 @@ provide(
   font-size: var(--font-size-md);
   font-family: inherit;
   font-weight: 600;
-  border-radius: var(--radius-btn-squircle, var(--radius-btn, 12px));
+  border-radius: var(--control-radius-md-squircle, 10px);
   corner-shape: squircle;
   /* Verlauf bis unter den (transparenten) Rand ziehen, sonst kachelt er dort und zeigt unten einen hellen Streifen */
   background-origin: border-box;
@@ -423,7 +423,7 @@ a.btn.is-loading {
   padding: 6px 12px;
   min-height: var(--control-height-sm, 36px);
   border: 1.5px solid transparent;
-  border-radius: var(--radius-sm-squircle);
+  border-radius: var(--control-radius-sm-squircle, 8px);
   corner-shape: squircle;
   background-color: var(--color-control-active-tint);
   color: var(--color-primary-dark);
