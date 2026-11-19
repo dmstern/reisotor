@@ -1040,62 +1040,75 @@ watch(
   }
 );
 
-const dayFocusSpotIds = ref<Set<number>>(new Set());
-const dayFocusExcursionIds = ref<Set<number>>(new Set());
+const dayFocusExcursionIds = computed(() => {
+  const date = drawers.mapFocusDate;
+
+  if (!date) {
+    return new Set<number>();
+  }
+
+  return new Set(
+    excursionsStore.excursions
+      .filter((excursion) => excursion.date === date)
+      .map((excursion) => excursion.id)
+  );
+});
+
+const dayFocusSpotIds = computed(() => {
+  const date = drawers.mapFocusDate;
+
+  if (!date) {
+    return new Set<number>();
+  }
+
+  const nextSpotIds = new Set<number>();
+
+  for (const spot of spotsStore.spots) {
+    if (spot.dates?.some((entry) => entry.date === date)) {
+      nextSpotIds.add(spot.id);
+    }
+  }
+
+  for (const item of scheduleStore.items) {
+    if (item.date === date && item.spot_id != null) {
+      nextSpotIds.add(item.spot_id);
+    }
+  }
+
+  for (const entry of diaryStore.entries) {
+    if (entry.date === date && Array.isArray(entry.spot_ids)) {
+      for (const spotId of entry.spot_ids) {
+        nextSpotIds.add(spotId);
+      }
+    }
+  }
+
+  return nextSpotIds;
+});
 
 watch(
-  () => drawers.mapFocusDate,
-  (date) => {
-    dayFocusSpotIds.value = new Set();
-    dayFocusExcursionIds.value = new Set();
-
-    if (!date) {
+  () => [drawers.mapFocusDate, drawers.focusVersion, loading.value] as const,
+  ([date, , isLoading]) => {
+    if (!date || isLoading) {
       return;
     }
 
-    const matchingExcursions = excursionsStore.excursions.filter((e) => e.date === date);
-    const matchingVisitSpotIds = spotsStore.spots
-      .filter((spot) => spot.dates?.some((entry) => entry.date === date))
-      .map((spot) => spot.id);
-    const matchingScheduleSpotIds = scheduleStore.items
-      .filter((item) => item.date === date && item.spot_id != null)
-      .map((item) => item.spot_id as number);
-    const matchingSpotIds = [...matchingVisitSpotIds, ...matchingScheduleSpotIds];
-    const matchingDiarySpotIds = diaryStore.entries
-      .filter((entry) => entry.date === date && Array.isArray(entry.spot_ids))
-      .flatMap((entry) => entry.spot_ids);
-
-    const nextExcursionIds = new Set<number>();
-    const nextSpotIds = new Set<number>();
-
-    for (const excursion of matchingExcursions) {
-      nextExcursionIds.add(excursion.id);
-    }
-
-    for (const spotId of matchingSpotIds) {
-      nextSpotIds.add(spotId);
-    }
-
-    for (const spotId of matchingDiarySpotIds) {
-      nextSpotIds.add(spotId);
-    }
-
-    dayFocusExcursionIds.value = nextExcursionIds;
-    dayFocusSpotIds.value = nextSpotIds;
-
     nextTick(() => {
-      if (groupMode.value === 'tours' && matchingExcursions.length > 0) {
-        scrollToExcursion(matchingExcursions[0].id);
+      const firstExcursionId = dayFocusExcursionIds.value.values().next().value;
+
+      if (groupMode.value === 'tours' && firstExcursionId != null) {
+        scrollToExcursion(firstExcursionId);
         return;
       }
 
-      if (matchingSpotIds.length === 0) {
+      const firstSpotId = dayFocusSpotIds.value.values().next().value;
+
+      if (firstSpotId == null) {
         return;
       }
 
-      const sid = matchingSpotIds[0];
-      const el = getSpotElement(sid, expandedExcursionId.value);
-      scrollToSpot(el ?? sid);
+      const el = getSpotElement(firstSpotId, expandedExcursionId.value);
+      scrollToSpot(el ?? firstSpotId);
     });
   },
   { immediate: true }

@@ -276,13 +276,13 @@ export const useLiveSyncStore = defineStore('liveSync', () => {
   }
 
   watch(
-    () => tripStore.currentTripId,
-    async (tripId) => {
+    () => [tripStore.currentTripId, auth.user?.id] as const,
+    async ([tripId, userId]) => {
       for (const domain of LIVE_DOMAINS) {
         unseenEntityIds[domain].clear();
       }
 
-      if (tripId == null) {
+      if (tripId == null || userId == null) {
         closeStream();
         ready.value = true;
         return;

@@ -73,7 +73,11 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
   const tourRoleFilter = ref<TourRoleFilterOption[]>([]);
   const searchQuery = ref('');
 
+  let lastMarkedMode: 'category' | 'tours' | 'tracks' | null = null;
+
   function markSeenForGroupMode(mode: 'category' | 'tours' | 'tracks') {
+    lastMarkedMode = mode;
+
     if (mode === 'category') {
       if (!highlightedSpotIds) {
         return;
@@ -92,7 +96,13 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
     }
   }
 
-  watch(groupMode, (mode) => markSeenForGroupMode(mode));
+  watch(groupMode, (mode) => {
+    if (mode === lastMarkedMode) {
+      return;
+    }
+
+    markSeenForGroupMode(mode);
+  });
 
   const spotScheduledDates = computed(() => {
     const map = new Map<number, string>();

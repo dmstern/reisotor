@@ -95,6 +95,7 @@ const {
 const showNewModal = ref(false);
 const editingEntry = ref<DiaryEntry | null>(null);
 const focusedEntryId = ref<number | null>(null);
+let lastHandledHash: string | null = null;
 
 function clearFocusedEntry(event?: MouseEvent) {
   if (focusedEntryId.value == null) {
@@ -109,7 +110,12 @@ function clearFocusedEntry(event?: MouseEvent) {
 
   focusedEntryId.value = null;
 
-  if (router.currentRoute.value.name === 'diary' && route.hash.startsWith('#entry-')) {
+  const currentRouteName = router.currentRoute.value.name;
+
+  if (
+    (currentRouteName === 'diary' || currentRouteName === 'legacy-diary') &&
+    route.hash.startsWith('#entry-')
+  ) {
     void router.replace({ path: route.path, query: route.query, hash: '' });
   }
 }
@@ -119,8 +125,15 @@ function scrollToHashEntry(hash: string) {
   focusedEntryId.value = id;
 
   if (id == null) {
+    lastHandledHash = hash;
     return;
   }
+
+  if (!entries.value.some((entry) => entry.id === id)) {
+    return;
+  }
+
+  lastHandledHash = hash;
 
   void nextTick(() => {
     const target = document.getElementById(`entry-${id}`);
@@ -132,11 +145,12 @@ watch(
   () => [route.hash, loading.value, entries.value.length] as const,
   ([hash, isLoading]) => {
     if (!hash) {
+      lastHandledHash = null;
       focusedEntryId.value = null;
       return;
     }
 
-    if (!isLoading) {
+    if (!isLoading && hash !== lastHandledHash) {
       scrollToHashEntry(hash);
     }
   },

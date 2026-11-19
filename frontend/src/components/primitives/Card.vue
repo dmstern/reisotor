@@ -337,6 +337,12 @@ const isNewHighlight = computed(() => {
   animation: cardMapFocusPulse 0.9s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.card.animate-cascade.is-map-focused {
+  animation:
+    cascade-up-bounce 0.52s cubic-bezier(0.34, 1.35, 0.64, 1) var(--stagger-delay, 0ms) both,
+    cardMapFocusPulse 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 @media (hover: hover) {
   .card.is-map-focused:hover {
     border-color: var(--color-primary) !important;
@@ -367,7 +373,8 @@ const isNewHighlight = computed(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .card.is-map-focused {
+  .card.is-map-focused,
+  .card.animate-cascade.is-map-focused {
     animation: none;
   }
 }
