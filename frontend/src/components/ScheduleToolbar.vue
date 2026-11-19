@@ -78,6 +78,12 @@ defineEmits<{
             @click="$emit('nextPage')"
           />
         </div>
+        <Button size="sm" class="add-btn" @click="$emit('openAdd')">
+          <AppIcon :icon="ACTION_ICONS.calendarPlus" :size="14" group="actions" /> Neu
+        </Button>
+      </div>
+
+      <div class="toolbar-actions-row">
         <div class="granularity-wrap">
           <SegmentedToggle
             v-model="granularity"
@@ -88,9 +94,6 @@ defineEmits<{
             ]"
           />
         </div>
-      </div>
-
-      <div class="toolbar-actions-row">
         <div class="jump-row">
           <Button
             variant="secondary"
@@ -124,9 +127,6 @@ defineEmits<{
             Urlaub
           </Button>
         </div>
-        <Button size="sm" @click="$emit('openAdd')">
-          <AppIcon :icon="ACTION_ICONS.calendarPlus" :size="14" group="actions" /> Neu
-        </Button>
       </div>
     </div>
   </div>
@@ -184,7 +184,7 @@ defineEmits<{
 
 .granularity-wrap {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   max-width: 100%;
   min-width: 0;
 }
@@ -195,6 +195,10 @@ defineEmits<{
   gap: var(--space-1);
   max-width: 100%;
   min-width: 0;
+}
+
+.add-btn {
+  flex-shrink: 0;
 }
 
 .range-label {
