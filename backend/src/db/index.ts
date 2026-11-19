@@ -2342,14 +2342,15 @@ const migrateCalendarLinks800 = db.transaction(() => {
   if (!hadSpotDatesTable) {
     db.exec(`
       INSERT OR IGNORE INTO spot_dates (trip_id, spot_id, date, done)
-      SELECT si.trip_id, si.spot_id, si.date, COALESCE(si.done, 0)
+      SELECT si.trip_id, si.spot_id, si.date, MAX(COALESCE(si.done, 0))
       FROM schedule_items si
       JOIN spots s ON s.id = si.spot_id
       WHERE si.spot_id IS NOT NULL
         AND si.date IS NOT NULL
         AND si.date != ''
         AND si.deleted_at IS NULL
-        AND s.deleted_at IS NULL;
+        AND s.deleted_at IS NULL
+      GROUP BY si.trip_id, si.spot_id, si.date;
 
       DELETE FROM schedule_items
       WHERE spot_id IS NOT NULL

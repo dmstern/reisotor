@@ -216,6 +216,7 @@ const upsertSpotDateKeepDoneStmt = db.prepare(
    ON CONFLICT(spot_id, date) DO NOTHING`
 );
 const deleteSpotDateStmt = db.prepare('DELETE FROM spot_dates WHERE id = ? AND spot_id = ?');
+const updateSpotDateStmt = db.prepare('UPDATE spot_dates SET date = ?, done = ? WHERE id = ?');
 
 function datesForSpots(spotIds: number[]): Map<number, SpotDateRow[]> {
   const map = new Map<number, SpotDateRow[]>();
@@ -800,11 +801,7 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
         }
       }
 
-      db.prepare('UPDATE spot_dates SET date = ?, done = ? WHERE id = ?').run(
-        nextDate,
-        nextDone,
-        existingEntry.id
-      );
+      updateSpotDateStmt.run(nextDate, nextDone, existingEntry.id);
 
       const allDates = selectSpotDatesBySpotStmt.all(spot.id) as SpotDateRow[];
 

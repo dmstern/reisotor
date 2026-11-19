@@ -170,6 +170,98 @@ describe('recordWeatherSnapshots', () => {
     expect(stored).toEqual([]);
   });
 
+  it('erfasst Wetter-Snapshots für Touren-Stationen über ideas.date und Spots über spot_dates ohne schedule_items (#800)', async () => {
+    const tourDate = isoDateInDays(-3);
+    const spotVisitDate = isoDateInDays(-2);
+    const tripId = await createTrip({
+      start_date: isoDateInDays(-4),
+      end_date: isoDateInDays(-1),
+      lat: 52.52,
+      lng: 13.4,
+    });
+
+    const tourSpotRes = await app.inject({
+      method: 'POST',
+      url: '/api/spots',
+      headers: { cookie },
+      payload: {
+        trip_id: tripId,
+        title: 'Tour-Station',
+        lat: 38.71,
+        lng: -9.14,
+      },
+    });
+    const tourSpotId = tourSpotRes.json().id as number;
+
+    const ideaRes = await app.inject({
+      method: 'POST',
+      url: '/api/ideas',
+      headers: { cookie },
+      payload: {
+        trip_id: tripId,
+        title: 'Altstadt-Tour',
+        date: tourDate,
+        spot_ids: [tourSpotId],
+      },
+    });
+    expect(ideaRes.statusCode).toBe(201);
+
+    const directSpotRes = await app.inject({
+      method: 'POST',
+      url: '/api/spots',
+      headers: { cookie },
+      payload: {
+        trip_id: tripId,
+        title: 'Aussichtspunkt',
+        lat: 39.12,
+        lng: -8.65,
+        dates: [{ date: spotVisitDate, done: true }],
+      },
+    });
+    expect(directSpotRes.statusCode).toBe(201);
+
+    const fetchMock = vi.fn((url: string) => {
+      if (String(url).includes('latitude=38.71')) {
+        return Promise.resolve(
+          mockOpenMeteoResponse([{ date: tourDate, code: 1, max: 24, min: 15, rain: 5 }])
+        );
+      }
+
+      if (String(url).includes('latitude=39.12')) {
+        return Promise.resolve(
+          mockOpenMeteoResponse([{ date: spotVisitDate, code: 2, max: 26, min: 16, rain: 10 }])
+        );
+      }
+
+      return Promise.resolve(
+        mockOpenMeteoResponse([
+          { date: isoDateInDays(-4), code: 0, max: 20, min: 10, rain: 0 },
+          { date: isoDateInDays(-3), code: 0, max: 20, min: 10, rain: 0 },
+          { date: isoDateInDays(-2), code: 0, max: 20, min: 10, rain: 0 },
+          { date: isoDateInDays(-1), code: 0, max: 20, min: 10, rain: 0 },
+        ])
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { recordWeatherSnapshots } = await import('../../src/weatherSnapshots.js');
+    await recordWeatherSnapshots();
+
+    const tourSnapshots = db
+      .prepare(
+        'SELECT date, temp_max FROM trip_weather_snapshots WHERE trip_id = ? AND ABS(lat - 38.71) < 0.01'
+      )
+      .all(tripId) as { date: string; temp_max: number }[];
+    expect(tourSnapshots).toEqual([{ date: tourDate, temp_max: 24 }]);
+
+    const spotSnapshots = db
+      .prepare(
+        'SELECT date, temp_max FROM trip_weather_snapshots WHERE trip_id = ? AND ABS(lat - 39.12) < 0.01'
+      )
+      .all(tripId) as { date: string; temp_max: number }[];
+    expect(spotSnapshots).toEqual([{ date: spotVisitDate, temp_max: 26 }]);
+  });
+
   // Regressionstest für #82: eine falsche/ungenaue Anfangs-Koordinate durfte vergangene
   // Wetter-Snapshots nicht dauerhaft auf falschen Werten einfrieren, sobald der Ort später
   // korrigiert wird.
