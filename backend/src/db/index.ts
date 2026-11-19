@@ -2276,6 +2276,14 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_spot_dates_spot_id ON spot_dates(spot_id);
 `);
 
+function hasNonEmptyRichText(note: string | null | undefined): boolean {
+  if (!note) {
+    return false;
+  }
+
+  return note.replace(/<[^>]*>/g, '').trim() !== '' || /<img\b/i.test(note);
+}
+
 const migrateCalendarLinks800 = db.transaction(() => {
   interface IdeaScheduleRow {
     id: number;
@@ -2284,8 +2292,10 @@ const migrateCalendarLinks800 = db.transaction(() => {
     end_date: string | null;
     time: string | null;
     end_time: string | null;
+    title: string | null;
     note: string | null;
     location: string | null;
+    maps_link: string | null;
     user_modified: number | null;
     done: number | null;
     deleted_at: string | null;
@@ -2293,13 +2303,15 @@ const migrateCalendarLinks800 = db.transaction(() => {
 
   const ideaScheduleRows = db
     .prepare(
-      `SELECT id, idea_id, date, end_date, time, end_time, note, location, user_modified, done, deleted_at
+      `SELECT id, idea_id, date, end_date, time, end_time, title, note, location, maps_link, user_modified, done, deleted_at
        FROM schedule_items
        WHERE idea_id IS NOT NULL`
     )
     .all() as IdeaScheduleRow[];
 
-  const selectIdeaStmt = db.prepare('SELECT id, date, done, deleted_at FROM ideas WHERE id = ?');
+  const selectIdeaStmt = db.prepare(
+    'SELECT id, title, date, done, deleted_at FROM ideas WHERE id = ?'
+  );
   const updateIdeaDateStmt = db.prepare('UPDATE ideas SET date = ? WHERE id = ?');
   const updateIdeaDoneStmt = db.prepare('UPDATE ideas SET done = 1 WHERE id = ?');
   const deleteScheduleStmt = db.prepare('DELETE FROM schedule_items WHERE id = ?');
@@ -2309,7 +2321,8 @@ const migrateCalendarLinks800 = db.transaction(() => {
 
   for (const row of ideaScheduleRows) {
     const idea = selectIdeaStmt.get(row.idea_id) as
-      { id: number; date: string | null; done: number; deleted_at: string | null } | undefined;
+      | { id: number; title: string; date: string | null; done: number; deleted_at: string | null }
+      | undefined;
 
     if (idea) {
       const shouldCopyDate =
@@ -2324,13 +2337,19 @@ const migrateCalendarLinks800 = db.transaction(() => {
       }
     }
 
+    const hasCustomEndDate = Boolean(row.end_date?.trim() && row.end_date.trim() !== row.date);
+    const hasCustomTitle =
+      Boolean(idea && row.title?.trim()) &&
+      row.title!.trim().toLowerCase() !== idea!.title.trim().toLowerCase();
     const hasCustomDetails =
+      Boolean(row.user_modified) ||
       Boolean(row.time?.trim()) ||
       Boolean(row.end_time?.trim()) ||
-      Boolean(row.end_date?.trim()) ||
-      Boolean(row.note?.trim()) ||
+      hasCustomEndDate ||
+      hasNonEmptyRichText(row.note) ||
       Boolean(row.location?.trim()) ||
-      Boolean(row.user_modified);
+      Boolean(row.maps_link?.trim()) ||
+      hasCustomTitle;
 
     if (hasCustomDetails) {
       unlinkScheduleIdeaStmt.run(row.id);
@@ -2346,17 +2365,79 @@ const migrateCalendarLinks800 = db.transaction(() => {
       FROM schedule_items si
       JOIN spots s ON s.id = si.spot_id
       WHERE si.spot_id IS NOT NULL
+        AND COALESCE(s.category, '') != 'Unterkunft'
         AND si.date IS NOT NULL
         AND si.date != ''
         AND si.deleted_at IS NULL
         AND s.deleted_at IS NULL
       GROUP BY si.trip_id, si.spot_id, si.date;
+    `);
 
-      DELETE FROM schedule_items
-      WHERE spot_id IS NOT NULL
-        AND auto_created = 1
-        AND (user_modified IS NULL OR user_modified = 0);
+    interface SpotScheduleRow {
+      id: number;
+      date: string;
+      end_date: string | null;
+      time: string | null;
+      end_time: string | null;
+      title: string | null;
+      note: string | null;
+      location: string | null;
+      maps_link: string | null;
+      auto_created: number | null;
+      user_modified: number | null;
+      deleted_at: string | null;
+      spot_title: string;
+      spot_category: string | null;
+      spot_maps_link: string | null;
+      spot_deleted_at: string | null;
+    }
 
+    const spotScheduleRows = db
+      .prepare(
+        `SELECT si.id, si.date, si.end_date, si.time, si.end_time, si.title, si.note, si.location,
+                si.maps_link, si.auto_created, si.user_modified, si.deleted_at,
+                s.title AS spot_title, s.category AS spot_category,
+                s.maps_link AS spot_maps_link, s.deleted_at AS spot_deleted_at
+         FROM schedule_items si
+         JOIN spots s ON s.id = si.spot_id
+         WHERE si.spot_id IS NOT NULL`
+      )
+      .all() as SpotScheduleRow[];
+
+    for (const row of spotScheduleRows) {
+      if (row.spot_category === 'Unterkunft') {
+        continue;
+      }
+
+      const hasCustomEndDate = Boolean(row.end_date?.trim() && row.end_date.trim() !== row.date);
+      const hasCustomMapsLink =
+        Boolean(row.maps_link?.trim()) &&
+        row.maps_link!.trim() !== (row.spot_maps_link?.trim() ?? '');
+      const hasCustomTitle =
+        Boolean(row.title?.trim()) &&
+        row.title!.trim().toLowerCase() !== row.spot_title.trim().toLowerCase();
+      const hasCustomDetails =
+        Boolean(row.user_modified) ||
+        Boolean(row.time?.trim()) ||
+        Boolean(row.end_time?.trim()) ||
+        hasCustomEndDate ||
+        hasNonEmptyRichText(row.note) ||
+        Boolean(row.location?.trim()) ||
+        hasCustomMapsLink ||
+        hasCustomTitle;
+
+      if (hasCustomDetails) {
+        continue;
+      }
+
+      const isActiveLegacyShadow = row.deleted_at == null && row.spot_deleted_at == null;
+
+      if (Boolean(row.auto_created) || isActiveLegacyShadow) {
+        deleteScheduleStmt.run(row.id);
+      }
+    }
+
+    db.exec(`
       INSERT OR IGNORE INTO spot_dates (trip_id, spot_id, date, done)
       SELECT d.trip_id, ds.spot_id, d.date, 1
       FROM diary_spots ds
@@ -2366,6 +2447,7 @@ const migrateCalendarLinks800 = db.transaction(() => {
         AND d.deleted_at IS NULL
         AND d.date IS NOT NULL
         AND d.date != ''
+        AND COALESCE(s.category, '') != 'Unterkunft'
         AND s.deleted_at IS NULL
         AND s.done = 1;
     `);
