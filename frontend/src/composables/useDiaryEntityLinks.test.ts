@@ -217,19 +217,22 @@ describe('useDiaryEntityLinks', () => {
 
     const setDoneSpy = vi.spyOn(spotsStore, 'setDone').mockResolvedValue({} as never);
     const addDateSpy = vi.spyOn(spotsStore, 'addDate').mockResolvedValue({} as never);
+    const updateDateSpy = vi.spyOn(spotsStore, 'updateDate').mockResolvedValue({} as never);
     const excSetDateSpy = vi.spyOn(excursionsStore, 'setDate').mockResolvedValue();
     const excSetDoneSpy = vi.spyOn(excursionsStore, 'setDone').mockResolvedValue();
 
     const links = useDiaryEntityLinks();
 
-    // Spot 10 hat bereits Datum, nicht in moveSpotIds -> nur setDone, kein addDate
+    // Spot 10 hat bereits Datum, nicht in moveSpotIds -> nur setDone, kein addDate/updateDate
     await links.markLinkedAsDone([], [10], '2026-07-15');
     expect(setDoneSpy).toHaveBeenCalledWith(10, true);
     expect(addDateSpy).not.toHaveBeenCalled();
+    expect(updateDateSpy).not.toHaveBeenCalled();
 
-    // Spot 10 mit moveSpotIds -> addDate mit done=true
+    // Spot 10 mit moveSpotIds -> verschiebt bestehenden einzelnen Besuchstag per updateDate + done=true
     await links.markLinkedAsDone([], [10], '2026-07-15', [10]);
-    expect(addDateSpy).toHaveBeenCalledWith(10, '2026-07-15', true);
+    expect(updateDateSpy).toHaveBeenCalledWith(10, 1, { date: '2026-07-15', done: true });
+    expect(addDateSpy).not.toHaveBeenCalled();
 
     // Ungeplanter Spot 20 & ungeplante Tour 5 -> beide bekommen symmetrisch das Tagebuch-Datum + done=true
     addDateSpy.mockClear();

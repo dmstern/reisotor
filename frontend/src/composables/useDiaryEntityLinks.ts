@@ -119,9 +119,20 @@ export function useDiaryEntityLinks() {
         }),
         ...spotIds.map(async (id) => {
           const spot = spotsStore.spots.find((targetSpot) => targetSpot.id === id);
-          const hasDates = (spot?.dates?.length ?? 0) > 0;
+          const existingDates = spot?.dates ?? [];
+          const hasDates = existingDates.length > 0;
 
-          if (date && (!hasDates || moveSpotIds.includes(id))) {
+          if (date && moveSpotIds.includes(id)) {
+            if (existingDates.length === 1 && existingDates[0].date !== date) {
+              await spotsStore.updateDate(id, existingDates[0].id, { date, done: true });
+              return;
+            }
+
+            await spotsStore.addDate(id, date, true);
+            return;
+          }
+
+          if (date && !hasDates) {
             await spotsStore.addDate(id, date, true);
             return;
           }

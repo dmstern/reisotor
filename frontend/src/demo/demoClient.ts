@@ -895,7 +895,11 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
           }
 
           persist();
-          return structuredClone(updatedEntry) as unknown as T;
+          return structuredClone({
+            entry: updatedEntry,
+            dates: spot.dates,
+            spot_done: Boolean(spot.done),
+          }) as unknown as T;
         }
       }
 
@@ -918,7 +922,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       | undefined;
 
     if (spot) {
-      const dateStr = String(body?.date ?? '');
+      const dateStr = String(body?.date ?? '').trim();
       const doneVal = body?.done ? 1 : 0;
       const datesList = Array.isArray(spot.dates) ? [...spot.dates] : [];
       const existingIdx = datesList.findIndex((entry) => entry.date === dateStr);
@@ -945,12 +949,16 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       datesList.sort((left, right) => String(left.date).localeCompare(String(right.date)));
       spot.dates = datesList;
 
-      if (doneVal) {
+      if (resultEntry.done) {
         spot.done = 1;
       }
 
       persist();
-      return structuredClone(resultEntry) as unknown as T;
+      return structuredClone({
+        entry: resultEntry,
+        dates: spot.dates,
+        spot_done: Boolean(spot.done),
+      }) as unknown as T;
     }
 
     return undefined as T;
@@ -1145,7 +1153,31 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     const created: Record<string, unknown> = { ...(body ?? {}), id };
 
     if (collection === '/spots') {
-      created.dates = Array.isArray(body?.dates) ? body.dates : [];
+      const rawDates = Array.isArray(body?.dates) ? body.dates : [];
+      const normalizedDates = rawDates
+        .filter(
+          (entry) =>
+            entry &&
+            typeof (entry as { date?: unknown }).date === 'string' &&
+            String((entry as { date: string }).date).trim().length > 0
+        )
+        .map((entry) => {
+          const item = entry as { id?: number; date: string; done?: boolean | number };
+          return {
+            id: item.id ?? nextId++,
+            trip_id: (body?.trip_id as number | undefined) ?? 1,
+            spot_id: id,
+            date: item.date.trim(),
+            done: item.done ? 1 : 0,
+            created_at: new Date().toISOString(),
+          };
+        })
+        .sort((left, right) => left.date.localeCompare(right.date));
+      created.dates = normalizedDates;
+
+      if (normalizedDates.some((entry) => entry.done === 1)) {
+        created.done = 1;
+      }
     }
 
     if (collection === '/diary') {

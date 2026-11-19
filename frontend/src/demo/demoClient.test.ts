@@ -355,4 +355,42 @@ describe('demoClient (Issue #172: backend-loser Demo-Build)', () => {
     const res = await demoRequest<{ publicKey: string }>('/push/vapid-public-key');
     expect(res.publicKey).toBeTruthy();
   });
+
+  it('unterstützt Spot-Besuchstage (/spots/:id/dates) mit vollständigem Antwort-Contract (#800)', async () => {
+    const spots = await demoRequest<Array<{ id: number }>>('/spots?trip_id=1');
+    const spotId = spots[0].id;
+
+    const added = await demoRequest<{
+      entry: { id: number; date: string; done: number };
+      dates: Array<{ id: number; date: string; done: number }>;
+      spot_done: boolean;
+    }>(`/spots/${spotId}/dates`, {
+      method: 'POST',
+      body: JSON.stringify({ date: '2026-08-18', done: false }),
+    });
+
+    expect(added.entry.date).toBe('2026-08-18');
+    expect(added.dates.some((entry) => entry.id === added.entry.id)).toBe(true);
+
+    const patched = await demoRequest<{
+      entry: { id: number; date: string; done: number };
+      dates: Array<{ id: number; date: string; done: number }>;
+      spot_done: boolean;
+    }>(`/spots/${spotId}/dates/${added.entry.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ date: '2026-08-19', done: true }),
+    });
+
+    expect(patched.entry).toMatchObject({ id: added.entry.id, date: '2026-08-19', done: 1 });
+    expect(patched.spot_done).toBe(true);
+    expect(patched.dates.some((entry) => entry.date === '2026-08-19' && entry.done === 1)).toBe(
+      true
+    );
+
+    await demoRequest(`/spots/${spotId}/dates/${added.entry.id}`, { method: 'DELETE' });
+    const reloaded =
+      await demoRequest<Array<{ id: number; dates?: Array<{ id: number }> }>>('/spots?trip_id=1');
+    const updatedSpot = reloaded.find((spot) => spot.id === spotId);
+    expect(updatedSpot?.dates?.some((entry) => entry.id === added.entry.id)).toBe(false);
+  });
 });

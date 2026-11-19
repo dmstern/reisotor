@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import type { DiaryEntry } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
+import { useDiaryStore } from '../stores/diary';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { hashHighlightId } from '../utils/hashHighlight';
 
@@ -27,6 +28,7 @@ import { useDiaryPreview } from '../composables/useDiaryPreview';
 const route = useRoute();
 const auth = useAuthStore();
 const tripStore = useTripStore();
+const diaryStore = useDiaryStore();
 const tripId = tripStore.currentTripId as number;
 const trip = computed(() => tripStore.currentTrip);
 
@@ -130,6 +132,7 @@ function onEntryCreated(created: DiaryEntry) {
     editor_ids: Array.isArray(created.editor_ids) ? created.editor_ids : [],
   });
   diaryData.sortEntries();
+  diaryStore.setEntries(entries.value);
 }
 
 function onEntryUpdated(updated: DiaryEntry) {
@@ -147,6 +150,7 @@ function onEntryUpdated(updated: DiaryEntry) {
   }
 
   diaryData.sortEntries();
+  diaryStore.setEntries(entries.value);
 }
 
 onMounted(() => {
