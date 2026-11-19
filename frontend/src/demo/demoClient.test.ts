@@ -393,4 +393,40 @@ describe('demoClient (Issue #172: backend-loser Demo-Build)', () => {
     const updatedSpot = reloaded.find((spot) => spot.id === spotId);
     expect(updatedSpot?.dates?.some((entry) => entry.id === added.entry.id)).toBe(false);
   });
+
+  it('normalisiert done und dates bei PUT /spots/:id sowie POST/PUT /ideas in der Demo', async () => {
+    const spots = await demoRequest<Array<{ id: number; title: string }>>('/spots?trip_id=1');
+    const spotId = spots[0].id;
+
+    const updatedSpot = await demoRequest<{
+      id: number;
+      done: number;
+      dates: Array<{ date: string; done: number }>;
+    }>(`/spots/${spotId}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        title: spots[0].title,
+        done: true,
+        dates: [{ date: '2026-08-21', done: true }],
+      }),
+    });
+    expect(updatedSpot.done).toBe(1);
+    expect(updatedSpot.dates).toHaveLength(1);
+    expect(updatedSpot.dates[0]).toMatchObject({ date: '2026-08-21', done: 1 });
+
+    const createdTour = await demoRequest<{ id: number; done: number }>('/ideas', {
+      method: 'POST',
+      body: JSON.stringify({ trip_id: 1, title: 'Demo-Tour', done: true }),
+    });
+    expect(createdTour.done).toBe(1);
+
+    const updatedTour = await demoRequest<{ id: number; done: number }>(
+      `/ideas/${createdTour.id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ title: 'Demo-Tour', done: false }),
+      }
+    );
+    expect(updatedTour.done).toBe(0);
+  });
 });

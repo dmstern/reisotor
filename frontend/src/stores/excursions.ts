@@ -26,6 +26,7 @@ export interface ExcursionFormData {
   luggage?: string | null;
   seat?: string | null;
   ticket_link?: string | null;
+  done?: boolean;
 }
 
 // Eigener Store statt lokalem State in ExcursionsView: Ausflüge werden per Drag&Drop aus der

@@ -159,4 +159,73 @@ describe('done requires date (#106)', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json().done).toBe(true);
   });
+
+  it('persists done on POST/PUT /ideas and preserves existing done when omitted', async () => {
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/ideas',
+      headers: { cookie },
+      payload: { trip_id: tripId, title: 'Direkt gemachte Tour', done: true },
+    });
+    expect(created.statusCode).toBe(201);
+    expect(created.json().done).toBe(1);
+    const ideaId = created.json().id as number;
+
+    // PUT ohne done-Feld behält bestehenden Status bei
+    const preserved = await app.inject({
+      method: 'PUT',
+      url: `/api/ideas/${ideaId}`,
+      headers: { cookie },
+      payload: { trip_id: tripId, title: 'Direkt gemachte Tour (umbenannt)' },
+    });
+    expect(preserved.statusCode).toBe(200);
+    expect(preserved.json().done).toBe(1);
+
+    // Explizites done: false setzt Status zurück
+    const cleared = await app.inject({
+      method: 'PUT',
+      url: `/api/ideas/${ideaId}`,
+      headers: { cookie },
+      payload: { trip_id: tripId, title: 'Direkt gemachte Tour (umbenannt)', done: false },
+    });
+    expect(cleared.statusCode).toBe(200);
+    expect(cleared.json().done).toBe(0);
+  });
+
+  it('persists explicit done true/false and dates on PUT /spots/:id', async () => {
+    const spotId = await createSpot('Dialog-Spot');
+
+    const markDone = await app.inject({
+      method: 'PUT',
+      url: `/api/spots/${spotId}`,
+      headers: { cookie },
+      payload: {
+        trip_id: tripId,
+        title: 'Dialog-Spot',
+        category: 'Sehenswürdigkeit',
+        done: true,
+        dates: [{ date: '2026-01-06', done: true }],
+      },
+    });
+    expect(markDone.statusCode).toBe(200);
+    expect(markDone.json().done).toBe(1);
+    expect(markDone.json().dates).toHaveLength(1);
+    expect(markDone.json().dates[0].done).toBe(1);
+
+    const unmarkDone = await app.inject({
+      method: 'PUT',
+      url: `/api/spots/${spotId}`,
+      headers: { cookie },
+      payload: {
+        trip_id: tripId,
+        title: 'Dialog-Spot',
+        category: 'Sehenswürdigkeit',
+        done: false,
+        dates: [{ date: '2026-01-06', done: false }],
+      },
+    });
+    expect(unmarkDone.statusCode).toBe(200);
+    expect(unmarkDone.json().done).toBe(0);
+    expect(unmarkDone.json().dates[0].done).toBe(0);
+  });
 });

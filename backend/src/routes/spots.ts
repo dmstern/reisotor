@@ -677,10 +677,12 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
 
     if (Array.isArray(body.dates)) {
       syncSpotDates(existing.id, existing.trip_id, body.dates);
+    }
 
-      if (body.dates.some((entry) => Boolean(entry.done))) {
-        updateSpotDoneStmt.run(1, existing.id);
-      }
+    if (body.done !== undefined) {
+      updateSpotDoneStmt.run(body.done ? 1 : 0, existing.id);
+    } else if (Array.isArray(body.dates) && body.dates.some((entry) => Boolean(entry.done))) {
+      updateSpotDoneStmt.run(1, existing.id);
     }
 
     recordActivity(

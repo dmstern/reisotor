@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, toRef, watch } from 'vue';
-import type { Spot, SpotDateEntry, User } from '../api/types';
+import type { Spot, User } from '../api/types';
 import Modal from './Modal.vue';
 import FormField from './FormField.vue';
+import DoneStatusField from './DoneStatusField.vue';
 import Badge from './primitives/Badge.vue';
 import Input from './primitives/Input.vue';
 import Select from './primitives/Select.vue';
@@ -58,7 +59,6 @@ const spotFormComposable = useSpotForm({
 
 const {
   showSpotForm,
-  spotForm,
   newSpotDraft,
   openSpotForm,
   closeSpotForm,
@@ -92,23 +92,25 @@ const {
   editSpotReferencePoints,
   spotPickerCenter,
   showSpotScheduleSection,
-  editSpotScheduledItems,
-  toggleScheduledItemDone,
-  removeScheduledItemFromSpot,
-  openScheduledItemDetail,
+  spotDoneSummary,
+  isScheduledDateDone,
+  toggleScheduledDateDone,
+  toggleSpotDone,
+  removeScheduledDate,
+  openScheduledDateInCalendar,
   addSchedulePopoverOpen,
   addScheduleDateVal,
   addScheduleBtnRef,
   addScheduleMenuStyle,
   toggleAddSchedulePopover,
   submitAddSpotToDate,
-  removeScheduledDateFromNewSpot,
   modalTourAssignments,
   toggleTourAssignment,
   createTourAssignment,
   removeTourTitle,
   getTourDate,
   isTourTravel,
+  isTourDone,
   onSpotMapsLinkUpdate,
   onSpotLocationSelect,
   spotLocationPickerRef,
@@ -126,6 +128,7 @@ const {
   isEditSpotAmountModified,
   isEditSpotPaidByModified,
   isEditSpotLinkModified,
+  isEditSpotDoneModified,
 } = spotFormComposable;
 
 const isAccommodation = computed(() => activeSpotForm.value.category === 'Unterkunft');
@@ -136,11 +139,7 @@ function onLinkBlur() {
   }
 }
 
-const scheduledCount = computed(() =>
-  editingSpot.value !== null
-    ? editSpotScheduledItems.value.length
-    : (spotForm.value.scheduledDates?.length ?? 0)
-);
+const scheduledCount = computed(() => activeSpotForm.value.scheduledDates?.length ?? 0);
 
 const manualRegionVisible = ref(false);
 
@@ -223,9 +222,9 @@ async function handleDeleteSpot() {
   }
 }
 
-function handleOpenScheduledItem(item: SpotDateEntry) {
-  openScheduledItemDetail(item);
-  emit('openScheduleDetail', item);
+function handleOpenScheduledDate(date: string) {
+  openScheduledDateInCalendar(date);
+  emit('openScheduleDetail', { date });
 }
 </script>
 
@@ -477,6 +476,20 @@ function handleOpenScheduledItem(item: SpotDateEntry) {
         <RichTextEditor v-model="activeSpotForm.note" placeholder="Notiz" compact expandable />
       </FormField>
 
+      <DoneStatusField
+        v-if="!isAccommodation"
+        :done="spotDoneSummary.done"
+        :partially-done="spotDoneSummary.partiallyDone"
+        :planned="spotDoneSummary.planned"
+        :disabled="spotDoneSummary.disabled"
+        :toggle-label="spotDoneSummary.toggleLabel"
+        :status-hint="spotDoneSummary.statusHint"
+        :modified="isEditSpotDoneModified"
+        :aria-label="spotDoneSummary.ariaLabel"
+        :title="spotDoneSummary.title"
+        @toggle="toggleSpotDone"
+      />
+
       <!-- Kombiniertes "Einplanen"-Fieldset: Touren zuordnen + Datum einplanen in einem Bereich -->
       <CollapsibleFieldset
         v-model="showSpotScheduleSection"
@@ -552,7 +565,10 @@ function handleOpenScheduledItem(item: SpotDateEntry) {
             v-for="title in activeSpotForm.tourTitles"
             :key="'tour-' + title"
             class="assign-chip tour-chip"
-            :class="isTourTravel(title) ? 'assign-chip--travel' : 'assign-chip--tour'"
+            :class="[
+              isTourTravel(title) ? 'assign-chip--travel' : 'assign-chip--tour',
+              { 'is-done': isTourDone(title) },
+            ]"
             variant="custom"
             size="md"
             closable
@@ -563,8 +579,19 @@ function handleOpenScheduledItem(item: SpotDateEntry) {
           >
             <span
               class="assign-chip-action"
-              :title="title + (getTourDate(title) ? ` · ${formatDate(getTourDate(title)!)}` : '')"
+              :title="
+                title +
+                (getTourDate(title) ? ` · ${formatDate(getTourDate(title)!)}` : '') +
+                (isTourDone(title) ? ' · Gemacht' : '')
+              "
             >
+              <AppIcon
+                v-if="isTourDone(title)"
+                :icon="ACTION_ICONS.done"
+                :size="14"
+                group="actions"
+                class="assign-chip-tour-done-icon"
+              />
               <AppIcon
                 :icon="
                   isTourTravel(title) ? SECTION_ICON_DEFS.travel : SECTION_ICON_DEFS.excursions
@@ -581,64 +608,57 @@ function handleOpenScheduledItem(item: SpotDateEntry) {
             </span>
           </Badge>
 
-          <!-- Termin-Chips: grau (--color-calendar-appointment) -->
-          <template v-if="editingSpot !== null">
-            <Badge
-              v-for="item in editSpotScheduledItems"
-              :key="'sched-' + item.id"
-              class="assign-chip assign-chip--schedule"
-              :class="{ 'is-done': !!item.done }"
-              variant="custom"
-              size="md"
-              closable
-              close-button-class="assign-chip-remove"
-              :close-aria-label="`Termin am ${formatDate(item.date)} entfernen`"
-              close-title="Termin entfernen"
-              @close="removeScheduledItemFromSpot(item)"
+          <!-- Termin-Chips: grau (--color-calendar-appointment), grün wenn besucht -->
+          <Badge
+            v-for="date in activeSpotForm.scheduledDates"
+            :key="'sched-' + date"
+            class="assign-chip assign-chip--schedule"
+            :class="{ 'is-done': isScheduledDateDone(date) }"
+            variant="custom"
+            size="md"
+            closable
+            close-button-class="assign-chip-remove"
+            :close-aria-label="`Termin am ${formatDate(date)} entfernen`"
+            close-title="Termin entfernen"
+            @close="removeScheduledDate(date)"
+          >
+            <button
+              v-if="!isAccommodation"
+              type="button"
+              class="assign-chip-done-toggle"
+              :title="
+                isScheduledDateDone(date) ? 'Als nicht besucht markieren' : 'Als besucht markieren'
+              "
+              :aria-label="
+                isScheduledDateDone(date) ? 'Als nicht besucht markieren' : 'Als besucht markieren'
+              "
+              @click.stop="toggleScheduledDateDone(date)"
             >
-              <button
-                type="button"
-                class="assign-chip-done-toggle"
-                :title="item.done ? 'Als nicht besucht markieren' : 'Als besucht markieren'"
-                :aria-label="item.done ? 'Als nicht besucht markieren' : 'Als besucht markieren'"
-                @click.stop="toggleScheduledItemDone(item)"
-              >
-                <AppIcon
-                  :icon="item.done ? ACTION_ICONS.done : ACTION_ICONS.notDone"
-                  :size="14"
-                  group="actions"
-                />
-              </button>
-              <button
-                type="button"
-                class="assign-chip-action"
-                title="Termin im Kalender öffnen"
-                @click="handleOpenScheduledItem(item)"
-              >
-                <span class="assign-chip-label">{{ formatDate(item.date) }}</span>
-              </button>
-            </Badge>
-          </template>
-
-          <template v-else>
-            <Badge
-              v-for="date in spotForm.scheduledDates"
-              :key="'new-sched-' + date"
-              class="assign-chip assign-chip--schedule"
-              variant="custom"
-              size="md"
-              closable
-              close-button-class="assign-chip-remove"
-              :close-aria-label="`Termin am ${formatDate(date)} entfernen`"
-              close-title="Termin entfernen"
-              @close="removeScheduledDateFromNewSpot(date)"
+              <AppIcon
+                :icon="isScheduledDateDone(date) ? ACTION_ICONS.done : ACTION_ICONS.notDone"
+                :size="14"
+                group="actions"
+              />
+            </button>
+            <button
+              v-if="editingSpot !== null"
+              type="button"
+              class="assign-chip-action"
+              title="Termin im Kalender öffnen"
+              @click="handleOpenScheduledDate(date)"
             >
-              <span class="assign-chip-action">
-                <AppIcon :icon="FORM_FIELD_ICONS.date" :size="14" group="formFields" />
-                <span class="assign-chip-label">{{ formatDate(date) }}</span>
-              </span>
-            </Badge>
-          </template>
+              <span class="assign-chip-label">{{ formatDate(date) }}</span>
+            </button>
+            <span v-else class="assign-chip-action">
+              <AppIcon
+                v-if="isAccommodation"
+                :icon="FORM_FIELD_ICONS.date"
+                :size="14"
+                group="formFields"
+              />
+              <span class="assign-chip-label">{{ formatDate(date) }}</span>
+            </span>
+          </Badge>
         </div>
       </CollapsibleFieldset>
 
@@ -915,6 +935,11 @@ function handleOpenScheduledItem(item: SpotDateEntry) {
   background: color-mix(in srgb, var(--color-success) 18%, transparent);
   border-color: color-mix(in srgb, var(--color-success) 45%, transparent);
   color: var(--color-success);
+}
+
+.assign-chip-tour-done-icon {
+  color: var(--color-success);
+  flex-shrink: 0;
 }
 
 .assign-chip-done-toggle {

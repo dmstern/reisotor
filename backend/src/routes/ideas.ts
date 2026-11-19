@@ -76,6 +76,7 @@ interface IdeaBody {
   luggage?: string | null;
   seat?: string | null;
   ticket_link?: string | null;
+  done?: boolean | number;
 }
 
 interface IdeaRow {
@@ -606,6 +607,11 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       budgetExpenseId
     );
     const ideaId = result.lastInsertRowid as number;
+
+    if (req.body.done !== undefined) {
+      updateIdeaDoneStmt.run(req.body.done ? 1 : 0, ideaId);
+    }
+
     syncExcursionSpots(ideaId, spot_ids ?? []);
     syncExcursionLegs({
       ideaId,
@@ -732,6 +738,11 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const ideaId = Number(req.params.id);
+
+    if (req.body.done !== undefined) {
+      updateIdeaDoneStmt.run(req.body.done ? 1 : 0, ideaId);
+    }
+
     syncExcursionSpots(ideaId, spot_ids ?? []);
     syncExcursionLegs({
       ideaId,

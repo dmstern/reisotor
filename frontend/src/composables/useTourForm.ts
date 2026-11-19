@@ -11,6 +11,7 @@ export interface ExcursionFormData {
   image_url: string;
   note: string;
   date: string;
+  done: boolean;
   spot_ids: number[];
   role: IdeaRole | '';
   legs: ExcursionLeg[];
@@ -23,6 +24,7 @@ export function emptyExcursionForm(): ExcursionFormData {
     image_url: '',
     note: '',
     date: '',
+    done: false,
     spot_ids: [] as number[],
     role: '' as IdeaRole | '',
     legs: [] as ExcursionLeg[],
@@ -37,6 +39,7 @@ export function tourPayload(form: ExcursionFormData) {
     note: form.note && !isEmptyRichText(form.note) ? form.note : undefined,
     note_format: 'html' as const,
     date: form.date || undefined,
+    done: Boolean(form.done),
     spot_ids: form.spot_ids,
     role: form.role ? form.role : null,
     legs: form.legs,
@@ -137,6 +140,14 @@ export function useTourForm(options: UseTourFormOptions) {
     }
 
     return (editExcursionForm.value.date || '') !== (initialEditingExcursion.value.date || '');
+  });
+
+  const isEditTourDoneModified = computed(() => {
+    if (!initialEditingExcursion.value) {
+      return false;
+    }
+
+    return Boolean(editExcursionForm.value.done) !== Boolean(initialEditingExcursion.value.done);
   });
 
   const isEditTourNoteModified = computed(() => {
@@ -260,6 +271,7 @@ export function useTourForm(options: UseTourFormOptions) {
       image_url: excursion.image_url ?? '',
       note: excursion.note ?? '',
       date: excursion.date ?? '',
+      done: Boolean(excursion.done),
       spot_ids: [...excursion.spot_ids],
       role: excursion.role ?? '',
       legs: excursion.legs ? excursion.legs.map((leg) => ({ ...leg })) : [],
@@ -402,6 +414,7 @@ export function useTourForm(options: UseTourFormOptions) {
     initialEditingExcursion,
     isEditTourTitleModified,
     isEditTourDateModified,
+    isEditTourDoneModified,
     isEditTourNoteModified,
     isEditTourRoleModified,
     isExcursionModalDirty,

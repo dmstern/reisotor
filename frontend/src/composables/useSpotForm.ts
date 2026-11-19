@@ -1,6 +1,6 @@
 import { ref, computed, watch, nextTick, type Ref } from 'vue';
 import { api } from '../api/client';
-import type { Spot, SpotDateEntry, User } from '../api/types';
+import type { Excursion, Spot, User } from '../api/types';
 import { useSpotsStore } from '../stores/spots';
 import { useTripStore } from '../stores/trip';
 import { useAuthStore } from '../stores/auth';
@@ -10,6 +10,7 @@ import { useDraftAutosave } from './useDraftAutosave';
 import { useToast } from './useToast';
 import { parseLatLngFromMapsLink, tilePreviewUrl, buildGoogleMapsLink } from '../utils/googleMaps';
 import { computePopoverPosition } from '../utils/popoverPosition';
+import { formatDate } from '../utils/dateFormat';
 import {
   spotCategoryMeta,
   isHomeCategory,
@@ -23,6 +24,17 @@ import { isBookingLink } from '../utils/locationInputClassifier';
 import type LocationPicker from '../components/LocationPicker.vue';
 import type { PlaceSearchResult } from '../components/LocationPicker.vue';
 import type { TourItem } from '../components/TourAssignDropdown.vue';
+
+export interface SpotDoneSummary {
+  done: boolean;
+  partiallyDone: boolean;
+  planned: boolean;
+  disabled: boolean;
+  toggleLabel: string;
+  statusHint: string;
+  ariaLabel: string;
+  title: string;
+}
 
 export interface SpotFormData {
   title: string;
@@ -40,8 +52,10 @@ export interface SpotFormData {
   amount: string;
   paid_by_user_id: string;
   link: string;
+  done: boolean;
   tourTitles: string[];
   scheduledDates: string[];
+  scheduledDateDone: Record<string, boolean>;
   scheduledDate?: string;
 }
 
@@ -77,9 +91,136 @@ export function emptySpotForm(): SpotFormData {
     amount: '',
     paid_by_user_id: '',
     link: '',
+    done: false,
     tourTitles: [] as string[],
     scheduledDates: [] as string[],
+    scheduledDateDone: {} as Record<string, boolean>,
     scheduledDate: '',
+  };
+}
+
+interface BuildSpotDoneSummaryOptions {
+  scheduledDates: string[];
+  scheduledDateDone: Record<string, boolean>;
+  formDone: boolean;
+  assignedDatedTours: Excursion[];
+}
+
+function buildDirectDatesDoneSummary(
+  scheduledDates: string[],
+  scheduledDateDone: Record<string, boolean>
+): SpotDoneSummary {
+  const total = scheduledDates.length;
+  const doneCount = scheduledDates.filter((date) => Boolean(scheduledDateDone[date])).length;
+  const allDone = doneCount === total;
+  const partiallyDone = doneCount > 0 && !allDone;
+  const toggleLabel = partiallyDone ? `Besucht (${doneCount}/${total})` : 'Besucht';
+
+  let statusHint = `Geplant an ${total} Tagen`;
+
+  if (total === 1) {
+    const formatted = formatDate(scheduledDates[0]);
+    statusHint = allDone ? `Besucht am ${formatted}` : `Geplant für ${formatted}`;
+  } else if (allDone) {
+    statusHint = `An allen ${total} Tagen besucht`;
+  } else if (partiallyDone) {
+    statusHint = `An ${doneCount} von ${total} Tagen besucht`;
+  }
+
+  let ariaLabel = 'Als besucht markieren';
+  let title = 'Als besucht markieren';
+
+  if (allDone) {
+    ariaLabel = 'Nicht mehr als besucht markieren';
+    title = 'Als nicht besucht markieren';
+  } else if (total > 1) {
+    ariaLabel = 'Alle Termine als besucht markieren';
+    title = 'Alle Termine als besucht markieren';
+  }
+
+  return {
+    done: allDone,
+    partiallyDone,
+    planned: true,
+    disabled: false,
+    toggleLabel,
+    statusHint,
+    ariaLabel,
+    title,
+  };
+}
+
+export function buildSpotDoneSummary(options: BuildSpotDoneSummaryOptions): SpotDoneSummary {
+  const { scheduledDates, scheduledDateDone, formDone, assignedDatedTours } = options;
+
+  if (scheduledDates.length > 0) {
+    return buildDirectDatesDoneSummary(scheduledDates, scheduledDateDone);
+  }
+
+  const doneDatedTours = assignedDatedTours.filter((tour) => Boolean(tour.done));
+
+  if (
+    !formDone &&
+    assignedDatedTours.length > 0 &&
+    doneDatedTours.length === assignedDatedTours.length
+  ) {
+    const tourHint =
+      doneDatedTours.length === 1
+        ? `Über Tour „${doneDatedTours[0].title}“ als besucht markiert`
+        : 'Über zugeordnete Touren als besucht markiert';
+    return {
+      done: true,
+      partiallyDone: false,
+      planned: true,
+      disabled: true,
+      toggleLabel: 'Besucht',
+      statusHint: tourHint,
+      ariaLabel: tourHint,
+      title: tourHint,
+    };
+  }
+
+  if (formDone) {
+    const statusHint =
+      assignedDatedTours.length > 0 ? 'Als besucht markiert' : 'Ohne Datum als besucht markiert';
+    return {
+      done: true,
+      partiallyDone: false,
+      planned: assignedDatedTours.length > 0,
+      disabled: false,
+      toggleLabel: 'Besucht',
+      statusHint,
+      ariaLabel: 'Nicht mehr als besucht markieren',
+      title: 'Als nicht besucht markieren',
+    };
+  }
+
+  if (assignedDatedTours.length > 0) {
+    const singleTourDate = assignedDatedTours.length === 1 ? assignedDatedTours[0].date : null;
+    const tourHint = singleTourDate
+      ? `Geplant über Tour (${formatDate(singleTourDate)})`
+      : `Geplant über ${assignedDatedTours.length} Touren`;
+    return {
+      done: false,
+      partiallyDone: false,
+      planned: true,
+      disabled: false,
+      toggleLabel: 'Besucht',
+      statusHint: tourHint,
+      ariaLabel: 'Als besucht markieren',
+      title: 'Als besucht markieren',
+    };
+  }
+
+  return {
+    done: false,
+    partiallyDone: false,
+    planned: false,
+    disabled: false,
+    toggleLabel: 'Besucht',
+    statusHint: 'Noch nicht besucht',
+    ariaLabel: 'Als besucht markieren',
+    title: 'Als besucht markieren',
   };
 }
 
@@ -308,6 +449,37 @@ export function useSpotForm(options: UseSpotFormOptions) {
     return (editSpotForm.value.link || '').trim() !== (editingSpot.value.link || '').trim();
   });
 
+  const isEditSpotDoneModified = computed(() => {
+    if (!editingSpot.value) {
+      return false;
+    }
+
+    const initialDates = editingSpot.value.dates ?? [];
+    const currentDates = editSpotForm.value.scheduledDates ?? [];
+    const initialMap = new Map(initialDates.map((entry) => [entry.date, Boolean(entry.done)]));
+
+    const anySharedDateDoneChanged = currentDates.some(
+      (date) =>
+        initialMap.has(date) &&
+        Boolean(editSpotForm.value.scheduledDateDone?.[date]) !== initialMap.get(date)
+    );
+
+    if (anySharedDateDoneChanged) {
+      return true;
+    }
+
+    const initialOverallDone =
+      initialDates.length > 0
+        ? initialDates.some((entry) => Boolean(entry.done))
+        : Boolean(editingSpot.value.done);
+    const currentOverallDone =
+      currentDates.length > 0
+        ? currentDates.some((date) => Boolean(editSpotForm.value.scheduledDateDone?.[date]))
+        : Boolean(editSpotForm.value.done);
+
+    return currentOverallDone !== initialOverallDone;
+  });
+
   const isEditSpotDirty = computed(
     () => editSpotDraft.isDirty.value || isEditSpotLocationModified.value
   );
@@ -363,6 +535,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
     const category = initialCategory ?? '';
     spotForm.value.category = category;
     spotForm.value.is_home = isHomeCategory(category);
+    spotForm.value.done = Boolean(spotForm.value.done);
     showSpotLocationSection.value = category === 'Unterkunft' || isHomeCategory(category);
 
     if (initialTourTitle) {
@@ -381,38 +554,95 @@ export function useSpotForm(options: UseSpotFormOptions) {
       spotForm.value.scheduledDates = [];
     }
 
+    if (!spotForm.value.scheduledDateDone || typeof spotForm.value.scheduledDateDone !== 'object') {
+      spotForm.value.scheduledDateDone = {};
+    }
+
     showSpotScheduleSection.value =
       spotForm.value.tourTitles.length > 0 || spotForm.value.scheduledDates.length > 0;
     showSpotForm.value = true;
   }
 
-  const editSpotScheduledItems = computed<SpotDateEntry[]>(() => {
-    if (!editingSpot.value) {
-      return [];
-    }
-
-    const storeSpot = spotsStore.spots.find((spot) => spot.id === editingSpot.value!.id);
-    return storeSpot?.dates ?? editingSpot.value.dates ?? [];
+  const assignedDatedTours = computed<Excursion[]>(() => {
+    const lowerTitles = new Set(
+      activeSpotForm.value.tourTitles.map((tourTitle) => tourTitle.trim().toLowerCase())
+    );
+    return excursionsStore.excursions.filter(
+      (excursion) => Boolean(excursion.date) && lowerTitles.has(excursion.title.toLowerCase())
+    );
   });
 
-  async function toggleScheduledItemDone(item: SpotDateEntry) {
-    if (!editingSpot.value) {
+  const spotDoneSummary = computed<SpotDoneSummary>(() =>
+    buildSpotDoneSummary({
+      scheduledDates: activeSpotForm.value.scheduledDates ?? [],
+      scheduledDateDone: activeSpotForm.value.scheduledDateDone ?? {},
+      formDone: Boolean(activeSpotForm.value.done),
+      assignedDatedTours: assignedDatedTours.value,
+    })
+  );
+
+  function isScheduledDateDone(date: string): boolean {
+    return Boolean(activeSpotForm.value.scheduledDateDone?.[date]);
+  }
+
+  function toggleScheduledDateDone(date: string) {
+    const form = activeSpotForm.value;
+    const currentMap = form.scheduledDateDone ?? {};
+    const nextDone = !Boolean(currentMap[date]);
+    form.scheduledDateDone = { ...currentMap, [date]: nextDone };
+    form.done = form.scheduledDates.some((scheduledDate) =>
+      Boolean(form.scheduledDateDone?.[scheduledDate])
+    );
+  }
+
+  function toggleSpotDone() {
+    if (spotDoneSummary.value.disabled) {
       return;
     }
 
-    await spotsStore.updateDate(editingSpot.value.id, item.id, { done: !item.done });
-  }
+    const form = activeSpotForm.value;
 
-  async function removeScheduledItemFromSpot(item: SpotDateEntry) {
-    if (!editingSpot.value) {
+    if (form.scheduledDates.length > 0) {
+      const allDone = form.scheduledDates.every((date) => Boolean(form.scheduledDateDone?.[date]));
+      const nextDone = !allDone;
+      const nextMap: Record<string, boolean> = {};
+
+      for (const date of form.scheduledDates) {
+        nextMap[date] = nextDone;
+      }
+
+      form.scheduledDateDone = nextMap;
+      form.done = nextDone;
       return;
     }
 
-    await spotsStore.removeDate(editingSpot.value.id, item.id);
+    form.done = !form.done;
   }
 
-  function openScheduledItemDetail(item: SpotDateEntry) {
-    drawers.openCalendar(item.date);
+  function removeScheduledDate(date: string) {
+    const form = activeSpotForm.value;
+
+    if (!Array.isArray(form.scheduledDates)) {
+      return;
+    }
+
+    form.scheduledDates = form.scheduledDates.filter((scheduledDate) => scheduledDate !== date);
+
+    if (form.scheduledDateDone && date in form.scheduledDateDone) {
+      const nextMap = { ...form.scheduledDateDone };
+      delete nextMap[date];
+      form.scheduledDateDone = nextMap;
+    }
+
+    if (form.scheduledDates.length > 0) {
+      form.done = form.scheduledDates.some((scheduledDate) =>
+        Boolean(form.scheduledDateDone?.[scheduledDate])
+      );
+    }
+  }
+
+  function openScheduledDateInCalendar(date: string) {
+    drawers.openCalendar(date);
   }
 
   const spotPickerCenter = computed(() => {
@@ -473,7 +703,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
         !!val.address ||
         (val.lat != null && val.lng != null);
       showSpotScheduleSection.value =
-        editSpotForm.value.tourTitles.length > 0 || editSpotScheduledItems.value.length > 0;
+        editSpotForm.value.tourTitles.length > 0 || editSpotForm.value.scheduledDates.length > 0;
     } else {
       showEditSpotLocationSection.value = false;
       showSpotScheduleSection.value = false;
@@ -536,6 +766,13 @@ export function useSpotForm(options: UseSpotFormOptions) {
       (e) => e.title.toLowerCase() === title.trim().toLowerCase()
     );
     return !!tour?.role;
+  }
+
+  function isTourDone(title: string): boolean {
+    const tour = excursionsStore.excursions.find(
+      (e) => e.title.toLowerCase() === title.trim().toLowerCase()
+    );
+    return Boolean(tour?.done);
   }
 
   function removeTourTitle(title: string) {
@@ -640,38 +877,27 @@ export function useSpotForm(options: UseSpotFormOptions) {
     }
   }
 
-  async function submitAddSpotToDate() {
+  function submitAddSpotToDate() {
     const date = addScheduleDateVal.value;
 
     if (!date || !/^[1-9]\d{3}-\d{2}-\d{2}$/.test(date)) {
       return;
     }
 
-    if (editingSpot.value !== null) {
-      await spotsStore.addDate(editingSpot.value.id, date);
-    } else {
-      if (!Array.isArray(spotForm.value.scheduledDates)) {
-        spotForm.value.scheduledDates = [];
-      }
+    const form = activeSpotForm.value;
 
-      if (!spotForm.value.scheduledDates.includes(date)) {
-        spotForm.value.scheduledDates.push(date);
-        spotForm.value.scheduledDates.sort();
-      }
+    if (!Array.isArray(form.scheduledDates)) {
+      form.scheduledDates = [];
+    }
+
+    if (!form.scheduledDates.includes(date)) {
+      const inheritDone = form.scheduledDates.length === 0 && Boolean(form.done);
+      form.scheduledDates = [...form.scheduledDates, date].sort();
+      form.scheduledDateDone = { ...(form.scheduledDateDone ?? {}), [date]: inheritDone };
     }
 
     addScheduleDateVal.value = '';
     addSchedulePopoverOpen.value = false;
-  }
-
-  function removeScheduledDateFromNewSpot(date: string) {
-    if (!Array.isArray(spotForm.value.scheduledDates)) {
-      return;
-    }
-
-    spotForm.value.scheduledDates = spotForm.value.scheduledDates.filter(
-      (scheduledDate) => scheduledDate !== date
-    );
   }
 
   const spotReferencePoints = computed(() =>
@@ -898,6 +1124,19 @@ export function useSpotForm(options: UseSpotFormOptions) {
       }
     }
 
+    let normalizedDates = Array.isArray(formData.scheduledDates) ? formData.scheduledDates : [];
+
+    if (normalizedDates.length === 0 && formData.scheduledDate) {
+      normalizedDates = [formData.scheduledDate];
+    }
+
+    const datesPayload = normalizedDates.map((date) => ({
+      date,
+      done: Boolean(formData.scheduledDateDone?.[date]),
+    }));
+    const effectiveDone =
+      datesPayload.length > 0 ? datesPayload.some((entry) => entry.done) : Boolean(formData.done);
+
     return {
       trip_id: tripId,
       title: formData.title.trim(),
@@ -918,6 +1157,8 @@ export function useSpotForm(options: UseSpotFormOptions) {
       amount: formData.amount ? Number(formData.amount) : undefined,
       paid_by_user_id: paidByUserId,
       link: formData.link?.trim() ? normalizeWebUrl(formData.link) : null,
+      done: effectiveDone,
+      dates: datesPayload,
     };
   }
 
@@ -1054,18 +1295,6 @@ export function useSpotForm(options: UseSpotFormOptions) {
     }
 
     await syncSpotTours(result.id, spotForm.value.tourTitles);
-    let datesToSchedule: string[] = [];
-
-    if (spotForm.value.scheduledDates?.length) {
-      datesToSchedule = spotForm.value.scheduledDates;
-    } else if (spotForm.value.scheduledDate) {
-      datesToSchedule = [spotForm.value.scheduledDate];
-    }
-
-    for (const schedDate of datesToSchedule) {
-      await spotsStore.addDate(result.id, schedDate);
-    }
-
     closeSpotForm();
     return result;
   }
@@ -1148,33 +1377,52 @@ export function useSpotForm(options: UseSpotFormOptions) {
     isFetchingSpotPreview.value = false;
     spotTitleTouched.value = false;
     selectedSpotCity.value = null;
-    spotPreviewImages.value = spot.image_url ? [spot.image_url] : [];
-    const isZuhause = isHomeCategory(spot.category);
+    const latestSpot = spotsStore.spots.find((item) => item.id === spot.id) ?? spot;
+    spotPreviewImages.value = latestSpot.image_url ? [latestSpot.image_url] : [];
+    const isZuhause = isHomeCategory(latestSpot.category);
+    const existingDates = latestSpot.dates ?? [];
+    const scheduledDates = existingDates.map((entry) => entry.date).sort();
+    const scheduledDateDone: Record<string, boolean> = {};
+
+    for (const entry of existingDates) {
+      scheduledDateDone[entry.date] = Boolean(entry.done);
+    }
+
+    const initialDone =
+      scheduledDates.length > 0
+        ? scheduledDates.some((date) => scheduledDateDone[date])
+        : Boolean(latestSpot.done);
+
     editSpotForm.value = {
-      title: spot.title,
-      image_url: spot.image_url ?? '',
-      maps_link: spot.maps_link ?? '',
-      note: spot.note ?? '',
-      category: spot.category ?? '',
-      is_home: isZuhause ? true : !!spot.is_home,
-      address: spot.address ?? '',
-      start_date: spot.start_date ?? '',
-      end_date: spot.end_date ?? '',
-      checkin: spot.checkin ?? '',
-      checkout: spot.checkout ?? '',
-      contact: spot.contact ?? '',
-      amount: spot.amount != null ? String(spot.amount) : '',
-      paid_by_user_id: spot.paid_by_user_id != null ? String(spot.paid_by_user_id) : '',
-      link: spot.link ?? '',
-      tourTitles: tourTitlesFor(spot.id),
-      scheduledDates: [],
-      scheduledDate: spotScheduledDates.value.get(spot.id) ?? '',
+      title: latestSpot.title,
+      image_url: latestSpot.image_url ?? '',
+      maps_link: latestSpot.maps_link ?? '',
+      note: latestSpot.note ?? '',
+      category: latestSpot.category ?? '',
+      is_home: isZuhause ? true : !!latestSpot.is_home,
+      address: latestSpot.address ?? '',
+      start_date: latestSpot.start_date ?? '',
+      end_date: latestSpot.end_date ?? '',
+      checkin: latestSpot.checkin ?? '',
+      checkout: latestSpot.checkout ?? '',
+      contact: latestSpot.contact ?? '',
+      amount: latestSpot.amount != null ? String(latestSpot.amount) : '',
+      paid_by_user_id: latestSpot.paid_by_user_id != null ? String(latestSpot.paid_by_user_id) : '',
+      link: latestSpot.link ?? '',
+      done: initialDone,
+      tourTitles: tourTitlesFor(latestSpot.id),
+      scheduledDates,
+      scheduledDateDone,
+      scheduledDate: spotScheduledDates.value.get(latestSpot.id) ?? '',
     };
-    const pin = spot.lat != null && spot.lng != null ? { lat: spot.lat, lng: spot.lng } : null;
+    const pin =
+      latestSpot.lat != null && latestSpot.lng != null
+        ? { lat: latestSpot.lat, lng: latestSpot.lng }
+        : null;
     editSpotManualPin.value = pin;
     spotManualPin.value = pin;
     editSpotLocationError.value = false;
-    editingSpot.value = spot;
+    editingSpot.value = latestSpot;
   }
 
   async function submitEditSpot() {
@@ -1304,17 +1552,18 @@ export function useSpotForm(options: UseSpotFormOptions) {
     showSpotLocationSection,
     showEditSpotLocationSection,
     showSpotScheduleSection,
-    editSpotScheduledItems,
-    toggleScheduledItemDone,
-    removeScheduledItemFromSpot,
-    openScheduledItemDetail,
+    spotDoneSummary,
+    isScheduledDateDone,
+    toggleScheduledDateDone,
+    toggleSpotDone,
+    removeScheduledDate,
+    openScheduledDateInCalendar,
     addSchedulePopoverOpen,
     addScheduleDateVal,
     addScheduleBtnRef,
     addScheduleMenuStyle,
     toggleAddSchedulePopover,
     submitAddSpotToDate,
-    removeScheduledDateFromNewSpot,
     allTourTitles,
     tourTitlesFor,
     removeTourTitle,
@@ -1323,6 +1572,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
     createTourAssignment,
     getTourDate,
     isTourTravel,
+    isTourDone,
     onSpotMapsLinkUpdate,
     onSpotLocationSelect,
     spotLocationPickerRef,
@@ -1342,5 +1592,6 @@ export function useSpotForm(options: UseSpotFormOptions) {
     isEditSpotAmountModified,
     isEditSpotPaidByModified,
     isEditSpotLinkModified,
+    isEditSpotDoneModified,
   };
 }

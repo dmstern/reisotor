@@ -30,6 +30,7 @@ export interface SpotFormData {
   amount?: number;
   paid_by_user_id?: number | null;
   dates?: { date: string; done?: boolean | number }[];
+  done?: boolean;
 }
 
 // Eigener Store statt lokalem State in ExcursionsView (analog zu stores/excursions.ts): Spots
