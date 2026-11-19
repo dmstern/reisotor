@@ -310,7 +310,7 @@ defineExpose({
                 :data-testid="context === 'trip' ? 'trip-coords-set' : 'spot-coords-set'"
                 :title="`${modelValue.lat.toFixed(5)}, ${modelValue.lng.toFixed(5)}`"
               >
-                <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="13" group="formFields" />
+                <AppIcon :icon="FORM_FIELD_ICONS.pinSet" :size="13" group="formFields" />
                 <span>Pin gesetzt</span>
                 <span class="status-coords sr-only">
                   {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
