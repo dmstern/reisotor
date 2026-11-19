@@ -161,6 +161,86 @@ describe('spots route coordinate preservation', () => {
     expect(spot.lng).toBeNull();
   });
 
+  it('manages visit dates via /spots/:id/dates without touching schedule_items and keeps done on date removal (#800)', async () => {
+    const createRes = await app.inject({
+      method: 'POST',
+      url: '/api/spots',
+      headers: { cookie },
+      payload: { trip_id: tripId, title: 'Café Pastéis', category: 'Essen & Trinken' },
+    });
+    expect(createRes.statusCode).toBe(201);
+    const spotId = createRes.json().id as number;
+    expect(createRes.json().dates).toEqual([]);
+
+    const addDate1 = await app.inject({
+      method: 'POST',
+      url: `/api/spots/${spotId}/dates`,
+      headers: { cookie },
+      payload: { date: '2026-06-02', done: true },
+    });
+    expect(addDate1.statusCode).toBe(201);
+    expect(addDate1.json().spot_done).toBe(true);
+    expect(addDate1.json().dates).toHaveLength(1);
+    const date1Id = addDate1.json().entry.id as number;
+
+    const addDate2 = await app.inject({
+      method: 'POST',
+      url: `/api/spots/${spotId}/dates`,
+      headers: { cookie },
+      payload: { date: '2026-06-05' },
+    });
+    expect(addDate2.statusCode).toBe(201);
+    const date2Id = addDate2.json().entry.id as number;
+
+    const patchRes = await app.inject({
+      method: 'PATCH',
+      url: `/api/spots/${spotId}/dates/${date2Id}`,
+      headers: { cookie },
+      payload: { done: true },
+    });
+    expect(patchRes.statusCode).toBe(200);
+    expect(patchRes.json().entry.done).toBe(1);
+
+    // Manueller Kalender-Termin mit Spot als Orts-Referenz ändert weder spot_dates noch done
+    const schedRes = await app.inject({
+      method: 'POST',
+      url: '/api/schedule',
+      headers: { cookie },
+      payload: {
+        trip_id: tripId,
+        date: '2026-06-09',
+        title: 'Abendessen',
+        spot_id: spotId,
+        done: false,
+      },
+    });
+    expect(schedRes.statusCode).toBe(201);
+
+    const del1 = await app.inject({
+      method: 'DELETE',
+      url: `/api/spots/${spotId}/dates/${date1Id}`,
+      headers: { cookie },
+    });
+    expect(del1.statusCode).toBe(204);
+
+    const del2 = await app.inject({
+      method: 'DELETE',
+      url: `/api/spots/${spotId}/dates/${date2Id}`,
+      headers: { cookie },
+    });
+    expect(del2.statusCode).toBe(204);
+
+    // Nach Entfernen aller Besuchstage bleibt done = 1 auf dem Spot erhalten (#800)
+    const getRes = await app.inject({
+      method: 'GET',
+      url: `/api/spots?trip_id=${tripId}`,
+      headers: { cookie },
+    });
+    const updatedSpot = getRes.json().find((s: { id: number }) => s.id === spotId);
+    expect(updatedSpot.dates).toEqual([]);
+    expect(updatedSpot.done).toBe(1);
+  });
+
   describe('GET /api/spots/preview', () => {
     afterEach(() => {
       vi.unstubAllGlobals();

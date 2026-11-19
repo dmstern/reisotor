@@ -552,15 +552,12 @@ const lisbonAirportSpotId = insertSpot.run(
 
 const insertTravelIdea = db.prepare(
   `INSERT INTO ideas (
-    trip_id, title, note, created_by, role, transport_type, departure_time, arrival_time,
+    trip_id, title, note, date, created_by, role, transport_type, departure_time, arrival_time,
     checkin_info, amount, paid_by_user_id, luggage, seat, budget_expense_id
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 );
 const insertTravelStation = db.prepare(
   'INSERT INTO excursion_spots (idea_id, spot_id, position) VALUES (?, ?, ?)'
-);
-const insertTravelSchedule = db.prepare(
-  'INSERT INTO schedule_items (trip_id, date, title, idea_id) VALUES (?, ?, ?, ?)'
 );
 
 const outboundExpenseId = insertExpense.run(
@@ -577,6 +574,7 @@ const outboundIdeaId = insertTravelIdea.run(
   tripId,
   'Hinflug nach Lissabon',
   'Direktflug',
+  fmt(startDate),
   user2.id,
   'arrival',
   'Flug',
@@ -591,7 +589,6 @@ const outboundIdeaId = insertTravelIdea.run(
 ).lastInsertRowid as number;
 insertTravelStation.run(outboundIdeaId, berlinSpotId, 0);
 insertTravelStation.run(outboundIdeaId, lisbonAirportSpotId, 1);
-insertTravelSchedule.run(tripId, fmt(startDate), 'Hinflug nach Lissabon', outboundIdeaId);
 
 const returnExpenseId = insertExpense.run(
   tripId,
@@ -607,6 +604,7 @@ const returnIdeaId = insertTravelIdea.run(
   tripId,
   'Rückflug nach Berlin',
   'Direktflug',
+  fmt(endDate),
   user1.id,
   'departure',
   'Flug',
@@ -621,15 +619,17 @@ const returnIdeaId = insertTravelIdea.run(
 ).lastInsertRowid as number;
 insertTravelStation.run(returnIdeaId, lisbonAirportSpotId, 0);
 insertTravelStation.run(returnIdeaId, berlinSpotId, 1);
-insertTravelSchedule.run(tripId, fmt(endDate), 'Rückflug nach Berlin', returnIdeaId);
 
 const panoramaTourResult = db
-  .prepare('INSERT INTO ideas (trip_id, title, image_url, note, created_by) VALUES (?, ?, ?, ?, ?)')
+  .prepare(
+    'INSERT INTO ideas (trip_id, title, image_url, note, date, created_by) VALUES (?, ?, ?, ?, ?, ?)'
+  )
   .run(
     tripId,
     'Panoramatour Alfama & Belém',
     null,
     'Rundgang vom Aussichtspunkt über die Burg hinunter zum Tejo und mit der historischen Tram weiter nach Belém.',
+    fmt(addDays(startDate, 1)),
     user1.id
   );
 const panoramaTourId = panoramaTourResult.lastInsertRowid as number;
@@ -643,15 +643,6 @@ insertStation.run(panoramaTourId, casteloSpotId, 2);
 insertStation.run(panoramaTourId, comercioSpotId, 3);
 insertStation.run(panoramaTourId, marketSpotId, 4);
 insertStation.run(panoramaTourId, belemSpotId, 5);
-
-// "Geplant" ergibt sich aus einem verknüpften Kalender-Termin statt einer eigenen Datums-Spalte
-// auf dem Ausflug (siehe Kommentar in db/index.ts/routes/ideas.ts).
-db.prepare('INSERT INTO schedule_items (trip_id, date, title, idea_id) VALUES (?, ?, ?, ?)').run(
-  tripId,
-  fmt(addDays(startDate, 1)),
-  'Panoramatour Alfama & Belém',
-  panoramaTourId
-);
 
 db.prepare('INSERT INTO idea_likes (idea_id, user_id, created_at) VALUES (?, ?, ?)').run(
   panoramaTourId,
@@ -818,17 +809,20 @@ insertLeg.run(
 
 // Bestehender Ausflug für Belém & Market (wird u. a. von E2E-Tests wie calendar.spec.ts & map-focus-covered-drawer.spec.ts gesucht)
 const belemIdeaResult = db
-  .prepare('INSERT INTO ideas (trip_id, title, image_url, note, created_by) VALUES (?, ?, ?, ?, ?)')
-  .run(tripId, 'Sightseeing-Tag Belém', null, 'Turm + danach im Market essen', user1.id);
+  .prepare(
+    'INSERT INTO ideas (trip_id, title, image_url, note, date, created_by) VALUES (?, ?, ?, ?, ?, ?)'
+  )
+  .run(
+    tripId,
+    'Sightseeing-Tag Belém',
+    null,
+    'Turm + danach im Market essen',
+    fmt(addDays(startDate, 2)),
+    user1.id
+  );
 const belemIdeaId = belemIdeaResult.lastInsertRowid as number;
 insertStation.run(belemIdeaId, belemSpotId, 0);
 insertStation.run(belemIdeaId, marketSpotId, 1);
-db.prepare('INSERT INTO schedule_items (trip_id, date, title, idea_id) VALUES (?, ?, ?, ?)').run(
-  tripId,
-  fmt(addDays(startDate, 2)),
-  'Sightseeing-Tag Belém',
-  belemIdeaId
-);
 
 db.prepare('INSERT INTO idea_likes (idea_id, user_id, created_at) VALUES (?, ?, ?)').run(
   belemIdeaId,

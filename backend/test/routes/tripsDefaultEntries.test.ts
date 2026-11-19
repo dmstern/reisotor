@@ -48,35 +48,29 @@ describe('POST /trips create_default_entries', () => {
 
     // Check ideas (tours)
     const ideas = db
-      .prepare('SELECT title, role, note_format FROM ideas WHERE trip_id = ? ORDER BY id ASC')
-      .all(tripId) as { title: string; role: string; note_format: string }[];
+      .prepare('SELECT title, role, date, note_format FROM ideas WHERE trip_id = ? ORDER BY id ASC')
+      .all(tripId) as { title: string; role: string; date: string; note_format: string }[];
 
     expect(ideas).toHaveLength(2);
     expect(ideas[0]).toEqual({
       title: 'Anreise',
       role: 'arrival',
+      date: '2026-06-01',
       note_format: 'html',
     });
     expect(ideas[1]).toEqual({
       title: 'Abreise',
       role: 'departure',
+      date: '2026-06-15',
       note_format: 'html',
     });
 
-    // Check schedule_items
+    // Keine Schatten-Termine in schedule_items (#800)
     const scheduleItems = db
       .prepare('SELECT date, title FROM schedule_items WHERE trip_id = ? ORDER BY id ASC')
       .all(tripId) as { date: string; title: string }[];
 
-    expect(scheduleItems).toHaveLength(2);
-    expect(scheduleItems[0]).toEqual({
-      date: '2026-06-01',
-      title: 'Anreise',
-    });
-    expect(scheduleItems[1]).toEqual({
-      date: '2026-06-15',
-      title: 'Abreise',
-    });
+    expect(scheduleItems).toHaveLength(0);
 
     // Check spots
     const spots = db

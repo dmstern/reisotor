@@ -47,7 +47,7 @@ describe('done requires date (#106)', () => {
     return res.json().id as number;
   }
 
-  it('rejects marking an unplanned spot as done', async () => {
+  it('allows marking an unplanned spot as done without requiring a date (#800)', async () => {
     const spotId = await createSpot('Unplanter Spot');
     const res = await app.inject({
       method: 'POST',
@@ -55,16 +55,17 @@ describe('done requires date (#106)', () => {
       headers: { cookie },
       payload: { done: true },
     });
-    expect(res.statusCode).toBe(400);
+    expect(res.statusCode).toBe(200);
+    expect(res.json().done).toBe(true);
   });
 
-  it('allows marking a spot as done once it has a directly linked schedule date', async () => {
+  it('allows marking a spot as done once it has a visit date via spot_dates', async () => {
     const spotId = await createSpot('Geplanter Spot');
     await app.inject({
       method: 'POST',
-      url: '/api/schedule',
+      url: `/api/spots/${spotId}/dates`,
       headers: { cookie },
-      payload: { trip_id: tripId, date: '2026-01-02', title: 'Geplanter Spot', spot_id: spotId },
+      payload: { date: '2026-01-02' },
     });
 
     const res = await app.inject({
@@ -81,14 +82,9 @@ describe('done requires date (#106)', () => {
     const spotId = await createSpot('Wird wieder geplant');
     await app.inject({
       method: 'POST',
-      url: '/api/schedule',
+      url: `/api/spots/${spotId}/dates`,
       headers: { cookie },
-      payload: {
-        trip_id: tripId,
-        date: '2026-01-03',
-        title: 'Wird wieder geplant',
-        spot_id: spotId,
-      },
+      payload: { date: '2026-01-03' },
     });
     await app.inject({
       method: 'POST',
@@ -126,7 +122,7 @@ describe('done requires date (#106)', () => {
     expect(res.json().done).toBe(true);
   });
 
-  it('rejects marking an unplanned tour as done', async () => {
+  it('allows marking an unplanned tour as done without requiring a date (#800)', async () => {
     const created = await app.inject({
       method: 'POST',
       url: '/api/ideas',
@@ -141,10 +137,11 @@ describe('done requires date (#106)', () => {
       headers: { cookie },
       payload: { done: true },
     });
-    expect(res.statusCode).toBe(400);
+    expect(res.statusCode).toBe(200);
+    expect(res.json().done).toBe(true);
   });
 
-  it('allows marking a tour as done once it has a schedule date', async () => {
+  it('allows marking a tour as done once it has a date', async () => {
     const created = await app.inject({
       method: 'POST',
       url: '/api/ideas',

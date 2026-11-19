@@ -693,19 +693,8 @@ if (firstTrip) {
   }
 }
 
-// Backfill für den ideas.date-Drop weiter oben: Ausflüge, die noch ein Datum aus dem alten Modell
-// tragen, bekommen dafür einen echten Termin, statt ihr Datum stillschweigend zu verlieren.
-// Braucht ideas.trip_id/schedule_items.trip_id, deshalb erst hier (nach obigem Block) statt direkt
-// bei den anderen ideas-Migrationen weiter oben.
-if (hasColumn('ideas', 'date')) {
-  db.exec(`
-    INSERT INTO schedule_items (trip_id, date, title, idea_id)
-    SELECT trip_id, date, title, id FROM ideas
-    WHERE date IS NOT NULL AND date != ''
-      AND NOT EXISTS (SELECT 1 FROM schedule_items WHERE idea_id = ideas.id)
-  `);
-  dropColumnIfExists('ideas', 'date');
-}
+// Hinweis (#800): ideas.date bleibt als direkte Datums-Spalte auf Touren erhalten (wird weiter
+// unten explizit per ensureColumn gesichert und aus alten schedule_items zurückübertragen).
 
 const DEFAULT_BUDGET_CATEGORIES = [
   'Essen & Trinken',
@@ -2262,6 +2251,127 @@ try {
 // Ermöglicht das Hinterlegen und Aufrufen von Buchungs-Links (Booking, Airbnb, Trivago etc.)
 // sowie allgemeinen Ticket- und Webseiten-Links für alle Spot-Kategorien.
 ensureColumn('spots', 'link', 'TEXT');
+
+// Direkte Kalender-Projektion (Issue #800):
+// 1. Touren (ideas) tragen ihr Datum direkt als Spalte ideas.date statt über Schatten-Termine.
+// 2. Spots unterstützen Mehrfach-Besuchstage über eine eigene Tabelle spot_dates.
+// 3. Bestehende Schatten-Termine aus schedule_items (idea_id / auto_created spot_id) sowie
+//    bestehende Tagebuch-Spot-Verknüpfungen werden einmalig und idempotent übertragen.
+ensureColumn('ideas', 'date', 'TEXT');
+ensureColumn('schedule_items', 'time', 'TEXT');
+ensureColumn('schedule_items', 'note', 'TEXT');
+
+const hadSpotDatesTable = hasTable('spot_dates');
+db.exec(`
+  CREATE TABLE IF NOT EXISTS spot_dates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+    spot_id INTEGER NOT NULL REFERENCES spots(id) ON DELETE CASCADE,
+    date TEXT NOT NULL,
+    done INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(spot_id, date)
+  );
+  CREATE INDEX IF NOT EXISTS idx_spot_dates_trip_id ON spot_dates(trip_id);
+  CREATE INDEX IF NOT EXISTS idx_spot_dates_spot_id ON spot_dates(spot_id);
+`);
+
+const migrateCalendarLinks800 = db.transaction(() => {
+  interface IdeaScheduleRow {
+    id: number;
+    idea_id: number;
+    date: string;
+    end_date: string | null;
+    time: string | null;
+    end_time: string | null;
+    note: string | null;
+    location: string | null;
+    user_modified: number | null;
+    done: number | null;
+    deleted_at: string | null;
+  }
+
+  const ideaScheduleRows = db
+    .prepare(
+      `SELECT id, idea_id, date, end_date, time, end_time, note, location, user_modified, done, deleted_at
+       FROM schedule_items
+       WHERE idea_id IS NOT NULL`
+    )
+    .all() as IdeaScheduleRow[];
+
+  const selectIdeaStmt = db.prepare('SELECT id, date, done, deleted_at FROM ideas WHERE id = ?');
+  const updateIdeaDateStmt = db.prepare('UPDATE ideas SET date = ? WHERE id = ?');
+  const updateIdeaDoneStmt = db.prepare('UPDATE ideas SET done = 1 WHERE id = ?');
+  const deleteScheduleStmt = db.prepare('DELETE FROM schedule_items WHERE id = ?');
+  const unlinkScheduleIdeaStmt = db.prepare(
+    'UPDATE schedule_items SET idea_id = NULL WHERE id = ?'
+  );
+
+  for (const row of ideaScheduleRows) {
+    const idea = selectIdeaStmt.get(row.idea_id) as
+      { id: number; date: string | null; done: number; deleted_at: string | null } | undefined;
+
+    if (idea) {
+      const shouldCopyDate =
+        !idea.date && Boolean(row.date) && (row.deleted_at == null || idea.deleted_at != null);
+
+      if (shouldCopyDate) {
+        updateIdeaDateStmt.run(row.date, idea.id);
+      }
+
+      if (row.done === 1 && row.deleted_at == null && idea.done !== 1) {
+        updateIdeaDoneStmt.run(idea.id);
+      }
+    }
+
+    const hasCustomDetails =
+      Boolean(row.time?.trim()) ||
+      Boolean(row.end_time?.trim()) ||
+      Boolean(row.end_date?.trim()) ||
+      Boolean(row.note?.trim()) ||
+      Boolean(row.location?.trim()) ||
+      Boolean(row.user_modified);
+
+    if (hasCustomDetails) {
+      unlinkScheduleIdeaStmt.run(row.id);
+    } else {
+      deleteScheduleStmt.run(row.id);
+    }
+  }
+
+  if (!hadSpotDatesTable) {
+    db.exec(`
+      INSERT OR IGNORE INTO spot_dates (trip_id, spot_id, date, done)
+      SELECT si.trip_id, si.spot_id, si.date, COALESCE(si.done, 0)
+      FROM schedule_items si
+      JOIN spots s ON s.id = si.spot_id
+      WHERE si.spot_id IS NOT NULL
+        AND si.date IS NOT NULL
+        AND si.date != ''
+        AND si.deleted_at IS NULL
+        AND s.deleted_at IS NULL;
+
+      DELETE FROM schedule_items
+      WHERE spot_id IS NOT NULL
+        AND auto_created = 1
+        AND (user_modified IS NULL OR user_modified = 0);
+
+      INSERT OR IGNORE INTO spot_dates (trip_id, spot_id, date, done)
+      SELECT d.trip_id, ds.spot_id, d.date, 1
+      FROM diary_spots ds
+      JOIN diary_entries d ON d.id = ds.entry_id
+      JOIN spots s ON s.id = ds.spot_id
+      WHERE d.is_draft = 0
+        AND d.deleted_at IS NULL
+        AND d.date IS NOT NULL
+        AND d.date != ''
+        AND s.deleted_at IS NULL
+        AND s.done = 1;
+    `);
+  }
+});
+
+migrateCalendarLinks800();
 
 /**
  * Leert alle Anwendungs-Tabellen in der Datenbank und setzt Auto-Inkrement-Sequenzen zurück.

@@ -101,7 +101,7 @@ describe('trash (soft delete + restore)', () => {
     ).toBeUndefined();
   });
 
-  it('deleting an excursion also soft-deletes its linked calendar entry, and restoring it restores both', async () => {
+  it('deleting an excursion soft-deletes it without creating shadow schedule_items, and restoring preserves its date', async () => {
     const idea = await app.inject({
       method: 'POST',
       url: '/api/ideas',
@@ -109,16 +109,16 @@ describe('trash (soft delete + restore)', () => {
       payload: { trip_id: tripId, title: 'Stadtrundgang', date: '2026-01-03' },
     });
     const ideaId = idea.json().id;
+    expect(idea.json().date).toBe('2026-01-03');
 
     const scheduleBefore = await app.inject({
       method: 'GET',
       url: `/api/schedule?trip_id=${tripId}`,
       headers: { cookie },
     });
-    const linkedEntry = scheduleBefore
-      .json()
-      .find((s: { idea_id: number | null }) => s.idea_id === ideaId);
-    expect(linkedEntry).toBeDefined();
+    expect(
+      scheduleBefore.json().find((s: { idea_id: number | null }) => s.idea_id === ideaId)
+    ).toBeUndefined();
 
     const del = await app.inject({
       method: 'DELETE',
@@ -127,15 +127,6 @@ describe('trash (soft delete + restore)', () => {
     });
     expect(del.statusCode).toBe(204);
 
-    const scheduleAfterDelete = await app.inject({
-      method: 'GET',
-      url: `/api/schedule?trip_id=${tripId}`,
-      headers: { cookie },
-    });
-    expect(
-      scheduleAfterDelete.json().find((s: { id: number }) => s.id === linkedEntry.id)
-    ).toBeUndefined();
-
     const restore = await app.inject({
       method: 'POST',
       url: `/api/trash/excursion/${ideaId}/restore`,
@@ -143,14 +134,16 @@ describe('trash (soft delete + restore)', () => {
     });
     expect(restore.statusCode).toBe(200);
 
-    const scheduleAfterRestore = await app.inject({
+    const ideasAfterRestore = await app.inject({
       method: 'GET',
-      url: `/api/schedule?trip_id=${tripId}`,
+      url: `/api/ideas?trip_id=${tripId}`,
       headers: { cookie },
     });
-    expect(
-      scheduleAfterRestore.json().find((s: { id: number }) => s.id === linkedEntry.id)
-    ).toBeDefined();
+    const restoredIdea = ideasAfterRestore
+      .json()
+      .find((item: { id: number }) => item.id === ideaId);
+    expect(restoredIdea).toBeDefined();
+    expect(restoredIdea.date).toBe('2026-01-03');
   });
 
   it('returns 400 for an unknown trash type on restore', async () => {
