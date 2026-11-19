@@ -842,8 +842,8 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     return { liked: comment.liked, like_count: comment.like_count } as unknown as T;
   }
 
-  // --- Done toggles (/spots/:id/done, /ideas/:id/done) ---
-  const doneMatch = /^\/(spots|ideas)\/(-?\d+)\/done$/.exec(basePath);
+  // --- Done toggles (/spots/:id/done, /ideas/:id/done, /schedule/:id/done) ---
+  const doneMatch = /^\/(spots|ideas|schedule)\/(-?\d+)\/done$/.exec(basePath);
 
   if (doneMatch && method === 'POST') {
     const domain = doneMatch[1];
@@ -1198,23 +1198,67 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       .sort((left, right) => left.date.localeCompare(right.date));
   }
 
+  function syncDemoPublishedDiaryLinks(
+    linkField: 'spot_ids' | 'excursion_ids',
+    entityId: number,
+    tripId: number,
+    rawDiaryIds: unknown[]
+  ) {
+    const selectedIds = new Set(
+      rawDiaryIds.map((val) => Number(val)).filter((val) => Number.isInteger(val))
+    );
+
+    if (!Array.isArray(store['/diary'])) {
+      return;
+    }
+
+    store['/diary'] = store['/diary'].map((entry) => {
+      if ((entry.trip_id as number | undefined) !== tripId || Boolean(entry.is_draft)) {
+        return entry;
+      }
+
+      const currentIds = Array.isArray(entry[linkField]) ? (entry[linkField] as number[]) : [];
+      const shouldBeLinked = selectedIds.has(entry.id as number);
+      const isLinked = currentIds.includes(entityId);
+
+      if (shouldBeLinked === isLinked) {
+        return entry;
+      }
+
+      const nextIds = shouldBeLinked
+        ? [...currentIds, entityId]
+        : currentIds.filter((id) => id !== entityId);
+      return { ...entry, [linkField]: nextIds };
+    });
+  }
+
   if (method === 'POST') {
     const id = nextId++;
     const created: Record<string, unknown> = { ...(body ?? {}), id };
 
     if (collection === '/spots') {
+      const tripId = (body?.trip_id as number | undefined) ?? 1;
       const rawDates = Array.isArray(body?.dates) ? body.dates : [];
-      const normalizedDates = normalizeDemoSpotDates(
-        id,
-        (body?.trip_id as number | undefined) ?? 1,
-        rawDates
-      );
+      const normalizedDates = normalizeDemoSpotDates(id, tripId, rawDates);
       created.dates = normalizedDates;
       created.done = body?.done || normalizedDates.some((entry) => entry.done === 1) ? 1 : 0;
+
+      if (Array.isArray(body?.diary_ids)) {
+        syncDemoPublishedDiaryLinks('spot_ids', id, tripId, body.diary_ids);
+      }
+
+      delete created.diary_ids;
     }
 
     if (collection === '/ideas') {
+      const tripId = (body?.trip_id as number | undefined) ?? 1;
       created.done = body?.done ? 1 : 0;
+
+      if (Array.isArray(body?.diary_ids)) {
+        syncDemoPublishedDiaryLinks('excursion_ids', id, tripId, body.diary_ids);
+      }
+
+      delete created.diary_ids;
     }
 
     if (collection === '/diary') {
@@ -1274,16 +1318,12 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       const existing = store['/spots']?.find((item) => (item as { id: number }).id === id);
 
       if (existing) {
+        const tripId = (existing.trip_id as number | undefined) ?? 1;
         const existingDates = Array.isArray(existing.dates)
           ? (existing.dates as Record<string, unknown>[])
           : [];
         const nextDates = Array.isArray(body?.dates)
-          ? normalizeDemoSpotDates(
-              id,
-              (existing.trip_id as number | undefined) ?? 1,
-              body.dates,
-              existingDates
-            )
+          ? normalizeDemoSpotDates(id, tripId, body.dates, existingDates)
           : existingDates;
         let nextDone = existing.done ? 1 : 0;
 
@@ -1293,13 +1333,18 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
           nextDone = 1;
         }
 
-        const updated = {
+        if (Array.isArray(body?.diary_ids)) {
+          syncDemoPublishedDiaryLinks('spot_ids', id, tripId, body.diary_ids);
+        }
+
+        const updated: Record<string, unknown> = {
           ...existing,
           ...(body ?? {}),
           id,
           dates: nextDates,
           done: nextDone,
         };
+        delete updated.diary_ids;
         store['/spots'] = store['/spots'].map((item) =>
           (item as { id: number }).id === id ? updated : item
         );
@@ -1312,18 +1357,24 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       const existing = store['/ideas']?.find((item) => (item as { id: number }).id === id);
 
       if (existing) {
+        const tripId = (existing.trip_id as number | undefined) ?? 1;
         let nextDone = existing.done ? 1 : 0;
 
         if (body?.done !== undefined) {
           nextDone = body.done ? 1 : 0;
         }
 
-        const updated = {
+        if (Array.isArray(body?.diary_ids)) {
+          syncDemoPublishedDiaryLinks('excursion_ids', id, tripId, body.diary_ids);
+        }
+
+        const updated: Record<string, unknown> = {
           ...existing,
           ...(body ?? {}),
           id,
           done: nextDone,
         };
+        delete updated.diary_ids;
         store['/ideas'] = store['/ideas'].map((item) =>
           (item as { id: number }).id === id ? updated : item
         );

@@ -161,7 +161,7 @@ export interface UseSpotFormOptions {
 }
 
 export function useSpotForm(options: UseSpotFormOptions) {
-  const { tripId, users, spotScheduledDates } = options;
+  const { tripId, users } = options;
 
   const spotsStore = useSpotsStore();
   const tripStore = useTripStore();
@@ -386,6 +386,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
       spotForm.value.scheduledDate
     ) {
       spotForm.value.scheduledDates = [spotForm.value.scheduledDate];
+      spotForm.value.scheduledDate = '';
     } else if (!Array.isArray(spotForm.value.scheduledDates)) {
       spotForm.value.scheduledDates = [];
     }
@@ -425,6 +426,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
     }
 
     form.scheduledDates = form.scheduledDates.filter((scheduledDate) => scheduledDate !== date);
+    form.scheduledDate = '';
 
     if (form.scheduledDateDone && date in form.scheduledDateDone) {
       const nextMap = { ...form.scheduledDateDone };
@@ -1213,7 +1215,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
       tourTitles: tourTitlesFor(latestSpot.id),
       scheduledDates,
       scheduledDateDone,
-      scheduledDate: spotScheduledDates.value.get(latestSpot.id) ?? '',
+      scheduledDate: '',
       diary_ids: diaryStore.entries
         .filter((entry) => !entry.is_draft && (entry.spot_ids ?? []).includes(latestSpot.id))
         .map((entry) => entry.id),

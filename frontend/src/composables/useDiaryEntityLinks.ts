@@ -137,6 +137,16 @@ export function useDiaryEntityLinks() {
             return;
           }
 
+          const matchingDateEntry =
+            date && existingDates.length > 1
+              ? existingDates.find((entry) => entry.date === date)
+              : undefined;
+
+          if (matchingDateEntry) {
+            await spotsStore.updateDate(id, matchingDateEntry.id, { done: true });
+            return;
+          }
+
           await spotsStore.setDone(id, true);
         }),
       ]);

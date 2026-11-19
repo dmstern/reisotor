@@ -240,5 +240,20 @@ describe('useDiaryEntityLinks', () => {
     expect(addDateSpy).toHaveBeenCalledWith(20, '2026-07-15', true);
     expect(excSetDateSpy).toHaveBeenCalledWith(5, '2026-07-15');
     expect(excSetDoneSpy).toHaveBeenCalledWith(5, true);
+
+    // Spot 30 mit mehreren Besuchstagen (einer passend zum Tagebuch-Datum) -> nur der passende Tag wird als besucht markiert
+    spotsStore.spots.push({
+      id: 30,
+      title: 'Spot C (mehrere Tage)',
+      dates: [
+        { id: 301, trip_id: 1, spot_id: 30, date: '2026-07-15', done: 0, created_at: '' },
+        { id: 302, trip_id: 1, spot_id: 30, date: '2026-07-20', done: 0, created_at: '' },
+      ],
+    } as unknown as Spot);
+    setDoneSpy.mockClear();
+    updateDateSpy.mockClear();
+    await links.markLinkedAsDone([], [30], '2026-07-15');
+    expect(updateDateSpy).toHaveBeenCalledWith(30, 301, { done: true });
+    expect(setDoneSpy).not.toHaveBeenCalled();
   });
 });

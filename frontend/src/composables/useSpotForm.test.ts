@@ -332,4 +332,63 @@ describe('useSpotForm - openSpotForm', () => {
     expect(isScheduledDateDone('2026-07-10')).toBe(true);
     expect(editSpotForm.value.done).toBe(true);
   });
+
+  it('allows removing the last scheduled date on an edited spot without re-adding it via legacy scheduledDate on submit', async () => {
+    const { api } = await import('../api/client');
+    vi.mocked(api.put).mockClear();
+    vi.mocked(api.put).mockResolvedValueOnce({
+      id: 12,
+      trip_id: 1,
+      title: 'Aussichtspunkt',
+      dates: [],
+      done: 1,
+    });
+
+    const { startEditSpot, editSpotForm, removeScheduledDate, submitEditSpot } = useSpotForm({
+      tripId: 1,
+      users: ref([]),
+      spotScheduledDates: ref(new Map([[12, '2026-07-10']])),
+    });
+
+    startEditSpot({
+      id: 12,
+      trip_id: 1,
+      title: 'Aussichtspunkt',
+      category: 'Aussichtspunkt',
+      is_home: 0,
+      image_url: null,
+      note: null,
+      note_format: 'html',
+      maps_link: null,
+      lat: 38.71,
+      lng: -9.12,
+      created_by: 1,
+      address: null,
+      start_date: null,
+      end_date: null,
+      checkin: null,
+      checkout: null,
+      contact: null,
+      amount: null,
+      paid_by_user_id: null,
+      budget_expense_id: null,
+      done: 1,
+      dates: [{ id: 1, trip_id: 1, spot_id: 12, date: '2026-07-10', done: 1, created_at: '' }],
+    });
+
+    expect(editSpotForm.value.scheduledDates).toEqual(['2026-07-10']);
+
+    removeScheduledDate('2026-07-10');
+    expect(editSpotForm.value.scheduledDates).toEqual([]);
+
+    await submitEditSpot();
+
+    expect(api.put).toHaveBeenCalledWith(
+      '/spots/12',
+      expect.objectContaining({
+        dates: [],
+        done: true,
+      })
+    );
+  });
 });

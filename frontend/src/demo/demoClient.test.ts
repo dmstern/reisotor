@@ -429,4 +429,74 @@ describe('demoClient (Issue #172: backend-loser Demo-Build)', () => {
     );
     expect(updatedTour.done).toBe(0);
   });
+
+  it('unterstützt POST /schedule/:id/done und synchronisiert diary_ids bei POST/PUT /spots und /ideas', async () => {
+    const scheduleItems =
+      await demoRequest<Array<{ id: number; done?: number }>>('/schedule?trip_id=1');
+    const firstScheduleId = scheduleItems[0].id;
+
+    const doneRes = await demoRequest<{ done: boolean }>(`/schedule/${firstScheduleId}/done`, {
+      method: 'POST',
+      body: JSON.stringify({ done: true }),
+    });
+    expect(doneRes).toEqual({ done: true });
+
+    const diaryEntries =
+      await demoRequest<
+        Array<{ id: number; is_draft?: number; spot_ids: number[]; excursion_ids: number[] }>
+      >('/diary?trip_id=1');
+    const publishedEntry = diaryEntries.find((entry) => !entry.is_draft)!;
+    expect(publishedEntry).toBeDefined();
+
+    const createdSpot = await demoRequest<{ id: number; diary_ids?: number[] }>('/spots', {
+      method: 'POST',
+      body: JSON.stringify({
+        trip_id: 1,
+        title: 'Verknüpfter Demo-Spot',
+        diary_ids: [publishedEntry.id],
+      }),
+    });
+    expect(createdSpot.diary_ids).toBeUndefined();
+
+    const createdTour = await demoRequest<{ id: number; diary_ids?: number[] }>('/ideas', {
+      method: 'POST',
+      body: JSON.stringify({
+        trip_id: 1,
+        title: 'Verknüpfte Demo-Tour',
+        diary_ids: [publishedEntry.id],
+      }),
+    });
+    expect(createdTour.diary_ids).toBeUndefined();
+
+    let updatedDiary =
+      await demoRequest<Array<{ id: number; spot_ids: number[]; excursion_ids: number[] }>>(
+        '/diary?trip_id=1'
+      );
+    let targetEntry = updatedDiary.find((entry) => entry.id === publishedEntry.id)!;
+    expect(targetEntry.spot_ids).toContain(createdSpot.id);
+    expect(targetEntry.excursion_ids).toContain(createdTour.id);
+
+    await demoRequest(`/spots/${createdSpot.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        title: 'Verknüpfter Demo-Spot',
+        diary_ids: [],
+      }),
+    });
+    await demoRequest(`/ideas/${createdTour.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        title: 'Verknüpfte Demo-Tour',
+        diary_ids: [],
+      }),
+    });
+
+    updatedDiary =
+      await demoRequest<Array<{ id: number; spot_ids: number[]; excursion_ids: number[] }>>(
+        '/diary?trip_id=1'
+      );
+    targetEntry = updatedDiary.find((entry) => entry.id === publishedEntry.id)!;
+    expect(targetEntry.spot_ids).not.toContain(createdSpot.id);
+    expect(targetEntry.excursion_ids).not.toContain(createdTour.id);
+  });
 });
