@@ -117,7 +117,7 @@ function showDayOnMap() {
   }
 
   drawers.focusMapOnDate(selectedDate.value);
-  drawers.calendarOpen = false;
+  drawers.restoreMaximized();
 }
 
 function jumpToTrip() {
@@ -130,11 +130,11 @@ function openEntry(entry: CalendarEntry) {
   if (entry.kind === 'trip') {
     jumpToTrip();
   } else if (entry.kind === 'todo') {
-    drawers.calendarOpen = false;
+    drawers.restoreMaximized();
     router.push(`${tripPrefix}/listen?tab=todo#todo-${entry.todoId}`);
   } else if ((entry.kind === 'travel' || entry.kind === 'excursion') && entry.ideaId != null) {
     drawers.openMapForExcursion(entry.ideaId);
-    drawers.calendarOpen = false;
+    drawers.restoreMaximized();
     router.push({
       path: `${tripPrefix}/excursions`,
       query: { group: 'tours' },
@@ -142,14 +142,14 @@ function openEntry(entry: CalendarEntry) {
     });
   } else if (entry.kind === 'spot' && entry.spotId != null) {
     drawers.openMapAt(`spot-${entry.spotId}`);
-    drawers.calendarOpen = false;
+    drawers.restoreMaximized();
     router.push({
       path: `${tripPrefix}/excursions`,
       query: { group: 'spots' },
       hash: `#spot-${entry.spotId}`,
     });
   } else if (entry.kind === 'diary' && entry.diaryEntryId != null) {
-    drawers.calendarOpen = false;
+    drawers.restoreMaximized();
     router.push({
       path: `${tripPrefix}/diary`,
       hash: `#entry-${entry.diaryEntryId}`,

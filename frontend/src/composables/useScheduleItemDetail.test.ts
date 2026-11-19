@@ -291,10 +291,12 @@ describe('useScheduleItemDetail', () => {
     });
   });
 
-  it('openAccommodationSpot öffnet eine Unterkunft per Badge immer in der Spot-Ansicht (group: spots)', () => {
+  it('openAccommodationSpot öffnet eine Unterkunft per Badge immer in der Spot-Ansicht (group: spots) und lässt die Desktop-Kalender-Schublade offen', () => {
     const tripStore = useTripStore();
     const drawers = useDrawersStore();
     tripStore.currentTripId = 1;
+    drawers.calendarOpen = true;
+    drawers.maximize('left');
 
     const detail = useScheduleItemDetail({
       allEntries: computed(() => []),
@@ -304,7 +306,8 @@ describe('useScheduleItemDetail', () => {
     detail.openAccommodationSpot(42);
 
     expect(drawers.mapFocusKey).toBe('spot-42');
-    expect(drawers.calendarOpen).toBe(false);
+    expect(drawers.calendarOpen).toBe(true);
+    expect(drawers.maximizedSide).toBeNull();
     expect(mockPush).toHaveBeenCalledWith({
       path: '/trip/1/excursions',
       query: { group: 'spots' },

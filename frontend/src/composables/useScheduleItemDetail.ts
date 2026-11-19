@@ -242,7 +242,7 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
         : null;
 
       drawers.openMapAt(`spot-${entry.spotId}`);
-      drawers.calendarOpen = false;
+      drawers.restoreMaximized();
       router
         .push({
           path,
@@ -252,7 +252,7 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
         .catch(() => {});
     } else if (entry.ideaId != null) {
       drawers.openMapForExcursion(entry.ideaId);
-      drawers.calendarOpen = false;
+      drawers.restoreMaximized();
       router
         .push({
           path,
@@ -265,7 +265,7 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
 
   function openAccommodationSpot(spotId: number) {
     drawers.openMapAt(`spot-${spotId}`);
-    drawers.calendarOpen = false;
+    drawers.restoreMaximized();
     const path = tripStore.currentTripId
       ? `/trip/${tripStore.currentTripId}/excursions`
       : '/excursions';

@@ -91,11 +91,14 @@ test('clicking a projected tour entry jumps directly to the tour (#800)', async 
   await tourItem.click();
 
   // Direkt projizierte Touren springen per Klick direkt zur Tour statt ein Detail-Modal zu öffnen
-  // (siehe ScheduleView.vue openEntry()).
+  // (siehe ScheduleView.vue openEntry()); auf Desktop bleibt die Kalender-Schublade dabei offen.
   await expect(page).toHaveURL(
     new RegExp(`/trip/\\d+/excursions\\?group=tours#excursion-${excursion.id}$`)
   );
   await expect(page.locator('.overlay .modal')).toHaveCount(0);
+  await expect(
+    page.getByRole('heading', { name: 'Kalender', exact: true, level: 2 })
+  ).toBeVisible();
 });
 
 test('MapsAppPicker dropdown is not clipped by the modal', async ({ page }) => {
