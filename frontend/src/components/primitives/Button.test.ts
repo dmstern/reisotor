@@ -108,6 +108,33 @@ describe('Button primitive', () => {
     expect(html).toContain('Kompakt');
   });
 
+  it('scales tonal icon size according to explicit size prop while keeping card-action compact by default', async () => {
+    setActivePinia(createPinia());
+
+    const tonalLgApp = createApp({
+      render: () =>
+        h(Button, { variant: 'tonal', size: 'lg', icon: ACTION_ICONS.edit }, () => 'Groß'),
+    });
+    tonalLgApp.use(createPinia());
+    const tonalLgHtml = await renderToString(tonalLgApp);
+    expect(tonalLgHtml).toContain('width="22"');
+
+    const tonalMdApp = createApp({
+      render: () => h(Button, { variant: 'tonal', icon: ACTION_ICONS.edit }, () => 'Standard'),
+    });
+    tonalMdApp.use(createPinia());
+    const tonalMdHtml = await renderToString(tonalMdApp);
+    expect(tonalMdHtml).toContain('width="20"');
+
+    const cardActionApp = createApp({
+      render: () =>
+        h(Button, { variant: 'card-action', icon: ACTION_ICONS.edit }, () => 'Card Action'),
+    });
+    cardActionApp.use(createPinia());
+    const cardActionHtml = await renderToString(cardActionApp);
+    expect(cardActionHtml).toContain('width="18"');
+  });
+
   it('renders btn--overlay with pill shape when variant="overlay" and shape="pill" are passed', async () => {
     const app = createApp({
       render: () =>

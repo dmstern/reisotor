@@ -20,7 +20,7 @@ const _props = withDefaults(
      * - 'primary': Haupt-Aktionsbutton (gefüllt mit --color-primary, leicht erhaben)
      * - 'secondary': Sekundärbutton (initial flach mit Rahmen, Progressive 3D bei Hover/Active)
      * - 'tonal': Sanft getönte Kontext-Aktion in Cards/Modals (initial flach, Progressive 3D bei Hover/Active)
-     * - 'ghost': Leise Hilfsaktion ohne Rahmen/Schatten (Progressive 3D bei Hover/Active)
+     * - 'ghost': Leise Hilfsaktion ohne Rahmen/Schatten (ruhiger, flacher Hover/Active ohne 3D-Verlauf/Schatten)
      * - 'danger': Destruktive Aktion (gefüllt mit --color-danger; mit secondary-Flag gerahmt & initial flach)
      * - 'overlay': Kontrast-gesicherter Frosted-Glass-Button auf Fotos/Bannern/Karten (initial schattenlos)
      *
@@ -121,12 +121,16 @@ const iconSize = computed(() => {
     return ICON_SIZE_XS;
   }
 
-  if (_props.size === 'sm' || _props.variant === 'card-action' || _props.variant === 'tonal') {
+  if (_props.size === 'sm') {
     return ICON_SIZE_SM;
   }
 
   if (_props.size === 'lg') {
     return ICON_SIZE_LG;
+  }
+
+  if (_props.variant === 'card-action') {
+    return ICON_SIZE_SM;
   }
 
   return ICON_SIZE_MD;
@@ -287,7 +291,7 @@ a.btn.is-loading {
 }
 
 .btn--circle {
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
   corner-shape: round;
   padding: 0;
   flex-shrink: 0;
@@ -418,20 +422,24 @@ a.btn.is-loading {
 .btn--tonal,
 .btn--card-action {
   @include control-physics-progressive;
-  @include touch-target($expand: true);
-  gap: var(--control-gap-sm, 6px);
-  padding: 6px 12px;
-  min-height: var(--control-height-sm, 36px);
   border: 1.5px solid transparent;
-  border-radius: var(--control-radius-sm-squircle, 8px);
-  corner-shape: squircle;
   background-color: var(--color-control-active-tint);
   color: var(--color-primary-dark);
-  font-size: var(--font-size-sm);
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
   line-height: 1.3;
+}
+
+/* Abwärtskompatibles kompaktes Default-Sizing nur für Legacy-Alias card-action (ohne explizites size-Prop) */
+.btn--card-action {
+  @include touch-target($expand: true);
+  gap: var(--control-gap-sm, 6px);
+  padding: 6px 12px;
+  min-height: var(--control-height-sm, 36px);
+  border-radius: var(--control-radius-sm-squircle, 8px);
+  corner-shape: squircle;
+  font-size: var(--font-size-sm);
 }
 
 @include can-hover {
@@ -618,7 +626,7 @@ a.btn.is-loading {
   padding: 4px 10px;
   font-size: var(--font-size-xs);
   min-height: var(--control-height-xs, 30px);
-  border-radius: var(--control-radius-xs-squircle, 8px);
+  border-radius: var(--control-radius-xs-squircle, 6.5px);
   box-sizing: border-box;
 }
 
@@ -628,7 +636,7 @@ a.btn.is-loading {
   padding: 6px 12px;
   font-size: var(--font-size-sm);
   min-height: var(--control-height-sm, 36px);
-  border-radius: var(--control-radius-sm-squircle, 9.5px);
+  border-radius: var(--control-radius-sm-squircle, 8px);
   box-sizing: border-box;
 }
 
@@ -637,17 +645,13 @@ a.btn.is-loading {
   padding: 12px 22px;
   font-size: var(--font-size-md);
   min-height: var(--control-height-lg, 52px);
-  border-radius: var(--control-radius-lg-squircle, 14px);
+  border-radius: var(--control-radius-lg-squircle, 11.5px);
   box-sizing: border-box;
 }
 
-/* Pill & Circle behalten immer ihre vollrunde Form unabhängig von xs/sm/lg */
-.btn--pill.btn--xs,
-.btn--pill.btn--sm,
-.btn--pill.btn--lg,
-.btn--circle.btn--xs,
-.btn--circle.btn--sm,
-.btn--circle.btn--lg {
+/* Pill & Circle behalten immer ihre vollrunde Form unabhängig von Variante und Größe */
+.btn.btn--pill,
+.btn.btn--circle {
   border-radius: var(--radius-pill);
   corner-shape: round;
 }
