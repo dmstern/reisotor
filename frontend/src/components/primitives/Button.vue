@@ -520,11 +520,10 @@ a.btn.is-loading {
   box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.4);
 }
 
-/* Aktiver Zustand für sekundäre/getönte/ghost Button-Varianten */
+/* Aktiver Zustand für körperhafte sekundäre/getönte Button-Varianten */
 .btn--secondary.is-active,
 .btn--overlay.is-active,
 .btn--surface.is-active,
-.btn--ghost.is-active,
 .btn--tonal.is-active,
 .btn--card-action.is-active {
   --control-grad-top: var(--gradient-control-top);
@@ -547,7 +546,6 @@ a.btn.is-loading {
   .btn--secondary.is-active:hover:not(:disabled):not(.is-disabled),
   .btn--overlay.is-active:hover:not(:disabled):not(.is-disabled),
   .btn--surface.is-active:hover:not(:disabled):not(.is-disabled),
-  .btn--ghost.is-active:hover:not(:disabled):not(.is-disabled),
   .btn--tonal.is-active:hover:not(:disabled):not(.is-disabled),
   .btn--card-action.is-active:hover:not(:disabled):not(.is-disabled) {
     background-color: var(--color-control-active-tint-hover);
@@ -561,7 +559,6 @@ a.btn.is-loading {
 .btn--secondary.is-active:active:not(:disabled):not(.is-disabled),
 .btn--overlay.is-active:active:not(:disabled):not(.is-disabled),
 .btn--surface.is-active:active:not(:disabled):not(.is-disabled),
-.btn--ghost.is-active:active:not(:disabled):not(.is-disabled),
 .btn--tonal.is-active:active:not(:disabled):not(.is-disabled),
 .btn--card-action.is-active:active:not(:disabled):not(.is-disabled) {
   box-shadow:
@@ -572,10 +569,39 @@ a.btn.is-loading {
 .btn--secondary.is-active:focus-visible,
 .btn--overlay.is-active:focus-visible,
 .btn--surface.is-active:focus-visible,
-.btn--ghost.is-active:focus-visible,
 .btn--tonal.is-active:focus-visible,
 .btn--card-action.is-active:focus-visible {
   box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control);
+}
+
+/* Aktiver Zustand für Ghost: bleibt flach & ruhig (weicher Primary-Tint ohne 3D/Schatten) */
+.btn--ghost.is-active {
+  background-color: var(--color-control-active-tint);
+  background-image: none;
+  border-color: color-mix(in srgb, var(--color-primary) 28%, transparent);
+  color: var(--color-primary-dark);
+  box-shadow: none;
+  font-weight: 600;
+}
+
+@include can-hover {
+  .btn--ghost.is-active:hover:not(:disabled):not(.is-disabled) {
+    background-color: var(--color-control-active-tint-hover);
+    border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+    box-shadow: none;
+    translate: none;
+  }
+}
+
+.btn--ghost.is-active:active:not(:disabled):not(.is-disabled) {
+  background-color: var(--color-control-active-tint-hover);
+  box-shadow: none;
+  transform: scale(0.96);
+  translate: none;
+}
+
+.btn--ghost.is-active:focus-visible {
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .btn--primary.is-active {
