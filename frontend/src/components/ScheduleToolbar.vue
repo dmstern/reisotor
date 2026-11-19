@@ -78,6 +78,12 @@ defineEmits<{
             @click="$emit('nextPage')"
           />
         </div>
+        <Button size="sm" class="add-btn" @click="$emit('openAdd')">
+          <AppIcon :icon="ACTION_ICONS.calendarPlus" :size="14" group="actions" /> Neu
+        </Button>
+      </div>
+
+      <div class="toolbar-actions-row">
         <div class="granularity-wrap">
           <SegmentedToggle
             v-model="granularity"
@@ -88,9 +94,6 @@ defineEmits<{
             ]"
           />
         </div>
-      </div>
-
-      <div class="toolbar-actions-row">
         <div class="jump-row">
           <Button
             variant="secondary"
@@ -124,9 +127,6 @@ defineEmits<{
             Urlaub
           </Button>
         </div>
-        <Button size="sm" @click="$emit('openAdd')">
-          <AppIcon :icon="ACTION_ICONS.calendarPlus" :size="14" group="actions" /> Neu
-        </Button>
       </div>
     </div>
   </div>
@@ -184,7 +184,7 @@ defineEmits<{
 
 .granularity-wrap {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   max-width: 100%;
   min-width: 0;
 }
@@ -193,16 +193,15 @@ defineEmits<{
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  /* Feste Breite für den Blätterer reservieren, damit das Umbruchverhalten des
-     Wochen-/Monat-Umschalters nur von der Schubladenbreite abhängt – nicht von der Länge
-     des gewählten Zeitraums (z. B. "Mai 2027" vs. "April 2027" / "29.12.2026 – 11.01.2027"). */
-  width: min(244px, 100%);
   max-width: 100%;
   min-width: 0;
 }
 
+.add-btn {
+  flex-shrink: 0;
+}
+
 .range-label {
-  flex: 1;
   font-size: var(--font-size-sm);
   font-weight: 700;
   color: var(--color-text);
