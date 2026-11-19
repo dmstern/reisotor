@@ -5,6 +5,8 @@
 // Korrespondiert mit den 3D- und Schatten-Tokens in `style.css` und DESIGN.md §2.
 // =============================================================================
 
+@use 'touch' as *;
+
 /// Kapselt das Aussehen und Interaktionsverhalten versenkter Eingabefelder
 /// (Input, Textarea, RichTextEditor, QuickAddRow).
 ///
