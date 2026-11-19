@@ -333,7 +333,7 @@ defineExpose({
                   data-testid="trip-coords-missing"
                   title="Standort fehlt – bitte Ort im Suchfeld eingeben oder auf die Karte tippen"
                 >
-                  <AppIcon :icon="ACTION_ICONS.warning" :size="13" group="actions" />
+                  <AppIcon :icon="ACTION_ICONS.mapPinExclamation" :size="13" group="actions" />
                   <span>Standort fehlt</span>
                 </span>
                 <SpotLocationBadge

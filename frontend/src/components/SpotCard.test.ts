@@ -177,6 +177,7 @@ describe('SpotCard', () => {
     expect(html).toContain('spot-location-badge');
     expect(html).toContain('set-location-btn');
     expect(html).toContain('Standort festlegen');
+    expect(html).toContain('tabler-icon-map-pin-exclamation');
     expect(html).not.toContain('show-on-map-btn');
   });
 
