@@ -10,9 +10,6 @@ const seeded = JSON.parse(
 const dinner = seeded.scheduleItems.find(
   (i: { title: string }) => i.title === 'Abendessen im Time Out Market'
 );
-const belemDay = seeded.scheduleItems.find(
-  (i: { title: string }) => i.title === 'Torre de Belém besichtigen'
-);
 const excursion = seeded.ideas.find((i: { title: string }) => i.title === 'Sightseeing-Tag Belém');
 
 test.beforeEach(async ({ page }) => {
@@ -84,22 +81,21 @@ test('clicking an own schedule entry opens the detail dialog instead of navigati
   await expect(page.locator('.day-detail .detail-row')).toHaveCount(0);
 });
 
-test('clicking a tour-linked calendar entry opens the detail dialog, not the excursions drawer', async ({
-  page,
-}) => {
+test('clicking a projected tour entry jumps directly to the tour (#800)', async ({ page }) => {
   await goToTripMonth(page);
-  await page.locator(`.day[data-date="${belemDay.date}"]`).click();
-  await page.locator('.item', { hasText: excursion.title }).click();
+  await page.locator(`.day[data-date="${excursion.date}"]`).click();
 
-  // Ein mit einer Tour verknüpfter Termin ist ein ganz normaler, editierbarer Kalender-Termin
-  // (siehe ScheduleView.vue openEntry()) – Klick öffnet den Anzeige-Dialog statt zur Karte zu
-  // springen, mit einer Zeile zur verknüpften Tour.
-  await expect(page).toHaveURL(/\/trip\/\d+$/);
-  const modal = page.locator('.overlay .modal');
-  await expect(modal).toBeVisible();
-  await expect(modal.getByText('Verknüpft')).toBeVisible();
-  await expect(modal).toContainText(excursion.title);
-  await expect(modal.locator('button[aria-label="Bearbeiten"]')).toBeVisible();
+  const tourItem = page.locator('.day-detail .items .item', { hasText: excursion.title });
+  await expect(tourItem).toBeVisible();
+  await expect(tourItem.locator('.nav-indicator')).toBeVisible();
+  await tourItem.click();
+
+  // Direkt projizierte Touren springen per Klick direkt zur Tour statt ein Detail-Modal zu öffnen
+  // (siehe ScheduleView.vue openEntry()).
+  await expect(page).toHaveURL(
+    new RegExp(`/trip/\\d+/excursions\\?group=tours#excursion-${excursion.id}$`)
+  );
+  await expect(page.locator('.overlay .modal')).toHaveCount(0);
 });
 
 test('MapsAppPicker dropdown is not clipped by the modal', async ({ page }) => {
