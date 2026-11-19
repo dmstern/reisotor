@@ -616,10 +616,10 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     });
 
     if (Array.isArray(req.body.diary_ids)) {
-      const diaryLinksChanged = syncPublishedDiaryLinksForIdea(ideaId, trip_id, req.body.diary_ids);
+      const changedDiaryIds = syncPublishedDiaryLinksForIdea(ideaId, trip_id, req.body.diary_ids);
 
-      if (diaryLinksChanged) {
-        recordActivity(trip_id, 'diary', ideaId, 'updated', req.session.userId!);
+      for (const diaryEntryId of changedDiaryIds) {
+        recordActivity(trip_id, 'diary', diaryEntryId, 'updated', req.session.userId!);
       }
     }
 
@@ -749,14 +749,14 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
     });
 
     if (Array.isArray(req.body.diary_ids)) {
-      const diaryLinksChanged = syncPublishedDiaryLinksForIdea(
+      const changedDiaryIds = syncPublishedDiaryLinksForIdea(
         ideaId,
         existingIdea.trip_id,
         req.body.diary_ids
       );
 
-      if (diaryLinksChanged) {
-        recordActivity(existingIdea.trip_id, 'diary', ideaId, 'updated', req.session.userId!);
+      for (const diaryEntryId of changedDiaryIds) {
+        recordActivity(existingIdea.trip_id, 'diary', diaryEntryId, 'updated', req.session.userId!);
       }
     }
 

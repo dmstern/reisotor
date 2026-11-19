@@ -578,5 +578,12 @@ describe('bidirectional diary linking for ideas and spots', () => {
       .prepare('SELECT entry_id FROM diary_spots WHERE entry_id = ? AND spot_id = ?')
       .get(memberDraft, spotId);
     expect(draftRow).toEqual({ entry_id: memberDraft });
+
+    const diaryActivities = db
+      .prepare(
+        "SELECT entity_id FROM trip_activity WHERE trip_id = ? AND domain = 'diary' AND action = 'updated' ORDER BY id ASC"
+      )
+      .all(tripId) as Array<{ entity_id: number }>;
+    expect(diaryActivities.map((row) => row.entity_id)).toEqual([pub1, pub1, pub2]);
   });
 });

@@ -72,18 +72,38 @@ function areIdSetsEqual(existingIds: number[], nextIds: number[]): boolean {
   return nextIds.every((id) => existingSet.has(id));
 }
 
+function changedIdList(existingIds: number[], nextIds: number[]): number[] {
+  const existingSet = new Set(existingIds);
+  const nextSet = new Set(nextIds);
+  const changed = new Set<number>();
+
+  for (const id of existingSet) {
+    if (!nextSet.has(id)) {
+      changed.add(id);
+    }
+  }
+
+  for (const id of nextSet) {
+    if (!existingSet.has(id)) {
+      changed.add(id);
+    }
+  }
+
+  return [...changed].sort((a, b) => a - b);
+}
+
 export function syncPublishedDiaryLinksForIdea(
   ideaId: number,
   tripId: number,
   diaryIds: number[]
-): boolean {
+): number[] {
   const nextIds = normalizeValidPublishedDiaryIds(tripId, diaryIds);
   const existingIds = (
     selectPublishedExcursionDiaryLinksStmt.all(ideaId, tripId) as { entry_id: number }[]
   ).map((row) => row.entry_id);
 
   if (areIdSetsEqual(existingIds, nextIds)) {
-    return false;
+    return [];
   }
 
   const syncTransaction = db.transaction(() => {
@@ -95,21 +115,21 @@ export function syncPublishedDiaryLinksForIdea(
   });
 
   syncTransaction();
-  return true;
+  return changedIdList(existingIds, nextIds);
 }
 
 export function syncPublishedDiaryLinksForSpot(
   spotId: number,
   tripId: number,
   diaryIds: number[]
-): boolean {
+): number[] {
   const nextIds = normalizeValidPublishedDiaryIds(tripId, diaryIds);
   const existingIds = (
     selectPublishedSpotDiaryLinksStmt.all(spotId, tripId) as { entry_id: number }[]
   ).map((row) => row.entry_id);
 
   if (areIdSetsEqual(existingIds, nextIds)) {
-    return false;
+    return [];
   }
 
   const syncTransaction = db.transaction(() => {
@@ -121,5 +141,5 @@ export function syncPublishedDiaryLinksForSpot(
   });
 
   syncTransaction();
-  return true;
+  return changedIdList(existingIds, nextIds);
 }

@@ -556,14 +556,14 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     }
 
     if (Array.isArray(body.diary_ids)) {
-      const diaryLinksChanged = syncPublishedDiaryLinksForSpot(
+      const changedDiaryIds = syncPublishedDiaryLinksForSpot(
         createdSpotId,
         trip_id,
         body.diary_ids
       );
 
-      if (diaryLinksChanged) {
-        recordActivity(trip_id, 'diary', createdSpotId, 'updated', req.session.userId!);
+      for (const diaryEntryId of changedDiaryIds) {
+        recordActivity(trip_id, 'diary', diaryEntryId, 'updated', req.session.userId!);
       }
     }
 
@@ -700,14 +700,14 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
     }
 
     if (Array.isArray(body.diary_ids)) {
-      const diaryLinksChanged = syncPublishedDiaryLinksForSpot(
+      const changedDiaryIds = syncPublishedDiaryLinksForSpot(
         existing.id,
         existing.trip_id,
         body.diary_ids
       );
 
-      if (diaryLinksChanged) {
-        recordActivity(existing.trip_id, 'diary', existing.id, 'updated', req.session.userId!);
+      for (const diaryEntryId of changedDiaryIds) {
+        recordActivity(existing.trip_id, 'diary', diaryEntryId, 'updated', req.session.userId!);
       }
     }
 
