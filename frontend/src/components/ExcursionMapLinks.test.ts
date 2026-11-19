@@ -37,37 +37,37 @@ describe('ExcursionMapLinks', () => {
     expect(html).toContain('Auf Karte anzeigen');
   });
 
-  it('renders linked track buttons and show on map button when tracks exist without mapped stations', async () => {
+  it('renders show on map button when tracks exist without mapped stations', async () => {
     const html = await mountComponent({
       hasMappedStations: false,
       linkedTracks: mockTracks,
     });
     expect(html).toContain('Auf Karte anzeigen');
-    expect(html).toContain('GPS Wanderung');
-    expect(html).toContain('🦊');
   });
 
-  it('calls drawers.openMapForTrack when track button is clicked', async () => {
+  it('emits show-on-map when show on map button is clicked', () => {
     const pinia = createPinia();
     setActivePinia(pinia);
-    const { useDrawersStore } = await import('../stores/drawers');
-    const drawers = useDrawersStore();
+    let emitted = false;
     const container = document.createElement('div');
     const app = createApp({
       render: () =>
         h(ExcursionMapLinks, {
-          hasMappedStations: false,
-          linkedTracks: mockTracks,
+          hasMappedStations: true,
+          linkedTracks: [],
+          onShowOnMap: () => {
+            emitted = true;
+          },
         }),
     });
     app.use(pinia);
     app.mount(container);
 
-    const buttons = container.querySelectorAll<HTMLButtonElement>('.linked-track-btn');
-    expect(buttons.length).toBe(1);
-    buttons[0].click();
+    const button = container.querySelector<HTMLButtonElement>('.show-on-map-btn');
+    expect(button).not.toBeNull();
+    button?.click();
 
-    expect(drawers.mapFocusTrackId).toBe(1);
+    expect(emitted).toBe(true);
     app.unmount();
   });
 });

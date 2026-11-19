@@ -130,8 +130,8 @@ function excursionTooltip(ex: Excursion): string {
           <span v-if="coEditors.length" class="edited-by">
             · bearbeitet von
             <span v-for="(u, i) in coEditors" :key="u.id" class="edited-by-user">
-              <span class="edited-by-avatar">{{ u.avatar }}</span
-              >{{ u.username }}<template v-if="i < coEditors.length - 1">, </template>
+              <span class="edited-by-avatar">{{ u.avatar }}</span>{{ u.username
+              }}<template v-if="i < coEditors.length - 1">, </template>
             </span>
           </span>
           <span v-else-if="entry.updated_at"> (bearbeitet)</span>
@@ -155,8 +155,8 @@ function excursionTooltip(ex: Excursion): string {
       />
     </div>
 
-    <div class="card-actions-wrapper">
-      <div class="excursion-links">
+    <div class="card-footer">
+      <div v-if="weather || hasMap" class="diary-map-actions">
         <div
           v-if="weather"
           class="diary-weather"
@@ -185,50 +185,58 @@ function excursionTooltip(ex: Excursion): string {
           <AppIcon :icon="SECTION_ICON_DEFS.map" :size="14" group="navigation" /> Tag auf Karte
           anzeigen
         </Button>
-        <LinkedEntityButton
-          v-for="excursion in excursions"
-          :key="excursion.id"
-          :label="excursion.title"
-          :image-url="excursion.image_url"
-          :icon="SECTION_ICON_DEFS.excursions"
-          icon-group="navigation"
-          :warning="excursionDateMismatch(excursion)"
-          :title="excursionTooltip(excursion)"
-          :aria-label="excursionTooltip(excursion)"
-          class="diary-linked-excursion"
-          @click="drawers.openMapForExcursion(excursion.id)"
-        >
-          <template v-if="excursionDateMismatch(excursion)" #badge>
-            <span class="chip-mismatch-badge" :title="`Geplant am ${formatDate(excursion.date!)}`">
-              <AppIcon :icon="ACTION_ICONS.warning" :size="12" group="actions" />
-              <span class="chip-mismatch-text">{{
-                formatDate(excursion.date!, { includeYear: false })
-              }}</span>
-            </span>
-          </template>
-        </LinkedEntityButton>
-        <LinkedEntityButton
-          v-for="spot in spots"
-          :key="spot.id"
-          :label="spot.title"
-          :image-url="spot.image_url"
-          :icon="spotCategoryMeta(spot.category).tabler"
-          icon-group="categories"
-          :title="formatSpotMismatchTooltip(spot)"
-          :aria-label="formatSpotMismatchTooltip(spot)"
-          class="diary-linked-spot"
-          @click="drawers.openMapAt(`spot-${spot.id}`)"
-        />
       </div>
 
-      <SocialRow
-        :like-count="likeCount"
-        :liked="liked"
-        :comment-count="commentCount"
-        :comments-open="commentsOpen"
-        @toggle-like="emit('toggleLike')"
-        @toggle-comments="emit('toggleComments')"
-      />
+      <div class="card-actions-wrapper">
+        <div v-if="excursions.length || spots.length" class="excursion-links">
+          <LinkedEntityButton
+            v-for="excursion in excursions"
+            :key="excursion.id"
+            :label="excursion.title"
+            :image-url="excursion.image_url"
+            :icon="SECTION_ICON_DEFS.excursions"
+            icon-group="navigation"
+            :warning="excursionDateMismatch(excursion)"
+            :title="excursionTooltip(excursion)"
+            :aria-label="excursionTooltip(excursion)"
+            class="diary-linked-excursion"
+            @click="drawers.openMapForExcursion(excursion.id)"
+          >
+            <template v-if="excursionDateMismatch(excursion)" #badge>
+              <span
+                class="chip-mismatch-badge"
+                :title="`Geplant am ${formatDate(excursion.date!)}`"
+              >
+                <AppIcon :icon="ACTION_ICONS.warning" :size="12" group="actions" />
+                <span class="chip-mismatch-text">{{
+                  formatDate(excursion.date!, { includeYear: false })
+                }}</span>
+              </span>
+            </template>
+          </LinkedEntityButton>
+          <LinkedEntityButton
+            v-for="spot in spots"
+            :key="spot.id"
+            :label="spot.title"
+            :image-url="spot.image_url"
+            :icon="spotCategoryMeta(spot.category).tabler"
+            icon-group="categories"
+            :title="formatSpotMismatchTooltip(spot)"
+            :aria-label="formatSpotMismatchTooltip(spot)"
+            class="diary-linked-spot"
+            @click="drawers.openMapAt(`spot-${spot.id}`)"
+          />
+        </div>
+
+        <SocialRow
+          :like-count="likeCount"
+          :liked="liked"
+          :comment-count="commentCount"
+          :comments-open="commentsOpen"
+          @toggle-like="emit('toggleLike')"
+          @toggle-comments="emit('toggleComments')"
+        />
+      </div>
     </div>
 
     <Accordion :expanded="commentsOpen">
@@ -312,22 +320,39 @@ function excursionTooltip(ex: Excursion): string {
   padding: var(--space-1) var(--space-3) var(--space-2) var(--space-1);
 }
 
-.card-actions-wrapper {
+.card-footer {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: var(--space-2);
   margin-top: var(--space-2);
   padding-top: var(--space-2);
   border-top: var(--border-width) solid var(--color-border);
 }
 
-.excursion-links {
+.diary-map-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
+}
+
+.card-actions-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.card-actions-wrapper > :deep(.social-row) {
+  margin-left: auto;
+}
+
+.excursion-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
   flex: 1;
   min-width: 0;
 }
