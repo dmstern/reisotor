@@ -242,14 +242,11 @@ defineExpose({
       </FormField>
       <p
         v-if="activeExcursionForm.role && activeExcursionForm.spot_ids.length < 2"
-        class="hint error"
+        class="hint info"
       >
-        <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Für
-        Anreise/Abreise/Weiterreise werden mindestens Start- und Zielstation benötigt.
-        <template v-if="spotsStore.spots.length < 2">
-          Lege zuerst mindestens zwei Orte (z. B. Zuhause und deine Unterkunft) an, um sie hier als
-          Stationen zuzuordnen.
-        </template>
+        <AppIcon :icon="ACTION_ICONS.info" :size="14" group="actions" />
+        Tipp: Ordne mindestens zwei Stationen zu, um Teilstrecken, Zeiten und die Route auf der
+        Karte zu planen. Du kannst das auch später ergänzen.
       </p>
       <div class="tour-date-status-row">
         <FormField
@@ -465,8 +462,8 @@ defineExpose({
   flex: 1;
 }
 
-.hint.error {
-  color: var(--color-danger);
+.hint.info {
+  color: var(--color-text-muted);
   font-size: var(--font-size-xs);
   display: flex;
   align-items: center;

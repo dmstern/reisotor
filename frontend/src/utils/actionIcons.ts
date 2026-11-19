@@ -131,6 +131,7 @@ import {
   IconCashBanknotePlus,
   IconUserPlus,
   IconCategoryPlus,
+  IconMapPinExclamation,
   IconMapPinPlus,
   IconMapPlus,
   IconShoppingCartPlus,
@@ -253,6 +254,7 @@ export type ActionIconKey =
   | 'cashBanknotePlus'
   | 'userPlus'
   | 'categoryPlus'
+  | 'mapPinExclamation'
   | 'mapPinPlus'
   | 'mapPlus'
   | 'shoppingCartPlus'
@@ -487,6 +489,11 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
     id: 'category-plus',
     emoji: '🏷️',
     outline: IconCategoryPlus,
+  },
+  mapPinExclamation: {
+    id: 'map-pin-exclamation',
+    emoji: '📍',
+    outline: IconMapPinExclamation,
   },
   mapPinPlus: {
     id: 'map-pin-plus',

@@ -461,8 +461,9 @@ function onDropdownScroll(e: Event) {
   z-index: 3;
 }
 
-.search-info-popover :deep(.info-popover-btn) {
+.search-info-popover :deep(.info-popover-btn:not(.is-active)) {
   @include control-glass-interactive('embedded');
+  color: var(--color-text-muted);
 }
 
 .search-right-actions .input-spinner-wrap {

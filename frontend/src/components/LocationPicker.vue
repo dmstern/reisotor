@@ -684,6 +684,7 @@ defineExpose({
       v-if="locateError"
       variant="danger"
       size="sm"
+      :icon="ACTION_ICONS.mapPinExclamation"
       reportable
       description="Standort konnte nicht ermittelt werden."
       error-context="Standortermittlung (Geolocation)"
