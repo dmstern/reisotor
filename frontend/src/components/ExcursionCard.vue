@@ -240,7 +240,10 @@ const {
           @show-on-map="emit('show-on-map')"
         />
 
-        <LinkedDiaryPills v-if="linkedDiaryEntries.length" :entries="linkedDiaryEntries" />
+        <LinkedDiaryPills
+          v-if="expanded && linkedDiaryEntries.length"
+          :entries="linkedDiaryEntries"
+        />
 
         <div
           v-if="

@@ -246,7 +246,10 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
         :accommodation-distance="accommodationDistance"
       />
 
-      <LinkedDiaryPills v-if="linkedDiaryEntries.length" :entries="linkedDiaryEntries" />
+      <LinkedDiaryPills
+        v-if="expanded && linkedDiaryEntries.length"
+        :entries="linkedDiaryEntries"
+      />
 
       <div class="card-actions-wrapper" :class="{ 'is-expanded': expanded }">
         <div class="actions-accordion" :class="{ 'is-expanded': expanded }">

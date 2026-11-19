@@ -93,6 +93,10 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
     return null;
   });
 
+  const viewingLinkedEntityImageUrl = computed(
+    () => viewingLinkedSpot.value?.image_url ?? viewingLinkedExcursion.value?.image_url ?? null
+  );
+
   const viewingCollageImages = computed<string[]>(() => {
     if (viewingImageUrl.value) {
       return [];
@@ -292,12 +296,29 @@ export function useScheduleItemDetail(options: UseScheduleItemDetailOptions) {
     viewingItem.value = null;
   }
 
+  const viewingLinkedEntityIconGroup = computed<'categories' | 'navigation'>(() => {
+    const entry = viewingEntry.value;
+
+    if (
+      entry &&
+      entry.spotId == null &&
+      entry.ideaId != null &&
+      !viewingLinkedExcursion.value?.role
+    ) {
+      return 'navigation';
+    }
+
+    return 'categories';
+  });
+
   return {
     viewingItem,
     viewingEntry,
     viewingLinkedSpot,
     viewingLinkedExcursion,
     viewingImageUrl,
+    viewingLinkedEntityImageUrl,
+    viewingLinkedEntityIconGroup,
     viewingCollageImages,
     viewingCategoryInfo,
     viewingWeatherEntry,

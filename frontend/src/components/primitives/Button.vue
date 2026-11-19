@@ -20,6 +20,7 @@ const _props = withDefaults(
      * - 'ghost': Dezent ohne Rahmen/Schatten für Toolbars/Untermenüs
      * - 'floating': Runder, schwebender Glass-Aktionsbutton (Liquid-Glass-Style analog zu Header Pill und NavBar Pill)
      * - 'glass': Transluzenter Glass-Button (speziell für Bedienelemente innerhalb von Glass-Pills und Toolbars)
+     * - 'linked-entity': Kompakte Link-Pill für verknüpfte Entitäten (Tagebuch, Tour, Spot, GPS-Aufzeichnung)
      */
     variant?:
       | 'primary'
@@ -29,7 +30,8 @@ const _props = withDefaults(
       | 'card-action'
       | 'ghost'
       | 'floating'
-      | 'glass';
+      | 'glass'
+      | 'linked-entity';
     /** Ob der Button als Sekundär-Variante gestylt werden soll (z. B. in Kombination mit variant="danger"). */
     secondary?: boolean;
     /** Button-Größe: 'sm' (klein), 'md' (Standard), 'lg' (groß). */
@@ -640,6 +642,59 @@ a.btn.is-loading {
   min-width: var(--input-width-lg, 52px);
   min-height: var(--input-height-lg, 52px);
   font-size: 1.5rem;
+}
+
+.btn--linked-entity {
+  @include touch-target($expand: true);
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 7px;
+  min-height: 34px;
+  max-width: 100%;
+  min-width: 0;
+  padding: var(--space-1) 11px var(--space-1) 6px;
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  corner-shape: round;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  line-height: 1.3;
+  text-decoration: none;
+  box-shadow: none;
+}
+
+@include can-hover {
+  .btn--linked-entity:hover:not(:disabled):not(.is-disabled) {
+    background-color: var(--color-hover);
+    border-color: var(--color-primary);
+    translate: 0 -1px;
+    box-shadow: none;
+  }
+}
+
+.btn--linked-entity:active:not(:disabled):not(.is-disabled) {
+  background-color: var(--color-hover);
+  box-shadow: none;
+}
+
+.btn--linked-entity.is-warning {
+  border-color: var(--color-warning);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn--linked-entity,
+  .btn--linked-entity:hover:not(:disabled):not(.is-disabled),
+  .btn--linked-entity:active:not(:disabled):not(.is-disabled) {
+    transition:
+      background-color 0.15s ease,
+      border-color 0.15s ease,
+      color 0.15s ease !important;
+    translate: none !important;
+    transform: none !important;
+  }
 }
 
 .btn--sm,

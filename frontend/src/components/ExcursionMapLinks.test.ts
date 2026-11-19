@@ -63,9 +63,9 @@ describe('ExcursionMapLinks', () => {
     app.use(pinia);
     app.mount(container);
 
-    const buttons = container.querySelectorAll<HTMLButtonElement>('.show-on-map-btn');
-    expect(buttons.length).toBe(2);
-    buttons[1].click();
+    const buttons = container.querySelectorAll<HTMLButtonElement>('.linked-track-btn');
+    expect(buttons.length).toBe(1);
+    buttons[0].click();
 
     expect(drawers.mapFocusTrackId).toBe(1);
     app.unmount();

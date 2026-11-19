@@ -2,6 +2,7 @@
 import type { LocationTrack } from '../api/types';
 import { useDrawersStore } from '../stores/drawers';
 import Button from './primitives/Button.vue';
+import LinkedEntityButton from './primitives/LinkedEntityButton.vue';
 import AppIcon from './AppIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -31,28 +32,26 @@ const drawers = useDrawersStore();
       <AppIcon :icon="FORM_FIELD_ICONS.maps" :size="14" group="formFields" />
       <span class="btn-label">Auf Karte anzeigen</span>
     </Button>
-    <Button
-      v-for="trk in linkedTracks"
-      :key="trk.id"
-      variant="card-action"
-      class="show-on-map-btn"
+    <LinkedEntityButton
+      v-for="track in linkedTracks"
+      :key="track.id"
+      :icon="ACTION_ICONS.recordStart"
+      icon-group="actions"
+      class="linked-track-btn"
       :title="
         'Aufzeichnung „' +
-        (trk.title || 'Aufzeichnung') +
+        (track.title || 'Aufzeichnung') +
         '“' +
-        (trk.author_username ? ' von ' + trk.author_username : '') +
+        (track.author_username ? ' von ' + track.author_username : '') +
         ' auf Karte abspielen'
       "
-      @click.stop="drawers.openMapForTrack(trk.id)"
+      @click.stop="drawers.openMapForTrack(track.id)"
     >
-      <AppIcon :icon="ACTION_ICONS.recordStart" :size="14" group="actions" />
-      <span class="btn-label">
-        <span v-if="trk.author_avatar" class="track-btn-avatar" :title="trk.author_username">{{
-          trk.author_avatar
-        }}</span>
-        {{ trk.title || 'Aufzeichnung' }}
-      </span>
-    </Button>
+      <span v-if="track.author_avatar" class="track-btn-avatar" :title="track.author_username">{{
+        track.author_avatar
+      }}</span>
+      {{ track.title || 'Aufzeichnung' }}
+    </LinkedEntityButton>
   </div>
 </template>
 
@@ -60,6 +59,7 @@ const drawers = useDrawersStore();
 .links {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-1);
 }

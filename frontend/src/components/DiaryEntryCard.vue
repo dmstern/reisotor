@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { imageDisplayUrl } from '../utils/imageDisplayUrl';
 import type { DiaryEntry, DiaryImage, Excursion, Spot } from '../api/types';
 import type { DailyWeather } from '../utils/weather';
 import { useDrawersStore } from '../stores/drawers';
@@ -13,6 +12,7 @@ import { useDiaryEntityLinks } from '../composables/useDiaryEntityLinks';
 import AppIcon from './AppIcon.vue';
 import Card from './primitives/Card.vue';
 import Button from './primitives/Button.vue';
+import LinkedEntityButton from './primitives/LinkedEntityButton.vue';
 import EditButton from './EditButton.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import DraftBadge from './DraftBadge.vue';
@@ -185,67 +185,40 @@ function excursionTooltip(ex: Excursion): string {
           <AppIcon :icon="SECTION_ICON_DEFS.map" :size="14" group="navigation" /> Tag auf Karte
           anzeigen
         </Button>
-        <Button
-          v-for="ex in excursions"
-          :key="ex.id"
-          type="button"
-          variant="ghost"
-          class="excursion-chip"
-          :class="{ 'excursion-chip--mismatch': excursionDateMismatch(ex) }"
-          :title="excursionTooltip(ex)"
-          :aria-label="excursionTooltip(ex)"
-          @click="drawers.openMapForExcursion(ex.id)"
+        <LinkedEntityButton
+          v-for="excursion in excursions"
+          :key="excursion.id"
+          :label="excursion.title"
+          :image-url="excursion.image_url"
+          :icon="SECTION_ICON_DEFS.excursions"
+          icon-group="navigation"
+          :warning="excursionDateMismatch(excursion)"
+          :title="excursionTooltip(excursion)"
+          :aria-label="excursionTooltip(excursion)"
+          class="diary-linked-excursion"
+          @click="drawers.openMapForExcursion(excursion.id)"
         >
-          <span
-            class="excursion-chip-img"
-            :style="
-              ex.image_url ? { backgroundImage: `url(${imageDisplayUrl(ex.image_url)})` } : {}
-            "
-          >
-            <AppIcon
-              v-if="!ex.image_url"
-              :icon="SECTION_ICON_DEFS.excursions"
-              :size="16"
-              group="navigation"
-            />
-          </span>
-          <span class="excursion-chip-title">{{ ex.title }}</span>
-          <span
-            v-if="excursionDateMismatch(ex)"
-            class="chip-mismatch-badge"
-            :title="`Geplant am ${formatDate(ex.date!)}`"
-          >
-            <AppIcon :icon="ACTION_ICONS.warning" :size="12" group="actions" />
-            <span class="chip-mismatch-text">{{
-              formatDate(ex.date!, { includeYear: false })
-            }}</span>
-          </span>
-        </Button>
-        <Button
+          <template v-if="excursionDateMismatch(excursion)" #badge>
+            <span class="chip-mismatch-badge" :title="`Geplant am ${formatDate(excursion.date!)}`">
+              <AppIcon :icon="ACTION_ICONS.warning" :size="12" group="actions" />
+              <span class="chip-mismatch-text">{{
+                formatDate(excursion.date!, { includeYear: false })
+              }}</span>
+            </span>
+          </template>
+        </LinkedEntityButton>
+        <LinkedEntityButton
           v-for="spot in spots"
           :key="spot.id"
-          type="button"
-          variant="ghost"
-          class="excursion-chip"
+          :label="spot.title"
+          :image-url="spot.image_url"
+          :icon="spotCategoryMeta(spot.category).tabler"
+          icon-group="categories"
           :title="formatSpotMismatchTooltip(spot)"
           :aria-label="formatSpotMismatchTooltip(spot)"
+          class="diary-linked-spot"
           @click="drawers.openMapAt(`spot-${spot.id}`)"
-        >
-          <span
-            class="excursion-chip-img"
-            :style="
-              spot.image_url ? { backgroundImage: `url(${imageDisplayUrl(spot.image_url)})` } : {}
-            "
-          >
-            <AppIcon
-              v-if="!spot.image_url"
-              :icon="spotCategoryMeta(spot.category).tabler"
-              :size="16"
-              group="categories"
-            />
-          </span>
-          <span class="excursion-chip-title">{{ spot.title }}</span>
-        </Button>
+        />
       </div>
 
       <SocialRow
@@ -359,34 +332,6 @@ function excursionTooltip(ex: Excursion): string {
   min-width: 0;
 }
 
-.excursion-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  background: var(--color-hover);
-  border: none;
-  border-radius: var(--radius-pill);
-  corner-shape: round;
-  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
-  font-size: var(--font-size-sm);
-  font-family: inherit;
-  color: var(--color-text);
-  text-decoration: none;
-  cursor: pointer;
-  max-width: 100%;
-  min-width: 0;
-}
-
-@include can-hover {
-  .excursion-chip:hover {
-    background: var(--color-primary-tint);
-  }
-}
-
-.excursion-chip--mismatch {
-  border: var(--border-width) solid var(--color-warning);
-}
-
 .chip-mismatch-badge {
   display: inline-flex;
   align-items: center;
@@ -404,31 +349,6 @@ function excursionTooltip(ex: Excursion): string {
 
 .chip-mismatch-text {
   font-size: var(--font-size-xs);
-}
-
-.excursion-chip:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo);
-}
-
-.excursion-chip-title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-}
-
-.excursion-chip-img {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-full);
-  background: var(--color-primary-tint) center/cover no-repeat;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--font-size-sm);
-  flex-shrink: 0;
 }
 
 .diary-weather {
@@ -459,10 +379,6 @@ function excursionTooltip(ex: Excursion): string {
     margin-left: 0;
     justify-content: flex-end;
     width: 100%;
-  }
-
-  .excursion-chip-title {
-    max-width: 180px;
   }
 }
 </style>

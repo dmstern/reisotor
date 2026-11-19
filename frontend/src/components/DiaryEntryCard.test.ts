@@ -120,7 +120,7 @@ describe('DiaryEntryCard', () => {
       ],
     });
     expect(html).toContain('Bootstour');
-    expect(html).toContain('excursion-chip--mismatch');
+    expect(html).toContain('is-warning');
     expect(html).toContain('chip-mismatch-badge');
     expect(html).toContain('15.08');
   });
@@ -152,7 +152,7 @@ describe('DiaryEntryCard', () => {
 
     expect(html).toContain('Aussichtspunkt');
     expect(html).toContain('title="Aussichtspunkt (geplant am 20.08.2026)"');
-    expect(html).not.toContain('excursion-chip--mismatch');
+    expect(html).not.toContain('is-warning');
     expect(html).not.toContain('chip-mismatch-badge');
   });
 
@@ -184,7 +184,7 @@ describe('DiaryEntryCard', () => {
     app.mount(container);
     await nextTick();
 
-    const button = container.querySelector('.excursion-chip') as HTMLButtonElement | null;
+    const button = container.querySelector('.diary-linked-excursion') as HTMLButtonElement | null;
     expect(button).not.toBeNull();
     button?.click();
     expect(openSpy).toHaveBeenCalledWith(7);
@@ -221,7 +221,7 @@ describe('DiaryEntryCard', () => {
     app.mount(container);
     await nextTick();
 
-    const button = container.querySelector('.excursion-chip') as HTMLButtonElement | null;
+    const button = container.querySelector('.diary-linked-spot') as HTMLButtonElement | null;
     expect(button).not.toBeNull();
     button?.click();
     expect(openSpy).toHaveBeenCalledWith('spot-99');
