@@ -74,7 +74,7 @@ function onEditClick(closePopover?: () => void) {
       @click.stop="onBadgeActionClick"
     >
       <AppIcon
-        :icon="ACTION_ICONS.warning"
+        :icon="ACTION_ICONS.mapPinExclamation"
         :size="13"
         group="actions"
         class="spot-location-warning-icon status-warning-icon"
@@ -83,7 +83,7 @@ function onEditClick(closePopover?: () => void) {
     </button>
     <span v-else class="spot-location-badge-display">
       <AppIcon
-        :icon="ACTION_ICONS.warning"
+        :icon="ACTION_ICONS.mapPinExclamation"
         :size="13"
         group="actions"
         class="spot-location-warning-icon status-warning-icon"

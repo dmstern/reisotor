@@ -335,9 +335,9 @@ function onSubmit() {
         <span class="field-label">Ziel &amp; Standort</span>
         <p class="hint">Wird für die Wetter-Anzeige und die Position auf der Karte verwendet.</p>
         <p v-if="locationError" class="hint error">
-          <AppIcon :icon="ACTION_ICONS.warning" :size="14" group="actions" /> Der Standort konnte
-          auch automatisch nicht ermittelt werden. Bitte tippe auf die Karte, um ihn manuell zu
-          setzen.
+          <AppIcon :icon="ACTION_ICONS.mapPinExclamation" :size="14" group="actions" /> Der Standort
+          konnte auch automatisch nicht ermittelt werden. Bitte tippe auf die Karte, um ihn manuell
+          zu setzen.
         </p>
         <LocationPicker
           v-model="manualPin"

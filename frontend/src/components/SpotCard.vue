@@ -219,7 +219,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
           @click.stop="emit('edit', spot)"
         >
           <AppIcon
-            :icon="ACTION_ICONS.warning"
+            :icon="ACTION_ICONS.mapPinExclamation"
             :size="14"
             group="actions"
             class="map-action-warning-icon"
