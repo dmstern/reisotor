@@ -11,6 +11,7 @@ import { DEMO_MODE } from '../../demo/isDemoMode';
 import AppIcon from '../AppIcon.vue';
 import Alert from '../primitives/Alert.vue';
 import DetailRow from '../primitives/DetailRow.vue';
+import LoadingSpinner from '../primitives/LoadingSpinner.vue';
 import WeatherDayDetailDialog from '../WeatherDayDetailDialog.vue';
 import DashboardWeatherTodayRow from './DashboardWeatherTodayRow.vue';
 import DashboardWeatherDayItem from './DashboardWeatherDayItem.vue';
@@ -87,7 +88,15 @@ onMounted(() => {
   <section class="card weather-card">
     <h3><AppIcon :icon="ACTION_ICONS.sun" :size="16" group="actions" /> Wetter</h3>
     <template v-if="trip.lat != null && trip.lng != null">
-      <p v-if="weatherLoading && !weatherDays" class="hint">Lädt …</p>
+      <p
+        v-if="weatherLoading && !weatherDays"
+        class="hint weather-loading-hint"
+        role="status"
+        aria-live="polite"
+      >
+        <LoadingSpinner variant="radar" size="sm" decorative />
+        <span>Lädt …</span>
+      </p>
       <Alert
         v-else-if="weatherError"
         variant="danger"
@@ -383,6 +392,12 @@ a.weather-source {
 
 .weather-source.static:hover {
   color: var(--color-text-muted);
+}
+
+.weather-loading-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .region-advisory-score {

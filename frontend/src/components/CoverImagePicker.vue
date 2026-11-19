@@ -491,7 +491,7 @@ function handleModalClose(visible: boolean) {
     >
       <div v-if="loading" class="banner-loading-overlay" aria-live="polite">
         <div class="banner-loading-shimmer" aria-hidden="true" />
-        <LoadingSpinner :size="variant === 'polaroid' ? 'md' : 'sm'" />
+        <LoadingSpinner :size="variant === 'polaroid' ? 'md' : 'sm'" variant="search" />
         <span class="banner-loading-text">{{ loadingText || 'Bild wird gesucht…' }}</span>
       </div>
 
@@ -591,7 +591,12 @@ function handleModalClose(visible: boolean) {
               title="Nach Bildern für diesen Suchbegriff suchen"
               @click="executeSearch()"
             >
-              <LoadingSpinner v-if="isSearchingAction === 'query'" size="sm" />
+              <LoadingSpinner
+                v-if="isSearchingAction === 'query'"
+                size="sm"
+                variant="search"
+                :inverted="isSearchButtonPrimary"
+              />
               <span>{{ isSearchingAction === 'query' ? 'Sucht…' : 'Suchen' }}</span>
             </Button>
           </div>
@@ -620,7 +625,7 @@ function handleModalClose(visible: boolean) {
               title="Nächstes Bild"
               @click="nextSuggestion"
             >
-              <LoadingSpinner v-if="isSearchingAction === 'next'" size="sm" />
+              <LoadingSpinner v-if="isSearchingAction === 'next'" size="sm" variant="search" />
               <span>{{ isSearchingAction === 'next' ? 'Sucht…' : 'Nächstes Bild' }}</span>
               <AppIcon
                 v-if="isSearchingAction !== 'next'"

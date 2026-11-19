@@ -117,7 +117,12 @@ provide(
     class="btn"
     :class="btnClasses"
   >
-    <LoadingSpinner v-if="loading" :size="size === 'lg' ? 'md' : 'sm'" class="btn-spinner" />
+    <LoadingSpinner
+      v-if="loading"
+      :size="size === 'lg' ? 'md' : 'sm'"
+      :inverted="variant === 'primary' || variant === 'danger'"
+      class="btn-spinner"
+    />
     <AppIcon
       v-else-if="icon"
       :icon="icon"
@@ -136,7 +141,12 @@ provide(
     class="btn"
     :class="btnClasses"
   >
-    <LoadingSpinner v-if="loading" :size="size === 'lg' ? 'md' : 'sm'" class="btn-spinner" />
+    <LoadingSpinner
+      v-if="loading"
+      :size="size === 'lg' ? 'md' : 'sm'"
+      :inverted="variant === 'primary' || variant === 'danger'"
+      class="btn-spinner"
+    />
     <AppIcon
       v-else-if="icon"
       :icon="icon"
@@ -156,7 +166,12 @@ provide(
     class="btn"
     :class="btnClasses"
   >
-    <LoadingSpinner v-if="loading" :size="size === 'lg' ? 'md' : 'sm'" class="btn-spinner" />
+    <LoadingSpinner
+      v-if="loading"
+      :size="size === 'lg' ? 'md' : 'sm'"
+      :inverted="variant === 'primary' || variant === 'danger'"
+      class="btn-spinner"
+    />
     <AppIcon
       v-else-if="icon"
       :icon="icon"
@@ -177,7 +192,12 @@ provide(
     class="btn"
     :class="btnClasses"
   >
-    <LoadingSpinner v-if="loading" :size="size === 'lg' ? 'md' : 'sm'" class="btn-spinner" />
+    <LoadingSpinner
+      v-if="loading"
+      :size="size === 'lg' ? 'md' : 'sm'"
+      :inverted="variant === 'primary' || variant === 'danger'"
+      class="btn-spinner"
+    />
     <AppIcon
       v-else-if="icon"
       :icon="icon"
@@ -254,12 +274,6 @@ provide(
 
 .btn-spinner {
   flex-shrink: 0;
-}
-
-.btn--primary:not(.btn--secondary) .btn-spinner,
-.btn--danger:not(.btn--secondary) .btn-spinner {
-  border-color: rgba(255, 255, 255, 0.35);
-  border-top-color: #fff;
 }
 
 a.btn.is-disabled,
