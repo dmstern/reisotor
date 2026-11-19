@@ -193,11 +193,16 @@ defineEmits<{
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  /* Feste Breite für den Blätterer reservieren, damit das Umbruchverhalten des
+     Wochen-/Monat-Umschalters nur von der Schubladenbreite abhängt – nicht von der Länge
+     des gewählten Zeitraums (z. B. "Mai 2027" vs. "April 2027" / "29.12.2026 – 11.01.2027"). */
+  width: min(244px, 100%);
   max-width: 100%;
   min-width: 0;
 }
 
 .range-label {
+  flex: 1;
   font-size: var(--font-size-sm);
   font-weight: 700;
   color: var(--color-text);
