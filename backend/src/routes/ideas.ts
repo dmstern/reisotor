@@ -627,14 +627,6 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       return;
     }
 
-    // Rolle (Anreise/Abreise/Weiterreise) mit mindestens zwei Stationen (Von/Nach)
-    if (role && (spot_ids?.length ?? 0) < 2) {
-      return reply.code(400).send({
-        error:
-          'Eine Tour mit Rolle (Anreise/Abreise/Weiterreise) braucht mindestens zwei Stationen (Von/Nach).',
-      });
-    }
-
     const isHtml = req.body.note_format === 'html';
     const { budgetExpenseId } = planIdeaBudgetExpense({
       tripId: trip_id,
@@ -734,13 +726,6 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       seat,
       ticket_link,
     } = req.body;
-
-    if (role && (spot_ids?.length ?? 0) < 2) {
-      return reply.code(400).send({
-        error:
-          'Eine Tour mit Rolle (Anreise/Abreise/Weiterreise) braucht mindestens zwei Stationen (Von/Nach).',
-      });
-    }
 
     const isHtml = req.body.note_format === 'html';
     const { budgetExpenseId, staleIdToDelete } = planIdeaBudgetExpense({

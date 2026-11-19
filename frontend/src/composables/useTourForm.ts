@@ -78,15 +78,8 @@ export function useTourForm(options: UseTourFormOptions) {
     () => excursionTitleTouched.value && !activeExcursionForm.value.title.trim()
   );
 
-  const isExcursionRoleInvalid = computed(() =>
-    Boolean(activeExcursionForm.value.role && activeExcursionForm.value.spot_ids.length < 2)
-  );
-
   const canSaveExcursion = computed(
-    () =>
-      !!activeExcursionForm.value.title.trim() &&
-      !isExcursionRoleInvalid.value &&
-      !isExcursionUploadingAttachments.value
+    () => !!activeExcursionForm.value.title.trim() && !isExcursionUploadingAttachments.value
   );
 
   const excursionSaveTooltip = computed(() => {
@@ -96,10 +89,6 @@ export function useTourForm(options: UseTourFormOptions) {
 
     if (!activeExcursionForm.value.title.trim()) {
       return 'Bitte gib zuerst einen Titel für die Tour ein';
-    }
-
-    if (isExcursionRoleInvalid.value) {
-      return 'Für Anreise/Abreise/Weiterreise werden mindestens 2 Stationen benötigt';
     }
 
     return undefined;
@@ -228,11 +217,8 @@ export function useTourForm(options: UseTourFormOptions) {
   }
 
   async function addExcursion() {
-    if (!excursionForm.value.title.trim() || isExcursionRoleInvalid.value) {
-      if (!excursionForm.value.title.trim()) {
-        excursionTitleTouched.value = true;
-      }
-
+    if (!excursionForm.value.title.trim()) {
+      excursionTitleTouched.value = true;
       return;
     }
 
@@ -394,7 +380,6 @@ export function useTourForm(options: UseTourFormOptions) {
     activeExcursionForm,
     excursionTitleTouched,
     showExcursionTitleError,
-    isExcursionRoleInvalid,
     canSaveExcursion,
     excursionSaveTooltip,
     newExcursionDraft,
