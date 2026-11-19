@@ -260,17 +260,19 @@ defineExpose({
 
 .dropdown--sm .dropdown__button.dropdown__field,
 .dropdown__button.dropdown__field.btn--sm {
-  padding: 6px 10px;
-  height: var(--input-height-sm, 38px);
-  min-height: var(--input-height-sm, 38px);
+  @include touch-target($expand: true);
+  padding: 6px 12px;
+  gap: var(--control-gap-sm, 6px);
+  height: var(--control-height-sm, 36px);
+  min-height: var(--control-height-sm, 36px);
   font-size: var(--font-size-sm);
 }
 
 .dropdown--lg .dropdown__button.dropdown__field,
 .dropdown__button.dropdown__field.btn--lg {
   padding: 12px 16px;
-  height: var(--input-height-lg, 52px);
-  min-height: var(--input-height-lg, 52px);
+  height: var(--control-height-lg, 52px);
+  min-height: var(--control-height-lg, 52px);
   font-size: var(--font-size-md);
 }
 

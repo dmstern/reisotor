@@ -548,6 +548,15 @@
   --input-height-lg: 52px;
   --input-width-lg: 52px;
 
+  /* Einheitliche Button- & Trigger-Höhen und Icon-Abstände (Issue #810) */
+  --control-height-xs: 30px;
+  --control-height-sm: 36px;
+  --control-height-md: var(--input-height);
+  --control-height-lg: var(--input-height-lg);
+  --control-gap-xs: var(--space-1);
+  --control-gap-sm: 6px;
+  --control-gap-md: var(--space-2);
+
   /* Formularfeld-Abstände (Abstand zwischen Label-Kopfzeile und Eingabefeld) */
   --form-field-gap: 5px;
 

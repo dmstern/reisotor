@@ -98,6 +98,28 @@ describe('Button primitive', () => {
     expect(html).toContain('Edit');
   });
 
+  it('renders btn--tonal and btn--xs when variant="tonal" and size="xs" are passed', async () => {
+    const app = createApp({
+      render: () => h(Button, { variant: 'tonal', size: 'xs' }, () => 'Kompakt'),
+    });
+    const html = await renderToString(app);
+    expect(html).toContain('btn--tonal');
+    expect(html).toContain('btn--xs');
+    expect(html).toContain('Kompakt');
+  });
+
+  it('renders btn--overlay with pill shape when variant="overlay" and shape="pill" are passed', async () => {
+    const app = createApp({
+      render: () =>
+        h(Button, { variant: 'overlay', shape: 'pill', size: 'sm' }, () => 'Bild ändern'),
+    });
+    const html = await renderToString(app);
+    expect(html).toContain('btn--overlay');
+    expect(html).toContain('btn--pill');
+    expect(html).toContain('btn--sm');
+    expect(html).toContain('Bild ändern');
+  });
+
   it('renders btn--pill when shape="pill" is passed without forcing icon-only mode', async () => {
     const app = createApp({
       render: () => h(Button, { shape: 'pill', size: 'sm' }, () => 'Ändern'),

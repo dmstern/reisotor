@@ -758,14 +758,20 @@ für elementare UI-Bausteine. Formularelemente werden **nicht** über globale Ta
 Reisotor-Design (Rahmen, Schatten, Squircle-Formen) versehen, sondern ausschließlich über die Primitives, um
 unerwünschte Vererbungen in Spezialfällen (z. B. ungerahmte Inputs in `QuickAddRow.vue`) zu vermeiden:
 
-- **`Button.vue`**: Zentrales Primitive für alle Schaltflächen. Unterstützt `variant` (`primary`,
-  `secondary`, `danger`, `card-action`, `ghost`), `size` (`sm`, `md`, `lg`) und den **Disabled-Zustand**
-  (`disabled` prop / `:disabled` Pseudo-Klasse). Deaktivierte Buttons werden ausgegraut (`opacity: 0.5`),
-  erhalten `cursor: not-allowed`, deaktiveren Pointer-Events (`pointer-events: none`) und entfernen
-  Schlagschatten sowie Skalierungs-Effekte beim Klicken (`transform: none`).
-- **`IconButton.vue`**: Spezielles Primitive für reine Icon- und Emoji-Schaltflächen (Avatar-Auswahl,
-  Verschiebe-Aktionen, Close-/Toggle-Buttons). Standardmäßig komplett ohne Rahmen, Schatten oder
-  Hintergrund (`variant="ghost"`), mit sanftem Hover- und aktivem Auswahlstatus (`active`).
+- **`Button.vue`**: Zentrales Primitive für alle Schaltflächen (konsolidiert in Issue #810). Unterstützt **6 kanonische Varianten** (`primary`, `secondary`, `tonal`, `ghost`, `danger` + `secondary`-Flag, `overlay`), **4 Größen** (`xs` 30px, `sm` 36px, `md` 46px, `lg` 52px — `xs` und `sm` erweitern ihr Touch-Target auf Touch-Geräten automatisch per `@include touch-target($expand: true)` auf ≥ 44px) und **3 Formen** (`squircle` Standard, `circle`, `pill`).
+  - **Ruhezustand & Progressive 3D:** Nur `primary` und solides `danger` sind dauerhaft leicht erhaben (CTA-Hierarchie). Alle sekundären Varianten (`secondary`, `tonal`, `ghost`, `overlay`) sowie Nachbar-Trigger (`DropdownMenu`, `DoneToggle`, `CollapsibleFieldset`, `InfoPopover`, `LinkedEntityButton`) sind im Ruhezustand **flach** (`box-shadow: none`) und erhalten den 3D-Lift (`-1px`, `--shadow-control-hover`) erst bei `@include can-hover` sowie haptisches Einfedern (`translateY(1px) scale(0.985)`) bei `:active` (via `@mixin control-physics-progressive`).
+  - **Form-Regel:** `squircle` für alle regulären Buttons & Card-/Listen-IconButtons; `circle` **nur** für Icon-Only-Buttons über Fotos/Medien (`overlay`) und Mikro-Indikatoren (`InfoPopover`, Map-FABs); `pill` **nur** für Status-/Entity-Chips (`DoneToggle`, `LinkedEntityButton`, `CollapsibleFieldset`), Bild-Overlay-Buttons mit Text (`overlay`) und Card-Disclosure-Pills.
+  - **Nachschlage-Matrix (Anwendungsfall → Komponente & Props):**
+    - Haupt-CTA (max. 1× pro Kontext) → `<Button variant="primary" />`
+    - Sekundäraktion (z. B. Abbrechen) → `<Button variant="secondary" />`
+    - Destruktiv (Dialog-Footer / Bestätigung) → `<Button variant="danger" secondary />` bzw. `<Button variant="danger" />`
+    - Kontext-Aktion in Card/Modal (z. B. „Auf Karte“) → `<Button variant="tonal" size="sm" />`
+    - Card-Edit / Toolbar / Like & Comment → `<IconButton variant="ghost" size="sm" />` bzw. `<Button variant="ghost" size="sm" />`
+    - Enge Listen-Zeile (ToDo, Einkauf, Packliste) → `<IconButton variant="ghost" size="xs" />`
+    - Foto-/Banner-Overlay (mit Text / nur Icon) → `<Button variant="overlay" shape="pill" size="sm" />` bzw. `<IconButton variant="overlay" shape="circle" size="sm" />`
+    - Bewusste Spezial-Controls (nicht in `Button.vue` pressen): `TabBar`, `ExcursionCategoryNav`, `SegmentedToggle`, `Drawer`-Anfasser, `RichTextEditor`-Toolbar, Farbfelder/Icon-Grids, Radio-Karten.
+  - **Disabled-Zustand** (`disabled` prop / `:disabled` Pseudo-Klasse): ausgegraut (`opacity: 0.5`), `cursor: not-allowed`, `pointer-events: none`, keine Schatten oder Transforms.
+- **`IconButton.vue`**: Spezielles Primitive für reine Icon- und Emoji-Schaltflächen (Avatar-Auswahl, Verschiebe-Aktionen, Card-Edit, Close-/Toggle-Buttons). Default ist **`variant="ghost"`** (`squircle`), unterstützt `xs` (30px), `sm` (36px), `md` (46px) und `lg` (52px) mit automatischer Touch-Target-Expansion für `xs`/`sm`.
 - **`ButtonGroup.vue` & Dialog-Footer (`.actions-row`)**: Standardisierte Aktionsleiste für Modals und
   Dialog-Formulare. Desktop: links destruktive/sekundäre Aktionen (`variant="danger" secondary` für Löschen),
   gefolgt von `.spacer`, und rechts das konsistente Aktionspaar `[Abbrechen]` (`variant="secondary" class="btn-cancel"`)
