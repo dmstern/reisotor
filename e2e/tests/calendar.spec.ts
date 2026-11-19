@@ -87,7 +87,7 @@ test('clicking a projected tour entry jumps directly to the tour (#800)', async 
 
   const tourItem = page.locator('.day-detail .items .item', { hasText: excursion.title });
   await expect(tourItem).toBeVisible();
-  await expect(tourItem.locator('.nav-indicator')).toBeVisible();
+  await expect(tourItem.locator('.todo-nav-indicator')).toBeVisible();
   await tourItem.click();
 
   // Direkt projizierte Touren springen per Klick direkt zur Tour statt ein Detail-Modal zu öffnen
