@@ -6,6 +6,7 @@ import { useTripStore } from '../stores/trip';
 import { useAuthStore } from '../stores/auth';
 import { useDrawersStore } from '../stores/drawers';
 import { useExcursionsStore } from '../stores/excursions';
+import { useDiaryStore } from '../stores/diary';
 import { useDraftAutosave } from './useDraftAutosave';
 import { useToast } from './useToast';
 import { parseLatLngFromMapsLink, tilePreviewUrl, buildGoogleMapsLink } from '../utils/googleMaps';
@@ -45,6 +46,7 @@ export interface SpotFormData {
   scheduledDates: string[];
   scheduledDateDone: Record<string, boolean>;
   scheduledDate?: string;
+  diary_ids: number[];
 }
 
 export const SPOT_SIDE_OPTIONS = [
@@ -84,6 +86,7 @@ export function emptySpotForm(): SpotFormData {
     scheduledDates: [] as string[],
     scheduledDateDone: {} as Record<string, boolean>,
     scheduledDate: '',
+    diary_ids: [] as number[],
   };
 }
 
@@ -165,6 +168,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
   const auth = useAuthStore();
   const drawers = useDrawersStore();
   const excursionsStore = useExcursionsStore();
+  const diaryStore = useDiaryStore();
   const { showToast } = useToast();
 
   const showSpotForm = ref(false);
@@ -388,6 +392,10 @@ export function useSpotForm(options: UseSpotFormOptions) {
 
     if (!spotForm.value.scheduledDateDone || typeof spotForm.value.scheduledDateDone !== 'object') {
       spotForm.value.scheduledDateDone = {};
+    }
+
+    if (!Array.isArray(spotForm.value.diary_ids)) {
+      spotForm.value.diary_ids = [];
     }
 
     showSpotScheduleSection.value =
@@ -949,6 +957,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
       link: formData.link?.trim() ? normalizeWebUrl(formData.link) : null,
       done: effectiveDone,
       dates: datesPayload,
+      diary_ids: Array.isArray(formData.diary_ids) ? formData.diary_ids : [],
     };
   }
 
@@ -1075,6 +1084,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
       spotPendingFixId.value != null
         ? await spotsStore.update(spotPendingFixId.value, body)
         : await spotsStore.create(body);
+    diaryStore.syncLinksForSpot(result.id, body.diary_ids);
     drawers.touchLocations();
 
     if (body.maps_link && result.lat == null && !spotManualPin.value) {
@@ -1204,6 +1214,9 @@ export function useSpotForm(options: UseSpotFormOptions) {
       scheduledDates,
       scheduledDateDone,
       scheduledDate: spotScheduledDates.value.get(latestSpot.id) ?? '',
+      diary_ids: diaryStore.entries
+        .filter((entry) => !entry.is_draft && (entry.spot_ids ?? []).includes(latestSpot.id))
+        .map((entry) => entry.id),
     };
     const pin =
       latestSpot.lat != null && latestSpot.lng != null
@@ -1227,6 +1240,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
 
     const body = spotToBody(editSpotForm.value, editSpotManualPin.value, editingSpot.value);
     const updated = await spotsStore.update(editingSpot.value.id, body);
+    diaryStore.syncLinksForSpot(editingSpot.value.id, body.diary_ids);
     drawers.touchLocations();
 
     if (body.maps_link && updated.lat == null && !editSpotManualPin.value) {

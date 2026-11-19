@@ -6,6 +6,7 @@ import { sanitizeHtml } from '../utils/sanitizeHtml.js';
 import { localizeImageUrl } from '../utils/remoteImage.js';
 import { associateUploadWithTrip } from '../uploadRegistry.js';
 import { isUserRestricted } from '../registrationConfig.js';
+import { syncPublishedDiaryLinksForIdea } from '../utils/diaryLinks.js';
 
 // role/transport_type/... (#176): eine Tour mit gesetzter role ist die ehemalige Reise-Etappe
 // (Anreise/Abreise/Weiterreise) - dieselbe ideas-Zeile trägt jetzt sowohl die normale Tour- als auch
@@ -65,6 +66,7 @@ interface IdeaBody {
   note_format?: 'html' | 'legacy';
   date?: string;
   spot_ids?: number[];
+  diary_ids?: number[];
   legs?: ExcursionLegInput[];
   role?: IdeaRole | null;
   transport_type?: string | null;
@@ -620,6 +622,15 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       tourTitle: title,
       tourDate: normalizedDate,
     });
+
+    if (Array.isArray(req.body.diary_ids)) {
+      const diaryLinksChanged = syncPublishedDiaryLinksForIdea(ideaId, trip_id, req.body.diary_ids);
+
+      if (diaryLinksChanged) {
+        recordActivity(trip_id, 'diary', ideaId, 'updated', req.session.userId!);
+      }
+    }
+
     recordActivity(trip_id, 'ideas', ideaId, 'created', req.session.userId!);
     reply.code(201);
     const row = selectIdeaByIdStmt.get(ideaId) as IdeaRow;
@@ -751,6 +762,19 @@ export const ideasRoutes: FastifyPluginAsync = async (app) => {
       tourTitle: title,
       tourDate: normalizedDate,
     });
+
+    if (Array.isArray(req.body.diary_ids)) {
+      const diaryLinksChanged = syncPublishedDiaryLinksForIdea(
+        ideaId,
+        existingIdea.trip_id,
+        req.body.diary_ids
+      );
+
+      if (diaryLinksChanged) {
+        recordActivity(existingIdea.trip_id, 'diary', ideaId, 'updated', req.session.userId!);
+      }
+    }
+
     const row = selectIdeaByIdStmt.get(ideaId) as IdeaRow;
     recordActivity(existingIdea.trip_id, 'ideas', ideaId, 'updated', req.session.userId!);
     const savedLegs = legsFor([ideaId]).get(ideaId) ?? [];

@@ -16,6 +16,7 @@ import TourAssignDropdown from './TourAssignDropdown.vue';
 import FileAttachments from './FileAttachments.vue';
 import DraftStatusBar from './DraftStatusBar.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
+import DiaryEntryPicker from './DiaryEntryPicker.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -136,6 +137,26 @@ function onLinkBlur() {
 }
 
 const scheduledCount = computed(() => activeSpotForm.value.scheduledDates?.length ?? 0);
+
+const spotDiaryReferenceDates = computed(() => {
+  const dates = new Set<string>();
+
+  for (const scheduledDate of activeSpotForm.value.scheduledDates ?? []) {
+    if (scheduledDate) {
+      dates.add(scheduledDate);
+    }
+  }
+
+  for (const tourTitle of activeSpotForm.value.tourTitles ?? []) {
+    const tourDate = getTourDate(tourTitle);
+
+    if (tourDate) {
+      dates.add(tourDate);
+    }
+  }
+
+  return Array.from(dates);
+});
 
 const manualRegionVisible = ref(false);
 
@@ -643,6 +664,12 @@ function handleOpenScheduledDate(date: string) {
           </Badge>
         </div>
       </CollapsibleFieldset>
+
+      <DiaryEntryPicker
+        v-model="activeSpotForm.diary_ids"
+        :dates="spotDiaryReferenceDates"
+        id-prefix="spot-diary"
+      />
 
       <FileAttachments
         v-if="editingSpot"

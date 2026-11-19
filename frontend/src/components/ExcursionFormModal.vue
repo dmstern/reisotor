@@ -14,6 +14,7 @@ import FileAttachments from './FileAttachments.vue';
 import DraftStatusBar from './DraftStatusBar.vue';
 import RichTextEditor from './RichTextEditor.vue';
 import TrackShareWarningModal from './TrackShareWarningModal.vue';
+import DiaryEntryPicker from './DiaryEntryPicker.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -370,6 +371,11 @@ defineExpose({
           </ul>
         </div>
       </CollapsibleFieldset>
+      <DiaryEntryPicker
+        v-model="activeExcursionForm.diary_ids"
+        :dates="activeExcursionForm.date ? [activeExcursionForm.date] : []"
+        id-prefix="tour-diary"
+      />
       <FileAttachments
         v-if="editingExcursion"
         domain="ideas"

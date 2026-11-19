@@ -30,6 +30,7 @@ export interface SpotFormData {
   amount?: number;
   paid_by_user_id?: number | null;
   dates?: { date: string; done?: boolean | number }[];
+  diary_ids?: number[];
   done?: boolean;
 }
 

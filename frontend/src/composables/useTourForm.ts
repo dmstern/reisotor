@@ -2,6 +2,7 @@ import { ref, computed, type Ref } from 'vue';
 import type { Excursion, ExcursionLeg, IdeaRole, LocationTrack, User } from '../api/types';
 import { useExcursionsStore } from '../stores/excursions';
 import { useTracksStore } from '../stores/tracks';
+import { useDiaryStore } from '../stores/diary';
 import { useToast } from './useToast';
 import { useDraftAutosave } from './useDraftAutosave';
 import { isEmptyRichText } from '../utils/richText';
@@ -13,6 +14,7 @@ export interface ExcursionFormData {
   date: string;
   done: boolean;
   spot_ids: number[];
+  diary_ids: number[];
   role: IdeaRole | '';
   legs: ExcursionLeg[];
   track_ids: number[];
@@ -26,6 +28,7 @@ export function emptyExcursionForm(): ExcursionFormData {
     date: '',
     done: false,
     spot_ids: [] as number[],
+    diary_ids: [] as number[],
     role: '' as IdeaRole | '',
     legs: [] as ExcursionLeg[],
     track_ids: [] as number[],
@@ -41,6 +44,7 @@ export function tourPayload(form: ExcursionFormData) {
     date: form.date || undefined,
     done: Boolean(form.done),
     spot_ids: form.spot_ids,
+    diary_ids: Array.isArray(form.diary_ids) ? form.diary_ids : [],
     role: form.role ? form.role : null,
     legs: form.legs,
   };
@@ -58,6 +62,7 @@ export function useTourForm(options: UseTourFormOptions) {
 
   const excursionsStore = useExcursionsStore();
   const tracksStore = useTracksStore();
+  const diaryStore = useDiaryStore();
   const { showToast } = useToast();
 
   const showExcursionForm = ref(false);
@@ -214,6 +219,10 @@ export function useTourForm(options: UseTourFormOptions) {
       excursionForm.value.title = initialTitle;
     }
 
+    if (!Array.isArray(excursionForm.value.diary_ids)) {
+      excursionForm.value.diary_ids = [];
+    }
+
     showExcursionSpotsSection.value = Boolean(initialRole);
     showExcursionTracksSection.value = false;
     tracksToShareOnSave.value.clear();
@@ -248,6 +257,10 @@ export function useTourForm(options: UseTourFormOptions) {
     }
 
     const created = await excursionsStore.create(tourPayload(excursionForm.value));
+    diaryStore.syncLinksForExcursion(
+      created.id,
+      Array.isArray(excursionForm.value.diary_ids) ? excursionForm.value.diary_ids : []
+    );
 
     for (const trackId of excursionForm.value.track_ids) {
       const shouldShare = tracksToShareOnSave.value.has(trackId);
@@ -273,6 +286,9 @@ export function useTourForm(options: UseTourFormOptions) {
       date: excursion.date ?? '',
       done: Boolean(excursion.done),
       spot_ids: [...excursion.spot_ids],
+      diary_ids: diaryStore.entries
+        .filter((entry) => !entry.is_draft && (entry.excursion_ids ?? []).includes(excursion.id))
+        .map((entry) => entry.id),
       role: excursion.role ?? '',
       legs: excursion.legs ? excursion.legs.map((leg) => ({ ...leg })) : [],
       track_ids: tracksStore.tracks
@@ -298,6 +314,10 @@ export function useTourForm(options: UseTourFormOptions) {
 
     const excId = editingExcursion.value;
     await excursionsStore.update(excId, tourPayload(editExcursionForm.value));
+    diaryStore.syncLinksForExcursion(
+      excId,
+      Array.isArray(editExcursionForm.value.diary_ids) ? editExcursionForm.value.diary_ids : []
+    );
     const currentAssigned = tracksStore.tracks
       .filter((track) => track.excursion_id === excId)
       .map((track) => track.id);

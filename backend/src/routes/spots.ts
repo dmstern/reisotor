@@ -14,6 +14,7 @@ import { recordActivity } from '../activity.js';
 import { sanitizeHtml } from '../utils/sanitizeHtml.js';
 import { ensureTripCategory } from './tripCategories.js';
 import { isUserRestricted } from '../registrationConfig.js';
+import { syncPublishedDiaryLinksForSpot } from '../utils/diaryLinks.js';
 
 interface SpotDateInput {
   date: string;
@@ -56,6 +57,7 @@ interface SpotBody {
   paid_by_user_id?: number | null;
   link?: string | null;
   dates?: SpotDateInput[];
+  diary_ids?: number[];
   done?: boolean | number;
 }
 
@@ -553,6 +555,18 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       updateSpotDoneStmt.run(1, createdSpotId);
     }
 
+    if (Array.isArray(body.diary_ids)) {
+      const diaryLinksChanged = syncPublishedDiaryLinksForSpot(
+        createdSpotId,
+        trip_id,
+        body.diary_ids
+      );
+
+      if (diaryLinksChanged) {
+        recordActivity(trip_id, 'diary', createdSpotId, 'updated', req.session.userId!);
+      }
+    }
+
     recordActivity(trip_id, 'spots', createdSpotId, 'created', req.session.userId!);
     reply.code(201);
     const createdRow = selectSpotByIdStmt.get(createdSpotId) as Record<string, unknown>;
@@ -683,6 +697,18 @@ export const spotsRoutes: FastifyPluginAsync = async (app) => {
       updateSpotDoneStmt.run(body.done ? 1 : 0, existing.id);
     } else if (Array.isArray(body.dates) && body.dates.some((entry) => Boolean(entry.done))) {
       updateSpotDoneStmt.run(1, existing.id);
+    }
+
+    if (Array.isArray(body.diary_ids)) {
+      const diaryLinksChanged = syncPublishedDiaryLinksForSpot(
+        existing.id,
+        existing.trip_id,
+        body.diary_ids
+      );
+
+      if (diaryLinksChanged) {
+        recordActivity(existing.trip_id, 'diary', existing.id, 'updated', req.session.userId!);
+      }
     }
 
     recordActivity(

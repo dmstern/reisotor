@@ -14,6 +14,7 @@ export interface ExcursionFormData {
   note_format?: 'html' | 'legacy';
   date?: string;
   spot_ids?: number[];
+  diary_ids?: number[];
   legs?: ExcursionLeg[];
   // Transportmittel-Kontext (#176) - macht aus einer normalen Tour eine ehemalige Reise-Etappe.
   role?: IdeaRole | null;
