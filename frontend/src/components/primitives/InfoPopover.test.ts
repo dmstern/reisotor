@@ -24,7 +24,7 @@ describe('InfoPopover', () => {
 
     const html = await renderToString(app);
     expect(html).toContain('info-popover-btn');
-    expect(html).toContain('btn--secondary');
+    expect(html).toContain('btn--ghost');
     expect(html).toContain('title="Erklärung zum Bereich"');
     expect(html).toContain('aria-label="Hilfe zum Bereich"');
     expect(html).toContain('aria-expanded="false"');

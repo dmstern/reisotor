@@ -163,8 +163,11 @@ function onEditClick(closePopover?: () => void) {
 
 <style scoped>
 .spot-location-badge {
+  --spot-location-badge-inset: 2px;
   display: inline-flex;
   align-items: center;
+  padding: var(--spot-location-badge-inset);
+  box-sizing: border-box;
   font-family: inherit;
   font-size: var(--font-size-xs);
   font-weight: 650;
@@ -193,7 +196,8 @@ function onEditClick(closePopover?: () => void) {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  padding: 3px 2px 3px 8px;
+  min-height: 20px;
+  padding: 0 3px 0 6px;
   background: none;
   border: none;
   color: inherit;
@@ -217,7 +221,8 @@ function onEditClick(closePopover?: () => void) {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  padding: 3px 4px 3px 8px;
+  min-height: 20px;
+  padding: 0 3px 0 6px;
   line-height: 1.25;
 }
 
@@ -232,21 +237,21 @@ function onEditClick(closePopover?: () => void) {
 }
 
 .spot-location-info-popover {
+  --info-popover-btn-size: 20px;
   display: inline-flex;
   align-items: center;
-  padding-right: 4px;
 }
 
-.spot-location-info-popover :deep(.info-popover-btn.btn) {
-  --info-popover-btn-size: 20px;
+.spot-location-info-popover :deep(.info-popover-btn.btn:where(:not(.is-active))) {
   color: var(--color-warning-dark);
   opacity: 0.85;
 }
 
-.spot-location-info-popover :deep(.info-popover-btn:hover),
-.spot-location-info-popover :deep(.info-popover-btn:focus-visible) {
+.spot-location-info-popover :deep(.info-popover-btn.btn.btn--ghost:hover),
+.spot-location-info-popover :deep(.info-popover-btn.btn.btn--ghost:focus-visible) {
   opacity: 1;
   color: var(--color-warning);
+  translate: none;
 }
 
 .spot-location-popover-content {

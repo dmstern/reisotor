@@ -105,7 +105,7 @@ defineExpose({
   <span class="info-popover-wrap">
     <Button
       ref="triggerRef"
-      variant="secondary"
+      variant="ghost"
       shape="circle"
       size="sm"
       :active="open"
@@ -146,16 +146,15 @@ defineExpose({
   line-height: 1;
 }
 
-.info-popover-btn.btn {
-  --info-popover-btn-size: 30px;
-  width: var(--info-popover-btn-size);
-  height: var(--info-popover-btn-size);
-  min-width: var(--info-popover-btn-size);
-  min-height: var(--info-popover-btn-size);
+.info-popover-btn.btn.btn--circle.btn--sm {
+  width: var(--info-popover-btn-size, 30px);
+  height: var(--info-popover-btn-size, 30px);
+  min-width: var(--info-popover-btn-size, 30px);
+  min-height: var(--info-popover-btn-size, 30px);
   font-size: var(--font-size-sm);
 }
 
-.info-popover-btn.btn:not(.is-active):not(:hover) {
+.info-popover-btn.btn:where(:not(.is-active):not(:hover)) {
   color: var(--color-text-muted);
 }
 
