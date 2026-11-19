@@ -41,7 +41,7 @@ export const AllVariantsAndStates: Story = {
             <Button variant="secondary" loading>Lädt…</Button>
 
             <strong style="font-size: 0.8rem;">tonal</strong>
-            <Button variant="tonal" size="sm" :icon="ACTION_ICONS.map">Auf Karte</Button>
+            <Button variant="tonal" size="sm" :icon="ACTION_ICONS.myLocation">Auf Karte</Button>
             <Button variant="tonal" size="sm" active>Aktiv</Button>
             <Button variant="tonal" size="sm" disabled>Deaktiviert</Button>
             <Button variant="tonal" size="sm" loading>Lädt…</Button>
@@ -118,21 +118,21 @@ export const TriggerFamilyBaseline: Story = {
     template: `
       <div style="display: flex; flex-direction: column; gap: 20px; max-width: 960px;">
         <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">
-          Alle kompakten Card-Elemente und Trigger sind initial flach, teilen exakt 36px Höhe (sm) bzw. 30px (xs) und dieselbe Progressive-3D-Hover-Physik:
+          Alle kompakten Card-Elemente und Trigger sind initial flach, teilen exakt 36px Höhe (sm) bzw. 30px (xs) und dieselbe 2-Stufen-Hover-Physik:
         </p>
         <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px; border: 1px dashed var(--color-border-strong); border-radius: 14px; background: var(--color-surface);">
           <DropdownMenu label="Sortieren" size="sm" :icon="ACTION_ICONS.sort" />
           <DoneToggle :done="true" :dropdown="true">14. Aug</DoneToggle>
-          <LinkedEntityButton label="Tagebuch" :icon="ACTION_ICONS.diary" />
-          <Button variant="tonal" size="sm" :icon="ACTION_ICONS.map">Auf Karte</Button>
-          <Button variant="ghost" size="sm" :icon="ACTION_ICONS.heart">3</Button>
+          <LinkedEntityButton label="Tagebuch" :icon="ACTION_ICONS.order" />
+          <Button variant="tonal" size="sm" :icon="ACTION_ICONS.myLocation">Auf Karte</Button>
+          <Button variant="ghost" size="sm" :icon="ACTION_ICONS.unliked">3</Button>
           <IconButton variant="ghost" size="sm" :icon="ACTION_ICONS.edit" aria-label="Bearbeiten" />
           <InfoPopover title="Hinweis">
-            <p>Alle Trigger folgen derselben Progressive-3D-Physik.</p>
+            <p>Alle Trigger folgen derselben einheitlichen Hover-Physik.</p>
           </InfoPopover>
         </div>
 
-        <CollapsibleFieldset label="Erweiterte Optionen" :count="3" :icon="ACTION_ICONS.settings">
+        <CollapsibleFieldset label="Erweiterte Optionen" :count="3" :icon="ACTION_ICONS.filterSettings">
           <p style="margin: 0; font-size: 0.85rem;">Inhalt im CollapsibleFieldset (Toggle nutzt Button secondary pill sm = 36px).</p>
         </CollapsibleFieldset>
       </div>
