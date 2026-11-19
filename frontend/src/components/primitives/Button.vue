@@ -447,22 +447,28 @@ a.btn.is-loading {
   background-color: color-mix(in srgb, var(--color-primary) 24%, transparent);
 }
 
-/* Ghost: transparent im Ruhezustand, Progressive 3D bei Hover/Active */
+/* Ghost: transparent im Ruhezustand, ruhiger flacher Hover ohne 3D-Verlauf/Schatten (#810) */
 .btn--ghost {
-  @include control-physics-progressive;
   background-color: transparent;
+  background-image: none;
   border: 1px solid transparent;
   color: var(--color-text);
+  box-shadow: none;
 }
 
 @include can-hover {
   .btn--ghost:hover:not(:disabled):not(.is-disabled) {
     background-color: var(--color-control-hover-bg);
+    box-shadow: none;
+    translate: none;
   }
 }
 
 .btn--ghost:active:not(:disabled):not(.is-disabled) {
   background-color: var(--color-control-active-bg);
+  box-shadow: none;
+  transform: scale(0.96);
+  translate: none;
 }
 
 /* Overlay (und Übergangs-Alias surface): Frosted Glass über Fotos/Bannern/Karten, initial schattenlos (#810) */
@@ -607,9 +613,11 @@ a.btn.is-loading {
   box-sizing: border-box;
 }
 
-/* Pill behält immer vollrunde Form unabhängig von xs/sm */
+/* Pill & Circle behalten immer ihre vollrunde Form unabhängig von xs/sm */
 .btn--pill.btn--xs,
-.btn--pill.btn--sm {
+.btn--pill.btn--sm,
+.btn--circle.btn--xs,
+.btn--circle.btn--sm {
   border-radius: var(--radius-pill);
   corner-shape: round;
 }
