@@ -108,7 +108,7 @@ function onClick(event: MouseEvent) {
   border-radius: var(--radius-pill);
   corner-shape: round;
   padding: var(--space-1) 12px;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text-muted);
   cursor: pointer;
