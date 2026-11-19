@@ -61,6 +61,7 @@ describe('SpotLocationBadge', () => {
     expect(html).toContain('spot-location-badge');
     expect(html).toContain('Standort fehlt');
     expect(html).toContain('spot-location-warning-icon');
+    expect(html).toContain('tabler-icon-map-pin-exclamation');
     expect(html).toContain('info-popover-btn');
   });
 

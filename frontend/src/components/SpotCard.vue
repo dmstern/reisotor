@@ -931,13 +931,8 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
     border-width: 0;
   }
 
-  .spot-card:not(.expanded) .card-badge-group :deep(.spot-location-badge) {
-    padding: 2px;
-    gap: 0;
-  }
-
   .spot-card:not(.expanded) .card-badge-group :deep(.spot-location-badge-action-btn) {
-    padding: 0 2px 0 6px;
+    padding: 0 2px 0 4px;
   }
 }
 

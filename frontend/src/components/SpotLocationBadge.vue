@@ -247,10 +247,14 @@ function onEditClick(closePopover?: () => void) {
   opacity: 0.85;
 }
 
-.spot-location-info-popover :deep(.info-popover-btn.btn.btn--ghost:hover),
-.spot-location-info-popover :deep(.info-popover-btn.btn.btn--ghost:focus-visible) {
+.spot-location-info-popover :deep(.info-popover-btn.btn:where(:not(.is-active)):hover),
+.spot-location-info-popover :deep(.info-popover-btn.btn:where(:not(.is-active)):focus-visible) {
   opacity: 1;
   color: var(--color-warning);
+}
+
+.spot-location-info-popover :deep(.info-popover-btn.btn.btn--ghost:hover),
+.spot-location-info-popover :deep(.info-popover-btn.btn.btn--ghost:focus-visible) {
   translate: none;
 }
 

@@ -154,7 +154,7 @@ defineExpose({
   font-size: var(--font-size-sm);
 }
 
-.info-popover-btn.btn:where(:not(.is-active):not(:hover)) {
+.info-popover-btn.btn:where(:not(.is-active):not(:hover):not(:focus-visible)) {
   color: var(--color-text-muted);
 }
 
