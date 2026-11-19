@@ -125,21 +125,34 @@ function jumpToTrip() {
 }
 
 function openEntry(entry: CalendarEntry) {
+  const tripPrefix = tripStore.currentTripId ? `/trip/${tripStore.currentTripId}` : '';
+
   if (entry.kind === 'trip') {
     jumpToTrip();
   } else if (entry.kind === 'todo') {
     drawers.calendarOpen = false;
-    router.push(`/listen?tab=todo#todo-${entry.todoId}`);
-  } else if (entry.category === 'travel' && entry.ideaId != null) {
+    router.push(`${tripPrefix}/listen?tab=todo#todo-${entry.todoId}`);
+  } else if ((entry.kind === 'travel' || entry.kind === 'excursion') && entry.ideaId != null) {
     drawers.openMapForExcursion(entry.ideaId);
     drawers.calendarOpen = false;
-    const path = tripStore.currentTripId
-      ? `/trip/${tripStore.currentTripId}/excursions`
-      : '/excursions';
     router.push({
-      path,
+      path: `${tripPrefix}/excursions`,
       query: { group: 'tours' },
       hash: `#excursion-${entry.ideaId}`,
+    });
+  } else if (entry.kind === 'spot' && entry.spotId != null) {
+    drawers.openMapAt(`spot-${entry.spotId}`);
+    drawers.calendarOpen = false;
+    router.push({
+      path: `${tripPrefix}/excursions`,
+      query: { group: 'spots' },
+      hash: `#spot-${entry.spotId}`,
+    });
+  } else if (entry.kind === 'diary' && entry.diaryEntryId != null) {
+    drawers.calendarOpen = false;
+    router.push({
+      path: `${tripPrefix}/diary`,
+      hash: `#entry-${entry.diaryEntryId}`,
     });
   } else if (entry.kind === 'schedule') {
     viewingItem.value = entry.scheduleItem;

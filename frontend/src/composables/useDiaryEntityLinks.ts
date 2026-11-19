@@ -1,21 +1,16 @@
 import { computed } from 'vue';
 import type { DiaryEntry, Excursion, Spot } from '../api/types';
-import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useScheduleStore } from '../stores/schedule';
-import { useDiaryStore } from '../stores/diary';
 import { useDrawersStore } from '../stores/drawers';
 import { deriveTravelItems } from '../utils/deriveTravelItems';
 import { buildDayStations } from '../utils/dayStations';
-import { toLocalDateString } from '../utils/dateFormat';
 
 export function useDiaryEntityLinks() {
-  const tripStore = useTripStore();
   const excursionsStore = useExcursionsStore();
   const spotsStore = useSpotsStore();
   const scheduleStore = useScheduleStore();
-  const diaryStore = useDiaryStore();
   const drawers = useDrawersStore();
 
   const travelItems = computed(() =>
@@ -29,43 +24,31 @@ export function useDiaryEntityLinks() {
   }
 
   function spotAlreadyPlanned(spotId: number, dateStr: string): boolean {
-    return (
-      scheduleStore.items.some((i) => i.spot_id === spotId && i.date === dateStr) ||
-      excursionsStore.excursions.some((e) => e.date === dateStr && e.spot_ids.includes(spotId)) ||
-      diaryStore.entries.some(
-        (entry) => entry.date === dateStr && (entry.spot_ids ?? []).includes(spotId)
-      )
+    const spot = spotsStore.spots.find((targetSpot) => targetSpot.id === spotId);
+    const hasOwnDate = Boolean(spot?.dates?.some((entry) => entry.date === dateStr));
+
+    if (hasOwnDate) {
+      return true;
+    }
+
+    return excursionsStore.excursions.some(
+      (excursion) => excursion.date === dateStr && excursion.spot_ids.includes(spotId)
     );
   }
 
   function getSpotScheduledDates(spotId: number): string[] {
     const dates = new Set<string>();
+    const spot = spotsStore.spots.find((targetSpot) => targetSpot.id === spotId);
 
-    for (const item of scheduleStore.items) {
-      if (item.spot_id === spotId && item.date) {
-        if (item.end_date && item.end_date > item.date) {
-          const cur = new Date(`${item.date}T00:00:00`);
-          const end = new Date(`${item.end_date}T00:00:00`);
-
-          while (cur <= end) {
-            dates.add(toLocalDateString(cur));
-            cur.setDate(cur.getDate() + 1);
-          }
-        } else {
-          dates.add(item.date);
-        }
+    for (const entry of spot?.dates ?? []) {
+      if (entry.date) {
+        dates.add(entry.date);
       }
     }
 
     for (const excursion of excursionsStore.excursions) {
       if (excursion.date && (excursion.spot_ids ?? []).includes(spotId)) {
         dates.add(excursion.date);
-      }
-    }
-
-    for (const entry of diaryStore.entries) {
-      if (entry.date && (entry.spot_ids ?? []).includes(spotId)) {
-        dates.add(entry.date);
       }
     }
 
@@ -123,8 +106,6 @@ export function useDiaryEntityLinks() {
     date: string,
     moveSpotIds: number[] = []
   ) {
-    const tripId = tripStore.currentTripId;
-
     try {
       await Promise.all([
         ...excursionIds.map(async (id) => {
@@ -137,12 +118,12 @@ export function useDiaryEntityLinks() {
           await excursionsStore.setDone(id, true);
         }),
         ...spotIds.map(async (id) => {
-          if (tripId != null && moveSpotIds.includes(id)) {
-            const spot = spotsStore.spots.find((targetSpot) => targetSpot.id === id);
+          const spot = spotsStore.spots.find((targetSpot) => targetSpot.id === id);
+          const hasDates = (spot?.dates?.length ?? 0) > 0;
 
-            if (spot) {
-              await scheduleStore.setSpotDate({ spotId: id, tripId, title: spot.title, date });
-            }
+          if (date && (!hasDates || moveSpotIds.includes(id))) {
+            await spotsStore.addDate(id, date, true);
+            return;
           }
 
           await spotsStore.setDone(id, true);

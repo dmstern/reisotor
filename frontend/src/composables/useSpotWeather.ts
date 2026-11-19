@@ -8,9 +8,7 @@ import {
   type Ref,
 } from 'vue';
 import type { Spot } from '../api/types';
-import { useScheduleStore } from '../stores/schedule';
 import { useExcursionsStore } from '../stores/excursions';
-import { useDiaryStore } from '../stores/diary';
 import { useWeatherProviderStore } from '../stores/weatherProvider';
 import { fetchMergedWeather, type DailyWeather } from '../utils/weather';
 import { formatDate as formatDateShared, toLocalDateString } from '../utils/dateFormat';
@@ -30,40 +28,22 @@ export interface UseSpotWeatherReturn {
 }
 
 export function useSpotWeather(options: UseSpotWeatherOptions): UseSpotWeatherReturn {
-  const scheduleStore = useScheduleStore();
   const excursionsStore = useExcursionsStore();
-  const diaryStore = useDiaryStore();
   const weatherProvider = useWeatherProviderStore();
 
   const scheduledDatesForSpot = computed(() => {
     const spot = toValue(options.spot);
     const dates = new Set<string>();
 
-    for (const item of scheduleStore.items) {
-      if (item.spot_id === spot.id && item.date) {
-        if (item.end_date && item.end_date > item.date) {
-          const cur = new Date(`${item.date}T00:00:00`);
-          const end = new Date(`${item.end_date}T00:00:00`);
-
-          while (cur <= end) {
-            dates.add(toLocalDateString(cur));
-            cur.setDate(cur.getDate() + 1);
-          }
-        } else {
-          dates.add(item.date);
-        }
+    for (const entry of spot.dates ?? []) {
+      if (entry.date) {
+        dates.add(entry.date);
       }
     }
 
     for (const excursion of excursionsStore.excursions) {
       if (excursion.date && excursion.spot_ids.includes(spot.id)) {
         dates.add(excursion.date);
-      }
-    }
-
-    for (const entry of diaryStore.entries) {
-      if (entry.date && (entry.spot_ids ?? []).includes(spot.id)) {
-        dates.add(entry.date);
       }
     }
 

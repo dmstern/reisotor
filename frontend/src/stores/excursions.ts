@@ -2,7 +2,6 @@ import { defineStore } from 'pinia';
 import { ref, shallowRef, watch } from 'vue';
 import { api } from '../api/client';
 import type { Excursion, ExcursionLeg, IdeaRole } from '../api/types';
-import { useScheduleStore } from './schedule';
 import { useTripStore } from './trip';
 import { useLiveSyncStore } from './liveSync';
 import { useToast } from '../composables/useToast';
@@ -63,7 +62,6 @@ export const useExcursionsStore = defineStore('excursions', () => {
       ...body,
     });
     excursions.value = [created, ...excursions.value];
-    await useScheduleStore().load();
     return created;
   }
 
@@ -77,7 +75,6 @@ export const useExcursionsStore = defineStore('excursions', () => {
       excursions.value = next;
     }
 
-    await useScheduleStore().load();
     return updated;
   }
 
@@ -85,14 +82,12 @@ export const useExcursionsStore = defineStore('excursions', () => {
     const { showToast } = useToast();
     await api.delete(`/ideas/${id}`);
     excursions.value = excursions.value.filter((e) => e.id !== id);
-    await useScheduleStore().load();
     showToast({
       message: 'Element gelöscht. Es befindet sich nun im Papierkorb.',
       type: 'info',
       onRestore: async () => {
         await restoreTrashItem('excursion', id);
         await load();
-        await useScheduleStore().load();
       },
     });
   }

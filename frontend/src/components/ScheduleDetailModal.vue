@@ -2,7 +2,6 @@
 import type { useScheduleItemDetail } from '../composables/useScheduleItemDetail';
 import DetailModal from './DetailModal.vue';
 import DetailRow from './primitives/DetailRow.vue';
-import Badge from './primitives/Badge.vue';
 import Button from './primitives/Button.vue';
 import AppIcon from './AppIcon.vue';
 import WeatherIcon from './WeatherIcon.vue';
@@ -12,7 +11,6 @@ import MapsAppPicker from './MapsAppPicker.vue';
 import CalendarExportDropdown from './CalendarExportDropdown.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
-import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { formatDate } from '../utils/dateFormat';
 import { isEmptyRichText } from '../utils/richText';
 
@@ -72,10 +70,6 @@ const emit = defineEmits<{
           }}°
         </template>
       </span>
-      <Badge v-if="detail.viewingItem.value?.auto_created" variant="primary" size="sm">
-        <AppIcon :icon="ACTION_ICONS.sparkles" :size="12" group="actions" />
-        Automatisch angelegt
-      </Badge>
     </template>
 
     <DetailRow v-if="detail.viewingItem.value?.time" label="Zeit">
@@ -108,7 +102,7 @@ const emit = defineEmits<{
 
     <DetailRow
       v-if="detail.linkedTitleFor(detail.viewingEntry.value)"
-      :label="detail.viewingEntry.value?.spotId != null ? 'Verknüpfter Ort' : 'Verknüpfte Tour'"
+      label="Verknüpfter Ort"
       tag="div"
       class="linked-entity-row"
     >
@@ -119,12 +113,7 @@ const emit = defineEmits<{
         @click="detail.navigateToLinkedEntity"
       >
         <AppIcon
-          :icon="
-            detail.viewingEntry.value?.iconDef ??
-            (detail.viewingEntry.value?.spotId != null
-              ? FORM_FIELD_ICONS.location
-              : SECTION_ICON_DEFS.excursions)
-          "
+          :icon="detail.viewingEntry.value?.iconDef ?? FORM_FIELD_ICONS.location"
           :size="15"
           group="categories"
         />

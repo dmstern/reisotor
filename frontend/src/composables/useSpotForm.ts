@@ -1,8 +1,7 @@
 import { ref, computed, watch, nextTick, type Ref } from 'vue';
 import { api } from '../api/client';
-import type { ScheduleItem, Spot, User } from '../api/types';
+import type { Spot, SpotDateEntry, User } from '../api/types';
 import { useSpotsStore } from '../stores/spots';
-import { useScheduleStore } from '../stores/schedule';
 import { useTripStore } from '../stores/trip';
 import { useAuthStore } from '../stores/auth';
 import { useDrawersStore } from '../stores/drawers';
@@ -20,7 +19,6 @@ import {
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { normalizeWebUrl } from '../utils/linkLabel';
 import { isEmptyRichText } from '../utils/richText';
-import { isAutoCreatedUnmodifiedScheduleItem } from '../utils/scheduleSpotUnlink';
 import { isBookingLink } from '../utils/locationInputClassifier';
 import type LocationPicker from '../components/LocationPicker.vue';
 import type { PlaceSearchResult } from '../components/LocationPicker.vue';
@@ -159,7 +157,6 @@ export function useSpotForm(options: UseSpotFormOptions) {
   const { tripId, users, spotScheduledDates } = options;
 
   const spotsStore = useSpotsStore();
-  const scheduleStore = useScheduleStore();
   const tripStore = useTripStore();
   const auth = useAuthStore();
   const drawers = useDrawersStore();
@@ -389,58 +386,33 @@ export function useSpotForm(options: UseSpotFormOptions) {
     showSpotForm.value = true;
   }
 
-  const editSpotScheduledItems = computed(() => {
+  const editSpotScheduledItems = computed<SpotDateEntry[]>(() => {
     if (!editingSpot.value) {
       return [];
     }
 
-    return scheduleStore.items.filter((i) => i.spot_id === editingSpot.value!.id);
+    const storeSpot = spotsStore.spots.find((spot) => spot.id === editingSpot.value!.id);
+    return storeSpot?.dates ?? editingSpot.value.dates ?? [];
   });
 
-  async function toggleScheduledItemDone(item: ScheduleItem) {
-    await scheduleStore.setDone(item.id, !item.done);
-  }
-
-  async function removeScheduledItemFromSpot(item: ScheduleItem) {
+  async function toggleScheduledItemDone(item: SpotDateEntry) {
     if (!editingSpot.value) {
       return;
     }
 
-    const isAutoUnmodified = isAutoCreatedUnmodifiedScheduleItem(item, editingSpot.value.title);
-
-    if (isAutoUnmodified) {
-      await scheduleStore.remove(item.id);
-      showToast({
-        message: 'Termin wurde gelöscht, da er vorher automatisch vom Reisotor angelegt wurde.',
-        type: 'info',
-      });
-    } else {
-      await scheduleStore.update(item.id, {
-        trip_id: item.trip_id,
-        date: item.date,
-        end_date: item.end_date,
-        time: item.time ?? undefined,
-        end_time: item.end_time ?? undefined,
-        title: item.title,
-        note: item.note ?? undefined,
-        location: item.location ?? undefined,
-        maps_link: item.maps_link ?? undefined,
-        lat: item.lat ?? undefined,
-        lng: item.lng ?? undefined,
-        spot_id: null,
-        idea_id: item.idea_id,
-      });
-      showToast({
-        message:
-          'Termin-Verknüpfung entfernt. Der Termin selbst lässt sich noch im Kalender bearbeiten.',
-        type: 'info',
-      });
-    }
+    await spotsStore.updateDate(editingSpot.value.id, item.id, { done: !item.done });
   }
 
-  function openScheduledItemDetail(item: ScheduleItem) {
-    drawers.openCalendar();
-    scheduleStore.openDetail(item);
+  async function removeScheduledItemFromSpot(item: SpotDateEntry) {
+    if (!editingSpot.value) {
+      return;
+    }
+
+    await spotsStore.removeDate(editingSpot.value.id, item.id);
+  }
+
+  function openScheduledItemDetail(item: SpotDateEntry) {
+    drawers.openCalendar(item.date);
   }
 
   const spotPickerCenter = computed(() => {
@@ -676,18 +648,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
     }
 
     if (editingSpot.value !== null) {
-      if (!tripStore.currentTripId) {
-        return;
-      }
-
-      await scheduleStore.create({
-        trip_id: tripStore.currentTripId,
-        date,
-        title: editingSpot.value.title,
-        spot_id: editingSpot.value.id,
-        auto_created: 1,
-        user_modified: 0,
-      });
+      await spotsStore.addDate(editingSpot.value.id, date);
     } else {
       if (!Array.isArray(spotForm.value.scheduledDates)) {
         spotForm.value.scheduledDates = [];
@@ -1102,14 +1063,7 @@ export function useSpotForm(options: UseSpotFormOptions) {
     }
 
     for (const schedDate of datesToSchedule) {
-      await scheduleStore.create({
-        trip_id: tripId,
-        date: schedDate,
-        title: result.title,
-        spot_id: result.id,
-        auto_created: 1,
-        user_modified: 0,
-      });
+      await spotsStore.addDate(result.id, schedDate);
     }
 
     closeSpotForm();

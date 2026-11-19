@@ -1,10 +1,9 @@
 import { defineStore } from 'pinia';
 import { ref, shallowRef, watch, computed } from 'vue';
 import { api } from '../api/client';
-import type { Spot, SpotComment, SpotLike } from '../api/types';
+import type { Spot, SpotComment, SpotDateEntry, SpotLike } from '../api/types';
 import { useTripStore } from './trip';
 import { useLiveSyncStore } from './liveSync';
-import { useScheduleStore } from './schedule';
 import { useToast } from '../composables/useToast';
 import { restoreTrashItem } from '../api/trash';
 import { useTripCategoriesStore } from './tripCategories';
@@ -30,6 +29,7 @@ export interface SpotFormData {
   contact?: string;
   amount?: number;
   paid_by_user_id?: number | null;
+  dates?: { date: string; done?: boolean | number }[];
 }
 
 // Eigener Store statt lokalem State in ExcursionsView (analog zu stores/excursions.ts): Spots
@@ -207,33 +207,84 @@ export const useSpotsStore = defineStore('spots', () => {
     }
   }
 
-  /** Setzt/entfernt den "gemacht"-Status, unabhängig von geplant/ungeplant (siehe
-   *  ExcursionsView.vue's clientseitig aus schedule_items abgeleitetem Status) - eigener Endpunkt
-   *  statt eines vollen update(), damit ein Toggle nicht alle anderen Felder erneut mitschicken muss. */
+  /** Setzt/entfernt den "besucht"-Status unabhängig von eingetragenen Besuchstagen (#800). */
   async function setDone(id: number, done: boolean) {
     const result = await api.post<{ done: boolean }>(`/spots/${id}/done`, { done });
+    const nextDoneVal: 0 | 1 = result.done ? 1 : 0;
     const idx = spots.value.findIndex((spot) => spot.id === id);
+
+    if (idx === -1) {
+      return;
+    }
+
+    const existing = spots.value[idx];
+    const nextDates = existing.dates?.map((entry) => ({ ...entry, done: nextDoneVal }));
+    const next = [...spots.value];
+    next[idx] = { ...existing, done: nextDoneVal, dates: nextDates };
+    spots.value = next;
+  }
+
+  async function addDate(spotId: number, date: string, done?: boolean) {
+    const result = await api.post<{
+      entry: SpotDateEntry;
+      dates: SpotDateEntry[];
+      spot_done: boolean;
+    }>(`/spots/${spotId}/dates`, { date, done }, { noQueue: true });
+    const idx = spots.value.findIndex((spot) => spot.id === spotId);
 
     if (idx !== -1) {
       const next = [...spots.value];
-      next[idx] = { ...next[idx], done: result.done ? 1 : 0 };
+      next[idx] = {
+        ...next[idx],
+        dates: result.dates,
+        done: result.spot_done ? 1 : 0,
+      };
       spots.value = next;
     }
 
-    const scheduleStore = useScheduleStore();
-    let hasScheduleChanges = false;
-    const nextSchedule = scheduleStore.items.map((item) => {
-      if (item.spot_id === id && (item.done ? 1 : 0) !== (result.done ? 1 : 0)) {
-        hasScheduleChanges = true;
-        return { ...item, done: result.done ? 1 : 0 };
-      }
+    return result.entry;
+  }
 
-      return item;
-    });
+  async function updateDate(
+    spotId: number,
+    dateId: number,
+    patch: { date?: string; done?: boolean }
+  ) {
+    const result = await api.patch<{
+      entry: SpotDateEntry;
+      dates: SpotDateEntry[];
+      spot_done: boolean;
+    }>(`/spots/${spotId}/dates/${dateId}`, patch, { noQueue: true });
+    const idx = spots.value.findIndex((spot) => spot.id === spotId);
 
-    if (hasScheduleChanges) {
-      scheduleStore.items = nextSchedule;
+    if (idx !== -1) {
+      const next = [...spots.value];
+      next[idx] = {
+        ...next[idx],
+        dates: result.dates,
+        done: result.spot_done ? 1 : 0,
+      };
+      spots.value = next;
     }
+
+    return result.entry;
+  }
+
+  async function removeDate(spotId: number, dateId: number) {
+    await api.delete(`/spots/${spotId}/dates/${dateId}`, { noQueue: true });
+    const idx = spots.value.findIndex((spot) => spot.id === spotId);
+
+    if (idx === -1) {
+      return;
+    }
+
+    const existing = spots.value[idx];
+    const next = [...spots.value];
+    next[idx] = {
+      ...existing,
+      dates: (existing.dates ?? []).filter((entry) => entry.id !== dateId),
+    };
+    spots.value = next;
   }
 
   return {
@@ -255,6 +306,9 @@ export const useSpotsStore = defineStore('spots', () => {
     updateComment,
     toggleCommentLike,
     setDone,
+    addDate,
+    updateDate,
+    removeDate,
     spotCategories,
   };
 });

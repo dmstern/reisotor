@@ -129,34 +129,6 @@ function idFromPath(path: string): number | undefined {
 
 let nextId = 1000;
 
-function syncDemoIdeaSchedule(
-  ideaId: number,
-  title: string,
-  date?: string | null,
-  tripId?: number
-) {
-  const schedule = store['/schedule'] as Record<string, unknown>[];
-  const existingIdx = schedule.findIndex((item) => item.idea_id === ideaId);
-
-  if (date) {
-    if (existingIdx !== -1) {
-      schedule[existingIdx] = { ...schedule[existingIdx], date, title };
-    } else {
-      schedule.push({
-        id: nextId++,
-        trip_id: tripId ?? 1,
-        date,
-        title,
-        idea_id: ideaId,
-        spot_id: null,
-        category: 'excursion',
-      });
-    }
-  } else if (existingIdx !== -1) {
-    schedule.splice(existingIdx, 1);
-  }
-}
-
 function delay(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 120));
 }
@@ -878,14 +850,110 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     const targetId = Number(doneMatch[2]);
     const coll = `/${domain}`;
     const doneVal = body?.done ? 1 : 0;
-    const existing = store[coll]?.find((item) => (item as { id: number }).id === targetId);
+    const existing = store[coll]?.find((item) => (item as { id: number }).id === targetId) as
+      (Record<string, unknown> & { dates?: Array<Record<string, unknown>> }) | undefined;
 
     if (existing) {
       existing.done = doneVal;
+
+      if (domain === 'spots' && Array.isArray(existing.dates)) {
+        existing.dates = existing.dates.map((entry) => ({ ...entry, done: doneVal }));
+      }
     }
 
     persist();
     return { done: !!doneVal } as unknown as T;
+  }
+
+  // --- Spot dates (/spots/:id/dates, /spots/:id/dates/:dateId) ---
+  const spotDateItemMatch = /^\/spots\/(-?\d+)\/dates\/(-?\d+)$/.exec(basePath);
+
+  if (spotDateItemMatch) {
+    const spotId = Number(spotDateItemMatch[1]);
+    const dateId = Number(spotDateItemMatch[2]);
+    const spot = store['/spots']?.find((item) => (item as { id: number }).id === spotId) as
+      (Record<string, unknown> & { dates?: Array<Record<string, unknown>> }) | undefined;
+
+    if (spot && Array.isArray(spot.dates)) {
+      if (method === 'PATCH') {
+        const idx = spot.dates.findIndex((entry) => entry.id === dateId);
+
+        if (idx >= 0) {
+          const current = spot.dates[idx];
+          const updatedEntry = {
+            ...current,
+            ...(body?.date !== undefined ? { date: String(body.date) } : {}),
+            ...(body?.done !== undefined ? { done: body.done ? 1 : 0 } : {}),
+          };
+          spot.dates = spot.dates.map((entry, entryIdx) =>
+            entryIdx === idx ? updatedEntry : entry
+          );
+          spot.dates.sort((left, right) => String(left.date).localeCompare(String(right.date)));
+
+          if (body?.done !== undefined) {
+            spot.done = spot.dates.some((entry) => Boolean(entry.done)) ? 1 : 0;
+          }
+
+          persist();
+          return structuredClone(updatedEntry) as unknown as T;
+        }
+      }
+
+      if (method === 'DELETE') {
+        spot.dates = spot.dates.filter((entry) => entry.id !== dateId);
+        persist();
+        return { ok: true } as unknown as T;
+      }
+    }
+
+    return undefined as T;
+  }
+
+  const spotDatesMatch = /^\/spots\/(-?\d+)\/dates$/.exec(basePath);
+
+  if (spotDatesMatch && method === 'POST') {
+    const spotId = Number(spotDatesMatch[1]);
+    const spot = store['/spots']?.find((item) => (item as { id: number }).id === spotId) as
+      | (Record<string, unknown> & { dates?: Array<Record<string, unknown>>; trip_id?: number })
+      | undefined;
+
+    if (spot) {
+      const dateStr = String(body?.date ?? '');
+      const doneVal = body?.done ? 1 : 0;
+      const datesList = Array.isArray(spot.dates) ? [...spot.dates] : [];
+      const existingIdx = datesList.findIndex((entry) => entry.date === dateStr);
+      let resultEntry: Record<string, unknown>;
+
+      if (existingIdx >= 0) {
+        resultEntry = {
+          ...datesList[existingIdx],
+          done: body?.done !== undefined ? doneVal : datesList[existingIdx].done,
+        };
+        datesList[existingIdx] = resultEntry;
+      } else {
+        resultEntry = {
+          id: nextId++,
+          trip_id: spot.trip_id ?? 1,
+          spot_id: spotId,
+          date: dateStr,
+          done: doneVal,
+          created_at: new Date().toISOString(),
+        };
+        datesList.push(resultEntry);
+      }
+
+      datesList.sort((left, right) => String(left.date).localeCompare(String(right.date)));
+      spot.dates = datesList;
+
+      if (doneVal) {
+        spot.done = 1;
+      }
+
+      persist();
+      return structuredClone(resultEntry) as unknown as T;
+    }
+
+    return undefined as T;
   }
 
   // --- Track recording endpoints (/tracks, /tracks/:id/stop, /tracks/:id/points) ---
@@ -1076,6 +1144,10 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     const id = nextId++;
     const created: Record<string, unknown> = { ...(body ?? {}), id };
 
+    if (collection === '/spots') {
+      created.dates = Array.isArray(body?.dates) ? body.dates : [];
+    }
+
     if (collection === '/diary') {
       const now = new Date().toISOString();
       created.author_id = currentDemoUser.id;
@@ -1121,22 +1193,6 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     }
 
     store[collection] = [...store[collection], created];
-
-    if (collection === '/ideas') {
-      syncDemoIdeaSchedule(
-        id,
-        (body?.title as string) ?? '',
-        body?.date as string | null | undefined,
-        body?.trip_id as number | undefined
-      );
-    } else if (collection === '/schedule' && body?.idea_id) {
-      const ideaId = Number(body.idea_id);
-      const existingIdea = store['/ideas']?.find((e) => e.id === ideaId);
-
-      if (existingIdea) {
-        existingIdea.date = body.date ?? null;
-      }
-    }
 
     persist();
     return created as unknown as T;
@@ -1220,30 +1276,6 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     );
     const updated = store[collection].find((item) => (item as { id: number }).id === id);
 
-    if (collection === '/ideas' && id != null) {
-      const updatedIdea = store['/ideas'].find((item) => (item as { id: number }).id === id) as
-        Record<string, unknown> | undefined;
-
-      if (updatedIdea) {
-        syncDemoIdeaSchedule(
-          id,
-          (updatedIdea.title as string) ?? '',
-          updatedIdea.date as string | null | undefined,
-          updatedIdea.trip_id as number | undefined
-        );
-      }
-    } else if (collection === '/schedule' && id != null) {
-      const schedItem = updated as { idea_id?: number | null; date?: string } | undefined;
-
-      if (schedItem?.idea_id != null) {
-        const idea = store['/ideas']?.find((e) => e.id === schedItem.idea_id);
-
-        if (idea) {
-          idea.date = schedItem.date ?? null;
-        }
-      }
-    }
-
     persist();
     return updated as unknown as T;
   }
@@ -1251,24 +1283,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
   if (method === 'DELETE') {
     const id = idFromPath(path);
 
-    if (collection === '/schedule' && id != null) {
-      const schedItem = store['/schedule']?.find((sched) => sched.id === id) as
-        { idea_id?: number | null } | undefined;
-
-      if (schedItem?.idea_id != null) {
-        const idea = store['/ideas']?.find((e) => e.id === schedItem.idea_id);
-
-        if (idea) {
-          idea.date = null;
-        }
-      }
-    }
-
     store[collection] = store[collection].filter((item) => (item as { id: number }).id !== id);
-
-    if (collection === '/ideas' && id != null) {
-      syncDemoIdeaSchedule(id, '', null);
-    }
 
     persist();
     return undefined as T;

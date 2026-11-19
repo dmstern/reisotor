@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, toRef, watch } from 'vue';
-import type { ScheduleItem, Spot, User } from '../api/types';
+import type { Spot, SpotDateEntry, User } from '../api/types';
 import Modal from './Modal.vue';
 import FormField from './FormField.vue';
 import Badge from './primitives/Badge.vue';
@@ -223,7 +223,7 @@ async function handleDeleteSpot() {
   }
 }
 
-function handleOpenScheduledItem(item: ScheduleItem) {
+function handleOpenScheduledItem(item: SpotDateEntry) {
   openScheduledItemDetail(item);
   emit('openScheduleDetail', item);
 }

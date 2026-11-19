@@ -89,10 +89,10 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     });
     expect(created.ok()).toBeTruthy();
     const spot = await created.json();
-    const scheduleRes = await page.request.post('/api/schedule', {
-      data: { trip_id: tripId, date: plannedDate, title: spotTitle, spot_id: spot.id },
+    const dateRes = await page.request.post(`/api/spots/${spot.id}/dates`, {
+      data: { date: plannedDate },
     });
-    expect(scheduleRes.ok()).toBeTruthy();
+    expect(dateRes.ok()).toBeTruthy();
 
     await page.goto('/excursions');
     await page.locator('.segmented-option', { hasText: 'Spots' }).click();
@@ -201,12 +201,12 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     expect(created.ok()).toBeTruthy();
     const spot = await created.json();
 
-    const s1 = await page.request.post('/api/schedule', {
-      data: { trip_id: tripId, date: date1, title: spotTitle, spot_id: spot.id },
+    const s1 = await page.request.post(`/api/spots/${spot.id}/dates`, {
+      data: { date: date1 },
     });
     expect(s1.ok()).toBeTruthy();
-    const s2 = await page.request.post('/api/schedule', {
-      data: { trip_id: tripId, date: date2, title: spotTitle, spot_id: spot.id },
+    const s2 = await page.request.post(`/api/spots/${spot.id}/dates`, {
+      data: { date: date2 },
     });
     expect(s2.ok()).toBeTruthy();
 
@@ -370,20 +370,10 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
       expect(created.ok()).toBeTruthy();
       const spot = await created.json();
 
-      const scheduleRes = await page.request.post('/api/schedule', {
-        data: {
-          trip_id: tripId,
-          date: localDateStr(new Date()),
-          title: spotTitle,
-          spot_id: spot.id,
-        },
+      const dateRes = await page.request.post(`/api/spots/${spot.id}/dates`, {
+        data: { date: localDateStr(new Date()), done: true },
       });
-      expect(scheduleRes.ok()).toBeTruthy();
-
-      const doneRes = await page.request.post(`/api/spots/${spot.id}/done`, {
-        data: { done: true },
-      });
-      expect(doneRes.ok()).toBeTruthy();
+      expect(dateRes.ok()).toBeTruthy();
 
       await page.goto('/excursions');
       const spotCard = page.locator('.spot-card', { hasText: spotTitle });

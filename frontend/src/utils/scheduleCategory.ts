@@ -7,6 +7,9 @@ import {
   IconPlaneFilled,
   IconPin,
   IconPinFilled,
+  IconMapPin,
+  IconMapPinFilled,
+  IconNotebook,
 } from '@tabler/icons-vue';
 import type { ScheduleCategory } from '../api/types';
 import type { IconDef } from './icon';
@@ -33,7 +36,7 @@ export const SCHEDULE_CATEGORY_META: Record<
   excursion: {
     icon: '🎒',
     color: TOUR_COLOR,
-    label: 'Ausflug',
+    label: 'Tour',
     tabler: { id: 'backpack', emoji: '🎒', outline: IconBackpack },
   },
   // 📋 statt eines Häkchen-Symbols: ☑️ sah in der Kalender-Liste wie ein bereits abgehakter statt
@@ -54,6 +57,18 @@ export const SCHEDULE_CATEGORY_META: Record<
     color: TRAVEL_COLOR,
     label: 'Reise',
     tabler: { id: 'plane', emoji: '✈️', outline: IconPlane, filled: IconPlaneFilled },
+  },
+  spot: {
+    icon: '📍',
+    color: '#0e7490',
+    label: 'Spot',
+    tabler: { id: 'map-pin', emoji: '📍', outline: IconMapPin, filled: IconMapPinFilled },
+  },
+  diary: {
+    icon: '📔',
+    color: '#9333ea',
+    label: 'Tagebuch',
+    tabler: { id: 'notebook', emoji: '📔', outline: IconNotebook },
   },
   other: {
     icon: '📌',

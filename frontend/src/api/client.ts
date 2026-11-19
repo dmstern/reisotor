@@ -270,7 +270,7 @@ async function get<T>(path: string, options?: RequestOptions): Promise<T> {
   }
 }
 
-type MutateMethod = 'POST' | 'PUT' | 'DELETE';
+type MutateMethod = 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 /** Legt eine offline gebliebene Mutation in die Outbox (siehe api/offline.ts, von
  *  stores/connectivity.ts beim Wiederverbinden abgearbeitet) und liefert eine optimistische,
@@ -289,10 +289,10 @@ function queueMutation<T>(method: MutateMethod, path: string, body: unknown): T 
     return { ...(body as object), id: tempId, _pending: true } as T;
   }
 
-  // PUT: die id steht schon in der URL (z. B. /todos/123 oder /spots/-123) – kein eigener Platzhalter nötig, die
+  // PUT/PATCH: die id steht schon in der URL (z. B. /todos/123 oder /spots/-123) – kein eigener Platzhalter nötig, die
   // Zeile existiert (aus Sicht des Clients) bereits.
   const idMatch = /(-?\d+)(?:\?.*)?$/.exec(path);
-  enqueue('PUT', path, body);
+  enqueue(method, path, body);
   const id = idMatch ? Number(idMatch[1]) : undefined;
   // body enthält meist nur die im Formular editierbaren Felder (siehe z. B. DiaryView.vue's
   // submitEditEntry), nicht server-verwaltete Felder wie created_by/trip_id/done - ohne diesen
@@ -305,6 +305,7 @@ function queueMutation<T>(method: MutateMethod, path: string, body: unknown): T 
 const MUTATE_KIND: Record<MutateMethod, 'create' | 'update' | 'delete'> = {
   POST: 'create',
   PUT: 'update',
+  PATCH: 'update',
   DELETE: 'delete',
 };
 
@@ -375,6 +376,8 @@ export const api = {
     mutate<T>('POST', path, body, options),
   put: <T>(path: string, body?: unknown, options?: RequestOptions) =>
     mutate<T>('PUT', path, body, options),
+  patch: <T>(path: string, body?: unknown, options?: RequestOptions) =>
+    mutate<T>('PATCH', path, body, options),
   delete: <T>(path: string, options?: RequestOptions) =>
     mutate<T>('DELETE', path, undefined, options),
 };

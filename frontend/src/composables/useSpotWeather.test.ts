@@ -3,8 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { ref } from 'vue';
 import { useSpotWeather } from './useSpotWeather';
-import { useScheduleStore } from '../stores/schedule';
-import type { ScheduleItem, Spot } from '../api/types';
+import type { Spot } from '../api/types';
 import * as weatherUtils from '../utils/weather';
 import type { DailyWeather } from '../utils/weather';
 
@@ -17,12 +16,9 @@ function createMockSpot(partial: Partial<Spot>): Spot {
     lat: 48.2082,
     lng: 16.3738,
     done: 0,
+    dates: [],
     ...partial,
   } as Spot;
-}
-
-function createMockScheduleItem(partial: Partial<ScheduleItem>): ScheduleItem {
-  return partial as unknown as ScheduleItem;
 }
 
 function createMockDailyWeather(partial: Partial<DailyWeather>): DailyWeather {
@@ -34,37 +30,17 @@ describe('useSpotWeather', () => {
     setActivePinia(createPinia());
   });
 
-  it('aggregiert geplante Tage aus dem ScheduleStore (inkl. Datumsbereiche)', () => {
-    const scheduleStore = useScheduleStore();
-    scheduleStore.items = [
-      createMockScheduleItem({
-        id: 101,
-        trip_id: 10,
-        spot_id: 1,
-        date: '2026-06-10',
-        title: 'Spot Besuch 1',
-        done: 0,
-      }),
-      createMockScheduleItem({
-        id: 102,
-        trip_id: 10,
-        spot_id: 1,
-        date: '2026-06-12',
-        end_date: '2026-06-14',
-        title: 'Spot Besuch 2',
-        done: 0,
-      }),
-      createMockScheduleItem({
-        id: 103,
-        trip_id: 10,
-        spot_id: 2, // fremder Spot
-        date: '2026-06-15',
-        title: 'Anderer Spot',
-        done: 0,
-      }),
-    ];
-
-    const spot = ref(createMockSpot({ id: 1 }));
+  it('aggregiert geplante Tage aus spot.dates', () => {
+    const spot = ref(
+      createMockSpot({
+        id: 1,
+        dates: [
+          { id: 101, trip_id: 10, spot_id: 1, date: '2026-06-10', done: 0, created_at: '' },
+          { id: 102, trip_id: 10, spot_id: 1, date: '2026-06-12', done: 0, created_at: '' },
+          { id: 103, trip_id: 10, spot_id: 1, date: '2026-06-13', done: 0, created_at: '' },
+        ],
+      })
+    );
     const scheduledDate = ref<string | null>('2026-06-10');
     const expanded = ref(false);
 
@@ -74,17 +50,14 @@ describe('useSpotWeather', () => {
       expanded,
     });
 
-    expect(scheduledDaysCount.value).toBe(4); // 2026-06-10, 2026-06-12, 2026-06-13, 2026-06-14
+    expect(scheduledDaysCount.value).toBe(3); // 2026-06-10, 2026-06-12, 2026-06-13
     expect(scheduledDatesForSpot.value.has('2026-06-10')).toBe(true);
     expect(scheduledDatesForSpot.value.has('2026-06-13')).toBe(true);
     expect(plannedDateLabel.value).toContain('10.06');
   });
 
   it('bestimmt weatherDate korrekt abhängig von Terminanzahl und expanded', () => {
-    const scheduleStore = useScheduleStore();
-    scheduleStore.items = [];
-
-    const spot = ref(createMockSpot({ id: 1, done: 0 }));
+    const spot = ref(createMockSpot({ id: 1, done: 0, dates: [] }));
     const scheduledDate = ref<string | null>(null);
     const expanded = ref(false);
 
@@ -106,10 +79,13 @@ describe('useSpotWeather', () => {
     expect(weatherDate.value).toBe('2026-07-01');
 
     // Mehr als ein geplanter Tag -> kein einzelnes Wetterdatum (null)
-    scheduleStore.items = [
-      createMockScheduleItem({ id: 1, spot_id: 1, date: '2026-07-01', trip_id: 10 }),
-      createMockScheduleItem({ id: 2, spot_id: 1, date: '2026-07-02', trip_id: 10 }),
-    ];
+    spot.value = createMockSpot({
+      id: 1,
+      dates: [
+        { id: 1, trip_id: 10, spot_id: 1, date: '2026-07-01', done: 0, created_at: '' },
+        { id: 2, trip_id: 10, spot_id: 1, date: '2026-07-02', done: 0, created_at: '' },
+      ],
+    });
     expect(weatherDate.value).toBeNull();
   });
 

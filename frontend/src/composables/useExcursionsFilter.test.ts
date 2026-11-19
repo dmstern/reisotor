@@ -4,15 +4,10 @@ import type { RouteLocationNormalizedLoaded, Router } from 'vue-router';
 import { useExcursionsFilter } from './useExcursionsFilter';
 import { useSpotsStore } from '../stores/spots';
 import { useExcursionsStore } from '../stores/excursions';
-import { useScheduleStore } from '../stores/schedule';
-import type { Excursion, ScheduleItem, Spot } from '../api/types';
+import type { Excursion, Spot } from '../api/types';
 
 function createMockSpot(partial: Partial<Spot>): Spot {
   return partial as unknown as Spot;
-}
-
-function createMockScheduleItem(partial: Partial<ScheduleItem>): ScheduleItem {
-  return partial as unknown as ScheduleItem;
 }
 
 function createMockExcursion(partial: Partial<Excursion>): Excursion {
@@ -70,7 +65,6 @@ describe('useExcursionsFilter', () => {
 
   it('filtert Spots nach Kategorie, Status und Suchbegriff', () => {
     const spotsStore = useSpotsStore();
-    const scheduleStore = useScheduleStore();
 
     spotsStore.spots = [
       createMockSpot({
@@ -80,6 +74,7 @@ describe('useExcursionsFilter', () => {
         category: 'Strand',
         lat: 10,
         lng: 10,
+        dates: [{ id: 10, trip_id: 1, spot_id: 1, date: '2026-06-15', done: 0, created_at: '' }],
       }),
       createMockSpot({
         id: 2,
@@ -88,17 +83,7 @@ describe('useExcursionsFilter', () => {
         category: 'Aussichtspunkt',
         lat: 20,
         lng: 20,
-      }),
-    ];
-
-    // Spot 1 ist geplant über Kalender-Item
-    scheduleStore.items = [
-      createMockScheduleItem({
-        id: 10,
-        trip_id: 1,
-        date: '2026-06-15',
-        title: 'Strandtag',
-        spot_id: 1,
+        dates: [],
       }),
     ];
 

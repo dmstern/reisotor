@@ -3,8 +3,6 @@ import { useRouter } from 'vue-router';
 import { useDrawersStore } from '../stores/drawers';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
-import { useScheduleStore } from '../stores/schedule';
-import { useTripStore } from '../stores/trip';
 
 export interface UsePendingScheduleOptions {
   standalone?: boolean;
@@ -19,8 +17,6 @@ export function usePendingSchedule(options: UsePendingScheduleOptions = {}) {
   const drawers = useDrawersStore();
   const excursionsStore = useExcursionsStore();
   const spotsStore = useSpotsStore();
-  const scheduleStore = useScheduleStore();
-  const tripStore = useTripStore();
 
   const pendingScheduleLabel = computed(() => {
     const pending = drawers.pendingSchedule;
@@ -63,29 +59,11 @@ export function usePendingSchedule(options: UsePendingScheduleOptions = {}) {
         await excursionsStore.setDone(pending.id, true);
       }
     } else {
-      const spot = spotsStore.spots.find((targetSpot) => targetSpot.id === pending.id);
-
-      if (spot && tripStore.currentTripId != null) {
-        if (pending.mode === 'confirm-done') {
-          await scheduleStore.setSpotDate({
-            spotId: pending.id,
-            tripId: tripStore.currentTripId,
-            title: spot.title,
-            date,
-            done: true,
-          });
-          await spotsStore.setDone(pending.id, true);
-        } else {
-          await scheduleStore.create({
-            trip_id: tripStore.currentTripId,
-            date,
-            title: spot.title,
-            spot_id: spot.id,
-            auto_created: 1,
-            user_modified: 0,
-          });
-        }
-      }
+      await spotsStore.addDate(
+        pending.id,
+        date,
+        pending.mode === 'confirm-done' ? true : undefined
+      );
     }
 
     drawers.clearPendingSchedule();

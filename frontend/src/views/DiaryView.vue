@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import type { DiaryEntry } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { hashHighlightId } from '../utils/hashHighlight';
 
 // Subkomponenten & Primitives
 import DiaryEntryCard from '../components/DiaryEntryCard.vue';
@@ -22,6 +24,7 @@ import { useDiaryWeather } from '../composables/useDiaryWeather';
 import { useDiaryEntityLinks } from '../composables/useDiaryEntityLinks';
 import { useDiaryPreview } from '../composables/useDiaryPreview';
 
+const route = useRoute();
 const auth = useAuthStore();
 const tripStore = useTripStore();
 const tripId = tripStore.currentTripId as number;
@@ -85,9 +88,34 @@ const {
   handleDiaryPreviewRemove,
 } = preview;
 
-// 6. Modals
+// 6. Modals & Hash Navigation
 const showNewModal = ref(false);
 const editingEntry = ref<DiaryEntry | null>(null);
+const focusedEntryId = ref<number | null>(null);
+
+function scrollToHashEntry(hash: string) {
+  const id = hashHighlightId(hash, 'entry');
+  focusedEntryId.value = id;
+
+  if (id == null) {
+    return;
+  }
+
+  void nextTick(() => {
+    const target = document.getElementById(`entry-${id}`);
+    target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+}
+
+watch(
+  () => [route.hash, loading.value, entries.value.length] as const,
+  ([hash, isLoading]) => {
+    if (!isLoading && hash) {
+      scrollToHashEntry(hash);
+    }
+  },
+  { immediate: true }
+);
 
 function openNewEntry() {
   showNewModal.value = true;
@@ -138,10 +166,11 @@ onMounted(() => {
     <TransitionGroup tag="div" name="list" class="entries">
       <DiaryEntryCard
         v-for="(entry, index) in entries"
+        :id="`entry-${entry.id}`"
         :key="entry.id"
         :entry="entry"
         :index="index"
-        :highlighted="highlightedIds.has(entry.id)"
+        :highlighted="highlightedIds.has(entry.id) || focusedEntryId === entry.id"
         :author-name="entry.author_username ?? author(entry.author_id)?.username ?? '?'"
         :author-avatar="entry.author_avatar ?? author(entry.author_id)?.avatar ?? '❓'"
         :co-editors="coEditorsFor(entry)"

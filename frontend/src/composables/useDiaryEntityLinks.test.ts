@@ -4,11 +4,9 @@ import { createPinia, setActivePinia } from 'pinia';
 import { useDiaryEntityLinks } from './useDiaryEntityLinks';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
-import { useScheduleStore } from '../stores/schedule';
 import { useDrawersStore } from '../stores/drawers';
 import { useTripStore } from '../stores/trip';
-import { useDiaryStore } from '../stores/diary';
-import type { Excursion, ScheduleItem, Spot, DiaryEntry } from '../api/types';
+import type { Excursion, Spot, DiaryEntry } from '../api/types';
 
 vi.mock('../api/client', () => ({
   api: {
@@ -53,18 +51,19 @@ describe('useDiaryEntityLinks', () => {
     expect(sorted.map((e) => e.id)).toEqual([2, 1, 3]);
   });
 
-  it('detects planned spots via schedule items or excursions', () => {
-    const scheduleStore = useScheduleStore();
+  it('detects planned spots via spot.dates or excursions', () => {
     const excursionsStore = useExcursionsStore();
     const spotsStore = useSpotsStore();
 
     spotsStore.spots = [
-      { id: 10, title: 'Spot 10' } as Spot,
-      { id: 20, title: 'Spot 20' } as Spot,
-      { id: 30, title: 'Spot 30' } as Spot,
+      {
+        id: 10,
+        title: 'Spot 10',
+        dates: [{ id: 100, trip_id: 1, spot_id: 10, date: '2026-07-01', done: 0, created_at: '' }],
+      } as unknown as Spot,
+      { id: 20, title: 'Spot 20', dates: [] } as unknown as Spot,
+      { id: 30, title: 'Spot 30', dates: [] } as unknown as Spot,
     ];
-
-    scheduleStore.items = [{ id: 100, spot_id: 10, date: '2026-07-01' } as ScheduleItem];
 
     excursionsStore.excursions = [
       { id: 1, title: 'Tour', date: '2026-07-01', spot_ids: [20] } as Excursion,
@@ -141,7 +140,6 @@ describe('useDiaryEntityLinks', () => {
   });
 
   it('erkennt Datumsabweichungen bei Touren und Spots', () => {
-    const scheduleStore = useScheduleStore();
     const excursionsStore = useExcursionsStore();
     const spotsStore = useSpotsStore();
 
@@ -159,12 +157,15 @@ describe('useDiaryEntityLinks', () => {
     } as unknown as Excursion;
 
     spotsStore.spots = [
-      { id: 10, title: 'Spot mit Termin' } as Spot,
-      { id: 20, title: 'Spot ohne Termin' } as Spot,
-      { id: 30, title: 'Spot via Tour' } as Spot,
+      {
+        id: 10,
+        title: 'Spot mit Termin',
+        dates: [{ id: 101, trip_id: 1, spot_id: 10, date: '2026-07-05', done: 0, created_at: '' }],
+      } as unknown as Spot,
+      { id: 20, title: 'Spot ohne Termin', dates: [] } as unknown as Spot,
+      { id: 30, title: 'Spot via Tour', dates: [] } as unknown as Spot,
     ];
 
-    scheduleStore.items = [{ id: 101, spot_id: 10, date: '2026-07-05' } as ScheduleItem];
     excursionsStore.excursions = [
       { id: 1, title: 'Tour 1', date: '2026-07-08', spot_ids: [30] } as unknown as Excursion,
     ];
@@ -188,51 +189,53 @@ describe('useDiaryEntityLinks', () => {
     expect(links.spotDateMismatch(30, '2026-07-08')).toBe(false);
   });
 
-  it('markLinkedAsDone marks spots as done without creating/mutating schedule item unless in moveSpotIds', async () => {
+  it('markLinkedAsDone setzt symmetrische Daten auf ungeplanten Spots & Touren und respektiert moveSpotIds', async () => {
     const spotsStore = useSpotsStore();
-    const scheduleStore = useScheduleStore();
+    const excursionsStore = useExcursionsStore();
 
     await vi.waitFor(() => {
       expect(spotsStore.loaded).toBe(true);
     });
-    spotsStore.spots = [{ id: 10, title: 'Spot A' } as Spot, { id: 20, title: 'Spot B' } as Spot];
-
-    const setDoneSpy = vi.spyOn(spotsStore, 'setDone').mockResolvedValue({} as any);
-    const setSpotDateSpy = vi.spyOn(scheduleStore, 'setSpotDate').mockResolvedValue({} as any);
-
-    const links = useDiaryEntityLinks();
-
-    // Ohne moveSpotIds: nur setDone, kein setSpotDate
-    await links.markLinkedAsDone([], [10], '2026-07-15');
-    expect(setDoneSpy).toHaveBeenCalledWith(10, true);
-    expect(setSpotDateSpy).not.toHaveBeenCalled();
-
-    // Mit moveSpotIds: setDone UND setSpotDate für die gewünschte ID
-    await links.markLinkedAsDone([], [20], '2026-07-15', [20]);
-    expect(setDoneSpy).toHaveBeenCalledWith(20, true);
-    expect(setSpotDateSpy).toHaveBeenCalledWith({
-      spotId: 20,
-      tripId: 1,
-      title: 'Spot B',
-      date: '2026-07-15',
-    });
-  });
-
-  it('erkennt dynamisch Termine aus Tagebucheinträgen', () => {
-    const diaryStore = useDiaryStore();
-
-    diaryStore.entries = [
+    spotsStore.spots = [
       {
-        id: 1,
-        date: '2026-07-12',
-        spot_ids: [50],
-      } as DiaryEntry,
+        id: 10,
+        title: 'Spot A (bereits geplant)',
+        dates: [{ id: 1, trip_id: 1, spot_id: 10, date: '2026-07-10', done: 0, created_at: '' }],
+      } as unknown as Spot,
+      { id: 20, title: 'Spot B (ungeplant)', dates: [] } as unknown as Spot,
+    ];
+    excursionsStore.excursions = [
+      {
+        id: 5,
+        trip_id: 1,
+        title: 'Tour ohne Datum',
+        date: null,
+        spot_ids: [],
+        done: 0,
+      } as unknown as Excursion,
     ];
 
+    const setDoneSpy = vi.spyOn(spotsStore, 'setDone').mockResolvedValue({} as never);
+    const addDateSpy = vi.spyOn(spotsStore, 'addDate').mockResolvedValue({} as never);
+    const excSetDateSpy = vi.spyOn(excursionsStore, 'setDate').mockResolvedValue();
+    const excSetDoneSpy = vi.spyOn(excursionsStore, 'setDone').mockResolvedValue();
+
     const links = useDiaryEntityLinks();
-    expect(links.spotAlreadyPlanned(50, '2026-07-12')).toBe(true);
-    expect(links.getSpotScheduledDates(50)).toContain('2026-07-12');
-    expect(links.spotDateMismatch(50, '2026-07-12')).toBe(false);
-    expect(links.spotDateMismatch(50, '2026-07-15')).toBe(true);
+
+    // Spot 10 hat bereits Datum, nicht in moveSpotIds -> nur setDone, kein addDate
+    await links.markLinkedAsDone([], [10], '2026-07-15');
+    expect(setDoneSpy).toHaveBeenCalledWith(10, true);
+    expect(addDateSpy).not.toHaveBeenCalled();
+
+    // Spot 10 mit moveSpotIds -> addDate mit done=true
+    await links.markLinkedAsDone([], [10], '2026-07-15', [10]);
+    expect(addDateSpy).toHaveBeenCalledWith(10, '2026-07-15', true);
+
+    // Ungeplanter Spot 20 & ungeplante Tour 5 -> beide bekommen symmetrisch das Tagebuch-Datum + done=true
+    addDateSpy.mockClear();
+    await links.markLinkedAsDone([5], [20], '2026-07-15');
+    expect(addDateSpy).toHaveBeenCalledWith(20, '2026-07-15', true);
+    expect(excSetDateSpy).toHaveBeenCalledWith(5, '2026-07-15');
+    expect(excSetDoneSpy).toHaveBeenCalledWith(5, true);
   });
 });

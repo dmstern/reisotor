@@ -2,7 +2,6 @@ import { computed, ref, watch, type Ref } from 'vue';
 import type { ScheduleItem } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useSpotsStore } from '../stores/spots';
-import { useExcursionsStore } from '../stores/excursions';
 import { useScheduleStore } from '../stores/schedule';
 import { useDraftAutosave } from './useDraftAutosave';
 import { useToast } from './useToast';
@@ -13,25 +12,17 @@ export interface UseScheduleItemFormOptions {
   selectedDate?: Ref<string | null>;
 }
 
-export function parseLinkKey(key: string): { spot_id: number | null; idea_id: number | null } {
+export function parseLinkKey(key: string): { spot_id: number | null; idea_id: null } {
   if (key.startsWith('spot:')) {
     return { spot_id: Number(key.slice('spot:'.length)), idea_id: null };
-  }
-
-  if (key.startsWith('idea:')) {
-    return { spot_id: null, idea_id: Number(key.slice('idea:'.length)) };
   }
 
   return { spot_id: null, idea_id: null };
 }
 
-export function linkKeyFor(item: Pick<ScheduleItem, 'spot_id' | 'idea_id'>): string {
+export function linkKeyFor(item: Pick<ScheduleItem, 'spot_id'>): string {
   if (item.spot_id != null) {
     return `spot:${item.spot_id}`;
-  }
-
-  if (item.idea_id != null) {
-    return `idea:${item.idea_id}`;
   }
 
   return '';
@@ -39,12 +30,11 @@ export function linkKeyFor(item: Pick<ScheduleItem, 'spot_id' | 'idea_id'>): str
 
 /**
  * Bündelt die State- und Formularlogik zum Anlegen und Bearbeiten von Terminen,
- * inklusive Entwurfs-Autosave, Validierung, Verknüpfungen (Spot/Tour) und Löschung.
+ * inklusive Entwurfs-Autosave, Validierung, Verknüpfungen (Spot) und Löschung.
  */
 export function useScheduleItemForm(options: UseScheduleItemFormOptions = {}) {
   const tripStore = useTripStore();
   const spotsStore = useSpotsStore();
-  const excursionsStore = useExcursionsStore();
   const scheduleStore = useScheduleStore();
   const { showToast } = useToast();
 
@@ -149,14 +139,10 @@ export function useScheduleItemForm(options: UseScheduleItemFormOptions = {}) {
 
   // --- Link Key & Location resolution ---
   function titleForLinkKey(key: string): string | null {
-    const { spot_id, idea_id } = parseLinkKey(key);
+    const { spot_id } = parseLinkKey(key);
 
     if (spot_id != null) {
       return spotsStore.spots.find((spot) => spot.id === spot_id)?.title ?? null;
-    }
-
-    if (idea_id != null) {
-      return excursionsStore.excursions.find((e) => e.id === idea_id)?.title ?? null;
     }
 
     return null;
@@ -203,12 +189,6 @@ export function useScheduleItemForm(options: UseScheduleItemFormOptions = {}) {
       }
     }
   );
-
-  async function syncExcursionsIfLinked(...ideaIds: (number | null | undefined)[]) {
-    if (ideaIds.some((id) => id != null)) {
-      await excursionsStore.load();
-    }
-  }
 
   // --- Add Form Actions ---
   function openAddForm(defaultDate?: string | Event) {
@@ -268,8 +248,8 @@ export function useScheduleItemForm(options: UseScheduleItemFormOptions = {}) {
     }
 
     const parsed = parseLatLngFromMapsLink(newMapsLink.value);
-    const { spot_id, idea_id } = parseLinkKey(newLinkKey.value);
-    const linked = spot_id != null || idea_id != null;
+    const { spot_id } = parseLinkKey(newLinkKey.value);
+    const linked = spot_id != null;
     await scheduleStore.create({
       trip_id: tripStore.currentTripId,
       date: newStartDate.value,
@@ -283,9 +263,7 @@ export function useScheduleItemForm(options: UseScheduleItemFormOptions = {}) {
       lat: linked ? undefined : parsed?.lat,
       lng: linked ? undefined : parsed?.lng,
       spot_id,
-      idea_id,
     });
-    await syncExcursionsIfLinked(idea_id);
     closeAddForm();
   }
 
@@ -321,9 +299,8 @@ export function useScheduleItemForm(options: UseScheduleItemFormOptions = {}) {
     }
 
     const parsed = parseLatLngFromMapsLink(editForm.value.mapsLink);
-    const { spot_id, idea_id } = parseLinkKey(editForm.value.linkKey);
-    const linked = spot_id != null || idea_id != null;
-    const previousIdeaId = editingItem.value.idea_id;
+    const { spot_id } = parseLinkKey(editForm.value.linkKey);
+    const linked = spot_id != null;
     await scheduleStore.update(editingItem.value.id, {
       trip_id: tripStore.currentTripId,
       date: editingItem.value.date,
@@ -337,10 +314,8 @@ export function useScheduleItemForm(options: UseScheduleItemFormOptions = {}) {
       lat: linked ? undefined : (parsed?.lat ?? editingItem.value.lat ?? undefined),
       lng: linked ? undefined : (parsed?.lng ?? editingItem.value.lng ?? undefined),
       spot_id,
-      idea_id,
       user_modified: 1,
     });
-    await syncExcursionsIfLinked(previousIdeaId, idea_id);
     editDraft.clear();
     editingItem.value = null;
   }
@@ -367,7 +342,6 @@ export function useScheduleItemForm(options: UseScheduleItemFormOptions = {}) {
       return;
     }
 
-    const ideaId = editingItem.value.idea_id;
     const id = editingItem.value.id;
     await scheduleStore.remove(id);
     showToast({
@@ -376,10 +350,8 @@ export function useScheduleItemForm(options: UseScheduleItemFormOptions = {}) {
       onRestore: async () => {
         await restoreTrashItem('schedule_item', id);
         await scheduleStore.load();
-        await syncExcursionsIfLinked(ideaId);
       },
     });
-    await syncExcursionsIfLinked(ideaId);
     closeEditForm();
   }
 

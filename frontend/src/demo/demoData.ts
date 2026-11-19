@@ -368,23 +368,6 @@ export function createDemoData(baseDate: Date = new Date()): DemoDataSet {
       spot_id: 3,
       idea_id: null,
     },
-    {
-      id: 3,
-      trip_id: 1,
-      date: addDays(4),
-      end_date: null,
-      time: '09:30',
-      end_time: '16:00',
-      title: 'Panoramatour Alfama & Belém',
-      note: 'Start beim Hotel Alfama',
-      location: 'Lissabon',
-      maps_link: null,
-      lat: null,
-      lng: null,
-      category: 'excursion',
-      spot_id: null,
-      idea_id: 3,
-    },
   ];
 
   const DEMO_EXCURSIONS: Excursion[] = [

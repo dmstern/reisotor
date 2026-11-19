@@ -1,10 +1,11 @@
 import { computed, ref, watch } from 'vue';
-import { api } from '../api/client';
-import type { CalendarEntry, Spot, TodoItem } from '../api/types';
+import type { CalendarEntry, Spot } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useExcursionsStore } from '../stores/excursions';
 import { useSpotsStore } from '../stores/spots';
 import { useScheduleStore } from '../stores/schedule';
+import { useTodosStore } from '../stores/todos';
+import { useDiaryStore } from '../stores/diary';
 import { useDrawersStore } from '../stores/drawers';
 import { useLiveSyncStore } from '../stores/liveSync';
 import { useWeatherProviderStore } from '../stores/weatherProvider';
@@ -19,13 +20,16 @@ import {
 
 /**
  * Kapselt das Laden, Synchronisieren und Vorhalten sämtlicher Kalenderdaten:
- * Termine, Todos, Etappen, Unterkünfte und standortabhängige Wettervorhersagen.
+ * Manuelle Termine, direkte Projektionen (Spots, Touren, Tagebuch, Todos, Unterkünfte)
+ * und standortabhängige Wettervorhersagen.
  */
 export function useCalendarData() {
   const tripStore = useTripStore();
   const excursionsStore = useExcursionsStore();
   const spotsStore = useSpotsStore();
   const scheduleStore = useScheduleStore();
+  const todosStore = useTodosStore();
+  const diaryStore = useDiaryStore();
   const drawers = useDrawersStore();
   const liveSync = useLiveSyncStore();
   const weatherProvider = useWeatherProviderStore();
@@ -34,7 +38,7 @@ export function useCalendarData() {
   const accommodations = computed(() =>
     spotsStore.spots.filter((spot) => spot.category === 'Unterkunft')
   );
-  const todos = ref<TodoItem[]>([]);
+  const todos = computed(() => todosStore.items);
   const travelItems = computed(() =>
     deriveTravelItems(excursionsStore.excursions, spotsStore.spots)
   );
@@ -56,12 +60,12 @@ export function useCalendarData() {
       return;
     }
 
-    const [todosRes] = await Promise.all([
-      api.get<TodoItem[]>(`/todos?trip_id=${tripId}`),
+    await Promise.all([
+      todosStore.load(tripId),
+      diaryStore.load(),
       spotsStore.load(),
       scheduleStore.load(),
     ]);
-    todos.value = todosRes;
   }
 
   async function loadWeather() {
@@ -94,14 +98,15 @@ export function useCalendarData() {
   }
 
   const allEntries = computed(() =>
-    buildAllEntries(
-      scheduleStore.items,
-      trip.value,
-      todos.value,
-      travelItems.value,
-      excursionsStore.excursions,
-      spotsStore.spots
-    )
+    buildAllEntries({
+      items: scheduleStore.items,
+      trip: trip.value,
+      todos: todos.value,
+      travelItems: travelItems.value,
+      excursions: excursionsStore.excursions,
+      spots: spotsStore.spots,
+      diaryEntries: diaryStore.entries,
+    })
   );
 
   function entriesForDate(date: string): CalendarEntry[] {
@@ -111,7 +116,11 @@ export function useCalendarData() {
   }
 
   function entryDone(entry: CalendarEntry): boolean {
-    return !!todos.value.find((todo) => todo.id === entry.todoId)?.done;
+    if (entry.kind === 'todo') {
+      return Boolean(todos.value.find((todo) => todo.id === entry.todoId)?.done);
+    }
+
+    return Boolean(entry.done);
   }
 
   async function toggleTodoDone(todoId: number) {
@@ -121,24 +130,9 @@ export function useCalendarData() {
       return;
     }
 
-    const updated = await api.put<TodoItem>(`/todos/${todoId}`, {
-      trip_id: tripStore.currentTripId,
-      title: todo.title,
-      assigned_to_user_id: todo.assigned_to_user_id,
-      due_date: todo.due_date ?? undefined,
-      period: todo.period ?? undefined,
-      priority: todo.priority,
-      note: todo.note ?? undefined,
-      done: !todo.done,
-    });
-    const idx = todos.value.findIndex((item) => item.id === todoId);
-
-    if (idx !== -1) {
-      todos.value[idx] = updated;
-    }
+    await todosStore.toggleDone(todo);
   }
 
-  // Reactive Sync Watchers
   watch(
     () => drawers.calendarOpen,
     (open) => {
@@ -155,8 +149,6 @@ export function useCalendarData() {
       loadWeather();
     }
   );
-
-  watch(() => liveSync.domainVersion.todos, loadAll);
 
   watch(
     () => drawers.locationsVersion,

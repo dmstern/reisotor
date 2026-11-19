@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import type { Excursion, Spot, TravelItem } from '../api/types';
 import { useDrawersStore } from '../stores/drawers';
+import { useDiaryStore } from '../stores/diary';
 import { useExcursionStations } from '../composables/useExcursionStations';
 import EditButton from './EditButton.vue';
 import Comments, { type CommentItem } from './Comments.vue';
@@ -16,6 +17,7 @@ import ExcursionCoverStack from './ExcursionCoverStack.vue';
 import ExcursionDoneStatus from './ExcursionDoneStatus.vue';
 import ExcursionRouteMeta from './ExcursionRouteMeta.vue';
 import ExcursionMapLinks from './ExcursionMapLinks.vue';
+import LinkedDiaryPills from './LinkedDiaryPills.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
@@ -50,6 +52,13 @@ const emit = defineEmits<{
 }>();
 
 const drawers = useDrawersStore();
+const diaryStore = useDiaryStore();
+
+const linkedDiaryEntries = computed(() =>
+  diaryStore.entries.filter(
+    (entry) => !entry.is_draft && (entry.excursion_ids ?? []).includes(props.excursion.id)
+  )
+);
 
 function onCardClick(event?: MouseEvent) {
   const target = event?.target as HTMLElement | null;
@@ -230,6 +239,8 @@ const {
           :linked-tracks="linkedTracks"
           @show-on-map="emit('show-on-map')"
         />
+
+        <LinkedDiaryPills v-if="linkedDiaryEntries.length" :entries="linkedDiaryEntries" />
 
         <div
           v-if="

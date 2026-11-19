@@ -44,13 +44,7 @@ const emit = defineEmits<{
           @keyup.enter="emit('submit-done')"
         />
         <div class="popover-buttons">
-          <Button
-            type="button"
-            variant="primary"
-            size="sm"
-            :disabled="!date"
-            @click="emit('submit-done')"
-          >
+          <Button type="button" variant="primary" size="sm" @click="emit('submit-done')">
             {{ doneButtonLabel }}
           </Button>
           <Button
