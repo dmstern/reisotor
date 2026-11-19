@@ -47,6 +47,7 @@ const props = withDefaults(
     // abgeleitet (analog zu Excursion.date), da mehrere Karten sich denselben Stand teilen müssen.
     scheduledDate: string | null;
     highlighted?: boolean;
+    focused?: boolean;
     /** Nur für Kategorie "Unterkunft" mit gesetztem paid_by_user_id relevant (siehe
      *  Migrationskommentar in db/index.ts). */
     payerLabel?: string | null;
@@ -61,6 +62,8 @@ const props = withDefaults(
     accommodationDistance?: SpotAccommodationDistanceInfo | null;
   }>(),
   {
+    highlighted: false,
+    focused: false,
     headingTag: 'h4',
   }
 );
@@ -151,6 +154,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
     :class="{ expanded, 'new-highlight': highlighted, 'has-layover': layoverMinutes != null }"
     :highlight="highlighted"
     :map-focused="isMapFocused"
+    :focused="focused"
     @click="onCardClick"
   >
     <SpotCoverImage

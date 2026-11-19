@@ -34,6 +34,7 @@ const props = withDefaults(
     entry: DiaryEntry;
     index?: number;
     highlighted?: boolean;
+    focused?: boolean;
     authorName?: string;
     authorAvatar?: string;
     coEditors?: CoEditor[];
@@ -50,6 +51,7 @@ const props = withDefaults(
   {
     index: 0,
     highlighted: false,
+    focused: false,
     authorName: '?',
     authorAvatar: '❓',
     coEditors: () => [],
@@ -120,6 +122,7 @@ function excursionTooltip(ex: Excursion): string {
     class="entry animate-cascade"
     :style="{ '--stagger-delay': `${index * 60}ms` }"
     :highlight="highlighted"
+    :focused="focused"
   >
     <header class="entry-head">
       <span class="avatar">{{ entry.author_avatar ?? authorAvatar }}</span>

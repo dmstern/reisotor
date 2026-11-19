@@ -58,6 +58,14 @@ describe('Card primitive', () => {
     expect(html).toContain('Focused Card');
   });
 
+  it('renders focused card with is-map-focused class and without new-highlight or sparkle badge', async () => {
+    const html = await renderCard({ focused: true }, 'Jump Focused Card');
+
+    expect(html).toContain('is-map-focused');
+    expect(html).not.toContain('new-highlight');
+    expect(html).not.toContain('card-sparkle-badge');
+  });
+
   it('renders highlight card with new-highlight class and card-sparkle-badge', async () => {
     const html = await renderCard({ highlight: true }, 'Highlighted Card');
 

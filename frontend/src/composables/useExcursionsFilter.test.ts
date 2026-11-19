@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { nextTick, ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router';
 import { useExcursionsFilter } from './useExcursionsFilter';
 import { useSpotsStore } from '../stores/spots';
 import { useExcursionsStore } from '../stores/excursions';
+import { useLiveSyncStore } from '../stores/liveSync';
 import type { Excursion, Spot } from '../api/types';
 
 function createMockSpot(partial: Partial<Spot>): Spot {
@@ -260,5 +262,63 @@ describe('useExcursionsFilter', () => {
     // Wenn keine Touren vorhanden sind, ist spotGroups leer
     excursionsStore.excursions = [];
     expect(filter.spotGroups.value.length).toBe(0);
+  });
+
+  it('trennt highlightedSpotIds und highlightedExcursionIds sauber und leert gesehene Highlights beim Moduswechsel', () => {
+    const highlightedSpotIds = { value: new Set([99]) };
+    const highlightedExcursionIds = { value: new Set([88]) };
+
+    const filter = useExcursionsFilter({
+      route: mockRoute,
+      router: mockRouter,
+      highlightedSpotIds: highlightedSpotIds as never,
+      highlightedExcursionIds: highlightedExcursionIds as never,
+    });
+
+    filter.markSeenForGroupMode('category');
+    expect([...highlightedSpotIds.value]).toEqual([]);
+    expect([...highlightedExcursionIds.value]).toEqual([88]);
+
+    filter.markSeenForGroupMode('tours');
+    expect([...highlightedExcursionIds.value]).toEqual([]);
+  });
+
+  it('löscht LiveSync-Highlights beim Initial-Mount mit Query-Moduswechsel nicht durch doppeltes markSeen', async () => {
+    const liveSync = useLiveSyncStore();
+    const markSeenSpy = vi
+      .spyOn(liveSync, 'markSeen')
+      .mockImplementationOnce(() => new Set([42]))
+      .mockImplementation(() => new Set());
+
+    const highlightedSpotIds = ref<Set<number>>(new Set());
+    const highlightedExcursionIds = ref<Set<number>>(new Set());
+    const toursRoute = {
+      path: '/trip/1/excursions',
+      query: { group: 'tours' },
+      hash: '',
+    } as unknown as RouteLocationNormalizedLoaded;
+
+    const filter = useExcursionsFilter({
+      route: toursRoute,
+      router: mockRouter,
+      highlightedSpotIds,
+      highlightedExcursionIds,
+    });
+
+    filter.applyRouteQuery();
+    filter.markSeenForGroupMode(filter.groupMode.value);
+    await nextTick();
+
+    expect(markSeenSpy).toHaveBeenCalledTimes(1);
+    expect(markSeenSpy).toHaveBeenCalledWith('ideas');
+    expect([...highlightedExcursionIds.value]).toEqual([42]);
+
+    // Echter Moduswechsel auf Spots und zurück auf Touren leert die gesehenen Highlights
+    filter.groupMode.value = 'category';
+    await nextTick();
+    filter.groupMode.value = 'tours';
+    await nextTick();
+
+    expect([...highlightedExcursionIds.value]).toEqual([]);
   });
 });

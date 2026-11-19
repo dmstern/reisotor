@@ -38,14 +38,15 @@ export const CATEGORY_GROUP_ORDER = [...new Set(['Unterkunft', ...SPOT_CATEGORY_
 export interface UseExcursionsFilterOptions {
   route: RouteLocationNormalizedLoaded;
   router: Router;
-  highlightedIds?: Ref<Set<number>>;
+  highlightedSpotIds?: Ref<Set<number>>;
+  highlightedExcursionIds?: Ref<Set<number>>;
   spotAccommodationDistances?:
     | Ref<Map<number, SpotAccommodationDistanceInfo>>
     | ComputedRef<Map<number, SpotAccommodationDistanceInfo>>;
 }
 
 export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
-  const { route, router, highlightedIds } = options;
+  const { route, router, highlightedSpotIds, highlightedExcursionIds } = options;
   const internalDistances = ref<Map<number, SpotAccommodationDistanceInfo>>(new Map());
   const spotAccommodationDistances = options.spotAccommodationDistances ?? internalDistances;
 
@@ -72,19 +73,36 @@ export function useExcursionsFilter(options: UseExcursionsFilterOptions) {
   const tourRoleFilter = ref<TourRoleFilterOption[]>([]);
   const searchQuery = ref('');
 
+  let lastMarkedMode: 'category' | 'tours' | 'tracks' | null = null;
+
   function markSeenForGroupMode(mode: 'category' | 'tours' | 'tracks') {
-    if (mode === 'tracks' || !highlightedIds) {
+    lastMarkedMode = mode;
+
+    if (mode === 'category') {
+      if (!highlightedSpotIds) {
+        return;
+      }
+
+      highlightedSpotIds.value = liveSync.markSeen('spots');
       return;
     }
 
-    const domain = mode === 'category' ? 'spots' : 'ideas';
+    if (mode === 'tours') {
+      if (!highlightedExcursionIds) {
+        return;
+      }
 
-    for (const id of liveSync.markSeen(domain)) {
-      highlightedIds.value.add(id);
+      highlightedExcursionIds.value = liveSync.markSeen('ideas');
     }
   }
 
-  watch(groupMode, (mode) => markSeenForGroupMode(mode));
+  watch(groupMode, (mode) => {
+    if (mode === lastMarkedMode) {
+      return;
+    }
+
+    markSeenForGroupMode(mode);
+  });
 
   const spotScheduledDates = computed(() => {
     const map = new Map<number, string>();

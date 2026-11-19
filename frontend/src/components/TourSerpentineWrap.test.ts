@@ -84,4 +84,31 @@ describe('TourSerpentineWrap', () => {
     expect(html).toContain('Fischereihafen');
     expect(html).toContain('tour-leg-connector');
   });
+
+  it('renders dayFocusHighlightedIds with is-map-focused instead of new-highlight', async () => {
+    const html = await render({
+      excursion: dummyExcursion,
+      items: [{ spot: dummySpot1 }],
+      cols: 1,
+      rows: [
+        {
+          rowIndex: 0,
+          isRtl: false,
+          cells: [{ key: 'spot-1', type: 'spot', spot: dummySpot1, globalIndex: 0 }],
+          rowBreak: null,
+        },
+      ],
+      expandedSpotId: null,
+      highlightedIds: new Set(),
+      dayFocusHighlightedIds: new Set([1]),
+      spotScheduledDates: new Map(),
+      users: [],
+      spotCommentItemsFor: () => [],
+      getTourLayover: () => null,
+    });
+
+    expect(html).toContain('is-map-focused');
+    expect(html).not.toContain('new-highlight');
+    expect(html).not.toContain('card-sparkle-badge');
+  });
 });

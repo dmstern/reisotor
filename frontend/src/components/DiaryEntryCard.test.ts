@@ -229,4 +229,12 @@ describe('DiaryEntryCard', () => {
     app.unmount();
     container.remove();
   });
+
+  it('rendert focused im Brand-Fokusrahmen ohne grünes Neu-Highlight oder Sparkle-Badge', async () => {
+    const html = await render({ focused: true, highlighted: false });
+
+    expect(html).toContain('is-map-focused');
+    expect(html).not.toContain('new-highlight');
+    expect(html).not.toContain('card-sparkle-badge');
+  });
 });
