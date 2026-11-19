@@ -63,7 +63,7 @@ const innerArcStrokeWidth = computed(() => strokeWidth.value - INNER_ARC_STROKE_
       fill="none"
       aria-hidden="true"
     >
-      <defs>
+      <defs v-if="!inverted">
         <linearGradient :id="gradientId" x1="10%" y1="95%" x2="90%" y2="5%">
           <stop offset="0%" stop-color="var(--spinner-primary)" />
           <stop offset="100%" stop-color="var(--spinner-primary-light)" />
@@ -109,7 +109,7 @@ const innerArcStrokeWidth = computed(() => strokeWidth.value - INNER_ARC_STROKE_
       fill="none"
       aria-hidden="true"
     >
-      <defs>
+      <defs v-if="!inverted">
         <linearGradient :id="gradientId" x1="10%" y1="95%" x2="90%" y2="5%">
           <stop offset="0%" stop-color="var(--spinner-primary)" />
           <stop offset="100%" stop-color="var(--spinner-primary-light)" />
@@ -133,7 +133,7 @@ const innerArcStrokeWidth = computed(() => strokeWidth.value - INNER_ARC_STROKE_
 
     <!-- 3. Extern / Live: Spot-Radar (Glass-Scheibe mit konzentrischen Sonar-Wellen) -->
     <svg v-else class="spinner-svg" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-      <defs>
+      <defs v-if="!inverted">
         <linearGradient :id="gradientId" x1="10%" y1="95%" x2="90%" y2="5%">
           <stop offset="0%" stop-color="var(--spinner-primary)" />
           <stop offset="100%" stop-color="var(--spinner-primary-light)" />
@@ -293,7 +293,7 @@ const innerArcStrokeWidth = computed(() => strokeWidth.value - INNER_ARC_STROKE_
 .spinner-scan-glow {
   fill: var(--spinner-accent);
   opacity: 0.28;
-  animation: spinner-scan 1.35s cubic-bezier(0.45, 0.05, 0.55, 0.95) 0.06s infinite;
+  animation: spinner-scan 1.35s cubic-bezier(0.45, 0.05, 0.55, 0.95) 0.06s infinite backwards;
 }
 
 .spinner-scan-dot {
@@ -317,7 +317,7 @@ const innerArcStrokeWidth = computed(() => strokeWidth.value - INNER_ARC_STROKE_
 
 .spinner-radar-ring--2 {
   stroke: var(--spinner-accent);
-  animation: spinner-radar-ping 1.65s cubic-bezier(0.15, 0.7, 0.35, 1) 0.82s infinite;
+  animation: spinner-radar-ping 1.65s cubic-bezier(0.15, 0.7, 0.35, 1) -0.825s infinite;
 }
 
 .spinner-radar-core {

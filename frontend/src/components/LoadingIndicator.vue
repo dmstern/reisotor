@@ -74,8 +74,10 @@ const label = computed(() => (visibleKind.value ? LABELS[visibleKind.value] : ''
       class="toast-pill"
       :class="visibleKind"
       :title="label"
+      role="status"
+      aria-live="polite"
     >
-      <LoadingSpinner size="sm" inverted class="toast-spinner" />
+      <LoadingSpinner size="sm" inverted decorative class="toast-spinner" />
       <AppIcon v-if="icon" class="icon" :size="13" :icon="icon" group="actions" />
       <span class="label">{{ label }}</span>
     </div>

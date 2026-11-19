@@ -101,6 +101,10 @@ const btnClasses = computed(() => [
   },
 ]);
 
+const isSpinnerInverted = computed(
+  () => !_props.secondary && (_props.variant === 'primary' || _props.variant === 'danger')
+);
+
 provide(
   'buttonActive',
   computed(() => _props.active)
@@ -120,7 +124,8 @@ provide(
     <LoadingSpinner
       v-if="loading"
       :size="size === 'lg' ? 'md' : 'sm'"
-      :inverted="variant === 'primary' || variant === 'danger'"
+      :inverted="isSpinnerInverted"
+      decorative
       class="btn-spinner"
     />
     <AppIcon
@@ -144,7 +149,8 @@ provide(
     <LoadingSpinner
       v-if="loading"
       :size="size === 'lg' ? 'md' : 'sm'"
-      :inverted="variant === 'primary' || variant === 'danger'"
+      :inverted="isSpinnerInverted"
+      decorative
       class="btn-spinner"
     />
     <AppIcon
@@ -169,7 +175,8 @@ provide(
     <LoadingSpinner
       v-if="loading"
       :size="size === 'lg' ? 'md' : 'sm'"
-      :inverted="variant === 'primary' || variant === 'danger'"
+      :inverted="isSpinnerInverted"
+      decorative
       class="btn-spinner"
     />
     <AppIcon
@@ -195,7 +202,8 @@ provide(
     <LoadingSpinner
       v-if="loading"
       :size="size === 'lg' ? 'md' : 'sm'"
-      :inverted="variant === 'primary' || variant === 'danger'"
+      :inverted="isSpinnerInverted"
+      decorative
       class="btn-spinner"
     />
     <AppIcon

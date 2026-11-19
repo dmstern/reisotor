@@ -163,7 +163,46 @@ describe('Button primitive', () => {
     expect(html).toContain('disabled');
     expect(html).toContain('aria-busy="true"');
     expect(html).toContain('spinner');
+    expect(html).toContain('spinner--inverted');
+    expect(html).toContain('aria-hidden="true"');
+    expect(html).not.toContain('role="status"');
     expect(html).toContain('btn-spinner');
     expect(html).toContain('Speichern');
+  });
+
+  it('default primary loading button renders spinner--inverted and aria-hidden="true"', async () => {
+    const app = createApp({
+      render: () => h(Button, { loading: true, variant: 'primary' }, () => 'Save'),
+    });
+    const html = await renderToString(app);
+    expect(html).toContain('spinner--inverted');
+    expect(html).toContain('aria-hidden="true"');
+    expect(html).not.toContain('role="status"');
+  });
+
+  it('primary loading button with secondary: true does NOT render spinner--inverted', async () => {
+    const app = createApp({
+      render: () => h(Button, { loading: true, variant: 'primary', secondary: true }, () => 'Save'),
+    });
+    const html = await renderToString(app);
+    expect(html).not.toContain('spinner--inverted');
+    expect(html).toContain('aria-hidden="true"');
+  });
+
+  it('danger loading button renders spinner--inverted', async () => {
+    const app = createApp({
+      render: () => h(Button, { loading: true, variant: 'danger' }, () => 'Delete'),
+    });
+    const html = await renderToString(app);
+    expect(html).toContain('spinner--inverted');
+  });
+
+  it('danger loading button with secondary: true does NOT render spinner--inverted', async () => {
+    const app = createApp({
+      render: () =>
+        h(Button, { loading: true, variant: 'danger', secondary: true }, () => 'Delete'),
+    });
+    const html = await renderToString(app);
+    expect(html).not.toContain('spinner--inverted');
   });
 });
