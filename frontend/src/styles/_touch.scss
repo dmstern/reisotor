@@ -31,8 +31,17 @@
 /// @param {String} $pseudo ['after'] - Verwendetes Pseudo-Element ('after' oder 'before')
 /// @param {Boolean} $only-touch [true] - Wenn true, nur auf Touchscreens (@media (pointer: coarse)) aktiv
 /// @param {Boolean} $expand [false] - Wenn true, nimmt das Pseudo-Element mindestens 100% Breite/Höhe ein (z. B. für Buttons/Switches)
-@mixin touch-target($size: 44px, $pseudo: 'after', $only-touch: true, $expand: false) {
-  position: relative;
+/// @param {String | null} $position ['relative'] - Positionierung des Host-Elements (oder null/false, falls bereits absolute/fixed/sticky positioniert)
+@mixin touch-target(
+  $size: 44px,
+  $pseudo: 'after',
+  $only-touch: true,
+  $expand: false,
+  $position: 'relative'
+) {
+  @if $position {
+    position: #{$position};
+  }
 
   @if $only-touch {
     @media (pointer: coarse) {
@@ -76,8 +85,14 @@
 }
 
 /// Alias für touch-target
-@mixin bigger-touch-area($size: 44px, $pseudo: 'after', $only-touch: true, $expand: false) {
-  @include touch-target($size, $pseudo, $only-touch, $expand) {
+@mixin bigger-touch-area(
+  $size: 44px,
+  $pseudo: 'after',
+  $only-touch: true,
+  $expand: false,
+  $position: 'relative'
+) {
+  @include touch-target($size, $pseudo, $only-touch, $expand, $position) {
     @content;
   }
 }

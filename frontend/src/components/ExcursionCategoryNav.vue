@@ -163,7 +163,7 @@ const emit = defineEmits<{
 }
 
 .category-nav-arrow {
-  position: absolute;
+  @include touch-target($expand: true, $position: 'absolute');
   top: 0;
   bottom: 0;
   z-index: 3;
@@ -177,7 +177,6 @@ const emit = defineEmits<{
   cursor: pointer;
   background: transparent;
   color: var(--color-text-muted);
-  @include touch-target($expand: true);
 }
 
 @include can-hover {
