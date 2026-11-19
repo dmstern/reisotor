@@ -1,6 +1,6 @@
 import { ref, computed, watch, nextTick, type Ref } from 'vue';
 import { api } from '../api/client';
-import type { Excursion, Spot, User } from '../api/types';
+import type { Spot, User } from '../api/types';
 import { useSpotsStore } from '../stores/spots';
 import { useTripStore } from '../stores/trip';
 import { useAuthStore } from '../stores/auth';
@@ -10,7 +10,6 @@ import { useDraftAutosave } from './useDraftAutosave';
 import { useToast } from './useToast';
 import { parseLatLngFromMapsLink, tilePreviewUrl, buildGoogleMapsLink } from '../utils/googleMaps';
 import { computePopoverPosition } from '../utils/popoverPosition';
-import { formatDate } from '../utils/dateFormat';
 import {
   spotCategoryMeta,
   isHomeCategory,
@@ -24,17 +23,6 @@ import { isBookingLink } from '../utils/locationInputClassifier';
 import type LocationPicker from '../components/LocationPicker.vue';
 import type { PlaceSearchResult } from '../components/LocationPicker.vue';
 import type { TourItem } from '../components/TourAssignDropdown.vue';
-
-export interface SpotDoneSummary {
-  done: boolean;
-  partiallyDone: boolean;
-  planned: boolean;
-  disabled: boolean;
-  toggleLabel: string;
-  statusHint: string;
-  ariaLabel: string;
-  title: string;
-}
 
 export interface SpotFormData {
   title: string;
@@ -96,131 +84,6 @@ export function emptySpotForm(): SpotFormData {
     scheduledDates: [] as string[],
     scheduledDateDone: {} as Record<string, boolean>,
     scheduledDate: '',
-  };
-}
-
-interface BuildSpotDoneSummaryOptions {
-  scheduledDates: string[];
-  scheduledDateDone: Record<string, boolean>;
-  formDone: boolean;
-  assignedDatedTours: Excursion[];
-}
-
-function buildDirectDatesDoneSummary(
-  scheduledDates: string[],
-  scheduledDateDone: Record<string, boolean>
-): SpotDoneSummary {
-  const total = scheduledDates.length;
-  const doneCount = scheduledDates.filter((date) => Boolean(scheduledDateDone[date])).length;
-  const allDone = doneCount === total;
-  const partiallyDone = doneCount > 0 && !allDone;
-  const toggleLabel = partiallyDone ? `Besucht (${doneCount}/${total})` : 'Besucht';
-
-  let statusHint = `Geplant an ${total} Tagen`;
-
-  if (total === 1) {
-    const formatted = formatDate(scheduledDates[0]);
-    statusHint = allDone ? `Besucht am ${formatted}` : `Geplant für ${formatted}`;
-  } else if (allDone) {
-    statusHint = `An allen ${total} Tagen besucht`;
-  } else if (partiallyDone) {
-    statusHint = `An ${doneCount} von ${total} Tagen besucht`;
-  }
-
-  let ariaLabel = 'Als besucht markieren';
-  let title = 'Als besucht markieren';
-
-  if (allDone) {
-    ariaLabel = 'Nicht mehr als besucht markieren';
-    title = 'Als nicht besucht markieren';
-  } else if (total > 1) {
-    ariaLabel = 'Alle Termine als besucht markieren';
-    title = 'Alle Termine als besucht markieren';
-  }
-
-  return {
-    done: allDone,
-    partiallyDone,
-    planned: true,
-    disabled: false,
-    toggleLabel,
-    statusHint,
-    ariaLabel,
-    title,
-  };
-}
-
-export function buildSpotDoneSummary(options: BuildSpotDoneSummaryOptions): SpotDoneSummary {
-  const { scheduledDates, scheduledDateDone, formDone, assignedDatedTours } = options;
-
-  if (scheduledDates.length > 0) {
-    return buildDirectDatesDoneSummary(scheduledDates, scheduledDateDone);
-  }
-
-  const doneDatedTours = assignedDatedTours.filter((tour) => Boolean(tour.done));
-
-  if (
-    !formDone &&
-    assignedDatedTours.length > 0 &&
-    doneDatedTours.length === assignedDatedTours.length
-  ) {
-    const tourHint =
-      doneDatedTours.length === 1
-        ? `Über Tour „${doneDatedTours[0].title}“ als besucht markiert`
-        : 'Über zugeordnete Touren als besucht markiert';
-    return {
-      done: true,
-      partiallyDone: false,
-      planned: true,
-      disabled: true,
-      toggleLabel: 'Besucht',
-      statusHint: tourHint,
-      ariaLabel: tourHint,
-      title: tourHint,
-    };
-  }
-
-  if (formDone) {
-    const statusHint =
-      assignedDatedTours.length > 0 ? 'Als besucht markiert' : 'Ohne Datum als besucht markiert';
-    return {
-      done: true,
-      partiallyDone: false,
-      planned: assignedDatedTours.length > 0,
-      disabled: false,
-      toggleLabel: 'Besucht',
-      statusHint,
-      ariaLabel: 'Nicht mehr als besucht markieren',
-      title: 'Als nicht besucht markieren',
-    };
-  }
-
-  if (assignedDatedTours.length > 0) {
-    const singleTourDate = assignedDatedTours.length === 1 ? assignedDatedTours[0].date : null;
-    const tourHint = singleTourDate
-      ? `Geplant über Tour (${formatDate(singleTourDate)})`
-      : `Geplant über ${assignedDatedTours.length} Touren`;
-    return {
-      done: false,
-      partiallyDone: false,
-      planned: true,
-      disabled: false,
-      toggleLabel: 'Besucht',
-      statusHint: tourHint,
-      ariaLabel: 'Als besucht markieren',
-      title: 'Als besucht markieren',
-    };
-  }
-
-  return {
-    done: false,
-    partiallyDone: false,
-    planned: false,
-    disabled: false,
-    toggleLabel: 'Besucht',
-    statusHint: 'Noch nicht besucht',
-    ariaLabel: 'Als besucht markieren',
-    title: 'Als besucht markieren',
   };
 }
 
@@ -449,37 +312,6 @@ export function useSpotForm(options: UseSpotFormOptions) {
     return (editSpotForm.value.link || '').trim() !== (editingSpot.value.link || '').trim();
   });
 
-  const isEditSpotDoneModified = computed(() => {
-    if (!editingSpot.value) {
-      return false;
-    }
-
-    const initialDates = editingSpot.value.dates ?? [];
-    const currentDates = editSpotForm.value.scheduledDates ?? [];
-    const initialMap = new Map(initialDates.map((entry) => [entry.date, Boolean(entry.done)]));
-
-    const anySharedDateDoneChanged = currentDates.some(
-      (date) =>
-        initialMap.has(date) &&
-        Boolean(editSpotForm.value.scheduledDateDone?.[date]) !== initialMap.get(date)
-    );
-
-    if (anySharedDateDoneChanged) {
-      return true;
-    }
-
-    const initialOverallDone =
-      initialDates.length > 0
-        ? initialDates.some((entry) => Boolean(entry.done))
-        : Boolean(editingSpot.value.done);
-    const currentOverallDone =
-      currentDates.length > 0
-        ? currentDates.some((date) => Boolean(editSpotForm.value.scheduledDateDone?.[date]))
-        : Boolean(editSpotForm.value.done);
-
-    return currentOverallDone !== initialOverallDone;
-  });
-
   const isEditSpotDirty = computed(
     () => editSpotDraft.isDirty.value || isEditSpotLocationModified.value
   );
@@ -563,24 +395,6 @@ export function useSpotForm(options: UseSpotFormOptions) {
     showSpotForm.value = true;
   }
 
-  const assignedDatedTours = computed<Excursion[]>(() => {
-    const lowerTitles = new Set(
-      activeSpotForm.value.tourTitles.map((tourTitle) => tourTitle.trim().toLowerCase())
-    );
-    return excursionsStore.excursions.filter(
-      (excursion) => Boolean(excursion.date) && lowerTitles.has(excursion.title.toLowerCase())
-    );
-  });
-
-  const spotDoneSummary = computed<SpotDoneSummary>(() =>
-    buildSpotDoneSummary({
-      scheduledDates: activeSpotForm.value.scheduledDates ?? [],
-      scheduledDateDone: activeSpotForm.value.scheduledDateDone ?? {},
-      formDone: Boolean(activeSpotForm.value.done),
-      assignedDatedTours: assignedDatedTours.value,
-    })
-  );
-
   function isScheduledDateDone(date: string): boolean {
     return Boolean(activeSpotForm.value.scheduledDateDone?.[date]);
   }
@@ -593,30 +407,6 @@ export function useSpotForm(options: UseSpotFormOptions) {
     form.done = form.scheduledDates.some((scheduledDate) =>
       Boolean(form.scheduledDateDone?.[scheduledDate])
     );
-  }
-
-  function toggleSpotDone() {
-    if (spotDoneSummary.value.disabled) {
-      return;
-    }
-
-    const form = activeSpotForm.value;
-
-    if (form.scheduledDates.length > 0) {
-      const allDone = form.scheduledDates.every((date) => Boolean(form.scheduledDateDone?.[date]));
-      const nextDone = !allDone;
-      const nextMap: Record<string, boolean> = {};
-
-      for (const date of form.scheduledDates) {
-        nextMap[date] = nextDone;
-      }
-
-      form.scheduledDateDone = nextMap;
-      form.done = nextDone;
-      return;
-    }
-
-    form.done = !form.done;
   }
 
   function removeScheduledDate(date: string) {
@@ -1552,10 +1342,8 @@ export function useSpotForm(options: UseSpotFormOptions) {
     showSpotLocationSection,
     showEditSpotLocationSection,
     showSpotScheduleSection,
-    spotDoneSummary,
     isScheduledDateDone,
     toggleScheduledDateDone,
-    toggleSpotDone,
     removeScheduledDate,
     openScheduledDateInCalendar,
     addSchedulePopoverOpen,
@@ -1592,6 +1380,5 @@ export function useSpotForm(options: UseSpotFormOptions) {
     isEditSpotAmountModified,
     isEditSpotPaidByModified,
     isEditSpotLinkModified,
-    isEditSpotDoneModified,
   };
 }

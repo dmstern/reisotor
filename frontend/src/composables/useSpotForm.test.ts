@@ -258,16 +258,15 @@ describe('useSpotForm - openSpotForm', () => {
     expect(editSpotManualPin.value).toEqual({ lat: 52.516, lng: 13.38 });
   });
 
-  it('toggles unplanned done, inherits done on first added date, and syncs multi-date done state', () => {
+  it('toggles individual visit-date done state and syncs form done flag across dates', () => {
     const {
       openSpotForm,
       spotForm,
-      spotDoneSummary,
-      toggleSpotDone,
       addScheduleDateVal,
       submitAddSpotToDate,
       toggleScheduledDateDone,
       isScheduledDateDone,
+      removeScheduledDate,
     } = useSpotForm({
       tripId: 1,
       users: ref([]),
@@ -275,44 +274,30 @@ describe('useSpotForm - openSpotForm', () => {
     });
 
     openSpotForm();
-    expect(spotDoneSummary.value.done).toBe(false);
-
-    // Ungeplant als besucht markieren
-    toggleSpotDone();
-    expect(spotForm.value.done).toBe(true);
-    expect(spotDoneSummary.value.done).toBe(true);
-
-    // Erstes Datum erbt den bereits gesetzten Besucht-Status
     addScheduleDateVal.value = '2026-07-05';
     submitAddSpotToDate();
-    expect(isScheduledDateDone('2026-07-05')).toBe(true);
-    expect(spotDoneSummary.value.done).toBe(true);
-
-    // Zweites Datum startet als geplant -> teilweise besucht (1/2)
     addScheduleDateVal.value = '2026-07-07';
     submitAddSpotToDate();
-    expect(isScheduledDateDone('2026-07-07')).toBe(false);
-    expect(spotDoneSummary.value.partiallyDone).toBe(true);
-    expect(spotDoneSummary.value.toggleLabel).toBe('Besucht (1/2)');
 
-    // Haupt-Toggle markiert alle Termine als besucht
-    toggleSpotDone();
-    expect(isScheduledDateDone('2026-07-05')).toBe(true);
-    expect(isScheduledDateDone('2026-07-07')).toBe(true);
-    expect(spotDoneSummary.value.done).toBe(true);
-
-    // Einzelnen Termin wieder abwählen
-    toggleScheduledDateDone('2026-07-05');
     expect(isScheduledDateDone('2026-07-05')).toBe(false);
-    expect(spotDoneSummary.value.partiallyDone).toBe(true);
+    expect(spotForm.value.done).toBe(false);
+
+    toggleScheduledDateDone('2026-07-05');
+    expect(isScheduledDateDone('2026-07-05')).toBe(true);
+    expect(spotForm.value.done).toBe(true);
+
+    removeScheduledDate('2026-07-05');
+    expect(spotForm.value.scheduledDates).toEqual(['2026-07-07']);
+    expect(spotForm.value.done).toBe(false);
   });
 
-  it('tracks isEditSpotDoneModified accurately when toggling done on an edited spot', () => {
-    const { startEditSpot, toggleSpotDone, isEditSpotDoneModified } = useSpotForm({
-      tripId: 1,
-      users: ref([]),
-      spotScheduledDates: ref(new Map()),
-    });
+  it('initializes scheduledDates and scheduledDateDone from existing spot on startEditSpot', () => {
+    const { startEditSpot, editSpotForm, isScheduledDateDone, toggleScheduledDateDone } =
+      useSpotForm({
+        tripId: 1,
+        users: ref([]),
+        spotScheduledDates: ref(new Map()),
+      });
 
     startEditSpot({
       id: 12,
@@ -340,10 +325,11 @@ describe('useSpotForm - openSpotForm', () => {
       dates: [{ id: 1, trip_id: 1, spot_id: 12, date: '2026-07-10', done: 0, created_at: '' }],
     });
 
-    expect(isEditSpotDoneModified.value).toBe(false);
-    toggleSpotDone();
-    expect(isEditSpotDoneModified.value).toBe(true);
-    toggleSpotDone();
-    expect(isEditSpotDoneModified.value).toBe(false);
+    expect(editSpotForm.value.scheduledDates).toEqual(['2026-07-10']);
+    expect(isScheduledDateDone('2026-07-10')).toBe(false);
+
+    toggleScheduledDateDone('2026-07-10');
+    expect(isScheduledDateDone('2026-07-10')).toBe(true);
+    expect(editSpotForm.value.done).toBe(true);
   });
 });

@@ -5,5 +5,5 @@
 
 ### Spots, Touren und Unterkünfte
 
-- ✅ **„Gemacht / Besucht“ auch ohne festes Datum & direkt im Bearbeiten-Dialog**: Ungeplante Spots und Touren können nun direkt ohne Datumsangabe als erledigt beziehungsweise besucht markiert werden – sowohl auf der Karte als auch unmittelbar im Anlegen- und Bearbeiten-Dialog zusammen mit dem Datum.
+- ✅ **„Gemacht / Besucht“ auch ohne festes Datum & direkt im Dialog**: Ungeplante Spots und Touren können nun direkt ohne Datumsangabe als erledigt beziehungsweise besucht markiert werden. Im Tour-Dialog lässt sich der Gemacht-Status direkt neben dem Datum umschalten, und im Spot-Dialog können Besuchstage bereits beim Anlegen und Bearbeiten einzeln als besucht abgehakt werden.
 - 📖 **Symmetrische Verknüpfungen mit dem Reisetagebuch**: Verknüpfte Tagebucheinträge erscheinen nun auf Spot- und Tour-Karten einheitlich als klickbare Hinweise und weisen ungeplanten Einträgen beim Speichern echte, bearbeitbare Daten zu.

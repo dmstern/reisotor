@@ -407,8 +407,8 @@ describe('SpotFormModal', () => {
     cleanUp();
   });
 
-  it('renders Besucht status toggle for normal spots and hides it for accommodations', async () => {
-    const { cleanUp: cleanUpSpot } = mountModal({
+  it('does not render a separate Besucht status field in the spot modal', async () => {
+    const { cleanUp } = mountModal({
       show: true,
       spot: { ...dummySpot, done: 1 },
       tripId: 1,
@@ -417,31 +417,11 @@ describe('SpotFormModal', () => {
     });
     await nextTick();
 
-    const doneToggle = document.querySelector('.done-toggle') as HTMLButtonElement;
-    expect(doneToggle).not.toBeNull();
-    expect(doneToggle.textContent).toContain('Besucht');
-    expect(doneToggle.getAttribute('aria-pressed')).toBe('true');
-
-    doneToggle.click();
-    await nextTick();
-    expect(doneToggle.getAttribute('aria-pressed')).toBe('false');
-    cleanUpSpot();
-
-    const { cleanUp: cleanUpAcc } = mountModal({
-      show: true,
-      spot: null,
-      defaultCategory: 'Unterkunft',
-      tripId: 1,
-      users: [dummyUser],
-      spotScheduledDates: new Map(),
-    });
-    await nextTick();
-
     expect(document.querySelector('.done-status-field')).toBeNull();
-    cleanUpAcc();
+    cleanUp();
   });
 
-  it('synchronizes date chip done toggle with Besucht status field in create mode', async () => {
+  it('allows toggling visited state directly on date chips in create mode', async () => {
     const { cleanUp } = mountModal({
       show: true,
       spot: null,
@@ -463,14 +443,14 @@ describe('SpotFormModal', () => {
     dateInput.dispatchEvent(new Event('change', { bubbles: true }));
     await nextTick();
 
-    const chipToggle = document.querySelector('.assign-chip-done-toggle') as HTMLButtonElement;
+    const chip = document.querySelector('.assign-chip--schedule') as HTMLElement;
+    const chipToggle = chip.querySelector('.assign-chip-done-toggle') as HTMLButtonElement;
     expect(chipToggle).not.toBeNull();
+    expect(chip.classList.contains('is-done')).toBe(false);
+
     chipToggle.click();
     await nextTick();
-
-    const doneToggle = document.querySelector('.done-toggle') as HTMLButtonElement;
-    expect(doneToggle.getAttribute('aria-pressed')).toBe('true');
-    expect(document.body.textContent).toContain('Besucht am 22.10.2026');
+    expect(chip.classList.contains('is-done')).toBe(true);
     cleanUp();
   });
 });

@@ -3,7 +3,6 @@ import { computed, ref, toRef, watch } from 'vue';
 import type { Spot, User } from '../api/types';
 import Modal from './Modal.vue';
 import FormField from './FormField.vue';
-import DoneStatusField from './DoneStatusField.vue';
 import Badge from './primitives/Badge.vue';
 import Input from './primitives/Input.vue';
 import Select from './primitives/Select.vue';
@@ -92,10 +91,8 @@ const {
   editSpotReferencePoints,
   spotPickerCenter,
   showSpotScheduleSection,
-  spotDoneSummary,
   isScheduledDateDone,
   toggleScheduledDateDone,
-  toggleSpotDone,
   removeScheduledDate,
   openScheduledDateInCalendar,
   addSchedulePopoverOpen,
@@ -128,7 +125,6 @@ const {
   isEditSpotAmountModified,
   isEditSpotPaidByModified,
   isEditSpotLinkModified,
-  isEditSpotDoneModified,
 } = spotFormComposable;
 
 const isAccommodation = computed(() => activeSpotForm.value.category === 'Unterkunft');
@@ -475,20 +471,6 @@ function handleOpenScheduledDate(date: string) {
       <FormField icon="note" label="Notiz" :modified="isEditSpotNoteModified">
         <RichTextEditor v-model="activeSpotForm.note" placeholder="Notiz" compact expandable />
       </FormField>
-
-      <DoneStatusField
-        v-if="!isAccommodation"
-        :done="spotDoneSummary.done"
-        :partially-done="spotDoneSummary.partiallyDone"
-        :planned="spotDoneSummary.planned"
-        :disabled="spotDoneSummary.disabled"
-        :toggle-label="spotDoneSummary.toggleLabel"
-        :status-hint="spotDoneSummary.statusHint"
-        :modified="isEditSpotDoneModified"
-        :aria-label="spotDoneSummary.ariaLabel"
-        :title="spotDoneSummary.title"
-        @toggle="toggleSpotDone"
-      />
 
       <!-- Kombiniertes "Einplanen"-Fieldset: Touren zuordnen + Datum einplanen in einem Bereich -->
       <CollapsibleFieldset
