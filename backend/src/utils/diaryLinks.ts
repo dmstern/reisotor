@@ -63,15 +63,6 @@ function normalizeValidPublishedDiaryIds(tripId: number, diaryIds: number[]): nu
   return deduplicated;
 }
 
-function areIdSetsEqual(existingIds: number[], nextIds: number[]): boolean {
-  if (existingIds.length !== nextIds.length) {
-    return false;
-  }
-
-  const existingSet = new Set(existingIds);
-  return nextIds.every((id) => existingSet.has(id));
-}
-
 function changedIdList(existingIds: number[], nextIds: number[]): number[] {
   const existingSet = new Set(existingIds);
   const nextSet = new Set(nextIds);
@@ -101,8 +92,9 @@ export function syncPublishedDiaryLinksForIdea(
   const existingIds = (
     selectPublishedExcursionDiaryLinksStmt.all(ideaId, tripId) as { entry_id: number }[]
   ).map((row) => row.entry_id);
+  const changedIds = changedIdList(existingIds, nextIds);
 
-  if (areIdSetsEqual(existingIds, nextIds)) {
+  if (changedIds.length === 0) {
     return [];
   }
 
@@ -115,7 +107,7 @@ export function syncPublishedDiaryLinksForIdea(
   });
 
   syncTransaction();
-  return changedIdList(existingIds, nextIds);
+  return changedIds;
 }
 
 export function syncPublishedDiaryLinksForSpot(
@@ -127,8 +119,9 @@ export function syncPublishedDiaryLinksForSpot(
   const existingIds = (
     selectPublishedSpotDiaryLinksStmt.all(spotId, tripId) as { entry_id: number }[]
   ).map((row) => row.entry_id);
+  const changedIds = changedIdList(existingIds, nextIds);
 
-  if (areIdSetsEqual(existingIds, nextIds)) {
+  if (changedIds.length === 0) {
     return [];
   }
 
@@ -141,5 +134,5 @@ export function syncPublishedDiaryLinksForSpot(
   });
 
   syncTransaction();
-  return changedIdList(existingIds, nextIds);
+  return changedIds;
 }

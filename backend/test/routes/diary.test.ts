@@ -429,6 +429,13 @@ describe('bidirectional diary linking for ideas and spots', () => {
       .prepare('SELECT entry_id FROM diary_excursions WHERE entry_id = ? AND idea_id = ?')
       .get(memberDraft, ideaId);
     expect(draftRow).toEqual({ entry_id: memberDraft });
+
+    const diaryActivities = db
+      .prepare(
+        "SELECT entity_id FROM trip_activity WHERE trip_id = ? AND domain = 'diary' AND action = 'updated' ORDER BY id ASC"
+      )
+      .all(tripId) as Array<{ entity_id: number }>;
+    expect(diaryActivities.map((row) => row.entity_id)).toEqual([pub1, pub1, pub2]);
   });
 
   it('links/unlinks published diary entries via POST/PUT /spots while preserving drafts and omitted diary_ids', async () => {
