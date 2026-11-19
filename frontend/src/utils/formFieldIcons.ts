@@ -15,6 +15,7 @@ import {
   IconLink,
   IconLinkFilled,
   IconMapPin,
+  IconMapPinCheck,
   IconMapPinFilled,
   IconCompass,
   IconCompassFilled,
@@ -60,7 +61,8 @@ export type FormFieldIconKey =
   | 'email'
   | 'pot'
   | 'shop'
-  | 'visibility';
+  | 'visibility'
+  | 'pinSet';
 
 export const FORM_FIELD_ICONS: Record<FormFieldIconKey, IconDef> = {
   title: { id: 'subtitles-edit', emoji: '✏️', outline: IconSubtitlesEdit },
@@ -93,4 +95,5 @@ export const FORM_FIELD_ICONS: Record<FormFieldIconKey, IconDef> = {
   pot: { id: 'pig-money', emoji: '🏺', outline: IconPigMoney },
   shop: { id: 'building-store', emoji: '🏬', outline: IconBuildingStore },
   visibility: { id: 'users', emoji: '👥', outline: IconUsers },
+  pinSet: { id: 'map-pin-check', emoji: '📍', outline: IconMapPinCheck },
 };
