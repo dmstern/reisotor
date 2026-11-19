@@ -528,7 +528,7 @@ defineExpose({
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  min-height: var(--input-height-sm, 38px);
+  min-height: var(--input-height, 46px);
   width: 100%;
   border: 1.5px solid var(--input-border-color);
   border-radius: var(--radius-sm-squircle);
