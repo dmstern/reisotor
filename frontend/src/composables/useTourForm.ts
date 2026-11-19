@@ -260,8 +260,7 @@ export function useTourForm(options: UseTourFormOptions) {
     if (
       editingExcursion.value == null ||
       isExcursionUploadingAttachments.value ||
-      !editExcursionForm.value.title.trim() ||
-      isExcursionRoleInvalid.value
+      !editExcursionForm.value.title.trim()
     ) {
       if (!editExcursionForm.value.title.trim()) {
         excursionTitleTouched.value = true;
