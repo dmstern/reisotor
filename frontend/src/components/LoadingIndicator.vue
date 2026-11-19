@@ -74,8 +74,10 @@ const label = computed(() => (visibleKind.value ? LABELS[visibleKind.value] : ''
       class="toast-pill"
       :class="visibleKind"
       :title="label"
+      role="status"
+      aria-live="polite"
     >
-      <LoadingSpinner size="sm" class="toast-spinner" />
+      <LoadingSpinner size="sm" inverted decorative class="toast-spinner" />
       <AppIcon v-if="icon" class="icon" :size="13" :icon="icon" group="actions" />
       <span class="label">{{ label }}</span>
     </div>
@@ -105,11 +107,6 @@ const label = computed(() => (visibleKind.value ? LABELS[visibleKind.value] : ''
   line-height: 1.3;
   white-space: nowrap;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-}
-
-.toast-spinner {
-  border-color: rgba(255, 255, 255, 0.4);
-  border-top-color: #fff;
 }
 
 /* Eigene, gedämpftere Farbe für löschende Operationen - kein Rot (das bleibt echten Fehlern

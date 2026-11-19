@@ -719,7 +719,6 @@ const profileTitle = computed(() => {
 .avatar-spinner {
   width: 18px;
   height: 18px;
-  border-width: 2px;
 }
 
 .offline-badge {

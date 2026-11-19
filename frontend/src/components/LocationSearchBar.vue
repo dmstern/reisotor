@@ -110,7 +110,7 @@ function onDropdownScroll(e: Event) {
           />
           <div class="search-right-actions">
             <div v-if="isSearching" class="input-spinner-wrap" aria-hidden="true">
-              <LoadingSpinner size="sm" class="spinner input-spinner" />
+              <LoadingSpinner size="sm" variant="search" decorative class="input-spinner" />
             </div>
             <InfoPopover
               title="Suchtipps, Maps- & Buchungs-Links"
@@ -220,7 +220,13 @@ function onDropdownScroll(e: Event) {
             @keydown.enter.prevent="emit('loadMore')"
             @keydown.space.prevent="emit('loadMore')"
           >
-            <LoadingSpinner v-if="isLoadingMore" size="sm" class="load-more-spinner" />
+            <LoadingSpinner
+              v-if="isLoadingMore"
+              size="sm"
+              variant="search"
+              decorative
+              class="load-more-spinner"
+            />
             <AppIcon
               v-else
               :icon="ACTION_ICONS.search"
@@ -441,7 +447,7 @@ function onDropdownScroll(e: Event) {
 }
 
 .location-search-wrap.is-loading .location-search-inner :deep(.location-picker-input) {
-  padding-right: 70px;
+  padding-right: 78px;
 }
 
 .location-search-wrap .location-search-inner :deep(.location-picker-input)::placeholder {

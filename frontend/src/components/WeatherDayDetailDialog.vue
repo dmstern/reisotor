@@ -7,6 +7,7 @@ import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Badge from './primitives/Badge.vue';
 import IconButton from './primitives/IconButton.vue';
+import LoadingSpinner from './primitives/LoadingSpinner.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
 import WeatherAlertCard from './WeatherAlertCard.vue';
 import {
@@ -579,10 +580,7 @@ function formatDate(dateStr: string) {
               role="status"
               aria-live="polite"
             >
-              <span class="pulse-indicator" aria-hidden="true">
-                <span class="pulse-ring"></span>
-                <span class="pulse-dot"></span>
-              </span>
+              <LoadingSpinner variant="radar" size="sm" decorative />
               <span>Lade Verlauf…</span>
             </Badge>
           </Transition>
@@ -796,45 +794,6 @@ function formatDate(dateStr: string) {
 .hourly-header h3 {
   font-size: 0.95rem;
   margin-bottom: 0;
-}
-
-.hourly-loading-badge {
-}
-
-.pulse-indicator {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 8px;
-  height: 8px;
-}
-
-.pulse-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: var(--radius-pill);
-  background-color: var(--color-primary);
-}
-
-.pulse-ring {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: var(--radius-pill);
-  background-color: var(--color-primary);
-  opacity: 0.75;
-  animation: radar-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
-}
-
-@keyframes radar-ping {
-  75%,
-  100% {
-    transform: scale(2.4);
-    opacity: 0;
-  }
 }
 
 .badge-fade-enter-active,

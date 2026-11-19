@@ -175,7 +175,7 @@ defineExpose({
           class="polaroid-field status-title-row"
         >
           <div class="field-input-wrap">
-            <div class="inline-title-input-wrap">
+            <div class="inline-title-input-wrap" :class="{ 'is-searching': isSearchingTitle }">
               <Input
                 :id="titleInputId"
                 :model-value="editTitleInput"
@@ -205,7 +205,7 @@ defineExpose({
                 @keydown="emit('titleKeydown', $event)"
               />
               <div v-if="isSearchingTitle" class="title-input-spinner-wrap" aria-hidden="true">
-                <LoadingSpinner size="sm" class="title-input-spinner" />
+                <LoadingSpinner size="sm" variant="search" decorative class="title-input-spinner" />
               </div>
 
               <!-- Autocomplete-Dropdown für Namensvorschläge / Ortssuche -->
@@ -356,7 +356,13 @@ defineExpose({
           </template>
 
           <div class="field-input-wrap">
-            <div class="inline-address-input-wrap" :class="{ 'has-sparkle': showAddressSparkle }">
+            <div
+              class="inline-address-input-wrap"
+              :class="{
+                'has-sparkle': showAddressSparkle,
+                'is-searching': isSearchingAddress,
+              }"
+            >
               <Input
                 :id="addressInputId"
                 :model-value="editAddressInput"
@@ -388,7 +394,12 @@ defineExpose({
                 @keydown="emit('addressKeydown', $event)"
               />
               <div v-if="isSearchingAddress" class="address-input-spinner-wrap" aria-hidden="true">
-                <LoadingSpinner size="sm" class="address-input-spinner" />
+                <LoadingSpinner
+                  size="sm"
+                  variant="search"
+                  decorative
+                  class="address-input-spinner"
+                />
               </div>
               <SparkleButton
                 v-if="showAddressSparkle"
@@ -675,8 +686,17 @@ defineExpose({
   align-items: center;
 }
 
-.inline-address-input-wrap.has-sparkle :deep(input) {
+.inline-title-input-wrap.is-searching :deep(input) {
   padding-right: 38px;
+}
+
+.inline-address-input-wrap.has-sparkle :deep(input),
+.inline-address-input-wrap.is-searching :deep(input) {
+  padding-right: 38px;
+}
+
+.inline-address-input-wrap.has-sparkle.is-searching :deep(input) {
+  padding-right: 62px;
 }
 
 .inline-category-combobox {
@@ -703,12 +723,16 @@ defineExpose({
 
 .address-input-spinner-wrap {
   position: absolute;
-  right: 34px;
+  right: 10px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
   align-items: center;
   pointer-events: none;
+}
+
+.inline-address-input-wrap.has-sparkle .address-input-spinner-wrap {
+  right: 34px;
 }
 
 .address-input-spinner,
