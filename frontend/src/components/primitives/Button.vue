@@ -618,7 +618,7 @@ a.btn.is-loading {
   padding: 4px 10px;
   font-size: var(--font-size-xs);
   min-height: var(--control-height-xs, 30px);
-  border-radius: var(--radius-xs-squircle, var(--radius-xs, 6px));
+  border-radius: var(--control-radius-xs-squircle, 8px);
   box-sizing: border-box;
 }
 
@@ -628,6 +628,7 @@ a.btn.is-loading {
   padding: 6px 12px;
   font-size: var(--font-size-sm);
   min-height: var(--control-height-sm, 36px);
+  border-radius: var(--control-radius-sm-squircle, 9.5px);
   box-sizing: border-box;
 }
 
@@ -636,14 +637,17 @@ a.btn.is-loading {
   padding: 12px 22px;
   font-size: var(--font-size-md);
   min-height: var(--control-height-lg, 52px);
+  border-radius: var(--control-radius-lg-squircle, 14px);
   box-sizing: border-box;
 }
 
-/* Pill & Circle behalten immer ihre vollrunde Form unabhängig von xs/sm */
+/* Pill & Circle behalten immer ihre vollrunde Form unabhängig von xs/sm/lg */
 .btn--pill.btn--xs,
 .btn--pill.btn--sm,
+.btn--pill.btn--lg,
 .btn--circle.btn--xs,
-.btn--circle.btn--sm {
+.btn--circle.btn--sm,
+.btn--circle.btn--lg {
   border-radius: var(--radius-pill);
   corner-shape: round;
 }

@@ -114,10 +114,4 @@ const emit = defineEmits<{
   outline-offset: var(--focus-ring-offset, 2px);
   box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
-
-.btn--ghost:not(.btn--circle),
-:deep(.btn--ghost:not(.btn--circle)) {
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-}
 </style>

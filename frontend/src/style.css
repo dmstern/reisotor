@@ -548,7 +548,7 @@
   --input-height-lg: 52px;
   --input-width-lg: 52px;
 
-  /* Einheitliche Button- & Trigger-Höhen und Icon-Abstände (Issue #810) */
+  /* Einheitliche Button- & Trigger-Höhen, Icon-Abstände und proportionale Radien (Issue #810) */
   --control-height-xs: 30px;
   --control-height-sm: 36px;
   --control-height-md: var(--input-height);
@@ -556,6 +556,14 @@
   --control-gap-xs: var(--space-1);
   --control-gap-sm: 6px;
   --control-gap-md: var(--space-2);
+  --control-radius-xs: 8px;
+  --control-radius-sm: 9.5px;
+  --control-radius-md: var(--radius-btn);
+  --control-radius-lg: 14px;
+  --control-radius-xs-squircle: var(--control-radius-xs);
+  --control-radius-sm-squircle: var(--control-radius-sm);
+  --control-radius-md-squircle: var(--control-radius-md);
+  --control-radius-lg-squircle: var(--control-radius-lg);
 
   /* Formularfeld-Abstände (Abstand zwischen Label-Kopfzeile und Eingabefeld) */
   --form-field-gap: 5px;
@@ -597,6 +605,10 @@
     --radius-md-squircle: calc(var(--radius-md) * 1.75);
     --radius-lg-squircle: calc(var(--radius-lg) * 1.75);
     --radius-xl-squircle: calc(var(--radius-xl) * 1.75);
+    --control-radius-xs-squircle: calc(var(--control-radius-xs) * 1.75);
+    --control-radius-sm-squircle: calc(var(--control-radius-sm) * 1.75);
+    --control-radius-md-squircle: calc(var(--control-radius-md) * 1.75);
+    --control-radius-lg-squircle: calc(var(--control-radius-lg) * 1.75);
   }
 }
 
