@@ -36,7 +36,7 @@ export default async function globalSetup() {
     .all(trip.id);
   const ideas = db
     .prepare(
-      `SELECT title, date
+      `SELECT id, title, date
        FROM ideas
        WHERE trip_id = ? AND deleted_at IS NULL
        ORDER BY date`
