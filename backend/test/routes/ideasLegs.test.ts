@@ -51,7 +51,7 @@ describe('ideas with intermediate stops and legs (#361)', () => {
     spotC = await createSpot('Mallorca Hotel');
   });
 
-  it('rejects an arrival tour with less than 2 spots', async () => {
+  it('accepts an arrival tour with less than 2 spots (stations can be added later)', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/ideas',
@@ -63,7 +63,7 @@ describe('ideas with intermediate stops and legs (#361)', () => {
         spot_ids: [spotA],
       },
     });
-    expect(res.statusCode).toBe(400);
+    expect(res.statusCode).toBe(201);
   });
 
   it('creates an arrival tour with 3 spots, 2 legs and budget integration', async () => {
