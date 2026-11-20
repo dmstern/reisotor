@@ -211,7 +211,7 @@
 
   @include can-hover {
     &:hover:not(:disabled):not(.is-disabled) {
-      background-color: var(--color-surface-glass-hover);
+      background-color: color-mix(in srgb, var(--color-surface) 95%, transparent);
       background-image: var(--gradient-glass-highlight);
       border-color: var(--color-surface-glass-hover-border);
       color: var(--color-primary-dark);
@@ -227,7 +227,7 @@
   }
 
   #{$active-selector} {
-    background-color: var(--color-surface-glass-active);
+    background-color: var(--color-surface);
     background-image: var(--gradient-glass-active);
     border-color: var(--color-surface-glass-active-border);
     box-shadow: none;
@@ -560,5 +560,60 @@
       border-color 0.15s ease,
       box-shadow 0.15s ease,
       color 0.15s ease !important;
+  }
+}
+
+/// Einheitliches xs/pill-Muster für nicht-interaktive Card-Disclosure-Pills
+/// (ExcursionCard, SpotCard, SpotCoverImage – Issue #810).
+///
+/// @param {'tonal' | 'overlay'} $mode ['tonal'] - 'tonal' auf Kartenflächen, 'overlay' über Fotos
+@mixin card-disclosure-pill($mode: 'tonal') {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  height: 26px;
+  min-width: 26px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  corner-shape: round;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  line-height: 1;
+  flex-shrink: 0;
+  user-select: none;
+  box-shadow: none;
+
+  @if $mode == 'overlay' {
+    background-color: var(--color-surface-glass-dense);
+    backdrop-filter: var(--backdrop-blur-md);
+    border: 1px solid var(--color-surface-glass-border);
+    color: var(--color-text);
+    transition: var(--transition-glass);
+  } @else {
+    background-color: var(--color-control-active-tint);
+    border: 1.5px solid transparent;
+    color: var(--color-primary-dark);
+    transition: var(--transition-control);
+  }
+
+  &.is-compact {
+    width: 26px;
+    padding: 0;
+  }
+}
+
+@mixin card-disclosure-pill-hover($mode: 'tonal') {
+  @if $mode == 'overlay' {
+    background-color: color-mix(in srgb, var(--color-surface) 95%, transparent);
+    border-color: var(--color-surface-glass-hover-border);
+    color: var(--color-primary-dark);
+    box-shadow: var(--shadow-sm);
+    translate: 0 -1px;
+  } @else {
+    background-color: var(--color-control-active-tint-hover);
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-control-hover);
+    translate: 0 -1px;
   }
 }

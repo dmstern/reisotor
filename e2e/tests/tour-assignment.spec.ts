@@ -281,7 +281,7 @@ test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in
     // Klick auf den Titel klappt die Tour-Karte auf, "Auf Karte anzeigen" visualisiert die Tour auf der Karte.
     await tourCard.locator('h3').click();
     await expect(tourCard).toHaveClass(/expanded/);
-    await tourCard.locator('.btn--card-action', { hasText: 'Auf Karte anzeigen' }).click();
+    await tourCard.locator('.btn--tonal', { hasText: 'Auf Karte anzeigen' }).click();
     await expect(page.locator('.focus-banner', { hasText: tourTitle })).toBeVisible();
 
     // Bearbeiten-Button ist in der aufgeklappten Karte erreichbar.

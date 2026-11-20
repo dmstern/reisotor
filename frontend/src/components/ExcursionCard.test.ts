@@ -115,8 +115,9 @@ describe('ExcursionCard', () => {
     expect(html).toContain('card-disclosure-pill is-expanded');
     expect(html).toContain('Einklappen');
     expect(html).toContain('tour-edit-btn');
-    expect(html).toContain('btn--circle');
-    expect(html).toContain('btn--secondary');
+    expect(html).toContain('btn--ghost');
+    expect(html).not.toContain('btn--circle');
+    expect(html).not.toContain('btn--secondary');
     expect(html).toContain('is-translucent');
   });
 

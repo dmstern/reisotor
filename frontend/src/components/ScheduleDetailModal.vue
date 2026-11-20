@@ -143,7 +143,7 @@ const emit = defineEmits<{
       <CalendarExportDropdown
         v-if="detail.viewingEntry.value"
         :entry="detail.viewingEntry.value"
-        variant="card-action"
+        variant="tonal"
         size="sm"
         label="In meinen Kalender"
         :show-label="true"

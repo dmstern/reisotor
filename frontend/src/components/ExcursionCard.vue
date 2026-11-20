@@ -144,13 +144,13 @@ const {
               <TourRoleBadge :role="excursion.role" :translucent="expanded" />
               <PendingSyncBadge v-if="excursion._pending" />
               <EditButton
-                small
-                shape="circle"
-                variant="secondary"
+                size="sm"
+                shape="squircle"
+                variant="ghost"
                 class="tour-edit-btn"
                 @click="emit('edit', excursion)"
               />
-              <span v-if="!expanded" class="card-disclosure-pill" aria-hidden="true">
+              <span v-if="!expanded" class="card-disclosure-pill is-compact" aria-hidden="true">
                 <AppIcon
                   :icon="ACTION_ICONS.chevronDown"
                   :size="14"
@@ -563,35 +563,12 @@ const {
 }
 
 .card-disclosure-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  width: 26px;
-  height: 26px;
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--excursion-theme-color) 10%, var(--color-hover));
-  border: 1px solid color-mix(in srgb, var(--excursion-theme-color) 24%, var(--color-border));
-  color: var(--excursion-theme-dark);
-  box-shadow: var(--shadow-control);
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  line-height: 1;
-  flex-shrink: 0;
-  user-select: none;
-  transition:
-    background 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  @include card-disclosure-pill('tonal');
 }
 
 .card-disclosure-pill.is-expanded {
   width: auto;
   padding: 0 var(--space-2);
-  background: var(--excursion-theme-tint);
-  border-color: var(--excursion-theme-border);
 }
 
 .disclosure-chevron {
@@ -600,11 +577,7 @@ const {
 
 @include can-hover {
   .excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) .card-disclosure-pill {
-    background: var(--excursion-theme-color);
-    border-color: var(--excursion-theme-color);
-    color: var(--color-primary-contrast, #ffffff);
-    box-shadow: var(--shadow-control-hover);
-    transform: translateY(-1px);
+    @include card-disclosure-pill-hover('tonal');
   }
 
   .excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) .disclosure-chevron {
@@ -614,11 +587,7 @@ const {
   .excursion-card.expanded
     .card-header-row:hover:not(:has(.tour-edit-btn:hover))
     .card-disclosure-pill {
-    background: var(--excursion-theme-color);
-    border-color: var(--excursion-theme-color);
-    color: var(--color-primary-contrast, #ffffff);
-    box-shadow: var(--shadow-control-hover);
-    transform: translateY(-1px);
+    @include card-disclosure-pill-hover('tonal');
   }
 
   .excursion-card.expanded

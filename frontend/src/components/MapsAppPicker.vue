@@ -23,12 +23,12 @@ const props = withDefaults(
     lng: number;
     title: string;
     mapsLink?: string | null;
-    variant?: 'primary' | 'secondary' | 'danger' | 'card-action' | 'ghost' | 'floating';
+    variant?: 'primary' | 'secondary' | 'tonal' | 'danger' | 'card-action' | 'ghost' | 'floating';
     size?: 'sm' | 'md' | 'lg';
   }>(),
   {
     mapsLink: null,
-    variant: 'card-action',
+    variant: 'tonal',
     size: 'sm',
   }
 );

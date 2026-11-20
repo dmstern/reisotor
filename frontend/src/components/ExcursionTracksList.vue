@@ -200,7 +200,8 @@ onMounted(() => {
               @click.stop="emit('stopTrack', track)"
             />
             <IconButton
-              variant="secondary"
+              variant="ghost"
+              shape="squircle"
               size="sm"
               :icon="ACTION_ICONS.edit"
               title="Aufzeichnung bearbeiten"

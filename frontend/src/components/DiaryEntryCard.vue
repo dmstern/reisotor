@@ -142,7 +142,7 @@ function excursionTooltip(ex: Excursion): string {
       </div>
       <PendingSyncBadge v-if="entry._pending" />
       <div class="entry-actions">
-        <EditButton small @click="emit('edit', entry)" />
+        <EditButton size="sm" shape="squircle" variant="ghost" @click="emit('edit', entry)" />
       </div>
     </header>
 
@@ -181,7 +181,8 @@ function excursionTooltip(ex: Excursion): string {
         </div>
         <Button
           type="button"
-          variant="card-action"
+          variant="tonal"
+          size="sm"
           v-if="hasMap"
           @click="drawers.focusMapOnDate(entry.date)"
         >

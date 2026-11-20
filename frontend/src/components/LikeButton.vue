@@ -27,33 +27,19 @@ const emit = defineEmits<{ (e: 'toggle'): void }>();
   </Button>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .like-btn {
-  min-height: 36px;
-  padding: 6px 10px;
-  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
-}
-
-.like-btn.small {
-  min-height: 34px;
-  padding: 4px 8px;
-  font-size: var(--font-size-xs);
-  line-height: 1;
-}
-
-.like-btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo);
 }
 
 .like-btn.liked {
   color: var(--color-like);
 }
 
-.like-btn.liked:hover {
-  background: var(--color-like-tint);
+@include can-hover {
+  .like-btn.btn.liked:hover:not(:disabled) {
+    background-color: var(--color-like-tint);
+  }
 }
 
 .social-count {

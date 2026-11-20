@@ -41,7 +41,7 @@ defineEmits<{
         <Badge v-else-if="isTripDate" variant="primary" size="sm">Urlaubstag</Badge>
       </div>
       <div class="day-detail-actions">
-        <Button variant="card-action" size="sm" @click="$emit('showOnMap')">
+        <Button variant="tonal" size="sm" @click="$emit('showOnMap')">
           <AppIcon :icon="SECTION_ICON_DEFS.map" :size="14" group="navigation" /> Tag auf Karte
           anzeigen
         </Button>

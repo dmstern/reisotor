@@ -55,7 +55,7 @@ const store = useBudgetStore();
       </span>
       <div class="row-actions">
         <template v-if="autoSourceFor(e.id)">
-          <Button variant="card-action" :to="autoSourceFor(e.id)!.path">
+          <Button variant="tonal" size="sm" :to="autoSourceFor(e.id)!.path">
             {{ autoSourceFor(e.id)!.label }}
           </Button>
         </template>

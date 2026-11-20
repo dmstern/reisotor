@@ -239,7 +239,7 @@ watch(
         <span v-else>{{
           focusedExcursion ? focusedExcursion.title : focusedSpot ? focusedSpot.title : ''
         }}</span>
-        <Button variant="card-action" class="focus-close-btn" @click="emit('clear')">
+        <Button variant="tonal" size="sm" class="focus-close-btn" @click="emit('clear')">
           <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" /> Fokus verlassen
         </Button>
       </div>

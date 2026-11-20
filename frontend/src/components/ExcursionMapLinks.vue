@@ -17,7 +17,8 @@ const emit = defineEmits<{
 <template>
   <div v-if="hasMappedStations || linkedTracks.length" class="links">
     <Button
-      variant="card-action"
+      variant="tonal"
+      size="sm"
       class="show-on-map-btn"
       aria-label="Auf Karte anzeigen"
       title="Auf Karte anzeigen"

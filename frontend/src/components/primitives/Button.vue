@@ -53,6 +53,8 @@ const _props = withDefaults(
     shape?: 'squircle' | 'circle' | 'pill';
     /** Ob der Button als aktiv/ausgewählt markiert ist (z. B. ausgewählter Avatar). */
     active?: boolean;
+    /** Gestrichelte Umrandung für leere/optionale Hinzufügen-Slots (z. B. Tour-Weg-Verbinder). */
+    dashed?: boolean;
     /** Native Button-Type (Standard: 'button'). */
     type?: 'button' | 'submit' | 'reset';
     /** Deaktiviert-Zustand. */
@@ -78,6 +80,7 @@ const _props = withDefaults(
     size: 'md',
     shape: 'squircle',
     active: false,
+    dashed: false,
     type: 'button',
     disabled: false,
     loading: false,
@@ -101,6 +104,7 @@ const btnClasses = computed(() => [
     'is-disabled': _props.disabled,
     'is-loading': _props.loading,
     'is-active': _props.active,
+    'btn--dashed': _props.dashed,
     'btn--icon-only':
       _props.iconOnly ||
       _props.shape === 'circle' ||
@@ -365,6 +369,18 @@ a.btn.is-loading {
   background-color: var(--color-control-active-bg);
 }
 
+/* Gestrichelte Sekundär-/Hinzufügen-Variante für leere/optionale Slots (#810) */
+.btn--dashed {
+  border-style: dashed;
+  color: var(--color-text-muted);
+}
+
+@include can-hover {
+  .btn--dashed:hover:not(:disabled):not(.is-disabled) {
+    color: var(--color-primary);
+  }
+}
+
 /* Danger Solid CTA */
 .btn--danger {
   background-color: var(--color-danger);
@@ -433,7 +449,7 @@ a.btn.is-loading {
 
 /* Abwärtskompatibles kompaktes Default-Sizing nur für Legacy-Alias card-action (ohne explizites size-Prop) */
 .btn--card-action {
-  @include touch-target($expand: true);
+  @include touch-target($expand: true, $position: null);
   gap: var(--control-gap-sm, 6px);
   padding: 6px 12px;
   min-height: var(--control-height-sm, 36px);
@@ -621,7 +637,7 @@ a.btn.is-loading {
 
 /* Einheitliche Größenstufen (Issue #810): xs (30px), sm (36px), md (46px), lg (52px) */
 .btn--xs {
-  @include touch-target($expand: true);
+  @include touch-target($expand: true, $position: null);
   gap: var(--control-gap-xs, 4px);
   padding: 4px 10px;
   font-size: var(--font-size-xs);
@@ -631,7 +647,7 @@ a.btn.is-loading {
 }
 
 .btn--sm {
-  @include touch-target($expand: true);
+  @include touch-target($expand: true, $position: null);
   gap: var(--control-gap-sm, 6px);
   padding: 6px 12px;
   font-size: var(--font-size-sm);
@@ -702,7 +718,7 @@ a.btn.is-loading {
 /* Linked-Entity Pill: harmonisiert auf sm-Grundlinie (36px) & Progressive 3D (#810) */
 .btn--linked-entity {
   @include control-physics-progressive;
-  @include touch-target($expand: true);
+  @include touch-target($expand: true, $position: null);
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;

@@ -18,7 +18,7 @@ import { computePopoverPosition } from '../utils/popoverPosition';
 const props = withDefaults(
   defineProps<{
     entry: CalendarEntry;
-    variant?: 'secondary' | 'card-action' | 'ghost';
+    variant?: 'secondary' | 'tonal' | 'card-action' | 'ghost';
     size?: 'sm' | 'md';
     label?: string;
     showLabel?: boolean;
@@ -153,11 +153,11 @@ function downloadIcs() {
 }
 
 .calendar-btn--sm:not(.always-show-label) {
-  width: var(--input-width-sm, 38px);
+  width: var(--control-height-sm, 36px);
 }
 
 .calendar-btn--md:not(.always-show-label) {
-  width: var(--input-width, 46px);
+  width: var(--control-height-md, 46px);
 }
 
 .calendar-btn-label {

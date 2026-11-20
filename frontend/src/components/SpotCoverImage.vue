@@ -223,28 +223,7 @@ function formatAccommodationDate(dateStr: string | null) {
 }
 
 .spot-collapse-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  height: 26px;
-  padding: 0 10px;
-  border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #ffffff;
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  line-height: 1;
-  backdrop-filter: var(--backdrop-blur-md, blur(8px));
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-  user-select: none;
-  flex-shrink: 0;
-  transition:
-    background 0.2s ease,
-    border-color 0.2s ease,
-    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.2s ease;
+  @include card-disclosure-pill('overlay');
 }
 
 .spot-collapse-chevron {
@@ -253,10 +232,7 @@ function formatAccommodationDate(dateStr: string | null) {
 
 @include can-hover {
   .image.is-expanded:hover:not(:has(a:hover)) .spot-collapse-pill {
-    background: var(--color-primary);
-    border-color: rgba(255, 255, 255, 0.65);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    transform: translateY(-1px);
+    @include card-disclosure-pill-hover('overlay');
   }
 
   .image.is-expanded:hover:not(:has(a:hover)) .spot-collapse-chevron {

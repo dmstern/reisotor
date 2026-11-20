@@ -267,7 +267,8 @@ async function emptyTrash() {
             <AppIcon :icon="ACTION_ICONS.delete" :size="18" group="actions" />
           </Button>
           <Button
-            variant="card-action"
+            variant="tonal"
+            size="sm"
             :disabled="restoringKey === keyOf(entry) || deletingKey === keyOf(entry)"
             @click="restore(entry)"
             title="Wiederherstellen"

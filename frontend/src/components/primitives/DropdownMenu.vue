@@ -168,7 +168,7 @@ defineExpose({
     <slot name="trigger" :open="open" :toggle="() => emit('toggle')">
       <Button
         ref="buttonRef"
-        variant="ghost"
+        variant="secondary"
         :size="size"
         class="dropdown__button dropdown__field"
         :class="[{ 'dropdown__button--active': open, 'btn--block': block }, triggerClass]"

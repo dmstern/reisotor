@@ -187,9 +187,9 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
           />
           <PendingSyncBadge v-if="spot._pending" />
           <EditButton
-            small
-            shape="circle"
-            :variant="expanded ? 'surface' : 'secondary'"
+            size="sm"
+            shape="squircle"
+            :variant="expanded ? 'overlay' : 'ghost'"
             class="spot-edit-btn"
             @click="emit('edit', spot)"
           />
@@ -204,7 +204,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
       <!-- Eigene, explizite Aktionen (#109, #381) – nur im aufgeklappten Zustand sichtbar -->
       <div class="map-actions" v-if="expanded && spot.lat != null && spot.lng != null">
         <Button
-          variant="card-action"
+          variant="tonal"
           size="sm"
           class="show-on-map-btn"
           aria-label="Auf Karte anzeigen"
@@ -224,7 +224,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
       </div>
       <div class="map-actions map-actions--missing" v-else-if="expanded">
         <Button
-          variant="card-action"
+          variant="tonal"
           size="sm"
           class="set-location-btn"
           aria-label="Standort festlegen"
@@ -549,10 +549,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
         )
     )
     :deep(.spot-collapse-pill) {
-    background: var(--color-primary);
-    border-color: rgba(255, 255, 255, 0.65);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    transform: translateY(-1px);
+    @include card-disclosure-pill-hover('overlay');
   }
 
   .spot-card.expanded:has(
@@ -693,27 +690,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 }
 
 .spot-expand-pill {
-  @include control-3d-raised;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  height: 24px;
-  min-width: 24px;
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-pill);
-  border: none;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  line-height: 1;
-  user-select: none;
-}
-
-.spot-expand-pill.is-compact {
-  width: 24px;
-  height: 24px;
-  padding: 0;
+  @include card-disclosure-pill('tonal');
 }
 
 .spot-expand-pill.is-compact .spot-expand-label {
@@ -727,20 +704,11 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 @include can-hover {
   .spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) .spot-expand-pill,
   .spot-expand-pill:hover {
-    background-color: var(--color-control-active-tint);
-    color: var(--color-primary-dark);
-    box-shadow: var(--shadow-control-hover);
-    translate: 0 -1px;
+    @include card-disclosure-pill-hover('tonal');
   }
 
   .spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) .spot-expand-chevron {
     transform: translateY(1.5px);
-  }
-
-  .spot-expand-pill:active {
-    transform: translateY(0.5px) scale(0.96);
-    translate: 0 0;
-    box-shadow: var(--shadow-control-active);
   }
 }
 
@@ -991,7 +959,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   }
 
   .spot-expand-pill {
-    width: 22px;
+    width: 26px;
     padding: 0;
   }
 
