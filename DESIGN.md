@@ -767,7 +767,7 @@ unerwünschte Vererbungen in Spezialfällen (z. B. ungerahmte Inputs in `QuickAd
     - Destruktiv (Dialog-Footer / Bestätigung) → `<Button variant="danger" secondary />` bzw. `<Button variant="danger" />`
     - Kontext-Aktion in Card/Modal (z. B. „Auf Karte“) → `<Button variant="tonal" size="sm" />`
     - Card-Edit / Toolbar / Like & Comment → `<IconButton variant="ghost" size="sm" />` bzw. `<Button variant="ghost" size="sm" />`
-    - Enge Listen-Zeile (ToDo, Einkauf, Packliste) → `<IconButton variant="ghost" size="xs" />`
+    - Listen-Zeile (ToDo, Einkauf, Packliste: Edit & Assignee) → `<IconButton variant="ghost" size="sm" />`
     - Foto-/Banner-Overlay (mit Text / nur Icon) → `<Button variant="overlay" shape="pill" size="sm" />` bzw. `<IconButton variant="overlay" shape="circle" size="sm" />`
     - Bewusste Spezial-Controls (nicht in `Button.vue` pressen): `TabBar`, `ExcursionCategoryNav`, `SegmentedToggle`, `Drawer`-Anfasser, `RichTextEditor`-Toolbar, Farbfelder/Icon-Grids, Radio-Karten.
   - **Disabled-Zustand** (`disabled` prop / `:disabled` Pseudo-Klasse): ausgegraut (`opacity: 0.5`), `cursor: not-allowed`, `pointer-events: none`, keine Schatten oder Transforms.

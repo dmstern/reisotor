@@ -7,7 +7,7 @@ import DropdownMenu from './primitives/DropdownMenu.vue';
 import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 
-// AssigneeMenu: Kompakter Avatar-Trigger (ghost xs squircle, passend zum benachbarten EditButton) mit Aktions-Menü zum Neuzuweisen
+// AssigneeMenu: Kompakter Avatar-Trigger (ghost sm squircle, passend zum benachbarten EditButton) mit Aktions-Menü zum Neuzuweisen
 // eines Listeneintrags (Einkaufsliste: Käufer:in, ToDo-Liste: Zuständige:r). Die Auswahl löst direkt
 // die Neuzuweisung aus (Aktion, kein Formularfeld) – daher DropdownMenu statt Select.vue.
 
@@ -63,7 +63,7 @@ function select(userId: number | null) {
     <template #trigger="{ toggle: toggleMenu }">
       <IconButton
         variant="ghost"
-        size="xs"
+        size="sm"
         :title="title"
         :aria-label="title"
         :aria-expanded="isOpen"
