@@ -511,25 +511,26 @@ function handleModalClose(visible: boolean) {
           <Button
             v-if="isModified"
             type="button"
-            variant="floating"
+            variant="overlay"
             size="sm"
             shape="pill"
+            :icon="ACTION_ICONS.restore"
             class="banner-reset-btn"
             title="Änderungen am Bild zurücksetzen"
+            aria-label="Änderungen am Bild zurücksetzen"
             @click.stop="resetImage"
           >
-            <AppIcon :icon="ACTION_ICONS.restore" :size="13" group="actions" />
-            {{ variant === 'polaroid' ? '' : 'Zurücksetzen' }}
+            <span v-if="variant !== 'polaroid'">Zurücksetzen</span>
           </Button>
           <Button
             type="button"
-            variant="floating"
+            variant="overlay"
             size="sm"
             shape="pill"
+            :icon="ACTION_ICONS.edit"
             class="banner-edit-btn"
             @click="showModal = true"
           >
-            <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
             {{
               variant === 'polaroid'
                 ? modelValue
@@ -729,11 +730,6 @@ function handleModalClose(visible: boolean) {
   right: var(--space-1);
   bottom: var(--space-1);
   gap: var(--space-1);
-}
-
-.form-image-banner--polaroid .banner-edit-btn,
-.form-image-banner--polaroid .banner-reset-btn {
-  font-size: var(--font-size-xs);
 }
 
 .banner-loading-overlay {
