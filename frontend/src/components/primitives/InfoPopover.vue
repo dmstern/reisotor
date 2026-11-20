@@ -107,7 +107,7 @@ defineExpose({
       ref="triggerRef"
       variant="ghost"
       shape="circle"
-      size="sm"
+      size="xs"
       :active="open"
       class="info-popover-btn"
       :title="title"
@@ -144,14 +144,6 @@ defineExpose({
   display: inline-flex;
   align-items: center;
   line-height: 1;
-}
-
-.info-popover-btn.btn.btn--circle.btn--sm {
-  width: var(--info-popover-btn-size, 30px);
-  height: var(--info-popover-btn-size, 30px);
-  min-width: var(--info-popover-btn-size, 30px);
-  min-height: var(--info-popover-btn-size, 30px);
-  font-size: var(--font-size-sm);
 }
 
 .info-popover-btn.btn:where(:not(.is-active):not(:hover):not(:focus-visible)) {

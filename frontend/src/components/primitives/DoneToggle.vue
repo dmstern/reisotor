@@ -96,18 +96,19 @@ function onClick(event: MouseEvent) {
 
 <style lang="scss" scoped>
 .done-toggle {
+  @include control-physics-progressive;
+  @include touch-target($expand: true);
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 36px;
-  background-color: transparent;
-  background-image: var(--gradient-control-3d);
-  border: var(--border-width) solid var(--color-border);
+  gap: var(--control-gap-sm, 6px);
+  min-height: var(--control-height-sm, 36px);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border-strong);
   border-radius: var(--radius-pill);
   corner-shape: round;
   padding: var(--space-1) 12px;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text-muted);
   cursor: pointer;
@@ -115,14 +116,6 @@ function onClick(event: MouseEvent) {
   max-width: 100%;
   flex-shrink: 0;
   box-sizing: border-box;
-  box-shadow: var(--shadow-control);
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease,
-    translate 0.12s cubic-bezier(0.2, 0.8, 0.4, 1),
-    transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1);
 }
 
 .done-toggle--field {
@@ -147,33 +140,26 @@ function onClick(event: MouseEvent) {
 
 @include can-hover {
   .done-toggle:hover:not(:disabled) {
-    background-color: var(--color-control-hover-bg);
+    background-color: var(--color-hover);
     border-color: var(--toggle-hover-border, var(--color-primary));
     color: var(--color-text);
-    box-shadow: var(--shadow-control-hover);
-    translate: 0 -1px;
   }
 }
 
 .done-toggle:active:not(:disabled) {
   background-color: var(--color-control-active-bg);
-  transform: scale(0.98);
-  translate: 0 0;
-  box-shadow: var(--shadow-control-active);
 }
 
 .done-toggle.planned {
   color: var(--color-text);
-  border-color: var(--color-border);
-  background-color: transparent;
-  box-shadow: var(--shadow-control);
+  border-color: var(--color-border-strong);
+  background-color: var(--color-surface);
 }
 
 @include can-hover {
   .done-toggle.planned:hover:not(:disabled) {
     border-color: var(--color-success);
     color: var(--color-success);
-    box-shadow: var(--shadow-control-hover);
   }
 }
 
@@ -182,15 +168,14 @@ function onClick(event: MouseEvent) {
   color: var(--color-success);
   font-weight: 600;
   background-color: color-mix(in srgb, var(--color-success) 14%, transparent);
-  border-color: var(--color-success);
-  box-shadow: var(--shadow-control);
+  border-color: color-mix(in srgb, var(--color-success) 45%, transparent);
 }
 
 @include can-hover {
   .done-toggle.active:hover:not(:disabled),
   .done-toggle.status-done:hover:not(:disabled) {
     background-color: color-mix(in srgb, var(--color-success) 22%, transparent);
-    box-shadow: var(--shadow-control-hover);
+    border-color: var(--color-success);
   }
 }
 

@@ -23,10 +23,18 @@ describe('IconButton primitive', () => {
     });
     const html = await renderToString(app);
     expect(html).toContain('<button');
+    expect(html).toContain('btn--ghost');
     expect(html).toContain('btn--icon-only');
     expect(html).toContain('icon-btn');
     expect(html).toContain('aria-label="Schließen"');
     expect(html).toContain('title="Schließen"');
+  });
+
+  it('renders with xs size class when size="xs" is specified', async () => {
+    const app = createTestApp(IconButton, { icon: ACTION_ICONS.edit, size: 'xs' });
+    const html = await renderToString(app);
+    expect(html).toContain('btn--xs');
+    expect(html).toContain('btn--ghost');
   });
 
   it('renders with circle shape when shape="circle" is specified', async () => {

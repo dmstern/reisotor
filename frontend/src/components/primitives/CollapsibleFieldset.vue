@@ -78,7 +78,9 @@ function toggle() {
     <legend :title="title">
       <Button
         type="button"
-        variant="ghost"
+        variant="secondary"
+        shape="pill"
+        size="sm"
         class="collapsible-toggle"
         :aria-expanded="isOpen"
         :disabled="disabled"
@@ -158,40 +160,11 @@ function toggle() {
 }
 
 .collapsible-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 6px 14px;
-  font-size: var(--font-size-sm);
+  padding-inline: 14px;
   font-weight: 500;
   color: var(--color-text);
-  background: var(--color-surface) !important;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-pill);
-  corner-shape: round;
-  cursor: pointer;
-  box-shadow: none;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
-}
-
-.collapsible-toggle:hover:not(:disabled) {
-  background-color: var(--color-hover) !important;
-  background-image: var(--gradient-control-3d) !important;
-  box-shadow: var(--shadow-control-hover) !important;
-}
-
-.collapsible-toggle:active:not(:disabled) {
-  background-color: var(--color-hover) !important;
-  background-image: var(--gradient-control-3d) !important;
-  box-shadow: var(--shadow-control-active) !important;
-}
-
-.collapsible-toggle:disabled {
-  opacity: 0.6;
-  cursor: not-allowed !important;
+  border-width: var(--border-width);
+  border-color: var(--color-border);
 }
 
 .collapsible-fieldset.is-disabled legend {

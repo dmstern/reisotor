@@ -9,11 +9,11 @@ const meta: Meta<typeof Button> = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['primary', 'secondary', 'danger', 'card-action', 'ghost'],
+      options: ['primary', 'secondary', 'tonal', 'ghost', 'danger', 'overlay'],
     },
     size: {
       control: 'select',
-      options: ['sm', 'md', 'lg'],
+      options: ['xs', 'sm', 'md', 'lg'],
     },
     shape: {
       control: 'select',
@@ -63,6 +63,33 @@ export const Secondary: Story = {
   }),
 };
 
+export const Tonal: Story = {
+  args: {
+    variant: 'tonal',
+    size: 'sm',
+  },
+  render: (args) => ({
+    components: { Button },
+    setup() {
+      return { args };
+    },
+    template: '<Button v-bind="args">Tonal Action</Button>',
+  }),
+};
+
+export const Ghost: Story = {
+  args: {
+    variant: 'ghost',
+  },
+  render: (args) => ({
+    components: { Button },
+    setup() {
+      return { args };
+    },
+    template: '<Button v-bind="args">Ghost Button</Button>',
+  }),
+};
+
 export const Danger: Story = {
   args: {
     variant: 'danger',
@@ -90,29 +117,22 @@ export const DangerSecondary: Story = {
   }),
 };
 
-export const CardAction: Story = {
+export const Overlay: Story = {
   args: {
-    variant: 'card-action',
+    variant: 'overlay',
+    shape: 'pill',
+    size: 'sm',
   },
   render: (args) => ({
     components: { Button },
     setup() {
       return { args };
     },
-    template: '<Button v-bind="args">Card Action</Button>',
-  }),
-};
-
-export const Ghost: Story = {
-  args: {
-    variant: 'ghost',
-  },
-  render: (args) => ({
-    components: { Button },
-    setup() {
-      return { args };
-    },
-    template: '<Button v-bind="args">Ghost Button</Button>',
+    template: `
+      <div style="padding: 24px; border-radius: 16px; background: linear-gradient(135deg, #2d5a7b 0%, #3c6e58 100%);">
+        <Button v-bind="args">Bild ändern</Button>
+      </div>
+    `,
   }),
 };
 

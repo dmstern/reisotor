@@ -8,34 +8,45 @@ import { useSlots, computed, Comment, provide } from 'vue';
 // Button-Primitive für alle Buttons (Formularknöpfe, Aktionsbuttons, Card-Actions, Icon-Only-Buttons) – siehe Issue #239.
 // Unterstützt sowohl Text, Text + Icon als auch reine Icon-Buttons, sowie Link-Rendering (to/href).
 
+const ICON_SIZE_XS = 16;
+const ICON_SIZE_SM = 18;
+const ICON_SIZE_MD = 20;
+const ICON_SIZE_LG = 22;
+
 const _props = withDefaults(
   defineProps<{
     /**
-     * Button-Variante:
-     * - 'primary': Haupt-Aktionsbutton (gefüllt mit --color-primary + Schatten)
-     * - 'secondary': Sekundärbutton (transparenter Hintergrund, 3D-Verlauf, Schatten)
-     * - 'surface': Deckender (opaquer) Sekundärbutton (Hintergrund --color-surface + 3D-Verlauf, z. B. über Bildern/Bannern)
-     * - 'danger': Gefahrenbutton (gefüllt mit --color-danger + Schatten)
-     * - 'card-action': Kompakter Karten-Aktionsbutton (Hintergrund --color-primary-tint)
-     * - 'ghost': Dezent ohne Rahmen/Schatten für Toolbars/Untermenüs
-     * - 'floating': Runder, schwebender Glass-Aktionsbutton (Liquid-Glass-Style analog zu Header Pill und NavBar Pill)
-     * - 'glass': Transluzenter Glass-Button (speziell für Bedienelemente innerhalb von Glass-Pills und Toolbars)
-     * - 'linked-entity': Kompakte Link-Pill für verknüpfte Entitäten (Tagebuch, Tour, Spot, GPS-Aufzeichnung)
+     * Button-Variante (Issue #810):
+     * - 'primary': Haupt-Aktionsbutton (gefüllt mit --color-primary, leicht erhaben)
+     * - 'secondary': Sekundärbutton (initial flach mit Rahmen, Progressive 3D bei Hover/Active)
+     * - 'tonal': Sanft getönte Kontext-Aktion in Cards/Modals (initial flach, Progressive 3D bei Hover/Active)
+     * - 'ghost': Leise Hilfsaktion ohne Rahmen/Schatten (ruhiger, flacher Hover/Active ohne 3D-Verlauf/Schatten)
+     * - 'danger': Destruktive Aktion (gefüllt mit --color-danger; mit secondary-Flag gerahmt & initial flach)
+     * - 'overlay': Kontrast-gesicherter Frosted-Glass-Button auf Fotos/Bannern/Karten (initial schattenlos)
+     *
+     * Abwärtskompatible Übergangs-Aliase (werden am Ende von Phase 4 entfernt):
+     * - 'card-action' → Alias für 'tonal'
+     * - 'surface' → Alias für 'overlay'
+     * - 'floating' → Freischwebender Liquid-Glass-Button (Map-FABs)
+     * - 'glass' → Eingebetteter Glass-Button (Header-Pills)
+     * - 'linked-entity' → Interne Variante für LinkedEntityButton.vue
      */
     variant?:
       | 'primary'
       | 'secondary'
-      | 'surface'
-      | 'danger'
-      | 'card-action'
+      | 'tonal'
       | 'ghost'
+      | 'danger'
+      | 'overlay'
+      | 'surface'
+      | 'card-action'
       | 'floating'
       | 'glass'
       | 'linked-entity';
     /** Ob der Button als Sekundär-Variante gestylt werden soll (z. B. in Kombination mit variant="danger"). */
     secondary?: boolean;
-    /** Button-Größe: 'sm' (klein), 'md' (Standard), 'lg' (groß). */
-    size?: 'sm' | 'md' | 'lg';
+    /** Button-Größe: 'xs' (30px), 'sm' (36px), 'md' (46px, Standard), 'lg' (52px). */
+    size?: 'xs' | 'sm' | 'md' | 'lg';
     /** Optionale IconDef-Definition für Tabler-Icon Rendering via AppIcon.vue */
     icon?: IconDef;
     /** Form-Variante: 'squircle' (Standard), 'circle' (kreisrund) oder 'pill' (Pille/Stadium). */
@@ -105,6 +116,26 @@ const isSpinnerInverted = computed(
   () => !_props.secondary && (_props.variant === 'primary' || _props.variant === 'danger')
 );
 
+const iconSize = computed(() => {
+  if (_props.size === 'xs') {
+    return ICON_SIZE_XS;
+  }
+
+  if (_props.size === 'sm') {
+    return ICON_SIZE_SM;
+  }
+
+  if (_props.size === 'lg') {
+    return ICON_SIZE_LG;
+  }
+
+  if (_props.variant === 'card-action') {
+    return ICON_SIZE_SM;
+  }
+
+  return ICON_SIZE_MD;
+});
+
 provide(
   'buttonActive',
   computed(() => _props.active)
@@ -128,13 +159,7 @@ provide(
       decorative
       class="btn-spinner"
     />
-    <AppIcon
-      v-else-if="icon"
-      :icon="icon"
-      group="actions"
-      :active="active"
-      :size="size === 'sm' || variant === 'card-action' ? 18 : size === 'lg' ? 22 : 20"
-    />
+    <AppIcon v-else-if="icon" :icon="icon" group="actions" :active="active" :size="iconSize" />
     <slot v-if="hasDefaultSlot()" />
   </RouterLink>
   <a
@@ -153,13 +178,7 @@ provide(
       decorative
       class="btn-spinner"
     />
-    <AppIcon
-      v-else-if="icon"
-      :icon="icon"
-      group="actions"
-      :active="active"
-      :size="size === 'sm' || variant === 'card-action' ? 18 : size === 'lg' ? 22 : 20"
-    />
+    <AppIcon v-else-if="icon" :icon="icon" group="actions" :active="active" :size="iconSize" />
     <slot v-if="hasDefaultSlot()" />
   </a>
   <component
@@ -179,13 +198,7 @@ provide(
       decorative
       class="btn-spinner"
     />
-    <AppIcon
-      v-else-if="icon"
-      :icon="icon"
-      group="actions"
-      :active="active"
-      :size="size === 'sm' || variant === 'card-action' ? 18 : size === 'lg' ? 22 : 20"
-    />
+    <AppIcon v-else-if="icon" :icon="icon" group="actions" :active="active" :size="iconSize" />
     <slot v-if="hasDefaultSlot()" />
   </component>
   <button
@@ -206,13 +219,7 @@ provide(
       decorative
       class="btn-spinner"
     />
-    <AppIcon
-      v-else-if="icon"
-      :icon="icon"
-      group="actions"
-      :active="active"
-      :size="size === 'sm' || variant === 'card-action' ? 18 : size === 'lg' ? 22 : 20"
-    />
+    <AppIcon v-else-if="icon" :icon="icon" group="actions" :active="active" :size="iconSize" />
     <slot v-if="hasDefaultSlot()" />
   </button>
 </template>
@@ -223,41 +230,34 @@ provide(
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  padding: 11px 18px;
-  min-height: var(--input-height, 46px);
+  gap: var(--control-gap-md, var(--space-2));
+  padding: 10px 18px;
+  min-height: var(--control-height-md, 46px);
   box-sizing: border-box;
   font-size: var(--font-size-md);
   font-family: inherit;
   font-weight: 600;
-  border-radius: var(--radius-btn-squircle, var(--radius-btn, 12px));
+  border-radius: var(--control-radius-md-squircle, 10px);
   corner-shape: squircle;
   /* Verlauf bis unter den (transparenten) Rand ziehen, sonst kachelt er dort und zeigt unten einen hellen Streifen */
   background-origin: border-box;
   cursor: pointer;
   box-shadow: none;
-  transition:
-    background-color 0.15s ease,
-    color 0.15s ease,
-    border-color 0.15s ease,
-    --control-grad-top 0.15s ease,
-    --control-grad-bottom 0.15s ease,
-    transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1),
-    translate 0.12s cubic-bezier(0.2, 0.8, 0.4, 1),
-    box-shadow 0.15s ease,
-    opacity 0.15s ease;
+  transition: var(--transition-control);
   user-select: none;
 }
 
 .btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
   outline-offset: var(--focus-ring-offset, 2px);
   box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
-.btn:hover:not(:disabled):not(.is-disabled) {
-  translate: 0 -1px;
-  box-shadow: var(--shadow-control-hover);
+@include can-hover {
+  .btn:hover:not(:disabled):not(.is-disabled) {
+    translate: 0 -1px;
+    box-shadow: var(--shadow-control-hover);
+  }
 }
 
 .btn:active:not(:disabled):not(.is-disabled) {
@@ -272,6 +272,7 @@ provide(
   cursor: not-allowed !important;
   box-shadow: none !important;
   transform: none !important;
+  translate: none !important;
 }
 
 .btn.is-loading {
@@ -290,14 +291,14 @@ a.btn.is-loading {
 }
 
 .btn--circle {
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
   corner-shape: round;
   padding: 0;
   flex-shrink: 0;
-  width: var(--input-width, 46px);
-  height: var(--input-height, 46px);
-  min-width: var(--input-width, 46px);
-  min-height: var(--input-height, 46px);
+  width: var(--control-height-md, 46px);
+  height: var(--control-height-md, 46px);
+  min-width: var(--control-height-md, 46px);
+  min-height: var(--control-height-md, 46px);
   aspect-ratio: 1 / 1;
   box-sizing: border-box;
 }
@@ -307,6 +308,7 @@ a.btn.is-loading {
   corner-shape: round;
 }
 
+/* Primary CTA: einzige dauerhaft leicht erhabene Standard-Variante für klare Hierarchie */
 .btn--primary {
   background-color: var(--color-primary);
   background-image: linear-gradient(
@@ -315,78 +317,55 @@ a.btn.is-loading {
     rgba(255, 255, 255, 0) 100%
   );
   color: var(--color-primary-contrast, white);
-  border: 1.5px solid transparent; /* 3D-Look braucht keinen Rahmen; Geometrie bleibt für .is-active stabil */
+  border: 1.5px solid transparent;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.28),
     0 1px 2px rgba(0, 0, 0, 0.12),
     0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
-.btn--primary:hover:not(:disabled) {
-  background-color: var(--color-primary-dark);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    0 3px 8px rgba(0, 0, 0, 0.16),
-    0 1px 3px rgba(0, 0, 0, 0.1);
+@include can-hover {
+  .btn--primary:hover:not(:disabled):not(.is-disabled) {
+    background-color: var(--color-primary-dark);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      0 3px 8px rgba(0, 0, 0, 0.16),
+      0 1px 3px rgba(0, 0, 0, 0.1);
+  }
 }
 
-.btn--primary:active:not(:disabled) {
+.btn--primary:active:not(:disabled):not(.is-disabled) {
   background-color: var(--color-primary-dark);
   box-shadow:
     inset 0 1.5px 3px rgba(0, 0, 0, 0.25),
     0 1px 1px rgba(0, 0, 0, 0.06);
 }
 
-/* Secondary Button mit elegantem, hintergrundadaptivem 3D-Look (transparent + 3D-Verlauf) */
+/* Secondary: initial ruhig & flach mit Rahmen, Progressive 3D erst bei Hover/Active (#810) */
 .btn--secondary {
-  background-color: transparent;
-  background-image: var(--gradient-control-3d);
+  @include control-physics-progressive;
+  background-color: var(--color-surface);
   color: var(--color-primary);
-  border: 1.5px solid transparent;
-  box-shadow: var(--shadow-control);
+  border: 1.5px solid var(--color-border-strong);
 }
 
-/* Icon-only secondary: Rahmen ja, aber Icon monochrom statt primärgrün */
 .btn--secondary.btn--icon-only,
 .btn--secondary.icon-only {
   color: var(--color-text);
 }
 
-.btn--secondary:hover:not(:disabled) {
-  background-color: var(--color-control-hover-bg);
-  box-shadow: var(--shadow-control-hover);
+@include can-hover {
+  .btn--secondary:hover:not(:disabled):not(.is-disabled) {
+    background-color: var(--color-hover);
+    border-color: var(--color-primary);
+  }
 }
 
-.btn--secondary:active:not(:disabled) {
+.btn--secondary:active:not(:disabled):not(.is-disabled) {
   background-color: var(--color-control-active-bg);
-  box-shadow: var(--shadow-control-active);
 }
 
-/* Surface Button: deckende (opaque) 3D-Variante mit --color-surface-Hintergrund (z. B. über Fotos/Bannern) */
-.btn--surface {
-  background-color: var(--color-surface);
-  background-image: var(--gradient-control-3d);
-  color: var(--color-primary);
-  border: 1.5px solid color-mix(in srgb, var(--color-border-strong) 60%, transparent);
-  box-shadow: var(--shadow-control);
-}
-
-.btn--surface.btn--icon-only,
-.btn--surface.icon-only {
-  color: var(--color-text);
-}
-
-.btn--surface:hover:not(:disabled) {
-  background-color: var(--color-hover);
-  border-color: var(--color-border-strong);
-  box-shadow: var(--shadow-control-hover);
-}
-
-.btn--surface:active:not(:disabled) {
-  background-color: var(--color-hover);
-  box-shadow: var(--shadow-control-active);
-}
-
+/* Danger Solid CTA */
 .btn--danger {
   background-color: var(--color-danger);
   background-image: linear-gradient(
@@ -395,135 +374,118 @@ a.btn.is-loading {
     rgba(255, 255, 255, 0) 100%
   );
   color: white;
-  border: 1.5px solid transparent; /* 3D-Look braucht keinen Rahmen; Geometrie bleibt für .is-active stabil */
+  border: 1.5px solid transparent;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.28),
     0 1px 2px rgba(0, 0, 0, 0.14),
     0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
-.btn--danger:hover:not(:disabled) {
-  background-color: var(--color-danger-dark, #b91c1c);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    0 3px 8px rgba(0, 0, 0, 0.18),
-    0 1px 3px rgba(0, 0, 0, 0.1);
+@include can-hover {
+  .btn--danger:hover:not(:disabled):not(.is-disabled) {
+    background-color: var(--color-danger-dark, #b91c1c);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      0 3px 8px rgba(0, 0, 0, 0.18),
+      0 1px 3px rgba(0, 0, 0, 0.1);
+  }
 }
 
-.btn--danger:active:not(:disabled) {
+.btn--danger:active:not(:disabled):not(.is-disabled) {
   background-color: var(--color-danger-dark, #b91c1c);
   box-shadow:
     inset 0 1.5px 3px rgba(0, 0, 0, 0.25),
     0 1px 1px rgba(0, 0, 0, 0.06);
 }
 
+/* Danger Secondary: initial flach mit rotem Rahmen, Progressive 3D bei Hover/Active */
 .btn--danger.btn--secondary {
+  @include control-physics-progressive;
   background-color: transparent;
-  background-image: var(--gradient-control-3d);
   color: var(--color-danger);
   border: 1.5px solid var(--color-danger);
-  box-shadow: var(--shadow-control);
 }
 
-.btn--danger.btn--secondary:hover:not(:disabled) {
-  background-color: color-mix(in srgb, var(--color-danger) 12%, transparent);
-  border-color: var(--color-danger-dark, #b91c1c);
-  color: var(--color-danger-dark, #b91c1c);
-  box-shadow: var(--shadow-control-hover);
+@include can-hover {
+  .btn--danger.btn--secondary:hover:not(:disabled):not(.is-disabled) {
+    background-color: color-mix(in srgb, var(--color-danger) 12%, transparent);
+    border-color: var(--color-danger-dark, #b91c1c);
+    color: var(--color-danger-dark, #b91c1c);
+  }
 }
 
-.btn--danger.btn--secondary:active:not(:disabled) {
+.btn--danger.btn--secondary:active:not(:disabled):not(.is-disabled) {
   background-color: color-mix(in srgb, var(--color-danger) 18%, transparent);
-  box-shadow: var(--shadow-control-active);
 }
 
+/* Tonal (und Übergangs-Alias card-action): sanft getönte Kontext-Aktion, initial flach -> Progressive 3D */
+.btn--tonal,
 .btn--card-action {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 6px 12px;
-  min-height: var(--input-height-sm, 38px);
-  box-sizing: border-box;
+  @include control-physics-progressive;
   border: 1.5px solid transparent;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  background-origin: border-box;
-  --control-grad-top: transparent;
-  --control-grad-bottom: transparent;
   background-color: var(--color-control-active-tint);
-  background-image: linear-gradient(
-    180deg,
-    var(--control-grad-top) 0%,
-    var(--control-grad-bottom) 100%
-  );
   color: var(--color-primary-dark);
-  font-size: var(--font-size-sm);
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
   line-height: 1.3;
-  cursor: pointer;
-  box-shadow: none;
-  transition:
-    background-color 0.15s ease,
-    color 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    --control-grad-top 0.15s ease,
-    --control-grad-bottom 0.15s ease,
-    transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1),
-    translate 0.12s cubic-bezier(0.2, 0.8, 0.4, 1);
 }
 
-.btn--card-action:hover:not(:disabled) {
-  translate: 0 -1px;
-  background-color: var(--color-control-active-tint-hover);
-  --control-grad-top: var(--gradient-control-top);
-  --control-grad-bottom: var(--gradient-control-bottom);
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-control-hover);
+/* Abwärtskompatibles kompaktes Default-Sizing nur für Legacy-Alias card-action (ohne explizites size-Prop) */
+.btn--card-action {
+  @include touch-target($expand: true);
+  gap: var(--control-gap-sm, 6px);
+  padding: 6px 12px;
+  min-height: var(--control-height-sm, 36px);
+  border-radius: var(--control-radius-sm-squircle, 8px);
+  corner-shape: squircle;
+  font-size: var(--font-size-sm);
 }
 
-.btn--card-action:active:not(:disabled) {
-  transform: translateY(1px) scale(0.985);
-  translate: 0 0;
+@include can-hover {
+  .btn--tonal:hover:not(:disabled):not(.is-disabled),
+  .btn--card-action:hover:not(:disabled):not(.is-disabled) {
+    background-color: var(--color-control-active-tint-hover);
+    border-color: var(--color-primary);
+  }
+}
+
+.btn--tonal:active:not(:disabled):not(.is-disabled),
+.btn--card-action:active:not(:disabled):not(.is-disabled) {
   background-color: color-mix(in srgb, var(--color-primary) 24%, transparent);
-  --control-grad-top: var(--gradient-control-top);
-  --control-grad-bottom: var(--gradient-control-bottom);
-  box-shadow: var(--shadow-control-active);
 }
 
+/* Ghost: transparent im Ruhezustand, ruhiger flacher Hover ohne 3D-Verlauf/Schatten (#810) */
 .btn--ghost {
-  --control-grad-top: transparent;
-  --control-grad-bottom: transparent;
   background-color: transparent;
-  background-image: linear-gradient(
-    180deg,
-    var(--control-grad-top) 0%,
-    var(--control-grad-bottom) 100%
-  );
+  background-image: none;
   border: 1px solid transparent;
   color: var(--color-text);
   box-shadow: none;
 }
 
-/* Ghost: erst bei Hover/Active entsteht der 3D-Look mit sanftem Wölbungsverlauf (Rahmen, Verlauf, Schatten) */
-.btn--ghost:hover:not(:disabled) {
-  background-color: var(--color-control-hover-bg);
-  --control-grad-top: var(--gradient-control-top);
-  --control-grad-bottom: var(--gradient-control-bottom);
-  background-origin: border-box;
-  box-shadow: var(--shadow-control-hover);
+@include can-hover {
+  .btn--ghost:hover:not(:disabled):not(.is-disabled) {
+    background-color: var(--color-control-hover-bg);
+    box-shadow: none;
+    translate: none;
+  }
 }
 
-.btn--ghost:active:not(:disabled) {
+.btn--ghost:active:not(:disabled):not(.is-disabled) {
   background-color: var(--color-control-active-bg);
-  --control-grad-top: var(--gradient-control-top);
-  --control-grad-bottom: var(--gradient-control-bottom);
-  box-shadow: var(--shadow-control-active);
+  box-shadow: none;
+  transform: scale(0.96);
+  translate: none;
 }
 
-/* Floating Buttons: Liquid-Glass-Style mit 3D-Lichtbrechung und Schwebeschatten (#701, #729) */
+/* Overlay (und Übergangs-Alias surface): Frosted Glass über Fotos/Bannern/Karten, initial schattenlos (#810) */
+.btn--overlay,
+.btn--surface {
+  @include control-overlay-interactive;
+}
+
+/* Floating Buttons: Liquid-Glass-Style für frei schwebende Map-FABs (#701, #729) */
 .btn--floating {
   @include control-glass-interactive('floating');
 }
@@ -537,13 +499,15 @@ a.btn.is-loading {
   border-color: var(--color-primary-dark);
   box-shadow: var(--shadow-floating-island);
 
-  &:hover:not(:disabled) {
-    background-color: var(--color-primary-dark);
-    box-shadow: var(--shadow-floating-island-hover);
-    translate: 0 -1.5px;
+  @include can-hover {
+    &:hover:not(:disabled):not(.is-disabled) {
+      background-color: var(--color-primary-dark);
+      box-shadow: var(--shadow-floating-island-hover);
+      translate: 0 -1.5px;
+    }
   }
 
-  &:active:not(:disabled) {
+  &:active:not(:disabled):not(.is-disabled) {
     background-color: var(--color-primary-dark);
     box-shadow: var(--shadow-floating-island-active);
     transform: translateY(1px) scale(0.985);
@@ -551,7 +515,7 @@ a.btn.is-loading {
   }
 }
 
-/* Glass Buttons: Transluzente Glaskapsel für Bedienelemente innerhalb von Glass-Pills/Headern/Toolbars */
+/* Glass Buttons: Transluzente Glaskapsel für Bedienelemente innerhalb von Glass-Pills/Headern */
 .btn--glass {
   @include control-glass-interactive('embedded');
 }
@@ -564,10 +528,11 @@ a.btn.is-loading {
   box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.4);
 }
 
-/* Aktiver Zustand für sekundäre/getönte 3D-Button-Varianten (#audit) */
+/* Aktiver Zustand für körperhafte sekundäre/getönte Button-Varianten */
 .btn--secondary.is-active,
+.btn--overlay.is-active,
 .btn--surface.is-active,
-.btn--ghost.is-active,
+.btn--tonal.is-active,
 .btn--card-action.is-active {
   --control-grad-top: var(--gradient-control-top);
   --control-grad-bottom: var(--gradient-control-bottom);
@@ -585,31 +550,66 @@ a.btn.is-loading {
   font-weight: 700;
 }
 
-.btn--secondary.is-active:hover:not(:disabled),
-.btn--surface.is-active:hover:not(:disabled),
-.btn--ghost.is-active:hover:not(:disabled),
-.btn--card-action.is-active:hover:not(:disabled) {
-  background-color: var(--color-control-active-tint-hover);
-  border-color: var(--color-primary-dark);
-  box-shadow:
-    0 0 0 1px var(--color-primary-dark),
-    var(--shadow-control-hover);
+@include can-hover {
+  .btn--secondary.is-active:hover:not(:disabled):not(.is-disabled),
+  .btn--overlay.is-active:hover:not(:disabled):not(.is-disabled),
+  .btn--surface.is-active:hover:not(:disabled):not(.is-disabled),
+  .btn--tonal.is-active:hover:not(:disabled):not(.is-disabled),
+  .btn--card-action.is-active:hover:not(:disabled):not(.is-disabled) {
+    background-color: var(--color-control-active-tint-hover);
+    border-color: var(--color-primary-dark);
+    box-shadow:
+      0 0 0 1px var(--color-primary-dark),
+      var(--shadow-control-hover);
+  }
 }
 
-.btn--secondary.is-active:active:not(:disabled),
-.btn--surface.is-active:active:not(:disabled),
-.btn--ghost.is-active:active:not(:disabled),
-.btn--card-action.is-active:active:not(:disabled) {
+.btn--secondary.is-active:active:not(:disabled):not(.is-disabled),
+.btn--overlay.is-active:active:not(:disabled):not(.is-disabled),
+.btn--surface.is-active:active:not(:disabled):not(.is-disabled),
+.btn--tonal.is-active:active:not(:disabled):not(.is-disabled),
+.btn--card-action.is-active:active:not(:disabled):not(.is-disabled) {
   box-shadow:
     0 0 0 1px var(--color-primary-dark),
     var(--shadow-control-active);
 }
 
 .btn--secondary.is-active:focus-visible,
+.btn--overlay.is-active:focus-visible,
 .btn--surface.is-active:focus-visible,
-.btn--ghost.is-active:focus-visible,
+.btn--tonal.is-active:focus-visible,
 .btn--card-action.is-active:focus-visible {
   box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control);
+}
+
+/* Aktiver Zustand für Ghost: bleibt flach & ruhig (weicher Primary-Tint ohne 3D/Schatten) */
+.btn--ghost.is-active {
+  background-color: var(--color-control-active-tint);
+  background-image: none;
+  border-color: color-mix(in srgb, var(--color-primary) 28%, transparent);
+  color: var(--color-primary-dark);
+  box-shadow: none;
+  font-weight: 600;
+}
+
+@include can-hover {
+  .btn--ghost.is-active:hover:not(:disabled):not(.is-disabled) {
+    background-color: var(--color-control-active-tint-hover);
+    border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+    box-shadow: none;
+    translate: none;
+  }
+}
+
+.btn--ghost.is-active:active:not(:disabled):not(.is-disabled) {
+  background-color: var(--color-control-active-tint-hover);
+  box-shadow: none;
+  transform: scale(0.96);
+  translate: none;
+}
+
+.btn--ghost.is-active:focus-visible {
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .btn--primary.is-active {
@@ -619,18 +619,41 @@ a.btn.is-loading {
     var(--shadow-sm);
 }
 
+/* Einheitliche Größenstufen (Issue #810): xs (30px), sm (36px), md (46px), lg (52px) */
+.btn--xs {
+  @include touch-target($expand: true);
+  gap: var(--control-gap-xs, 4px);
+  padding: 4px 10px;
+  font-size: var(--font-size-xs);
+  min-height: var(--control-height-xs, 30px);
+  border-radius: var(--control-radius-xs-squircle, 6.5px);
+  box-sizing: border-box;
+}
+
 .btn--sm {
+  @include touch-target($expand: true);
+  gap: var(--control-gap-sm, 6px);
   padding: 6px 12px;
   font-size: var(--font-size-sm);
-  min-height: var(--input-height-sm, 38px);
+  min-height: var(--control-height-sm, 36px);
+  border-radius: var(--control-radius-sm-squircle, 8px);
   box-sizing: border-box;
 }
 
 .btn--lg {
-  padding: 14px 24px;
+  gap: var(--control-gap-md, 8px);
+  padding: 12px 22px;
   font-size: var(--font-size-md);
-  min-height: var(--input-height-lg, 52px);
+  min-height: var(--control-height-lg, 52px);
+  border-radius: var(--control-radius-lg-squircle, 11.5px);
   box-sizing: border-box;
+}
+
+/* Pill & Circle behalten immer ihre vollrunde Form unabhängig von Variante und Größe */
+.btn.btn--pill,
+.btn.btn--circle {
+  border-radius: var(--radius-pill);
+  corner-shape: round;
 }
 
 /* Icon-only Modus */
@@ -639,43 +662,55 @@ a.btn.is-loading {
   padding: 0;
   gap: 0;
   flex-shrink: 0;
-  width: var(--input-width, 46px);
-  height: var(--input-height, 46px);
-  min-width: var(--input-width, 46px);
-  min-height: var(--input-height, 46px);
+  width: var(--control-height-md, 46px);
+  height: var(--control-height-md, 46px);
+  min-width: var(--control-height-md, 46px);
+  min-height: var(--control-height-md, 46px);
   font-size: 1.3rem;
+}
+
+.btn--icon-only.btn--xs,
+.btn.icon-only.btn--xs,
+.btn--circle.btn--xs {
+  width: var(--control-height-xs, 30px);
+  height: var(--control-height-xs, 30px);
+  min-width: var(--control-height-xs, 30px);
+  min-height: var(--control-height-xs, 30px);
+  font-size: 0.95rem;
 }
 
 .btn--icon-only.btn--sm,
 .btn.icon-only.btn--sm,
 .btn--circle.btn--sm {
-  width: var(--input-width-sm, 38px);
-  height: var(--input-height-sm, 38px);
-  min-width: var(--input-width-sm, 38px);
-  min-height: var(--input-height-sm, 38px);
+  width: var(--control-height-sm, 36px);
+  height: var(--control-height-sm, 36px);
+  min-width: var(--control-height-sm, 36px);
+  min-height: var(--control-height-sm, 36px);
   font-size: 1.1rem;
 }
 
 .btn--icon-only.btn--lg,
 .btn.icon-only.btn--lg,
 .btn--circle.btn--lg {
-  width: var(--input-width-lg, 52px);
-  height: var(--input-height-lg, 52px);
-  min-width: var(--input-width-lg, 52px);
-  min-height: var(--input-height-lg, 52px);
+  width: var(--control-height-lg, 52px);
+  height: var(--control-height-lg, 52px);
+  min-width: var(--control-height-lg, 52px);
+  min-height: var(--control-height-lg, 52px);
   font-size: 1.5rem;
 }
 
+/* Linked-Entity Pill: harmonisiert auf sm-Grundlinie (36px) & Progressive 3D (#810) */
 .btn--linked-entity {
+  @include control-physics-progressive;
   @include touch-target($expand: true);
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 7px;
-  min-height: 34px;
+  gap: var(--control-gap-sm, 6px);
+  min-height: var(--control-height-sm, 36px);
   max-width: 100%;
   min-width: 0;
-  padding: var(--space-1) 11px var(--space-1) 6px;
+  padding: var(--space-1) 12px var(--space-1) 6px;
   border: var(--border-width) solid var(--color-border-strong);
   border-radius: var(--radius-pill);
   corner-shape: round;
@@ -685,21 +720,17 @@ a.btn.is-loading {
   font-weight: 500;
   line-height: 1.3;
   text-decoration: none;
-  box-shadow: none;
 }
 
 @include can-hover {
   .btn--linked-entity:hover:not(:disabled):not(.is-disabled) {
     background-color: var(--color-hover);
     border-color: var(--color-primary);
-    translate: 0 -1px;
-    box-shadow: none;
   }
 }
 
 .btn--linked-entity:active:not(:disabled):not(.is-disabled) {
   background-color: var(--color-hover);
-  box-shadow: none;
 }
 
 .btn--linked-entity.is-warning {
@@ -707,20 +738,17 @@ a.btn.is-loading {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .btn--linked-entity,
-  .btn--linked-entity:hover:not(:disabled):not(.is-disabled),
-  .btn--linked-entity:active:not(:disabled):not(.is-disabled) {
+  .btn,
+  .btn:hover:not(:disabled):not(.is-disabled),
+  .btn:active:not(:disabled):not(.is-disabled) {
     transition:
       background-color 0.15s ease,
       border-color 0.15s ease,
-      color 0.15s ease !important;
+      color 0.15s ease,
+      box-shadow 0.15s ease,
+      opacity 0.15s ease !important;
     translate: none !important;
     transform: none !important;
   }
-}
-
-.btn--sm,
-.btn--card-action {
-  @include touch-target($expand: true);
 }
 </style>
