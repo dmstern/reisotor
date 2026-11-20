@@ -199,6 +199,7 @@ defineEmits<{
 
 .range-label {
   flex: 0 1 11.5rem;
+  width: 11.5rem;
   font-size: var(--font-size-sm);
   font-weight: 700;
   color: var(--color-text);
