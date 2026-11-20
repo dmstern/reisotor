@@ -5,13 +5,12 @@ import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
 import Alert from './primitives/Alert.vue';
 import Badge from './primitives/Badge.vue';
 import Button from './primitives/Button.vue';
+import LoadingSpinner from './primitives/LoadingSpinner.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
-import AppIcon from './AppIcon.vue';
 import LegMiniMap from './LegMiniMap.vue';
 import LegRouteAlternatives from './LegRouteAlternatives.vue';
 import { IconMapRoute } from '@tabler/icons-vue';
 import type { IconDef } from '../utils/icon';
-import { ACTION_ICONS } from '../utils/actionIcons';
 import { ROUTE_MODE_OPTIONS, ROUTE_PREFERENCE_OPTIONS } from '../utils/legTransportConfig';
 import type { MiniMapHandle } from '../composables/useLegRoutingAccordion';
 import { createCapturedError, type CapturedError } from '../composables/useErrorNotifier';
@@ -95,12 +94,7 @@ const routeHeadingIconDef: IconDef = {
   >
     <template v-if="!isDisabled && isCalculatingRoute" #badge>
       <Badge variant="primary" size="sm" class="route-calc-badge route-calc-badge--loading">
-        <AppIcon
-          :icon="ACTION_ICONS.refresh"
-          :size="12"
-          group="actions"
-          class="route-calc-spinner"
-        />
+        <LoadingSpinner size="sm" decorative />
         Route wird berechnet…
       </Badge>
     </template>
@@ -342,19 +336,6 @@ const routeHeadingIconDef: IconDef = {
   gap: var(--space-1);
   background: var(--color-primary-tint);
   color: var(--color-primary);
-}
-
-.route-calc-spinner {
-  animation: route-spin 1s linear infinite;
-}
-
-@keyframes route-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .route-floating-card {
