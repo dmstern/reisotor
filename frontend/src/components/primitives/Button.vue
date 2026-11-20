@@ -24,9 +24,7 @@ const _props = withDefaults(
      * - 'danger': Destruktive Aktion (gefüllt mit --color-danger; mit secondary-Flag gerahmt & initial flach)
      * - 'overlay': Kontrast-gesicherter Frosted-Glass-Button auf Fotos/Bannern/Karten (initial schattenlos)
      *
-     * Abwärtskompatible Übergangs-Aliase (werden am Ende von Phase 4 entfernt):
-     * - 'card-action' → Alias für 'tonal'
-     * - 'surface' → Alias für 'overlay'
+     * Spezial- & interne Varianten:
      * - 'floating' → Freischwebender Liquid-Glass-Button (Map-FABs)
      * - 'glass' → Eingebetteter Glass-Button (Header-Pills)
      * - 'linked-entity' → Interne Variante für LinkedEntityButton.vue
@@ -38,8 +36,6 @@ const _props = withDefaults(
       | 'ghost'
       | 'danger'
       | 'overlay'
-      | 'surface'
-      | 'card-action'
       | 'floating'
       | 'glass'
       | 'linked-entity';
@@ -131,10 +127,6 @@ const iconSize = computed(() => {
 
   if (_props.size === 'lg') {
     return ICON_SIZE_LG;
-  }
-
-  if (_props.variant === 'card-action') {
-    return ICON_SIZE_SM;
   }
 
   return ICON_SIZE_MD;
@@ -434,9 +426,8 @@ a.btn.is-loading {
   background-color: color-mix(in srgb, var(--color-danger) 18%, transparent);
 }
 
-/* Tonal (und Übergangs-Alias card-action): sanft getönte Kontext-Aktion, initial flach -> Progressive 3D */
-.btn--tonal,
-.btn--card-action {
+/* Tonal: sanft getönte Kontext-Aktion, initial flach -> Progressive 3D */
+.btn--tonal {
   @include control-physics-progressive;
   border: 1.5px solid transparent;
   background-color: var(--color-control-active-tint);
@@ -447,27 +438,14 @@ a.btn.is-loading {
   line-height: 1.3;
 }
 
-/* Abwärtskompatibles kompaktes Default-Sizing nur für Legacy-Alias card-action (ohne explizites size-Prop) */
-.btn--card-action {
-  @include touch-target($expand: true, $position: null);
-  gap: var(--control-gap-sm, 6px);
-  padding: 6px 12px;
-  min-height: var(--control-height-sm, 36px);
-  border-radius: var(--control-radius-sm-squircle, 8px);
-  corner-shape: squircle;
-  font-size: var(--font-size-sm);
-}
-
 @include can-hover {
-  .btn--tonal:hover:not(:disabled):not(.is-disabled),
-  .btn--card-action:hover:not(:disabled):not(.is-disabled) {
+  .btn--tonal:hover:not(:disabled):not(.is-disabled) {
     background-color: var(--color-control-active-tint-hover);
     border-color: var(--color-primary);
   }
 }
 
-.btn--tonal:active:not(:disabled):not(.is-disabled),
-.btn--card-action:active:not(:disabled):not(.is-disabled) {
+.btn--tonal:active:not(:disabled):not(.is-disabled) {
   background-color: color-mix(in srgb, var(--color-primary) 24%, transparent);
 }
 
@@ -495,9 +473,8 @@ a.btn.is-loading {
   translate: none;
 }
 
-/* Overlay (und Übergangs-Alias surface): Frosted Glass über Fotos/Bannern/Karten, initial schattenlos (#810) */
-.btn--overlay,
-.btn--surface {
+/* Overlay: Frosted Glass über Fotos/Bannern/Karten, initial schattenlos (#810) */
+.btn--overlay {
   @include control-overlay-interactive;
 }
 
@@ -547,9 +524,7 @@ a.btn.is-loading {
 /* Aktiver Zustand für körperhafte sekundäre/getönte Button-Varianten */
 .btn--secondary.is-active,
 .btn--overlay.is-active,
-.btn--surface.is-active,
-.btn--tonal.is-active,
-.btn--card-action.is-active {
+.btn--tonal.is-active {
   --control-grad-top: var(--gradient-control-top);
   --control-grad-bottom: var(--gradient-control-bottom);
   background-color: var(--color-control-active-tint);
@@ -569,9 +544,7 @@ a.btn.is-loading {
 @include can-hover {
   .btn--secondary.is-active:hover:not(:disabled):not(.is-disabled),
   .btn--overlay.is-active:hover:not(:disabled):not(.is-disabled),
-  .btn--surface.is-active:hover:not(:disabled):not(.is-disabled),
-  .btn--tonal.is-active:hover:not(:disabled):not(.is-disabled),
-  .btn--card-action.is-active:hover:not(:disabled):not(.is-disabled) {
+  .btn--tonal.is-active:hover:not(:disabled):not(.is-disabled) {
     background-color: var(--color-control-active-tint-hover);
     border-color: var(--color-primary-dark);
     box-shadow:
@@ -582,9 +555,7 @@ a.btn.is-loading {
 
 .btn--secondary.is-active:active:not(:disabled):not(.is-disabled),
 .btn--overlay.is-active:active:not(:disabled):not(.is-disabled),
-.btn--surface.is-active:active:not(:disabled):not(.is-disabled),
-.btn--tonal.is-active:active:not(:disabled):not(.is-disabled),
-.btn--card-action.is-active:active:not(:disabled):not(.is-disabled) {
+.btn--tonal.is-active:active:not(:disabled):not(.is-disabled) {
   box-shadow:
     0 0 0 1px var(--color-primary-dark),
     var(--shadow-control-active);
@@ -592,9 +563,7 @@ a.btn.is-loading {
 
 .btn--secondary.is-active:focus-visible,
 .btn--overlay.is-active:focus-visible,
-.btn--surface.is-active:focus-visible,
-.btn--tonal.is-active:focus-visible,
-.btn--card-action.is-active:focus-visible {
+.btn--tonal.is-active:focus-visible {
   box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control);
 }
 

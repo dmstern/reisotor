@@ -23,7 +23,7 @@ const props = withDefaults(
     lng: number;
     title: string;
     mapsLink?: string | null;
-    variant?: 'primary' | 'secondary' | 'tonal' | 'danger' | 'card-action' | 'ghost' | 'floating';
+    variant?: 'primary' | 'secondary' | 'tonal' | 'danger' | 'ghost';
     size?: 'sm' | 'md' | 'lg';
   }>(),
   {

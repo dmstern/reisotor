@@ -9,18 +9,9 @@ withDefaults(
   defineProps<{
     /** Optionale IconDef-Definition für Tabler-Icon Rendering via AppIcon.vue */
     icon?: IconDef;
-    /** Variante: 'ghost' (Standard), 'secondary', 'tonal', 'danger', 'primary', 'overlay' (+ Übergangs-Aliase) */
+    /** Variante: 'ghost' (Standard), 'secondary', 'tonal', 'danger', 'primary', 'overlay', 'floating', 'glass' */
     variant?:
-      | 'ghost'
-      | 'secondary'
-      | 'tonal'
-      | 'danger'
-      | 'primary'
-      | 'overlay'
-      | 'surface'
-      | 'card-action'
-      | 'floating'
-      | 'glass';
+      'ghost' | 'secondary' | 'tonal' | 'danger' | 'primary' | 'overlay' | 'floating' | 'glass';
     /** Ob der Button als Sekundär-Variante gestylt werden soll (z. B. in Kombination mit variant="danger"). */
     secondary?: boolean;
     /** Größe des Buttons: 'xs' (30px), 'sm' (36px), 'md' (46px), 'lg' (52px). */
