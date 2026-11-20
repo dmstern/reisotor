@@ -307,12 +307,12 @@ function formatAccommodationDate(dateStr: string | null) {
 }
 
 @container spot-card (max-width: 360px) {
-  .spot-collapse-pill {
+  :deep(.disclosure-pill) {
     width: 26px;
     padding: 0;
   }
 
-  .spot-collapse-label {
+  :deep(.disclosure-label) {
     display: none;
   }
 }
@@ -345,9 +345,7 @@ function formatAccommodationDate(dateStr: string | null) {
 
 @media (prefers-reduced-motion: reduce) {
   .image,
-  .overlay-bottom-text,
-  .spot-collapse-pill,
-  .spot-collapse-chevron {
+  .overlay-bottom-text {
     transition: none;
     transform: none !important;
   }

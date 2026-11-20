@@ -934,12 +934,12 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
     gap: 0;
   }
 
-  .spot-expand-pill {
+  :deep(.disclosure-pill) {
     width: 26px;
     padding: 0;
   }
 
-  .spot-expand-label {
+  :deep(.disclosure-label) {
     display: none;
   }
 }
@@ -949,8 +949,6 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   .body,
   .spot-card.expanded .card-badge-group,
   .spot-card.expanded .body > :not(.card-header-row),
-  .spot-expand-pill,
-  .spot-expand-chevron,
   .actions-accordion,
   .actions-accordion-inner > * {
     transition: none;

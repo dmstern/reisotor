@@ -669,7 +669,8 @@ defineExpose({
   color: var(--color-text);
 }
 
-.speed-trigger-btn.is-open {
+.speed-trigger-btn.is-open,
+.speed-trigger-btn.is-open:hover {
   background-color: var(--color-control-active-tint);
   border-color: var(--color-primary);
   color: var(--color-primary-dark);
