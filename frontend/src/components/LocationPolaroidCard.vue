@@ -146,7 +146,7 @@ defineExpose({
         type="button"
         size="sm"
         shape="circle"
-        variant="secondary"
+        variant="overlay"
         class="polaroid-action-btn polaroid-reset-btn"
         :icon="ACTION_ICONS.restore"
         title="Standort zurücksetzen"
@@ -315,15 +315,16 @@ defineExpose({
                 <span class="status-coords sr-only">
                   {{ modelValue.lat.toFixed(5) }}, {{ modelValue.lng.toFixed(5) }}
                 </span>
-                <button
-                  type="button"
+                <IconButton
+                  variant="ghost"
+                  size="xs"
+                  shape="circle"
+                  :icon="ACTION_ICONS.close"
                   class="clear-btn coords-clear-btn coords-clear-inline-btn"
                   title="Standort-Koordinaten entfernen"
                   aria-label="Standort-Koordinaten entfernen"
                   @click="emit('clearCoords')"
-                >
-                  <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
-                </button>
+                />
               </span>
               <!-- Standort fehlt Badge & Search Sparkle -->
               <div v-else class="coords-missing-wrap">
@@ -513,30 +514,7 @@ defineExpose({
   gap: var(--space-1);
 }
 
-.polaroid-action-btn {
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
-  width: var(--input-height-sm, 38px);
-  height: var(--input-height-sm, 38px);
-  min-width: var(--input-height-sm, 38px);
-  min-height: var(--input-height-sm, 38px);
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.polaroid-action-btn:hover {
-  background: var(--color-hover);
-  color: var(--color-text);
-}
-
-.polaroid-reset-btn:hover {
+.polaroid-reset-btn:hover:not(:disabled) {
   color: var(--color-accent);
   border-color: var(--color-accent);
 }
@@ -627,40 +605,23 @@ defineExpose({
 }
 
 .coords-clear-inline-btn {
-  @include touch-target;
   @include min-touch-target(24px) {
     width: 24px;
     height: 24px;
+    min-width: 24px;
+    min-height: 24px;
   }
-  background: none;
-  border: none;
-  padding: 0;
   width: 20px;
   height: 20px;
   min-width: 20px;
   min-height: 20px;
   margin-left: 2px;
-  cursor: pointer;
   color: var(--color-text-muted);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-pill);
-  line-height: 1;
-  transition:
-    color 0.15s ease,
-    background-color 0.15s ease,
-    outline 0.15s ease;
 }
 
-.coords-clear-inline-btn:hover {
+.coords-clear-inline-btn:hover:not(:disabled) {
   color: var(--color-danger);
   background: color-mix(in srgb, var(--color-danger) 14%, transparent);
-}
-
-.coords-clear-inline-btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
-  outline-offset: var(--focus-ring-offset, 1px);
 }
 
 .coords-missing-wrap {

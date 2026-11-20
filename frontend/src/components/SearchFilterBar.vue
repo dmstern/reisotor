@@ -3,6 +3,7 @@ import { ref, computed, watch, nextTick, onBeforeUnmount, type ComponentPublicIn
 import AppIcon from './AppIcon.vue';
 import Accordion from './primitives/Accordion.vue';
 import Button from './primitives/Button.vue';
+import IconButton from './primitives/IconButton.vue';
 import Badge from './primitives/Badge.vue';
 import Input from './primitives/Input.vue';
 import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
@@ -269,16 +270,16 @@ function clearFilters() {
         aria-label="Suchen"
         @update:model-value="emit('update:searchQuery', $event)"
       />
-      <button
+      <IconButton
         v-if="searchQuery"
-        type="button"
+        variant="ghost"
+        size="xs"
+        :icon="ACTION_ICONS.close"
         class="search-clear-btn"
         title="Suche löschen"
         aria-label="Suche löschen"
         @click="emit('update:searchQuery', '')"
-      >
-        <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
-      </button>
+      />
     </div>
 
     <!-- Kombinierter Filter- & Sortieren-Button + Popover (#684) -->
@@ -531,15 +532,16 @@ function clearFilters() {
             </div>
 
             <div v-if="totalActiveCount > 0" class="popover-footer">
-              <button type="button" class="clear-filters-btn" @click="clearFilters">
-                <AppIcon
-                  :icon="ACTION_ICONS.refresh"
-                  group="actions"
-                  :size="13"
-                  class="reset-icon"
-                />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                :icon="ACTION_ICONS.refresh"
+                class="clear-filters-btn"
+                @click="clearFilters"
+              >
                 <span>Filter & Sortierung zurücksetzen</span>
-              </button>
+              </Button>
             </div>
           </PickerMenu>
         </template>
@@ -799,37 +801,15 @@ function clearFilters() {
   z-index: 2;
 }
 
-button.clear-filters-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+.clear-filters-btn {
   width: 100%;
-  min-height: var(--input-height-sm, 38px);
-  padding: var(--space-1) var(--space-2);
-  border: none;
-  background: transparent;
   color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
   font-weight: 500;
-  cursor: pointer;
-  text-align: center;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
 }
 
-.reset-icon {
-  opacity: 0.75;
-  flex-shrink: 0;
-}
-
-button.clear-filters-btn:hover {
-  color: var(--color-danger);
-  background: var(--color-hover);
-}
-
-button.clear-filters-btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--color-danger);
-  outline-offset: var(--focus-ring-offset, 2px);
+@include can-hover {
+  .clear-filters-btn:hover:not(:disabled) {
+    color: var(--color-danger);
+  }
 }
 </style>

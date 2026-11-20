@@ -218,16 +218,18 @@ function dismissPwaInstall() {
         <div v-if="open" class="dropdown notification-dropdown" @click.stop>
           <div class="dropdown-header">
             <span class="dropdown-title">Benachrichtigungen</span>
-            <button
+            <Button
               v-if="notifications.unreadCount > 0"
               type="button"
+              variant="ghost"
+              size="xs"
               class="mark-all-btn"
               title="Alle als gelesen markieren"
               aria-label="Alle als gelesen markieren"
               @click="markAllRead"
             >
               Alle als gelesen markieren
-            </button>
+            </Button>
           </div>
           <div class="notification-list">
             <!-- System-Benachrichtigungen (PWA-Update, Offline-Bereitschaft, App-Installation) -->
@@ -252,14 +254,17 @@ function dismissPwaInstall() {
                       : 'Eine neuere Version von Reisotor steht bereit.'
                   }}</span>
                 </div>
-                <button
+                <Button
                   type="button"
+                  variant="primary"
+                  size="xs"
+                  shape="pill"
                   class="pwa-pill-btn reload-btn"
-                  :disabled="isReloading"
+                  :loading="isReloading"
                   @click="handleReload"
                 >
                   {{ isReloading ? 'Wird geladen…' : 'Neu laden' }}
-                </button>
+                </Button>
               </div>
 
               <!-- 2. Offline verfügbar -->
@@ -501,28 +506,15 @@ function dismissPwaInstall() {
 }
 
 .mark-all-btn {
-  @include touch-target($expand: true);
-  background: none;
-  border: none;
   color: var(--color-primary-dark);
   font-size: 0.78rem;
-  cursor: pointer;
-  padding: 4px 6px;
-  min-height: 28px;
-  display: inline-flex;
-  align-items: center;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  font-weight: 600;
 }
 
-.mark-all-btn:hover {
-  text-decoration: underline;
-}
-
-.mark-all-btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo);
+@include can-hover {
+  .mark-all-btn:hover:not(:disabled) {
+    text-decoration: underline;
+  }
 }
 
 .notification-list {
@@ -706,34 +698,16 @@ function dismissPwaInstall() {
 }
 
 .reload-btn {
-  @include touch-target($expand: true);
   flex-shrink: 0;
   margin-left: auto;
-  background: var(--color-success);
+  background-color: var(--color-success);
   color: #fff;
-  border: none;
-  border-radius: var(--radius-pill);
-  padding: 4px 10px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: opacity 0.15s ease;
 }
 
-.reload-btn:hover {
-  opacity: 0.9;
-}
-
-.reload-btn:disabled {
-  opacity: 0.65;
-  cursor: wait;
-}
-
-.reload-btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--color-success);
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo);
+@include can-hover {
+  .reload-btn:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-success) 88%, #000);
+  }
 }
 
 .system-divider {

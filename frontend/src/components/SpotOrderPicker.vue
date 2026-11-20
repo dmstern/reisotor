@@ -8,6 +8,7 @@ import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDura
 import type { IconDef } from '../utils/icon';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
+import IconButton from './primitives/IconButton.vue';
 import LegTransportModal from './LegTransportModal.vue';
 
 // Drag&Drop-Reihenfolge-Editor fürs Touren-Formular (ExcursionsView.vue) – TourAssignDropdown.vue
@@ -290,22 +291,27 @@ function onDeleteLeg() {
             <AppIcon :icon="ACTION_ICONS.duration" :size="12" group="actions" />
             {{ formatTravelDuration(getLayover(index)!) }} Umstiegszeit
           </span>
-          <button
-            type="button"
+          <IconButton
+            variant="ghost"
+            size="xs"
+            :icon="ACTION_ICONS.close"
             class="remove-btn"
-            @click="removeSpotAt(index)"
             aria-label="Aus Tour entfernen"
-          >
-            <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
-          </button>
+            title="Aus Tour entfernen"
+            @click="removeSpotAt(index)"
+          />
         </div>
 
         <!-- Teilstrecken-Verbinder zwischen zwei Stationen (Issue #361) -->
         <div v-if="index < plannedStations.length - 1" class="leg-connector">
           <div class="leg-connector-line"></div>
           <div class="leg-item-wrap">
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              :dashed="!getLegBetween(station.id, plannedStations[index + 1].id)"
+              size="xs"
+              shape="squircle"
               class="leg-btn"
               :class="{
                 'has-data': !!getLegBetween(station.id, plannedStations[index + 1].id),
@@ -369,17 +375,17 @@ function onDeleteLeg() {
                   Verkehrsmittel
                 </span>
               </template>
-            </button>
-            <button
+            </Button>
+            <IconButton
               v-if="getLegBetween(station.id, plannedStations[index + 1].id)"
-              type="button"
+              variant="ghost"
+              size="xs"
+              :icon="ACTION_ICONS.close"
               class="remove-btn leg-remove-btn"
               title="Weg-Details entfernen"
               aria-label="Weg-Details entfernen"
               @click.stop="removeLegBetween(station.id, plannedStations[index + 1].id)"
-            >
-              <AppIcon :icon="ACTION_ICONS.close" :size="12" group="actions" />
-            </button>
+            />
           </div>
           <div class="leg-connector-line"></div>
         </div>
@@ -666,30 +672,13 @@ function onDeleteLeg() {
 }
 
 .remove-btn {
-  @include touch-target;
-  background: none;
-  border: none;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
   color: var(--color-text-muted);
-  cursor: pointer;
-  font-size: 0.85rem;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 }
 
 @include can-hover {
-  .remove-btn:hover {
+  .remove-btn:hover:not(:disabled) {
     color: var(--color-danger);
   }
-}
-
-.remove-btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: var(--focus-ring-offset, 2px);
 }
 
 .spot-option-title {
