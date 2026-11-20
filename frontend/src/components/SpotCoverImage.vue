@@ -2,9 +2,9 @@
 import { imageDisplayUrl } from '../utils/imageDisplayUrl';
 import type { Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
-import { ACTION_ICONS } from '../utils/actionIcons';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 import AppIcon from './AppIcon.vue';
+import DisclosurePill from './primitives/DisclosurePill.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
 
 withDefaults(
@@ -78,15 +78,7 @@ function formatAccommodationDate(dateStr: string | null) {
               </div>
             </div>
 
-            <span class="spot-collapse-pill" aria-hidden="true">
-              <span class="spot-collapse-label">Einklappen</span>
-              <AppIcon
-                :icon="ACTION_ICONS.chevronUp"
-                :size="14"
-                group="actions"
-                class="spot-collapse-chevron"
-              />
-            </span>
+            <DisclosurePill variant="overlay" expanded />
           </div>
         </div>
       </div>
@@ -222,20 +214,12 @@ function formatAccommodationDate(dateStr: string | null) {
   }
 }
 
-.spot-collapse-pill {
-  @include card-disclosure-pill('overlay');
-}
-
-.spot-collapse-chevron {
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
 @include can-hover {
-  .image.is-expanded:hover:not(:has(a:hover)) .spot-collapse-pill {
+  .image.is-expanded:hover:not(:has(a:hover)) :deep(.disclosure-pill) {
     @include card-disclosure-pill-hover('overlay');
   }
 
-  .image.is-expanded:hover:not(:has(a:hover)) .spot-collapse-chevron {
+  .image.is-expanded:hover:not(:has(a:hover)) :deep(.disclosure-chevron) {
     transform: translateY(-2px);
   }
 }
