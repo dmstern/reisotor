@@ -3,6 +3,7 @@ import type { ComponentPublicInstance } from 'vue';
 import type { Excursion } from '../api/types';
 import type { IconDef } from '../utils/icon';
 import AppIcon from './AppIcon.vue';
+import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 export interface SpotGroupNavOption {
@@ -72,24 +73,24 @@ const emit = defineEmits<{
         ></span>
       </div>
     </nav>
-    <button
+    <IconButton
       v-if="canScrollLeft"
-      type="button"
+      variant="ghost"
+      size="xs"
       class="category-nav-arrow left"
+      :icon="ACTION_ICONS.scrollLeft"
       aria-label="Kategorien nach links scrollen"
       @click="emit('scrollNav', -1)"
-    >
-      <AppIcon :icon="ACTION_ICONS.scrollLeft" :size="16" group="actions" />
-    </button>
-    <button
+    />
+    <IconButton
       v-if="canScrollRight"
-      type="button"
+      variant="ghost"
+      size="xs"
       class="category-nav-arrow right"
+      :icon="ACTION_ICONS.scrollRight"
       aria-label="Kategorien nach rechts scrollen"
       @click="emit('scrollNav', 1)"
-    >
-      <AppIcon :icon="ACTION_ICONS.scrollRight" :size="16" group="actions" />
-    </button>
+    />
   </div>
 </template>
 
@@ -163,19 +164,11 @@ const emit = defineEmits<{
 }
 
 .category-nav-arrow {
-  @include touch-target($expand: true, $position: 'absolute');
+  position: absolute;
   top: 0;
   bottom: 0;
+  margin-block: auto;
   z-index: 3;
-  display: flex;
-  align-items: center;
-  width: 32px;
-  border: none;
-  box-shadow: none;
-  border-radius: 0;
-  padding: 0;
-  cursor: pointer;
-  background: transparent;
   color: var(--color-text-muted);
 }
 
@@ -185,23 +178,12 @@ const emit = defineEmits<{
   }
 }
 
-.category-nav-arrow:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: -3px;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-}
-
 .category-nav-arrow.left {
-  left: 0;
-  justify-content: flex-start;
-  padding-left: 4px;
+  left: var(--space-1);
 }
 
 .category-nav-arrow.right {
-  right: 0;
-  justify-content: flex-end;
-  padding-right: 4px;
+  right: var(--space-1);
 }
 
 .category-nav-item {

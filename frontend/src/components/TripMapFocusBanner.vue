@@ -9,6 +9,7 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import { MAP_TOOL_ICONS } from '../utils/mapToolIcons';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
+import IconButton from './primitives/IconButton.vue';
 
 const props = defineProps<{
   focusedExcursion?: Excursion | null;
@@ -212,29 +213,31 @@ watch(
           }}
         </button>
         <div v-else-if="focusedDate" class="focus-date-nav">
-          <button
+          <IconButton
             v-if="hasMultipleDays"
-            type="button"
+            variant="ghost"
+            size="xs"
+            shape="circle"
             class="focus-nav-btn"
+            :icon="ACTION_ICONS.scrollLeft"
             :disabled="!hasPrevDate"
             aria-label="Vorheriger Tag"
             title="Vorheriger Tag"
             @click.stop="goToPrevDate"
-          >
-            <AppIcon :icon="ACTION_ICONS.scrollLeft" :size="16" group="actions" />
-          </button>
+          />
           <span class="focus-date-label">{{ formattedDateString }}</span>
-          <button
+          <IconButton
             v-if="hasMultipleDays"
-            type="button"
+            variant="ghost"
+            size="xs"
+            shape="circle"
             class="focus-nav-btn"
+            :icon="ACTION_ICONS.scrollRight"
             :disabled="!hasNextDate"
             aria-label="Nächster Tag"
             title="Nächster Tag"
             @click.stop="goToNextDate"
-          >
-            <AppIcon :icon="ACTION_ICONS.scrollRight" :size="16" group="actions" />
-          </button>
+          />
         </div>
         <span v-else>{{
           focusedExcursion ? focusedExcursion.title : focusedSpot ? focusedSpot.title : ''
@@ -446,40 +449,7 @@ watch(
 }
 
 .focus-nav-btn {
-  @include touch-target($expand: true);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  min-height: 28px;
-  border-radius: var(--radius-pill);
-  corner-shape: round;
-  border: none;
-  background: transparent;
   color: var(--color-primary-dark);
-  cursor: pointer;
-  padding: 0;
-  flex-shrink: 0;
-  transition:
-    background var(--transition-fast),
-    color var(--transition-fast),
-    opacity var(--transition-fast);
-}
-
-.focus-nav-btn:hover:not(:disabled) {
-  background: var(--color-hover);
-}
-
-.focus-nav-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-.focus-nav-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
 }
 
 .focus-date-label {

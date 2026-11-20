@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onUnmounted, nextTick } from 'vue';
+import { ref, watch, onUnmounted, nextTick, type ComponentPublicInstance } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useTripStore } from '../stores/trip';
 import { useAuthStore } from '../stores/auth';
@@ -31,7 +31,7 @@ const props = withDefaults(
 const tripStore = useTripStore();
 const auth = useAuthStore();
 const open = ref(false);
-const switcherBtnRef = ref<HTMLButtonElement | null>(null);
+const switcherBtnRef = ref<ComponentPublicInstance | null>(null);
 const dropdownRef = ref<InstanceType<typeof PickerMenu> | null>(null);
 const dropdownStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
 const {
@@ -77,11 +77,13 @@ const router = useRouter();
 const route = useRoute();
 
 function updateDropdownPosition() {
-  if (!switcherBtnRef.value) {
+  const btnEl = switcherBtnRef.value?.$el as HTMLElement | undefined;
+
+  if (!btnEl) {
     return;
   }
 
-  const rect = switcherBtnRef.value.getBoundingClientRect();
+  const rect = btnEl.getBoundingClientRect();
   const menuWidth = dropdownRef.value?.el?.getBoundingClientRect().width || DEFAULT_MENU_WIDTH;
   const viewportWidth = window.innerWidth;
 
@@ -152,9 +154,11 @@ function selectAndClose(id: number) {
 
 <template>
   <div class="trip-switcher" :class="{ 'is-docked': props.docked }">
-    <button
+    <Button
       ref="switcherBtnRef"
-      type="button"
+      variant="tonal"
+      shape="pill"
+      :size="props.docked ? 'xs' : 'sm'"
       class="switcher-btn"
       title="Urlaub wechseln"
       :aria-expanded="open"
@@ -163,7 +167,7 @@ function selectAndClose(id: number) {
     >
       <span class="trip-name">{{ tripStore.currentTrip?.name ?? 'Urlaub wählen' }}</span>
       <AppIcon :icon="ACTION_ICONS.chevronDown" :size="12" group="actions" class="caret" />
-    </button>
+    </Button>
 
     <Teleport to="body">
       <PickerMenu
@@ -257,17 +261,6 @@ function selectAndClose(id: number) {
 }
 
 .switcher-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--color-primary-tint);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);
-  border-radius: var(--radius-pill);
-  padding: 6px 14px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-primary-dark);
-  cursor: pointer;
   max-width: min(100%, 280px);
   /* Ohne min-width:0 verweigert der Button als Flex-Kind das
      Schrumpfen unter die Content-Breite von .trip-name (white-space:nowrap) - max-width
@@ -275,30 +268,14 @@ function selectAndClose(id: number) {
      auf schmalen Viewports enger wird. min-width:0 lässt .trip-name's Ellipsis wie
      vorgesehen greifen. */
   min-width: 0;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease,
-    transform 0.15s ease;
 }
 
 @include media-down('mobile') {
   .switcher-btn {
     padding: 5px 10px;
     gap: 4px;
-    font-size: 0.8rem;
+    font-size: var(--font-size-xs);
   }
-}
-
-.switcher-btn:hover {
-  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
-  border-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
-}
-
-.switcher-btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo);
 }
 
 .trip-switcher.is-docked {
@@ -306,8 +283,6 @@ function selectAndClose(id: number) {
 }
 
 .trip-switcher.is-docked .switcher-btn {
-  padding: 5px 12px;
-  font-size: 0.82rem;
   max-width: 180px;
 }
 

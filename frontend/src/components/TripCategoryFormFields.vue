@@ -5,6 +5,7 @@ import {
   getCategoryIconDef,
 } from '../utils/categoryIcons';
 import AppIcon from './AppIcon.vue';
+import Button from './primitives/Button.vue';
 import Input from './primitives/Input.vue';
 import FormField from './FormField.vue';
 import CategoryChip from './CategoryChip.vue';
@@ -76,8 +77,9 @@ function updateField<K extends keyof CategoryFormData>(field: K, val: CategoryFo
 
       <div class="icon-picker-field">
         <span class="field-label">Icon</span>
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="md"
           class="icon-selector-btn"
           title="Icon auswählen"
           aria-label="Icon auswählen"
@@ -91,7 +93,7 @@ function updateField<K extends keyof CategoryFormData>(field: K, val: CategoryFo
           <span class="icon-name">{{
             findCategoryIcon(modelValue.icon, modelValue.emoji)?.label ?? 'Icon auswählen'
           }}</span>
-        </button>
+        </Button>
       </div>
 
       <div class="color-palette-field">
@@ -150,37 +152,13 @@ function updateField<K extends keyof CategoryFormData>(field: K, val: CategoryFo
 }
 
 .icon-selector-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
+  justify-content: flex-start;
   padding: var(--space-2) var(--space-3);
-  min-height: var(--input-height, 46px);
-  background: var(--color-input-bg);
-  border: 1.5px solid var(--input-border-color);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  cursor: pointer;
   font-size: var(--font-size-sm);
+  font-weight: 500;
   color: var(--color-text);
   text-align: left;
   width: 100%;
-  box-shadow: none;
-  transition:
-    border-color var(--transition-fast),
-    background-color var(--transition-fast),
-    box-shadow var(--transition-fast);
-}
-
-.icon-selector-btn:hover:not(:focus-visible) {
-  border-color: var(--color-primary);
-  background: var(--color-hover);
-  box-shadow: var(--shadow-sm);
-}
-
-.icon-selector-btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .icon-name {

@@ -367,20 +367,6 @@ const profileTitle = computed(() => {
   flex-shrink: 1;
 }
 
-.switcher :deep(.switcher-btn) {
-  position: relative;
-}
-
-.switcher :deep(.switcher-btn)::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 44px;
-  transform: translateY(-50%);
-}
-
 .floating-island.has-nav .switcher {
   flex-shrink: 0;
 }

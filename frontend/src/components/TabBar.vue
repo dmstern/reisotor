@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import AppIcon from './AppIcon.vue';
+import IconButton from './primitives/IconButton.vue';
 import UnseenDot from './primitives/UnseenDot.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import type { IconDef } from '../utils/icon';
@@ -211,24 +212,26 @@ function onTabClick(key: string) {
     </div>
     <!-- Dezente Klick-Flächen mit Verlauf statt eines vollflächigen, hart abgesetzten Buttons (#144)
          - nur sichtbar, wenn in die jeweilige Richtung tatsächlich noch etwas zu scrollen ist. -->
-    <button
+    <span v-if="canScrollLeft" class="tab-bar-fade left" aria-hidden="true"></span>
+    <IconButton
       v-if="canScrollLeft"
-      type="button"
+      variant="ghost"
+      size="sm"
       class="tab-bar-arrow left"
+      :icon="ACTION_ICONS.scrollLeft"
       aria-label="Tabs nach links scrollen"
       @click="scrollBy(-1)"
-    >
-      <AppIcon :icon="ACTION_ICONS.scrollLeft" :size="16" group="actions" />
-    </button>
-    <button
+    />
+    <span v-if="canScrollRight" class="tab-bar-fade right" aria-hidden="true"></span>
+    <IconButton
       v-if="canScrollRight"
-      type="button"
+      variant="ghost"
+      size="sm"
       class="tab-bar-arrow right"
+      :icon="ACTION_ICONS.scrollRight"
       aria-label="Tabs nach rechts scrollen"
       @click="scrollBy(1)"
-    >
-      <AppIcon :icon="ACTION_ICONS.scrollRight" :size="16" group="actions" />
-    </button>
+    />
   </div>
 </template>
 
@@ -297,45 +300,46 @@ function onTabClick(key: string) {
    je nachdem ob TabBar auf einer normalen View (--color-bg) oder auf einer erhabenen Fläche wie
    in einem Modal/Dialog/Drawer (--color-surface) verwendet wird. Kann per CSS-Variable
    (--tab-bar-fade-bg bzw. --scroll-fade-bg) oder prop fade-bg explizit überschrieben werden. */
-.tab-bar-arrow {
+.tab-bar-fade {
   position: absolute;
   top: 0;
   bottom: 0;
   z-index: 1;
-  display: flex;
-  align-items: center;
-  width: 32px;
-  border: none;
-  box-shadow: none;
-  border-radius: 0;
-  padding: 0;
-  cursor: pointer;
+  width: 40px;
+  pointer-events: none;
+}
+
+.tab-bar-fade.left {
+  left: 0;
+  background: linear-gradient(to right, var(--tab-bar-effective-fade-bg) 45%, transparent);
+}
+
+.tab-bar-fade.right {
+  right: 0;
+  background: linear-gradient(to left, var(--tab-bar-effective-fade-bg) 45%, transparent);
+}
+
+.tab-bar-arrow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  margin-block: auto;
+  z-index: 2;
   color: var(--color-text-muted);
 }
 
-.tab-bar-arrow:hover {
-  color: var(--color-primary-dark);
-}
-
-.tab-bar-arrow:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: -3px;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+@media (hover: hover) {
+  .tab-bar-arrow:hover {
+    color: var(--color-primary-dark);
+  }
 }
 
 .tab-bar-arrow.left {
   left: 0;
-  justify-content: flex-start;
-  padding-left: 4px;
-  background: linear-gradient(to right, var(--tab-bar-effective-fade-bg) 45%, transparent);
 }
 
 .tab-bar-arrow.right {
   right: 0;
-  justify-content: flex-end;
-  padding-right: 4px;
-  background: linear-gradient(to left, var(--tab-bar-effective-fade-bg) 45%, transparent);
 }
 
 .tab {

@@ -28,6 +28,7 @@ import {
   trackElevation,
 } from '../utils/trackGeometry';
 import AppIcon from './AppIcon.vue';
+import Button from './primitives/Button.vue';
 import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { IconGauge, IconGaugeFilled, IconMountain, IconMountainFilled } from '@tabler/icons-vue';
@@ -471,8 +472,9 @@ defineExpose({
       />
 
       <div ref="speedWrapperRef" class="speed-picker-wrapper">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="xs"
           class="speed-trigger-btn"
           :class="{ 'is-open': showSpeedPopover }"
           aria-label="Wiedergabegeschwindigkeit ändern"
@@ -482,7 +484,7 @@ defineExpose({
           @click.stop="toggleSpeedPopover"
         >
           <span class="speed-trigger-label">{{ speed }}x</span>
-        </button>
+        </Button>
 
         <div
           v-show="showSpeedPopover"
@@ -662,37 +664,15 @@ defineExpose({
 }
 
 .speed-trigger-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3px 8px;
-  background: var(--color-hover);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  color: var(--color-text);
-  font-size: 0.75rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  cursor: pointer;
-  line-height: 1.2;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
+  color: var(--color-text);
 }
 
-.speed-trigger-btn:hover,
 .speed-trigger-btn.is-open {
-  background: var(--color-surface);
+  background-color: var(--color-control-active-tint);
   border-color: var(--color-primary);
-  color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
-}
-
-.speed-trigger-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  color: var(--color-primary-dark);
 }
 
 .speed-popover {

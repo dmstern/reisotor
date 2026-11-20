@@ -5,6 +5,7 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import { buildGoogleMapsLink, buildOsmLink } from '../utils/googleMaps';
 import AppIcon from './AppIcon.vue';
 import Alert from './primitives/Alert.vue';
+import Button from './primitives/Button.vue';
 import IconButton from './primitives/IconButton.vue';
 import LocationSearchBar from './LocationSearchBar.vue';
 import LocationPolaroidCard from './LocationPolaroidCard.vue';
@@ -634,21 +635,19 @@ defineExpose({
         </div>
 
         <!-- Mobile Expand / Collapse Button -->
-        <button
-          type="button"
+        <Button
+          :variant="isMobileMapExpanded ? 'primary' : 'overlay'"
+          shape="pill"
+          size="xs"
           class="mobile-map-expand-btn"
           :class="{ 'is-expanded': isMobileMapExpanded }"
           :aria-expanded="isMobileMapExpanded"
+          :icon="isMobileMapExpanded ? ACTION_ICONS.done : ACTION_ICONS.maximize"
           data-testid="mobile-map-expand-btn"
           @click.stop="toggleMobileMapExpanded"
         >
-          <AppIcon
-            :icon="isMobileMapExpanded ? ACTION_ICONS.done : ACTION_ICONS.maximize"
-            :size="13"
-            group="actions"
-          />
-          <span>{{ isMobileMapExpanded ? 'Fertig' : 'Position anpassen' }}</span>
-        </button>
+          {{ isMobileMapExpanded ? 'Fertig' : 'Position anpassen' }}
+        </Button>
 
         <!-- Locate Button (bottom-right) -->
         <IconButton
@@ -784,7 +783,7 @@ defineExpose({
   min-height: 475px;
 }
 
-.mobile-map-expand-btn {
+.map-canvas-wrap .mobile-map-expand-btn {
   display: none;
 }
 
@@ -825,37 +824,12 @@ defineExpose({
     cursor: default;
   }
 
-  .mobile-map-expand-btn {
+  .map-canvas-wrap .mobile-map-expand-btn {
     display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
     position: absolute;
     bottom: 12px;
     left: 12px;
     z-index: var(--z-fab, 120);
-    padding: 5px 12px;
-    border-radius: var(--radius-pill);
-    font-size: var(--font-size-xs);
-    font-weight: 600;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    color: var(--color-text);
-    box-shadow: var(--shadow-sm);
-    cursor: pointer;
-    transition:
-      background 0.15s ease,
-      border-color 0.15s ease,
-      color 0.15s ease;
-  }
-
-  .mobile-map-expand-btn:hover {
-    background: var(--color-hover);
-  }
-
-  .mobile-map-expand-btn.is-expanded {
-    background: var(--color-primary);
-    color: var(--color-on-primary, #ffffff);
-    border-color: var(--color-primary);
   }
 }
 
