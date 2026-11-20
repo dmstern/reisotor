@@ -53,6 +53,8 @@ const _props = withDefaults(
     shape?: 'squircle' | 'circle' | 'pill';
     /** Ob der Button als aktiv/ausgewählt markiert ist (z. B. ausgewählter Avatar). */
     active?: boolean;
+    /** Gestrichelte Umrandung für leere/optionale Hinzufügen-Slots (z. B. Tour-Weg-Verbinder). */
+    dashed?: boolean;
     /** Native Button-Type (Standard: 'button'). */
     type?: 'button' | 'submit' | 'reset';
     /** Deaktiviert-Zustand. */
@@ -78,6 +80,7 @@ const _props = withDefaults(
     size: 'md',
     shape: 'squircle',
     active: false,
+    dashed: false,
     type: 'button',
     disabled: false,
     loading: false,
@@ -101,6 +104,7 @@ const btnClasses = computed(() => [
     'is-disabled': _props.disabled,
     'is-loading': _props.loading,
     'is-active': _props.active,
+    'btn--dashed': _props.dashed,
     'btn--icon-only':
       _props.iconOnly ||
       _props.shape === 'circle' ||
@@ -363,6 +367,18 @@ a.btn.is-loading {
 
 .btn--secondary:active:not(:disabled):not(.is-disabled) {
   background-color: var(--color-control-active-bg);
+}
+
+/* Gestrichelte Sekundär-/Hinzufügen-Variante für leere/optionale Slots (#810) */
+.btn--dashed {
+  border-style: dashed;
+  color: var(--color-text-muted);
+}
+
+@include can-hover {
+  .btn--dashed:hover:not(:disabled):not(.is-disabled) {
+    color: var(--color-primary);
+  }
 }
 
 /* Danger Solid CTA */

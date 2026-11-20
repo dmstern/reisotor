@@ -61,12 +61,14 @@ export const AllVariantsAndStates: Story = {
         </section>
 
         <section>
-          <h3 style="margin: 0 0 10px; font-size: 0.9rem; color: var(--color-text-muted);">Formen: Pill-Variante (<code>shape="pill"</code> / <code>btn--pill</code>)</h3>
+          <h3 style="margin: 0 0 10px; font-size: 0.9rem; color: var(--color-text-muted);">Formen &amp; Slots: Pill-Variante (<code>shape="pill"</code>) &amp; Gestrichelt (<code>dashed</code>)</h3>
           <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
             <Button variant="primary" shape="pill" size="sm" :icon="ACTION_ICONS.add">Primary Pill</Button>
             <Button variant="secondary" shape="pill" size="sm" :icon="ACTION_ICONS.edit">Secondary Pill</Button>
             <Button variant="tonal" shape="pill" size="sm" :icon="ACTION_ICONS.myLocation">Tonal Pill</Button>
             <Button variant="ghost" shape="pill" size="sm" :icon="ACTION_ICONS.unliked">Ghost Pill</Button>
+            <Button variant="secondary" dashed size="sm" :icon="ACTION_ICONS.add">Slot (Squircle)</Button>
+            <Button variant="secondary" dashed shape="pill" size="sm" :icon="ACTION_ICONS.add">Slot (Pill)</Button>
           </div>
         </section>
 

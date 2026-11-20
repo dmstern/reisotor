@@ -61,6 +61,7 @@ const emit = defineEmits<{
     <Button
       v-else
       variant="secondary"
+      dashed
       size="sm"
       shape="squircle"
       class="tour-leg-add-btn is-horizontal-leg"
@@ -117,6 +118,7 @@ const emit = defineEmits<{
       <div v-else class="tour-leg-add-wrap">
         <Button
           variant="secondary"
+          dashed
           size="sm"
           shape="pill"
           class="tour-leg-add-btn is-row-break"
@@ -133,7 +135,7 @@ const emit = defineEmits<{
 </template>
 
 <style lang="scss" scoped>
-/* Horizontaler Teilstrecken-Verbinder ("hochkant" zwischen 2 Kacheln) */
+/* Horizontaler Teilstrecken-Verbinder ("hochkant" zwischen zwei Kacheln) */
 .tour-leg-connector.is-horizontal {
   flex: 0 0 var(--tour-conn-width, 76px);
   width: var(--tour-conn-width, 76px);
@@ -198,11 +200,6 @@ const emit = defineEmits<{
   padding: 0 var(--space-3);
   max-width: 90%;
   text-align: center;
-}
-
-.tour-leg-add-btn {
-  border-style: dashed;
-  color: var(--color-text-muted);
 }
 
 .tour-leg-add-btn.is-row-break {
