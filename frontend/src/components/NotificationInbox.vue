@@ -700,14 +700,19 @@ function dismissPwaInstall() {
 .reload-btn {
   flex-shrink: 0;
   margin-left: auto;
+  white-space: nowrap;
   background-color: var(--color-success);
   color: #fff;
 }
 
 @include can-hover {
-  .reload-btn:hover:not(:disabled) {
+  .reload-btn.btn--primary:hover:not(:disabled):not(.is-disabled) {
     background-color: color-mix(in srgb, var(--color-success) 88%, #000);
   }
+}
+
+.reload-btn.btn--primary:active:not(:disabled):not(.is-disabled) {
+  background-color: color-mix(in srgb, var(--color-success) 82%, #000);
 }
 
 .system-divider {

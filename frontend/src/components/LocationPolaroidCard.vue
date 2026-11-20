@@ -319,12 +319,13 @@ defineExpose({
                   variant="ghost"
                   size="xs"
                   shape="circle"
-                  :icon="ACTION_ICONS.close"
                   class="clear-btn coords-clear-btn coords-clear-inline-btn"
                   title="Standort-Koordinaten entfernen"
                   aria-label="Standort-Koordinaten entfernen"
                   @click="emit('clearCoords')"
-                />
+                >
+                  <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
+                </IconButton>
               </span>
               <!-- Standort fehlt Badge & Search Sparkle -->
               <div v-else class="coords-missing-wrap">
@@ -514,9 +515,11 @@ defineExpose({
   gap: var(--space-1);
 }
 
-.polaroid-reset-btn:hover:not(:disabled) {
-  color: var(--color-accent);
-  border-color: var(--color-accent);
+@include can-hover {
+  .polaroid-reset-btn.btn--overlay:hover:not(:disabled):not(.is-disabled) {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+  }
 }
 
 .polaroid-media {
@@ -604,7 +607,7 @@ defineExpose({
   line-height: 1.25;
 }
 
-.coords-clear-inline-btn {
+.coords-clear-inline-btn.btn--icon-only.btn--xs {
   @include min-touch-target(24px) {
     width: 24px;
     height: 24px;
@@ -619,9 +622,11 @@ defineExpose({
   color: var(--color-text-muted);
 }
 
-.coords-clear-inline-btn:hover:not(:disabled) {
-  color: var(--color-danger);
-  background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+@include can-hover {
+  .coords-clear-inline-btn.btn--ghost:hover:not(:disabled):not(.is-disabled) {
+    color: var(--color-danger);
+    background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+  }
 }
 
 .coords-missing-wrap {

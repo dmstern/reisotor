@@ -588,34 +588,13 @@ function clearFilters() {
 }
 
 .search-clear-btn {
-  @include touch-target;
   position: absolute;
   right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: none;
-  background: transparent;
+  top: 0;
+  bottom: 0;
+  margin-block: auto;
   color: var(--color-text-muted);
-  cursor: pointer;
-  border-radius: var(--radius-pill);
   z-index: 1;
-}
-
-.search-clear-btn:hover {
-  color: var(--color-text);
-  background: var(--color-hover);
-}
-
-.search-clear-btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .dropdown {

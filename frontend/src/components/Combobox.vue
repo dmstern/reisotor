@@ -549,14 +549,19 @@ defineOptions({
       v-if="hasClearButton"
       variant="ghost"
       size="xs"
-      :icon="ACTION_ICONS.close"
       class="combobox-clear-btn"
       title="Eingabe leeren"
       aria-label="Eingabe leeren"
       tabindex="-1"
       @mousedown.prevent="clearInput"
       @click="clearInput"
-    />
+    >
+      <AppIcon
+        :icon="ACTION_ICONS.close"
+        :size="size === 'sm' ? 11 : size === 'lg' ? 14 : 12"
+        group="actions"
+      />
+    </IconButton>
     <AppIcon
       :icon="ACTION_ICONS.chevronDown"
       :size="size === 'sm' ? 12 : 14"
@@ -707,11 +712,12 @@ defineOptions({
   padding-right: 64px;
 }
 
-.combobox-clear-btn {
+.combobox-clear-btn.btn--icon-only.btn--xs {
   position: absolute;
   right: 30px;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 0;
+  bottom: 0;
+  margin-block: auto;
   width: 20px;
   height: 20px;
   min-width: 20px;
@@ -720,7 +726,7 @@ defineOptions({
   z-index: 2;
 }
 
-.combobox--sm .combobox-clear-btn {
+.combobox--sm .combobox-clear-btn.btn--icon-only.btn--xs {
   right: 24px;
   width: 18px;
   height: 18px;
@@ -728,7 +734,7 @@ defineOptions({
   min-height: 18px;
 }
 
-.combobox--lg .combobox-clear-btn {
+.combobox--lg .combobox-clear-btn.btn--icon-only.btn--xs {
   right: 36px;
   width: 24px;
   height: 24px;
