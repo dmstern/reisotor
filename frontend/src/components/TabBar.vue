@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import AppIcon from './AppIcon.vue';
-import IconButton from './primitives/IconButton.vue';
+import PagerButton from './primitives/PagerButton.vue';
 import UnseenDot from './primitives/UnseenDot.vue';
-import { ACTION_ICONS } from '../utils/actionIcons';
 import type { IconDef } from '../utils/icon';
 
 // Gemeinsame Tab-Leiste mit gleitender Unterstreichung (JS-gemessene offsetLeft/offsetWidth des
@@ -213,22 +212,18 @@ function onTabClick(key: string) {
     <!-- Dezente Klick-Flächen mit Verlauf statt eines vollflächigen, hart abgesetzten Buttons (#144)
          - nur sichtbar, wenn in die jeweilige Richtung tatsächlich noch etwas zu scrollen ist. -->
     <span v-if="canScrollLeft" class="tab-bar-fade left" aria-hidden="true"></span>
-    <IconButton
+    <PagerButton
       v-if="canScrollLeft"
-      variant="ghost"
-      size="sm"
+      direction="prev"
       class="tab-bar-arrow left"
-      :icon="ACTION_ICONS.scrollLeft"
       aria-label="Tabs nach links scrollen"
       @click="scrollBy(-1)"
     />
     <span v-if="canScrollRight" class="tab-bar-fade right" aria-hidden="true"></span>
-    <IconButton
+    <PagerButton
       v-if="canScrollRight"
-      variant="ghost"
-      size="sm"
+      direction="next"
       class="tab-bar-arrow right"
-      :icon="ACTION_ICONS.scrollRight"
       aria-label="Tabs nach rechts scrollen"
       @click="scrollBy(1)"
     />
@@ -305,18 +300,18 @@ function onTabClick(key: string) {
   top: 0;
   bottom: 0;
   z-index: 1;
-  width: 40px;
+  width: 48px;
   pointer-events: none;
 }
 
 .tab-bar-fade.left {
   left: 0;
-  background: linear-gradient(to right, var(--tab-bar-effective-fade-bg) 45%, transparent);
+  background: linear-gradient(to right, var(--tab-bar-effective-fade-bg) 65%, transparent);
 }
 
 .tab-bar-fade.right {
   right: 0;
-  background: linear-gradient(to left, var(--tab-bar-effective-fade-bg) 45%, transparent);
+  background: linear-gradient(to left, var(--tab-bar-effective-fade-bg) 65%, transparent);
 }
 
 .tab-bar-arrow {
@@ -325,13 +320,6 @@ function onTabClick(key: string) {
   bottom: 0;
   margin-block: auto;
   z-index: 2;
-  color: var(--color-text-muted);
-}
-
-@media (hover: hover) {
-  .tab-bar-arrow:hover {
-    color: var(--color-primary-dark);
-  }
 }
 
 .tab-bar-arrow.left {

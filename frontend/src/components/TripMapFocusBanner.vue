@@ -9,7 +9,7 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import { MAP_TOOL_ICONS } from '../utils/mapToolIcons';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
-import IconButton from './primitives/IconButton.vue';
+import PagerButton from './primitives/PagerButton.vue';
 
 const props = defineProps<{
   focusedExcursion?: Excursion | null;
@@ -213,26 +213,20 @@ watch(
           }}
         </button>
         <div v-else-if="focusedDate" class="focus-date-nav">
-          <IconButton
+          <PagerButton
             v-if="hasMultipleDays"
-            variant="ghost"
-            size="xs"
-            shape="circle"
+            direction="prev"
             class="focus-nav-btn"
-            :icon="ACTION_ICONS.scrollLeft"
             :disabled="!hasPrevDate"
             aria-label="Vorheriger Tag"
             title="Vorheriger Tag"
             @click.stop="goToPrevDate"
           />
           <span class="focus-date-label">{{ formattedDateString }}</span>
-          <IconButton
+          <PagerButton
             v-if="hasMultipleDays"
-            variant="ghost"
-            size="xs"
-            shape="circle"
+            direction="next"
             class="focus-nav-btn"
-            :icon="ACTION_ICONS.scrollRight"
             :disabled="!hasNextDate"
             aria-label="Nächster Tag"
             title="Nächster Tag"
@@ -446,10 +440,6 @@ watch(
   align-items: center;
   gap: 2px;
   flex-shrink: 0;
-}
-
-.focus-nav-btn {
-  color: var(--color-primary-dark);
 }
 
 .focus-date-label {

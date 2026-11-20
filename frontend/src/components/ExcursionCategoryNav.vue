@@ -3,8 +3,7 @@ import type { ComponentPublicInstance } from 'vue';
 import type { Excursion } from '../api/types';
 import type { IconDef } from '../utils/icon';
 import AppIcon from './AppIcon.vue';
-import IconButton from './primitives/IconButton.vue';
-import { ACTION_ICONS } from '../utils/actionIcons';
+import PagerButton from './primitives/PagerButton.vue';
 
 export interface SpotGroupNavOption {
   category: string;
@@ -73,21 +72,19 @@ const emit = defineEmits<{
         ></span>
       </div>
     </nav>
-    <IconButton
+    <span v-if="canScrollLeft" class="category-nav-fade left" aria-hidden="true"></span>
+    <PagerButton
       v-if="canScrollLeft"
-      variant="ghost"
-      size="xs"
+      direction="prev"
       class="category-nav-arrow left"
-      :icon="ACTION_ICONS.scrollLeft"
       aria-label="Kategorien nach links scrollen"
       @click="emit('scrollNav', -1)"
     />
-    <IconButton
+    <span v-if="canScrollRight" class="category-nav-fade right" aria-hidden="true"></span>
+    <PagerButton
       v-if="canScrollRight"
-      variant="ghost"
-      size="xs"
+      direction="next"
       class="category-nav-arrow right"
-      :icon="ACTION_ICONS.scrollRight"
       aria-label="Kategorien nach rechts scrollen"
       @click="emit('scrollNav', 1)"
     />
@@ -163,19 +160,31 @@ const emit = defineEmits<{
   min-width: max-content;
 }
 
+.category-nav-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 48px;
+  pointer-events: none;
+}
+
+.category-nav-fade.left {
+  left: 0;
+  background: linear-gradient(to right, var(--category-nav-bg) 65%, transparent);
+}
+
+.category-nav-fade.right {
+  right: 0;
+  background: linear-gradient(to left, var(--category-nav-bg) 65%, transparent);
+}
+
 .category-nav-arrow {
   position: absolute;
   top: 0;
   bottom: 0;
   margin-block: auto;
   z-index: 3;
-  color: var(--color-text-muted);
-}
-
-@include can-hover {
-  .category-nav-arrow:hover {
-    color: var(--color-primary-dark);
-  }
 }
 
 .category-nav-arrow.left {

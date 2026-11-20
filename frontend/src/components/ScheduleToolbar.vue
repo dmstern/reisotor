@@ -2,7 +2,7 @@
 import type { PageGranularity } from '../composables/useCalendarNavigation';
 import SegmentedToggle from './SegmentedToggle.vue';
 import Button from './primitives/Button.vue';
-import IconButton from './primitives/IconButton.vue';
+import PagerButton from './primitives/PagerButton.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -58,21 +58,17 @@ defineEmits<{
     <div class="calendar-toolbar">
       <div class="toolbar-nav-row">
         <div class="pager">
-          <IconButton
-            variant="ghost"
-            size="sm"
+          <PagerButton
+            direction="prev"
             :disabled="!canGoPrev"
-            :icon="ACTION_ICONS.scrollLeft"
             :aria-label="prevPageLabel"
             :title="prevPageLabel"
             @click="$emit('prevPage')"
           />
           <span class="range-label">{{ visibleRangeLabel }}</span>
-          <IconButton
-            variant="ghost"
-            size="sm"
+          <PagerButton
+            direction="next"
             :disabled="!canGoNext"
-            :icon="ACTION_ICONS.scrollRight"
             :aria-label="nextPageLabel"
             :title="nextPageLabel"
             @click="$emit('nextPage')"
