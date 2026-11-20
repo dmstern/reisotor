@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { IconX } from '@tabler/icons-vue';
 import type { LegalConfig } from '../../api/types';
+import { ACTION_ICONS } from '../../utils/actionIcons';
+import IconButton from '../primitives/IconButton.vue';
 import LegalContent from '../legal/LegalContent.vue';
 
 const props = defineProps<{
@@ -17,7 +18,7 @@ const emit = defineEmits<{
 
 const modalRef = ref<HTMLElement | null>(null);
 const bodyRef = ref<HTMLElement | null>(null);
-const closeBtnRef = ref<HTMLButtonElement | null>(null);
+const closeBtnRef = ref<InstanceType<typeof IconButton> | null>(null);
 let previouslyFocusedElement: HTMLElement | null = null;
 
 function close() {
@@ -83,7 +84,7 @@ watch(
         previouslyFocusedElement = document.activeElement as HTMLElement | null;
         document.body.style.overflow = 'hidden';
         nextTick(() => {
-          closeBtnRef.value?.focus();
+          (closeBtnRef.value?.$el as HTMLElement | undefined)?.focus();
         });
       } else {
         document.body.style.overflow = '';
@@ -128,16 +129,16 @@ onUnmounted(() => {
               @update:active-tab="handleTabChange"
             >
               <template #tabs-end>
-                <button
+                <IconButton
                   ref="closeBtnRef"
-                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  :icon="ACTION_ICONS.close"
                   class="close-button"
                   aria-label="Schließen"
                   title="Schließen"
                   @click="close"
-                >
-                  <IconX :size="18" aria-hidden="true" />
-                </button>
+                />
               </template>
             </LegalContent>
           </div>
@@ -190,43 +191,7 @@ onUnmounted(() => {
 }
 
 .close-button {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-muted);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  width: 38px;
-  height: 38px;
-  min-inline-size: 38px;
-  min-block-size: 38px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: var(--shadow-xs);
-  position: relative;
-  transition:
-    background-color var(--transition-fast, 0.15s ease),
-    color var(--transition-fast, 0.15s ease),
-    border-color var(--transition-fast, 0.15s ease),
-    box-shadow var(--transition-fast, 0.15s ease);
-}
-
-.close-button::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 44px;
-  height: 44px;
-  transform: translate(-50%, -50%);
-}
-
-.close-button:hover {
-  background: var(--color-hover);
-  color: var(--color-text);
-  border-color: var(--color-border-strong);
-  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
 }
 
 .landing-legal-body {

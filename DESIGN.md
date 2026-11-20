@@ -515,14 +515,14 @@ automatisch bei der nächsten Gelegenheit an einem Button/einer Card mitgezogen 
 
 ### Schriftgrößen-Skala & CSS-Tokens
 
-| Variable          | Wert               | Typischer Einsatz                                           |
-| ----------------- | ------------------ | ----------------------------------------------------------- |
-| `--font-size-xs`  | `0.75rem` (12px)   | Pre-Heading Kicker, Badges, Formular-Meta & Labels          |
-| `--font-size-sm`  | `0.85rem` (13.6px) | Sekundärtexte, Card-Actions (`.btn--card-action`), Hinweise |
-| `--font-size-md`  | `1rem` (16px)      | Standard Fließtext, Text-Inputs, Haupt-Buttons              |
-| `--font-size-lg`  | `1.15rem` (18.4px) | H3 Überschriften, Subheadings, Dialog-Titel                 |
-| `--font-size-xl`  | `1.3rem` (20.8px)  | H2 Sektions-Überschriften, Kachel-Titel                     |
-| `--font-size-2xl` | `1.6rem` (25.6px)  | H1 Haupt-Seitentitel (700 Bold, `-0.01em` Tracking)         |
+| Variable          | Wert               | Typischer Einsatz                                     |
+| ----------------- | ------------------ | ----------------------------------------------------- |
+| `--font-size-xs`  | `0.75rem` (12px)   | Pre-Heading Kicker, Badges, Formular-Meta & Labels    |
+| `--font-size-sm`  | `0.85rem` (13.6px) | Sekundärtexte, Card-Actions (`.btn--tonal`), Hinweise |
+| `--font-size-md`  | `1rem` (16px)      | Standard Fließtext, Text-Inputs, Haupt-Buttons        |
+| `--font-size-lg`  | `1.15rem` (18.4px) | H3 Überschriften, Subheadings, Dialog-Titel           |
+| `--font-size-xl`  | `1.3rem` (20.8px)  | H2 Sektions-Überschriften, Kachel-Titel               |
+| `--font-size-2xl` | `1.6rem` (25.6px)  | H1 Haupt-Seitentitel (700 Bold, `-0.01em` Tracking)   |
 
 ### Semantische Textbausteine
 
@@ -760,14 +760,14 @@ unerwünschte Vererbungen in Spezialfällen (z. B. ungerahmte Inputs in `QuickAd
 
 - **`Button.vue`**: Zentrales Primitive für alle Schaltflächen (konsolidiert in Issue #810). Unterstützt **6 kanonische Varianten** (`primary`, `secondary`, `tonal`, `ghost`, `danger` + `secondary`-Flag, `overlay`), **4 Größen** (`xs` 30px, `sm` 36px, `md` 46px, `lg` 52px — `xs` und `sm` erweitern ihr Touch-Target auf Touch-Geräten automatisch per `@include touch-target($expand: true)` auf ≥ 44px) und **3 Formen** (`squircle` Standard, `circle`, `pill`).
   - **Ruhezustand & 2-Stufen-Hover-Physik:** Nur `primary` und solides `danger` sind dauerhaft leicht erhaben (CTA-Hierarchie). Körperhafte sekundäre Buttons & Trigger (`secondary`, `tonal`, `DropdownMenu`, `DoneToggle`, `CollapsibleFieldset`, `LinkedEntityButton`) sind im Ruhezustand **flach** (`box-shadow: none`) und erhalten den Progressive-3D-Lift (`-1px`, `--shadow-control-hover`) erst bei `@include can-hover` sowie haptisches Einfedern (`translateY(1px) scale(0.985)`) bei `:active` (via `@mixin control-physics-progressive`). Leise **`ghost`-Buttons** (`ghost`, `InfoPopover`, Card-/Listen-Edit, Close-`×`, Like/Comment, Blätter-Pfeile) nutzen dagegen einen **ruhigen, flachen Hover** (`--color-control-hover-bg`, ohne 3D-Verlauf/Schatten/Lift, `:active` nur `scale(0.96)`), damit auf dichten Flächen keine schweren 3D-Kästen aufploppen.
-  - **Form-Regel:** `squircle` für alle regulären Buttons & Card-/Listen-IconButtons; `circle` **nur** für Icon-Only-Buttons über Fotos/Medien (`overlay`) und Mikro-Indikatoren (`InfoPopover`, Map-FABs); `pill` **nur** für Status-/Entity-Chips (`DoneToggle`, `LinkedEntityButton`, `CollapsibleFieldset`), Bild-Overlay-Buttons mit Text (`overlay`) und Card-Disclosure-Pills.
+  - **Form-Regel:** `squircle` ist der Standard für alle regulären Buttons sowie alle funktionalen `ghost`- und Card-/Listen-IconButtons (Dialog-/Drawer-Header `×` & Maximieren, Listen-Edit/-Delete, `AssigneeMenu`, `PagerButton`, `DoneDatesPopover`-Jump). `circle` wird bei `ghost` ausschließlich dann genutzt, wenn die Geometrie des Inhalts oder Containers selbst kreisförmig/pillenförmig ist (`InfoPopover` `ⓘ`, Inline-Clear in Pill-Badges wie `LocationPolaroidCard`), sowie bei `overlay`-IconButtons über Fotos/Medien und Liquid-Glass-Spezialvarianten (`floating` Map-FABs, `glass` Header-Pills). `pill` **nur** für Status-/Entity-Chips (`DoneToggle`, `LinkedEntityButton`, `CollapsibleFieldset`), Bild-Overlay-Buttons mit Text (`overlay`) und Card-Disclosure-Pills.
   - **Nachschlage-Matrix (Anwendungsfall → Komponente & Props):**
     - Haupt-CTA (max. 1× pro Kontext) → `<Button variant="primary" />`
     - Sekundäraktion (z. B. Abbrechen) → `<Button variant="secondary" />`
     - Destruktiv (Dialog-Footer / Bestätigung) → `<Button variant="danger" secondary />` bzw. `<Button variant="danger" />`
     - Kontext-Aktion in Card/Modal (z. B. „Auf Karte“) → `<Button variant="tonal" size="sm" />`
     - Card-Edit / Toolbar / Like & Comment → `<IconButton variant="ghost" size="sm" />` bzw. `<Button variant="ghost" size="sm" />`
-    - Enge Listen-Zeile (ToDo, Einkauf, Packliste) → `<IconButton variant="ghost" size="xs" />`
+    - Listen-Zeile (ToDo, Einkauf, Packliste: Edit & Assignee) → `<IconButton variant="ghost" size="sm" />`
     - Foto-/Banner-Overlay (mit Text / nur Icon) → `<Button variant="overlay" shape="pill" size="sm" />` bzw. `<IconButton variant="overlay" shape="circle" size="sm" />`
     - Bewusste Spezial-Controls (nicht in `Button.vue` pressen): `TabBar`, `ExcursionCategoryNav`, `SegmentedToggle`, `Drawer`-Anfasser, `RichTextEditor`-Toolbar, Farbfelder/Icon-Grids, Radio-Karten.
   - **Disabled-Zustand** (`disabled` prop / `:disabled` Pseudo-Klasse): ausgegraut (`opacity: 0.5`), `cursor: not-allowed`, `pointer-events: none`, keine Schatten oder Transforms.

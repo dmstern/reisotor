@@ -23,7 +23,7 @@ export const TypographySystem: Story = {
         {
           var: '--font-size-sm',
           val: '0.85rem (13.6px)',
-          usage: 'Sekundärtexte, Card-Actions (.btn--card-action), Hinweise',
+          usage: 'Sekundärtexte, Card-Actions (.btn--tonal), Hinweise',
         },
         {
           var: '--font-size-md',

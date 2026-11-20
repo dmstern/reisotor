@@ -4,6 +4,8 @@ import { getActivePinia } from 'pinia';
 import { useToast, type ToastItem } from '../composables/useToast';
 import { useErrorNotifier } from '../composables/useErrorNotifier';
 import { useTripStore } from '../stores/trip';
+import IconButton from './primitives/IconButton.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 const { toasts, removeToast } = useToast();
 
@@ -111,14 +113,15 @@ async function handleActionClick(toast: ToastItem) {
               Details anzeigen
             </button>
           </div>
-          <button
-            type="button"
+          <IconButton
+            variant="ghost"
+            size="xs"
+            :icon="ACTION_ICONS.close"
             class="toast-close"
             aria-label="Schließen"
+            title="Schließen"
             @click="removeToast(toast.id)"
-          >
-            ✕
-          </button>
+          />
         </div>
       </TransitionGroup>
     </div>
@@ -240,24 +243,7 @@ async function handleActionClick(toast: ToastItem) {
 }
 
 .toast-close {
-  background: transparent;
-  border: none;
   color: var(--color-text-muted, #64748b);
-  font-size: 0.9rem;
-  cursor: pointer;
-  padding: 2px var(--space-1);
-  border-radius: var(--radius-sm, 4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    color 0.15s ease,
-    background-color 0.15s ease;
-}
-
-.toast-close:hover {
-  color: var(--color-text, #1e293b);
-  background-color: var(--color-bg-hover, rgba(0, 0, 0, 0.05));
 }
 
 /* Animations */

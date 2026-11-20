@@ -283,10 +283,16 @@ function resetDefaults() {
 
         <!-- Reset Button -->
         <div v-if="activeCount > 0" class="popover-footer">
-          <button type="button" class="reset-settings-btn" @click="resetDefaults">
-            <AppIcon :icon="ACTION_ICONS.refresh" group="actions" :size="12" class="reset-icon" />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            :icon="ACTION_ICONS.refresh"
+            class="reset-settings-btn"
+            @click="resetDefaults"
+          >
             <span>Standard wiederherstellen</span>
-          </button>
+          </Button>
         </div>
       </PickerMenu>
     </Teleport>
@@ -370,48 +376,14 @@ function resetDefaults() {
 }
 
 .reset-settings-btn {
-  @include min-touch-target(44px);
   width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: var(--space-1) var(--space-2);
-  border: none;
-  background: transparent;
   color: var(--color-text-muted);
-  font-size: 0.8rem;
   font-weight: 500;
-  cursor: pointer;
-  text-align: center;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
-}
-
-.reset-icon {
-  opacity: 0.75;
-  flex-shrink: 0;
 }
 
 @include can-hover {
-  .reset-settings-btn:hover {
+  .reset-settings-btn:hover:not(:disabled) {
     color: var(--color-danger);
-    background: var(--color-hover);
-  }
-}
-
-.reset-settings-btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .reset-settings-btn {
-    transition: none;
   }
 }
 </style>

@@ -98,7 +98,7 @@ const emit = defineEmits<{
         role-label="Zugewiesen an"
         @select="(userId) => emit('reassign', item, userId)"
       />
-      <EditButton size="xs" @click="emit('edit', item)" />
+      <EditButton size="sm" @click="emit('edit', item)" />
     </template>
   </CheckableListItem>
 </template>

@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue';
 import type { IconDef } from '../utils/icon';
 import AppIcon from './AppIcon.vue';
 import Input from './primitives/Input.vue';
+import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 // Combobox.vue: Suchbares Autocomplete-/Freitext-Eingabefeld mit Filterliste (Issue #721).
@@ -544,9 +545,10 @@ defineOptions({
       @focus="onFocus"
       @blur="onBlur"
     />
-    <button
+    <IconButton
       v-if="hasClearButton"
-      type="button"
+      variant="ghost"
+      size="xs"
       class="combobox-clear-btn"
       title="Eingabe leeren"
       aria-label="Eingabe leeren"
@@ -559,7 +561,7 @@ defineOptions({
         :size="size === 'sm' ? 11 : size === 'lg' ? 14 : 12"
         group="actions"
       />
-    </button>
+    </IconButton>
     <AppIcon
       :icon="ACTION_ICONS.chevronDown"
       :size="size === 'sm' ? 12 : 14"
@@ -710,51 +712,34 @@ defineOptions({
   padding-right: 64px;
 }
 
-.combobox-clear-btn {
+.combobox-clear-btn.btn--icon-only.btn--xs {
   position: absolute;
   right: 30px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  top: 0;
+  bottom: 0;
+  margin-block: auto;
   width: 20px;
   height: 20px;
-  padding: 0;
-  border: none;
-  background: transparent;
+  min-width: 20px;
+  min-height: 20px;
   color: var(--color-text-muted);
-  cursor: pointer;
-  border-radius: var(--radius-pill);
   z-index: 2;
-  transition:
-    color 0.15s ease,
-    background 0.15s ease;
 }
 
-@include can-hover {
-  .combobox-clear-btn:hover {
-    color: var(--color-text);
-    background: var(--color-hover);
-  }
-}
-
-.combobox-clear-btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo);
-}
-
-.combobox--sm .combobox-clear-btn {
+.combobox--sm .combobox-clear-btn.btn--icon-only.btn--xs {
   right: 24px;
   width: 18px;
   height: 18px;
+  min-width: 18px;
+  min-height: 18px;
 }
 
-.combobox--lg .combobox-clear-btn {
+.combobox--lg .combobox-clear-btn.btn--icon-only.btn--xs {
   right: 36px;
   width: 24px;
   height: 24px;
+  min-width: 24px;
+  min-height: 24px;
 }
 
 .combobox-caret {

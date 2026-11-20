@@ -38,14 +38,15 @@ describe('Button primitive', () => {
     await router.isReady();
 
     const app = createApp({
-      render: () => h(Button, { to: '/trash', variant: 'card-action' }, () => 'Papierkorb öffnen'),
+      render: () =>
+        h(Button, { to: '/trash', variant: 'tonal', size: 'sm' }, () => 'Papierkorb öffnen'),
     });
     app.use(router);
 
     const html = await renderToString(app);
     expect(html).toContain('<a');
     expect(html).toContain('href="/trash"');
-    expect(html).toContain('btn--card-action');
+    expect(html).toContain('btn--tonal');
     expect(html).toContain('Papierkorb öffnen');
   });
 
@@ -58,12 +59,12 @@ describe('Button primitive', () => {
     expect(html).toContain('btn--secondary');
   });
 
-  it('renders btn--card-action and btn--sm when size="sm" is passed with variant="card-action"', async () => {
+  it('renders btn--tonal and btn--sm when size="sm" is passed with variant="tonal"', async () => {
     const app = createApp({
-      render: () => h(Button, { variant: 'card-action', size: 'sm' }, () => 'Auf Karte'),
+      render: () => h(Button, { variant: 'tonal', size: 'sm' }, () => 'Auf Karte'),
     });
     const html = await renderToString(app);
-    expect(html).toContain('btn--card-action');
+    expect(html).toContain('btn--tonal');
     expect(html).toContain('btn--sm');
     expect(html).toContain('Auf Karte');
   });
@@ -88,12 +89,12 @@ describe('Button primitive', () => {
     expect(html).toContain('Bell');
   });
 
-  it('renders btn--surface when variant="surface" is passed', async () => {
+  it('renders btn--overlay when variant="overlay" is passed', async () => {
     const app = createApp({
-      render: () => h(Button, { variant: 'surface', shape: 'circle' }, () => 'Edit'),
+      render: () => h(Button, { variant: 'overlay', shape: 'circle' }, () => 'Edit'),
     });
     const html = await renderToString(app);
-    expect(html).toContain('btn--surface');
+    expect(html).toContain('btn--overlay');
     expect(html).toContain('btn--circle');
     expect(html).toContain('Edit');
   });
@@ -108,7 +109,7 @@ describe('Button primitive', () => {
     expect(html).toContain('Kompakt');
   });
 
-  it('scales tonal icon size according to explicit size prop while keeping card-action compact by default', async () => {
+  it('scales tonal icon size according to explicit size prop', async () => {
     setActivePinia(createPinia());
 
     const tonalLgApp = createApp({
@@ -126,13 +127,13 @@ describe('Button primitive', () => {
     const tonalMdHtml = await renderToString(tonalMdApp);
     expect(tonalMdHtml).toContain('width="20"');
 
-    const cardActionApp = createApp({
+    const tonalSmApp = createApp({
       render: () =>
-        h(Button, { variant: 'card-action', icon: ACTION_ICONS.edit }, () => 'Card Action'),
+        h(Button, { variant: 'tonal', size: 'sm', icon: ACTION_ICONS.edit }, () => 'Kompakt'),
     });
-    cardActionApp.use(createPinia());
-    const cardActionHtml = await renderToString(cardActionApp);
-    expect(cardActionHtml).toContain('width="18"');
+    tonalSmApp.use(createPinia());
+    const tonalSmHtml = await renderToString(tonalSmApp);
+    expect(tonalSmHtml).toContain('width="18"');
   });
 
   it('renders btn--overlay with pill shape when variant="overlay" and shape="pill" are passed', async () => {

@@ -38,9 +38,9 @@ describe('CalendarExportDropdown', () => {
     expect(html).toContain('title="Zum eigenen Kalender hinzufügen"');
   });
 
-  it('unterstützt benutzerdefiniertes Label und Card-Action-Variante', async () => {
+  it('unterstützt benutzerdefiniertes Label und Tonal-Variante', async () => {
     const html = await render({
-      variant: 'card-action',
+      variant: 'tonal',
       label: 'In meinen Kalender',
       showLabel: true,
     });

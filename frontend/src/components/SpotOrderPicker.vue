@@ -8,6 +8,7 @@ import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDura
 import type { IconDef } from '../utils/icon';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
+import IconButton from './primitives/IconButton.vue';
 import LegTransportModal from './LegTransportModal.vue';
 
 // Drag&Drop-Reihenfolge-Editor fürs Touren-Formular (ExcursionsView.vue) – TourAssignDropdown.vue
@@ -290,22 +291,27 @@ function onDeleteLeg() {
             <AppIcon :icon="ACTION_ICONS.duration" :size="12" group="actions" />
             {{ formatTravelDuration(getLayover(index)!) }} Umstiegszeit
           </span>
-          <button
-            type="button"
+          <IconButton
+            variant="ghost"
+            size="xs"
+            :icon="ACTION_ICONS.close"
             class="remove-btn"
-            @click="removeSpotAt(index)"
             aria-label="Aus Tour entfernen"
-          >
-            <AppIcon :icon="ACTION_ICONS.close" :size="14" group="actions" />
-          </button>
+            title="Aus Tour entfernen"
+            @click="removeSpotAt(index)"
+          />
         </div>
 
         <!-- Teilstrecken-Verbinder zwischen zwei Stationen (Issue #361) -->
         <div v-if="index < plannedStations.length - 1" class="leg-connector">
           <div class="leg-connector-line"></div>
           <div class="leg-item-wrap">
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              :dashed="!getLegBetween(station.id, plannedStations[index + 1].id)"
+              size="xs"
+              shape="squircle"
               class="leg-btn"
               :class="{
                 'has-data': !!getLegBetween(station.id, plannedStations[index + 1].id),
@@ -369,17 +375,17 @@ function onDeleteLeg() {
                   Verkehrsmittel
                 </span>
               </template>
-            </button>
-            <button
+            </Button>
+            <IconButton
               v-if="getLegBetween(station.id, plannedStations[index + 1].id)"
-              type="button"
+              variant="ghost"
+              size="xs"
+              :icon="ACTION_ICONS.close"
               class="remove-btn leg-remove-btn"
               title="Weg-Details entfernen"
               aria-label="Weg-Details entfernen"
               @click.stop="removeLegBetween(station.id, plannedStations[index + 1].id)"
-            >
-              <AppIcon :icon="ACTION_ICONS.close" :size="12" group="actions" />
-            </button>
+            />
           </div>
           <div class="leg-connector-line"></div>
         </div>
@@ -473,61 +479,17 @@ function onDeleteLeg() {
   flex: 0 1 auto;
 }
 
-.leg-remove-btn {
-  padding: 3px 5px;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    color 0.15s ease,
-    background-color 0.15s ease;
-}
-
 .leg-btn {
-  @include touch-target($expand: true);
-  display: inline-flex;
-  align-items: center;
   min-width: 0;
   max-width: 100%;
-  background: none;
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  padding: 3px var(--space-2);
   font-size: 0.78rem;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  box-shadow: none;
+  font-weight: 500;
   text-align: left;
-  transition:
-    border-color 0.15s ease,
-    color 0.15s ease,
-    background-color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-@include can-hover {
-  .leg-btn:hover {
-    border-color: var(--color-primary);
-    color: var(--color-primary-dark);
-    background: var(--color-surface);
-  }
-}
-
-.leg-btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: var(--focus-ring-offset, 2px);
 }
 
 .leg-btn.has-data {
-  border-style: solid;
   border-color: var(--color-primary);
-  background: var(--color-surface);
   color: var(--color-text);
-  box-shadow: var(--shadow-sm);
 }
 
 .leg-pill {
@@ -666,30 +628,13 @@ function onDeleteLeg() {
 }
 
 .remove-btn {
-  @include touch-target;
-  background: none;
-  border: none;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
   color: var(--color-text-muted);
-  cursor: pointer;
-  font-size: 0.85rem;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 }
 
 @include can-hover {
-  .remove-btn:hover {
+  .remove-btn:hover:not(:disabled) {
     color: var(--color-danger);
   }
-}
-
-.remove-btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: var(--focus-ring-offset, 2px);
 }
 
 .spot-option-title {
@@ -761,12 +706,5 @@ function onDeleteLeg() {
   margin: 0;
   font-size: 0.82rem;
   color: var(--color-text-muted);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .leg-remove-btn,
-  .leg-btn {
-    transition: none;
-  }
 }
 </style>

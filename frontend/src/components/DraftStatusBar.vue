@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DraftStatus } from '../composables/useDraftAutosave';
 import AppIcon from './AppIcon.vue';
+import Button from './primitives/Button.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
@@ -66,17 +67,21 @@ const emit = defineEmits<{
         </template>
       </template>
     </span>
-    <button
+    <Button
       v-if="canDiscard"
       type="button"
+      variant="danger"
+      secondary
+      size="xs"
+      shape="pill"
+      :icon="ACTION_ICONS.delete"
       class="draft-discard-btn"
       :title="mode === 'edit' ? 'Änderungen verwerfen' : 'Entwurf verwerfen'"
       :aria-label="mode === 'edit' ? 'Änderungen verwerfen' : 'Entwurf verwerfen'"
       @click="emit('discard')"
     >
-      <AppIcon :icon="ACTION_ICONS.delete" :size="14" group="actions" />
       <span>{{ mode === 'edit' ? 'Änderungen verwerfen' : 'Entwurf verwerfen' }}</span>
-    </button>
+    </Button>
   </div>
 </template>
 
@@ -109,47 +114,5 @@ const emit = defineEmits<{
 .draft-status-message span {
   min-width: 0;
   word-break: break-word;
-}
-
-.draft-discard-btn {
-  @include touch-target($pseudo: 'before');
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  min-height: 30px;
-  padding: 0 12px;
-  font-size: var(--font-size-xs);
-  font-family: inherit;
-  font-weight: 600;
-  color: var(--color-danger);
-  background: var(--color-surface);
-  border: 1.5px solid var(--color-border-strong);
-  border-radius: var(--radius-pill);
-  corner-shape: round;
-  cursor: pointer;
-  line-height: 1;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease,
-    border-color 0.15s ease,
-    transform 0.1s ease;
-  user-select: none;
-}
-
-.draft-discard-btn:hover {
-  background: var(--color-hover);
-  border-color: var(--color-danger);
-}
-
-.draft-discard-btn:active {
-  transform: scale(0.96);
-}
-
-.draft-discard-btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo);
 }
 </style>
