@@ -37,15 +37,15 @@ const heroStyle = computed(() => {
       <h1>{{ trip?.name || 'Euer Urlaub' }}</h1>
       <div class="banner-actions">
         <Button
-          variant="floating"
+          variant="overlay"
           shape="pill"
           size="sm"
+          :icon="ACTION_ICONS.edit"
           class="banner-action-btn"
           title="Urlaub bearbeiten"
           aria-label="Urlaub bearbeiten"
           @click="$emit('edit')"
         >
-          <AppIcon :icon="ACTION_ICONS.edit" :size="14" group="actions" />
           <span class="banner-action-label">Bearbeiten</span>
         </Button>
       </div>
@@ -138,13 +138,9 @@ const heroStyle = computed(() => {
 }
 
 .banner-action-btn {
-  position: relative;
-  font-size: var(--font-size-xs);
-  padding: var(--space-1) var(--space-2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  box-shadow: none;
   flex-shrink: 0;
 }
 
@@ -158,22 +154,12 @@ const heroStyle = computed(() => {
   }
 
   .banner-action-btn {
-    padding: 6px;
-    min-width: 32px;
-    min-height: 32px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .banner-action-btn::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 44px;
-    height: 44px;
-    transform: translate(-50%, -50%);
+    padding: 0;
+    gap: 0;
+    width: var(--control-height-sm, 36px);
+    height: var(--control-height-sm, 36px);
+    min-width: var(--control-height-sm, 36px);
+    min-height: var(--control-height-sm, 36px);
   }
 }
 

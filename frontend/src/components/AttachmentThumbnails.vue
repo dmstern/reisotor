@@ -224,7 +224,9 @@ const stackTooltip = computed(() => {
           <!-- Roter X-Löschen-Button am Polaroid -->
           <IconButton
             v-if="editable"
-            size="sm"
+            variant="danger"
+            shape="circle"
+            size="xs"
             :icon="ACTION_ICONS.close"
             class="remove-thumb remove-btn"
             :title="removeTitle"
@@ -643,22 +645,8 @@ const stackTooltip = computed(() => {
   height: 22px;
   min-width: 22px;
   min-height: 22px;
-  padding: 0;
-  border-radius: var(--radius-pill);
-  corner-shape: round;
   border: 1.5px solid var(--color-surface, #ffffff);
-  background: var(--color-danger, #c0392b);
-  color: var(--color-primary-contrast, #ffffff);
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
   z-index: 12;
-  transition:
-    background-color 0.15s ease,
-    transform 0.12s ease;
 }
 
 :root[data-theme='dark'] .remove-thumb {
@@ -669,19 +657,6 @@ const stackTooltip = computed(() => {
   :root:not([data-theme='light']) .remove-thumb {
     border-color: #2a2825;
   }
-}
-
-@include can-hover {
-  .remove-thumb:hover {
-    background: var(--color-danger-dark, #a93226);
-    transform: scale(1.15);
-  }
-}
-
-.remove-thumb:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo);
 }
 
 @media (prefers-reduced-motion: reduce) {

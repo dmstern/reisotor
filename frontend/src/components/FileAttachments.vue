@@ -288,8 +288,10 @@ function handleUploadClick() {
   >
     <!-- Im eingeklappten Ansichtsmodus (z. B. auf Spots): dezentes Büroklammer-Badge mit Anzahl -->
     <div v-if="collapsed && !editable" class="attachments-badge-wrap">
-      <button
-        type="button"
+      <Button
+        variant="overlay"
+        shape="pill"
+        size="xs"
         class="attachments-badge"
         :title="badgeTooltip"
         :aria-label="badgeTooltip"
@@ -297,7 +299,7 @@ function handleUploadClick() {
       >
         <AppIcon :icon="ACTION_ICONS.attachment" :size="13" group="actions" />
         <span class="attachments-badge-count">{{ attachments.length }}</span>
-      </button>
+      </Button>
     </div>
 
     <!-- Im regulären Ansichtsmodus: verspielter Polaroid-Stapel mit Büroklammer -->
@@ -384,54 +386,6 @@ function handleUploadClick() {
   display: inline-flex;
 }
 
-.attachments-badge {
-  @include touch-target($expand: true);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 3px var(--space-2);
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: var(--backdrop-blur-md);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: var(--radius-pill);
-  color: var(--color-primary-contrast, #ffffff);
-  font-size: 0.75rem;
-  font-weight: 600;
-  line-height: 1;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-  transition:
-    transform 0.18s cubic-bezier(0.32, 0.72, 0, 1),
-    background-color 0.18s ease,
-    border-color 0.18s ease,
-    box-shadow 0.18s ease;
-  user-select: none;
-}
-
-@include can-hover {
-  .attachments-badge:hover {
-    background: rgba(0, 0, 0, 0.75);
-    border-color: rgba(255, 255, 255, 0.45);
-    transform: scale(1.06);
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
-  }
-}
-
-.attachments-badge:active {
-  transform: scale(0.96);
-}
-
-.attachments-badge:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo);
-}
-
-.attachments-badge-count {
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
 .heading {
   font-size: 0.85rem;
   color: var(--color-text-muted);
@@ -454,11 +408,5 @@ function handleUploadClick() {
 
 .error {
   margin-top: var(--space-1);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .attachments-badge {
-    transition: none;
-  }
 }
 </style>
