@@ -75,7 +75,7 @@ const emit = defineEmits<{
         role-label="Käufer:in"
         @select="(userId) => emit('reassign', item, userId)"
       />
-      <EditButton small @click="emit('edit', item)" />
+      <EditButton size="xs" @click="emit('edit', item)" />
     </template>
   </CheckableListItem>
 </template>

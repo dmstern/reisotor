@@ -113,13 +113,14 @@ function travelDuration(item: TravelItem) {
         :href="item.link"
         target="_blank"
         rel="noopener"
-        variant="card-action"
+        variant="tonal"
+        size="sm"
       >
         {{ linkLabel(item.link) }} ↗
       </Button>
       <Button
         v-if="item.from_lat != null && item.from_lng != null"
-        variant="card-action"
+        variant="tonal"
         size="sm"
         @click="emit('show-on-map-from')"
       >
@@ -135,7 +136,7 @@ function travelDuration(item: TravelItem) {
       />
       <Button
         v-if="item.to_lat != null && item.to_lng != null"
-        variant="card-action"
+        variant="tonal"
         size="sm"
         @click="emit('show-on-map-to')"
       >

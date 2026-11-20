@@ -18,7 +18,7 @@ import { computePopoverPosition } from '../utils/popoverPosition';
 const props = withDefaults(
   defineProps<{
     entry: CalendarEntry;
-    variant?: 'secondary' | 'card-action' | 'ghost';
+    variant?: 'secondary' | 'tonal' | 'card-action' | 'ghost';
     size?: 'sm' | 'md';
     label?: string;
     showLabel?: boolean;

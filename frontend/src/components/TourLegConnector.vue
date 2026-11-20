@@ -129,7 +129,7 @@ const emit = defineEmits<{
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 /* Horizontaler Teilstrecken-Verbinder ("hochkant" zwischen 2 Kacheln) */
 .tour-leg-connector.is-horizontal {
   flex: 0 0 var(--tour-conn-width, 76px);
@@ -179,26 +179,29 @@ const emit = defineEmits<{
 
 /* Teilstrecken-Pill für vorhandene Teilstrecken */
 .tour-leg-pill {
+  @include control-physics-progressive;
+  @include touch-target($expand: true);
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-xs);
+  min-height: var(--control-height-sm, 36px);
+  background-color: var(--color-surface);
+  border: 1.5px solid var(--color-border-strong);
   cursor: pointer;
-  outline: none;
-  transition:
-    transform 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    background-color 0.15s ease;
 }
 
-.tour-leg-pill:hover,
+@include can-hover {
+  .tour-leg-pill:hover {
+    background-color: var(--color-hover);
+    border-color: var(--tour-theme-color, var(--color-primary));
+  }
+}
+
 .tour-leg-pill:focus-visible {
-  transform: translateY(-2px);
-  border-color: var(--tour-theme-color, var(--color-primary));
-  box-shadow: var(--shadow-sm);
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .tour-leg-pill.is-horizontal-leg {
@@ -216,38 +219,40 @@ const emit = defineEmits<{
   flex-direction: row;
   flex-wrap: wrap;
   gap: var(--space-2);
-  padding: 6px var(--space-3);
+  padding: 0 var(--space-3);
   border-radius: var(--radius-pill);
+  corner-shape: round;
   max-width: 90%;
   text-align: center;
 }
 
 /* Button für noch nicht erfasste Teilstrecke */
 .tour-leg-add-btn {
+  @include control-physics-progressive;
+  @include touch-target($expand: true);
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px dashed var(--color-border);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-xs);
+  min-height: var(--control-height-sm, 36px);
+  border: 1.5px dashed var(--color-border-strong);
+  background-color: var(--color-surface);
   color: var(--color-text-muted);
   cursor: pointer;
-  outline: none;
-  transition:
-    transform 0.15s ease,
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease;
 }
 
-.tour-leg-add-btn:hover,
+@include can-hover {
+  .tour-leg-add-btn:hover {
+    background-color: var(--tour-theme-tint, var(--color-hover));
+    border-color: var(--tour-theme-color, var(--color-primary));
+    color: var(--tour-theme-color, var(--color-primary));
+  }
+}
+
 .tour-leg-add-btn:focus-visible {
-  background: var(--tour-theme-tint, var(--color-hover));
-  border-color: var(--tour-theme-color, var(--color-primary));
-  color: var(--tour-theme-color, var(--color-primary));
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
 }
 
 .tour-leg-add-btn.is-horizontal-leg {
@@ -264,8 +269,9 @@ const emit = defineEmits<{
 .tour-leg-add-btn.is-row-break {
   flex-direction: row;
   gap: 6px;
-  padding: 5px var(--space-3);
+  padding: 0 var(--space-3);
   border-radius: var(--radius-pill);
+  corner-shape: round;
 }
 
 .tour-leg-add-wrap {
