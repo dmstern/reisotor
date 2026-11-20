@@ -61,6 +61,16 @@ export const AllVariantsAndStates: Story = {
         </section>
 
         <section>
+          <h3 style="margin: 0 0 10px; font-size: 0.9rem; color: var(--color-text-muted);">Formen: Pill-Variante (<code>shape="pill"</code> / <code>btn--pill</code>)</h3>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
+            <Button variant="primary" shape="pill" size="sm" :icon="ACTION_ICONS.add">Primary Pill</Button>
+            <Button variant="secondary" shape="pill" size="sm" :icon="ACTION_ICONS.edit">Secondary Pill</Button>
+            <Button variant="tonal" shape="pill" size="sm" :icon="ACTION_ICONS.myLocation">Tonal Pill</Button>
+            <Button variant="ghost" shape="pill" size="sm" :icon="ACTION_ICONS.unliked">Ghost Pill</Button>
+          </div>
+        </section>
+
+        <section>
           <h3 style="margin: 0 0 10px; font-size: 0.9rem; color: var(--color-text-muted);">overlay (auf Foto / Banner — initial schattenlos, Hover mit --shadow-sm)</h3>
           <div style="padding: 20px; border-radius: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; background: radial-gradient(circle at 22% 28%, rgba(255, 224, 150, 0.72) 0%, transparent 45%), linear-gradient(155deg, #2d5a7b 0%, #4b869e 38%, #3c6e58 72%, #243b30 100%);">
             <Button variant="overlay" shape="pill" size="sm" :icon="ACTION_ICONS.edit">Bild ändern</Button>

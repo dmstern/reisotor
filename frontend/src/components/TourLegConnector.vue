@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ExcursionLeg, Spot } from '../api/types';
 import AppIcon from './AppIcon.vue';
+import Button from './primitives/Button.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { travelTypeIcon } from '../utils/travelTypeIcon';
 import { getLegDurationParts, getLegTooltip } from '../composables/useTourSerpentine';
@@ -27,16 +28,15 @@ const emit = defineEmits<{
     class="tour-leg-connector is-horizontal"
     :class="{ 'is-rtl': isRtl }"
   >
-    <div
+    <Button
       v-if="leg"
+      variant="secondary"
+      size="sm"
+      shape="squircle"
       class="tour-leg-pill is-horizontal-leg"
-      tabindex="0"
-      role="button"
       :title="getLegTooltip(leg, fromSpot, toSpot)"
       :aria-label="`Weg von ${fromSpot.title} nach ${toSpot.title} bearbeiten`"
       @click.stop="emit('click')"
-      @keydown.enter.self="emit('click')"
-      @keydown.space.self.prevent="emit('click')"
     >
       <span class="leg-pill-icon">
         {{ travelTypeIcon(leg.transport_type ?? null) }}
@@ -56,11 +56,13 @@ const emit = defineEmits<{
       <span v-if="leg.amount != null" class="leg-pill-cost nobr">
         {{ leg.amount.toFixed(2).replace('.', ',') }}&nbsp;€
       </span>
-    </div>
+    </Button>
 
-    <button
+    <Button
       v-else
-      type="button"
+      variant="secondary"
+      size="sm"
+      shape="squircle"
       class="tour-leg-add-btn is-horizontal-leg"
       title="Weg-Details eintragen"
       :aria-label="`Weg-Details zwischen ${fromSpot.title} und ${toSpot.title} eintragen`"
@@ -68,7 +70,7 @@ const emit = defineEmits<{
     >
       <AppIcon :icon="ACTION_ICONS.add" :size="12" group="actions" />
       <span class="leg-add-text">Weg</span>
-    </button>
+    </Button>
   </div>
 
   <!-- Zeilenumbruch-Verbinder im Schlangen-Layout -->
@@ -78,17 +80,16 @@ const emit = defineEmits<{
     :class="[alignSide ? 'align-' + alignSide : '', { 'single-col': singleCol }]"
   >
     <div class="tour-row-break-inner">
-      <div
+      <Button
         v-if="leg"
         :key="`leg-${fromSpot.id}-${toSpot.id}`"
+        variant="secondary"
+        size="sm"
+        shape="pill"
         class="tour-leg-pill is-row-break"
-        tabindex="0"
-        role="button"
         :title="getLegTooltip(leg, fromSpot, toSpot)"
         :aria-label="`Weg von ${fromSpot.title} nach ${toSpot.title} bearbeiten`"
         @click.stop="emit('click')"
-        @keydown.enter.self="emit('click')"
-        @keydown.space.self.prevent="emit('click')"
       >
         <span class="leg-pill-icon">
           {{ travelTypeIcon(leg.transport_type ?? null) }}
@@ -111,11 +112,13 @@ const emit = defineEmits<{
         <span v-if="leg.amount != null" class="leg-pill-cost nobr">
           {{ leg.amount.toFixed(2).replace('.', ',') }}&nbsp;€
         </span>
-      </div>
+      </Button>
 
       <div v-else class="tour-leg-add-wrap">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="sm"
+          shape="pill"
           class="tour-leg-add-btn is-row-break"
           title="Weg-Details eintragen"
           :aria-label="`Weg-Details zwischen ${fromSpot.title} und ${toSpot.title} eintragen`"
@@ -123,7 +126,7 @@ const emit = defineEmits<{
         >
           <AppIcon :icon="ACTION_ICONS.add" :size="12" group="actions" />
           <span class="leg-add-text">Weg-Details eintragen</span>
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -177,101 +180,34 @@ const emit = defineEmits<{
   max-width: 100%;
 }
 
-/* Teilstrecken-Pill für vorhandene Teilstrecken */
-.tour-leg-pill {
-  @include control-physics-progressive;
-  @include touch-target($expand: true);
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--control-height-sm, 36px);
-  background-color: var(--color-surface);
-  border: 1.5px solid var(--color-border-strong);
-  cursor: pointer;
-}
-
-@include can-hover {
-  .tour-leg-pill:hover {
-    background-color: var(--color-hover);
-    border-color: var(--tour-theme-color, var(--color-primary));
-  }
-}
-
-.tour-leg-pill:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
-}
-
-.tour-leg-pill.is-horizontal-leg {
+/* Layout-Anpassungen für die Button-Primitive in TourLegConnector */
+.tour-leg-pill.is-horizontal-leg,
+.tour-leg-add-btn.is-horizontal-leg {
   flex-direction: column;
   gap: 2px;
   padding: var(--space-2) var(--space-1);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
   width: 100%;
   max-width: 68px;
+  height: auto;
   text-align: center;
 }
 
 .tour-leg-pill.is-row-break {
-  flex-direction: row;
   flex-wrap: wrap;
   gap: var(--space-2);
   padding: 0 var(--space-3);
-  border-radius: var(--radius-pill);
-  corner-shape: round;
   max-width: 90%;
   text-align: center;
 }
 
-/* Button für noch nicht erfasste Teilstrecke */
 .tour-leg-add-btn {
-  @include control-physics-progressive;
-  @include touch-target($expand: true);
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--control-height-sm, 36px);
-  border: 1.5px dashed var(--color-border-strong);
-  background-color: var(--color-surface);
+  border-style: dashed;
   color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-@include can-hover {
-  .tour-leg-add-btn:hover {
-    background-color: var(--tour-theme-tint, var(--color-hover));
-    border-color: var(--tour-theme-color, var(--color-primary));
-    color: var(--tour-theme-color, var(--color-primary));
-  }
-}
-
-.tour-leg-add-btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
-}
-
-.tour-leg-add-btn.is-horizontal-leg {
-  flex-direction: column;
-  gap: 3px;
-  padding: var(--space-2) 3px;
-  width: 100%;
-  max-width: 68px;
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  text-align: center;
 }
 
 .tour-leg-add-btn.is-row-break {
-  flex-direction: row;
   gap: 6px;
   padding: 0 var(--space-3);
-  border-radius: var(--radius-pill);
-  corner-shape: round;
 }
 
 .tour-leg-add-wrap {
