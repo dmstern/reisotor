@@ -188,7 +188,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
           <PendingSyncBadge v-if="spot._pending" />
           <EditButton
             size="sm"
-            :shape="expanded ? 'circle' : 'squircle'"
+            shape="squircle"
             :variant="expanded ? 'overlay' : 'ghost'"
             class="spot-edit-btn"
             @click="emit('edit', spot)"
