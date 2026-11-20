@@ -3,7 +3,7 @@ import type { ComponentPublicInstance } from 'vue';
 import type { Excursion } from '../api/types';
 import type { IconDef } from '../utils/icon';
 import AppIcon from './AppIcon.vue';
-import { ACTION_ICONS } from '../utils/actionIcons';
+import PagerButton from './primitives/PagerButton.vue';
 
 export interface SpotGroupNavOption {
   category: string;
@@ -72,24 +72,22 @@ const emit = defineEmits<{
         ></span>
       </div>
     </nav>
-    <button
+    <span v-if="canScrollLeft" class="category-nav-fade left" aria-hidden="true"></span>
+    <PagerButton
       v-if="canScrollLeft"
-      type="button"
+      direction="prev"
       class="category-nav-arrow left"
       aria-label="Kategorien nach links scrollen"
       @click="emit('scrollNav', -1)"
-    >
-      <AppIcon :icon="ACTION_ICONS.scrollLeft" :size="16" group="actions" />
-    </button>
-    <button
+    />
+    <span v-if="canScrollRight" class="category-nav-fade right" aria-hidden="true"></span>
+    <PagerButton
       v-if="canScrollRight"
-      type="button"
+      direction="next"
       class="category-nav-arrow right"
       aria-label="Kategorien nach rechts scrollen"
       @click="emit('scrollNav', 1)"
-    >
-      <AppIcon :icon="ACTION_ICONS.scrollRight" :size="16" group="actions" />
-    </button>
+    />
   </div>
 </template>
 
@@ -162,46 +160,39 @@ const emit = defineEmits<{
   min-width: max-content;
 }
 
-.category-nav-arrow {
-  @include touch-target($expand: true, $position: 'absolute');
+.category-nav-fade {
+  position: absolute;
   top: 0;
   bottom: 0;
+  z-index: 2;
+  width: 48px;
+  pointer-events: none;
+}
+
+.category-nav-fade.left {
+  left: 0;
+  background: linear-gradient(to right, var(--category-nav-bg) 65%, transparent);
+}
+
+.category-nav-fade.right {
+  right: 0;
+  background: linear-gradient(to left, var(--category-nav-bg) 65%, transparent);
+}
+
+.category-nav-arrow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  margin-block: auto;
   z-index: 3;
-  display: flex;
-  align-items: center;
-  width: 32px;
-  border: none;
-  box-shadow: none;
-  border-radius: 0;
-  padding: 0;
-  cursor: pointer;
-  background: transparent;
-  color: var(--color-text-muted);
-}
-
-@include can-hover {
-  .category-nav-arrow:hover {
-    color: var(--color-primary-dark);
-  }
-}
-
-.category-nav-arrow:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: -3px;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
 }
 
 .category-nav-arrow.left {
-  left: 0;
-  justify-content: flex-start;
-  padding-left: 4px;
+  left: var(--space-1);
 }
 
 .category-nav-arrow.right {
-  right: 0;
-  justify-content: flex-end;
-  padding-right: 4px;
+  right: var(--space-1);
 }
 
 .category-nav-item {

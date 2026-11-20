@@ -6,7 +6,7 @@ import WeatherIcon from './WeatherIcon.vue';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import Badge from './primitives/Badge.vue';
-import IconButton from './primitives/IconButton.vue';
+import PagerButton from './primitives/PagerButton.vue';
 import LoadingSpinner from './primitives/LoadingSpinner.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
 import WeatherAlertCard from './WeatherAlertCard.vue';
@@ -485,20 +485,16 @@ function formatDate(dateStr: string) {
   >
     <template #header-actions>
       <div v-if="hasMultipleDays" class="weather-pager">
-        <IconButton
-          variant="ghost"
-          size="sm"
+        <PagerButton
+          direction="prev"
           :disabled="!canGoPrev"
-          :icon="ACTION_ICONS.scrollLeft"
           :aria-label="prevDayLabel"
           :title="prevDayTitle"
           @click="goToPrevDay"
         />
-        <IconButton
-          variant="ghost"
-          size="sm"
+        <PagerButton
+          direction="next"
           :disabled="!canGoNext"
-          :icon="ACTION_ICONS.scrollRight"
           :aria-label="nextDayLabel"
           :title="nextDayTitle"
           @click="goToNextDay"

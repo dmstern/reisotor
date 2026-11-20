@@ -84,7 +84,7 @@ describe('ExcursionCard', () => {
     expect(html).toContain('excursion-card');
     expect(html).toContain('tour-status-meta');
     expect(html).toContain('is-readonly');
-    expect(html).toContain('card-disclosure-pill');
+    expect(html).toContain('disclosure-pill');
     expect(html).toContain('tour-edit-btn');
     expect(html).not.toContain('Einklappen');
     expect(html).not.toContain('card-title-meta');
@@ -112,7 +112,7 @@ describe('ExcursionCard', () => {
     expect(html).toContain('Auf Karte anzeigen');
     expect(html).toContain('done-toggle');
     expect(html).toContain('like-btn');
-    expect(html).toContain('card-disclosure-pill is-expanded');
+    expect(html).toContain('disclosure-pill disclosure-pill--tonal is-expanded');
     expect(html).toContain('Einklappen');
     expect(html).toContain('tour-edit-btn');
     expect(html).toContain('btn--ghost');

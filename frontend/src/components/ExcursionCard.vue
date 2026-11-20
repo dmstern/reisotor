@@ -10,6 +10,7 @@ import RichTextDisplay from './RichTextDisplay.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import SocialRow from './SocialRow.vue';
 import Card from './primitives/Card.vue';
+import DisclosurePill from './primitives/DisclosurePill.vue';
 import Accordion from './primitives/Accordion.vue';
 import FileAttachments from './FileAttachments.vue';
 import TourRoleBadge from './TourRoleBadge.vue';
@@ -150,14 +151,7 @@ const {
                 class="tour-edit-btn"
                 @click="emit('edit', excursion)"
               />
-              <span v-if="!expanded" class="card-disclosure-pill is-compact" aria-hidden="true">
-                <AppIcon
-                  :icon="ACTION_ICONS.chevronDown"
-                  :size="14"
-                  group="actions"
-                  class="disclosure-chevron"
-                />
-              </span>
+              <DisclosurePill v-if="!expanded" compact />
             </div>
           </div>
 
@@ -196,15 +190,7 @@ const {
               </Transition>
             </div>
 
-            <span class="card-disclosure-pill is-expanded" aria-hidden="true">
-              <span class="disclosure-label">Einklappen</span>
-              <AppIcon
-                :icon="ACTION_ICONS.chevronUp"
-                :size="14"
-                group="actions"
-                class="disclosure-chevron"
-              />
-            </span>
+            <DisclosurePill expanded />
           </div>
         </div>
 
@@ -562,37 +548,24 @@ const {
   margin-top: 1px;
 }
 
-.card-disclosure-pill {
-  @include card-disclosure-pill('tonal');
-}
-
-.card-disclosure-pill.is-expanded {
-  width: auto;
-  padding: 0 var(--space-2);
-}
-
-.disclosure-chevron {
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
 @include can-hover {
-  .excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) .card-disclosure-pill {
+  .excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) :deep(.disclosure-pill) {
     @include card-disclosure-pill-hover('tonal');
   }
 
-  .excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) .disclosure-chevron {
+  .excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) :deep(.disclosure-chevron) {
     transform: translateY(2px);
   }
 
   .excursion-card.expanded
     .card-header-row:hover:not(:has(.tour-edit-btn:hover))
-    .card-disclosure-pill {
+    :deep(.disclosure-pill) {
     @include card-disclosure-pill-hover('tonal');
   }
 
   .excursion-card.expanded
     .card-header-row:hover:not(:has(.tour-edit-btn:hover))
-    .disclosure-chevron {
+    :deep(.disclosure-chevron) {
     transform: translateY(-2px);
   }
 }
@@ -698,12 +671,12 @@ const {
 }
 
 @container excursion-card (max-width: 400px) {
-  .card-disclosure-pill.is-expanded {
+  :deep(.disclosure-pill.is-expanded) {
     width: 26px;
     padding: 0;
   }
 
-  .disclosure-label {
+  :deep(.disclosure-label) {
     display: none;
   }
 }
@@ -772,8 +745,6 @@ const {
   .body,
   .body > :not(.card-header-row, .accordion, .tour-note-container),
   .card-header-row,
-  .card-disclosure-pill,
-  .disclosure-chevron,
   .tour-note-container {
     transform: none !important;
     transition: opacity 0.15s ease !important;

@@ -318,8 +318,9 @@ function clearFilters() {
           >
             <!-- Sektion 1: Sortieren nach -->
             <div class="popover-section">
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 class="popover-section-header popover-section-toggle"
                 :aria-expanded="openSections.sort"
                 @click="toggleSection('sort')"
@@ -341,7 +342,7 @@ function clearFilters() {
                   class="section-chevron"
                   :class="{ 'is-open': openSections.sort }"
                 />
-              </button>
+              </Button>
               <Accordion :expanded="openSections.sort" stagger inner-class="popover-options-list">
                 <DropdownMenuItem
                   label="Nach Datum"
@@ -380,8 +381,9 @@ function clearFilters() {
 
             <!-- Sektion 2: Spots (Kategorien) -->
             <div v-if="categoryOptions.length" class="popover-section">
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 class="popover-section-header popover-section-toggle"
                 :aria-expanded="openSections.spots"
                 @click="toggleSection('spots')"
@@ -407,7 +409,7 @@ function clearFilters() {
                   class="section-chevron"
                   :class="{ 'is-open': openSections.spots }"
                 />
-              </button>
+              </Button>
               <Accordion :expanded="openSections.spots" stagger inner-class="popover-options-list">
                 <DropdownMenuItem
                   v-for="cat in categoryOptions"
@@ -425,8 +427,9 @@ function clearFilters() {
 
             <!-- Sektion 3: Status -->
             <div class="popover-section">
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 class="popover-section-header popover-section-toggle"
                 :aria-expanded="openSections.status"
                 @click="toggleSection('status')"
@@ -452,7 +455,7 @@ function clearFilters() {
                   class="section-chevron"
                   :class="{ 'is-open': openSections.status }"
                 />
-              </button>
+              </Button>
               <Accordion :expanded="openSections.status" stagger inner-class="popover-options-list">
                 <DropdownMenuItem
                   multiselect
@@ -484,8 +487,9 @@ function clearFilters() {
 
             <!-- Sektion 4: Touren -->
             <div class="popover-section">
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 class="popover-section-header popover-section-toggle"
                 :aria-expanded="openSections.tours"
                 @click="toggleSection('tours')"
@@ -511,7 +515,7 @@ function clearFilters() {
                   class="section-chevron"
                   :class="{ 'is-open': openSections.tours }"
                 />
-              </button>
+              </Button>
               <Accordion :expanded="openSections.tours" stagger inner-class="popover-options-list">
                 <DropdownMenuItem
                   v-for="role in TOUR_ROLE_OPTIONS"
@@ -699,38 +703,23 @@ function clearFilters() {
   padding-top: 2px;
 }
 
-button.popover-section-header.popover-section-toggle {
-  display: flex;
-  align-items: center;
+.popover-section-header.popover-section-toggle {
+  justify-content: flex-start;
   gap: 6px;
   width: 100%;
-  min-height: 36px;
   padding: 6px 8px;
-  border: none;
-  background: transparent;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
   font-size: var(--font-size-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-text-muted);
-  cursor: pointer;
-  user-select: none;
   text-align: left;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
 }
 
-button.popover-section-header.popover-section-toggle:hover {
-  background: var(--color-hover);
-  color: var(--color-text);
-}
-
-button.popover-section-header.popover-section-toggle:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
-  outline-offset: -2px;
+@include can-hover {
+  .popover-section-header.popover-section-toggle:hover {
+    color: var(--color-text);
+  }
 }
 
 .section-icon {

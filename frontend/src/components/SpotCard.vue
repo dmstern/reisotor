@@ -17,6 +17,7 @@ import Accordion from './primitives/Accordion.vue';
 import Button from './primitives/Button.vue';
 import Badge from './primitives/Badge.vue';
 import Card from './primitives/Card.vue';
+import DisclosurePill from './primitives/DisclosurePill.vue';
 import SpotCoverImage from './SpotCoverImage.vue';
 import SpotDetails from './SpotDetails.vue';
 import SpotDoneStatus from './SpotDoneStatus.vue';
@@ -351,21 +352,9 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
             :liked="liked"
             :comment-count="comments.length"
           />
-          <span
-            class="spot-expand-pill"
-            :class="{
-              'is-compact': likeCount > 0 || comments.length > 0 || layoverMinutes != null,
-            }"
-            aria-hidden="true"
-          >
-            <span class="spot-expand-label">Details</span>
-            <AppIcon
-              :icon="ACTION_ICONS.chevronDown"
-              :size="13"
-              group="actions"
-              class="spot-expand-chevron"
-            />
-          </span>
+          <DisclosurePill
+            :compact="likeCount > 0 || comments.length > 0 || layoverMinutes != null"
+          />
         </div>
       </div>
 
@@ -548,7 +537,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
           :has(.spot-location-badge:hover, .pending-sync-badge:hover, .spot-edit-btn:hover)
         )
     )
-    :deep(.spot-collapse-pill) {
+    :deep(.disclosure-pill) {
     @include card-disclosure-pill-hover('overlay');
   }
 
@@ -557,7 +546,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
           :has(.spot-location-badge:hover, .pending-sync-badge:hover, .spot-edit-btn:hover)
         )
     )
-    :deep(.spot-collapse-chevron) {
+    :deep(.disclosure-chevron) {
     transform: translateY(-2px);
   }
 }
@@ -689,25 +678,12 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   flex-shrink: 0;
 }
 
-.spot-expand-pill {
-  @include card-disclosure-pill('tonal');
-}
-
-.spot-expand-pill.is-compact .spot-expand-label {
-  display: none;
-}
-
-.spot-expand-chevron {
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
 @include can-hover {
-  .spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) .spot-expand-pill,
-  .spot-expand-pill:hover {
+  .spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) :deep(.disclosure-pill) {
     @include card-disclosure-pill-hover('tonal');
   }
 
-  .spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) .spot-expand-chevron {
+  .spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) :deep(.disclosure-chevron) {
     transform: translateY(1.5px);
   }
 }
@@ -958,12 +934,12 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
     gap: 0;
   }
 
-  .spot-expand-pill {
+  :deep(.disclosure-pill) {
     width: 26px;
     padding: 0;
   }
 
-  .spot-expand-label {
+  :deep(.disclosure-label) {
     display: none;
   }
 }
@@ -973,8 +949,6 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   .body,
   .spot-card.expanded .card-badge-group,
   .spot-card.expanded .body > :not(.card-header-row),
-  .spot-expand-pill,
-  .spot-expand-chevron,
   .actions-accordion,
   .actions-accordion-inner > * {
     transition: none;

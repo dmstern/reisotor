@@ -3,7 +3,7 @@ import { computed, nextTick, toRef, watch } from 'vue';
 import type { Attachment } from '../api/types';
 import Modal from './Modal.vue';
 import Button from './primitives/Button.vue';
-import IconButton from './primitives/IconButton.vue';
+import PagerButton from './primitives/PagerButton.vue';
 import FileFormatGraphic from './primitives/FileFormatGraphic.vue';
 import AttachmentExifCard from './AttachmentExifCard.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -142,11 +142,11 @@ function onRemoveCurrent() {
         @touchcancel="onTouchCancel"
         @mousedown="onMouseDown"
       >
-        <IconButton
+        <PagerButton
           v-if="attachments.length > 1"
-          variant="ghost"
+          direction="prev"
+          size="md"
           class="nav-btn prev-btn"
-          :icon="ACTION_ICONS.scrollLeft"
           title="Vorheriger Anhang (Pfeiltaste links)"
           aria-label="Vorheriger Anhang"
           :disabled="isAnimating"
@@ -198,11 +198,11 @@ function onRemoveCurrent() {
           </div>
         </div>
 
-        <IconButton
+        <PagerButton
           v-if="attachments.length > 1"
-          variant="ghost"
+          direction="next"
+          size="md"
           class="nav-btn next-btn"
-          :icon="ACTION_ICONS.scrollRight"
           title="Nächster Anhang (Pfeiltaste rechts)"
           aria-label="Nächster Anhang"
           :disabled="isAnimating"
@@ -243,7 +243,7 @@ function onRemoveCurrent() {
   </Modal>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .preview-container {
   display: flex;
   flex-direction: column;
@@ -282,14 +282,12 @@ function onRemoveCurrent() {
   }
 
   .nav-btn {
+    @include control-overlay-interactive;
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 0;
+    bottom: 0;
+    margin-block: auto;
     z-index: 10;
-    background: var(--color-surface-glass);
-    backdrop-filter: var(--backdrop-blur-md);
-    box-shadow: var(--shadow-floating-island);
-    border: 1px solid var(--color-surface-glass-border);
   }
 
   .nav-btn.prev-btn {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
+import IconButton from './primitives/IconButton.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
@@ -69,11 +70,10 @@ const emit = defineEmits<{
               </span>
               <span class="date-check-status">{{ item.statusLabel }}</span>
             </button>
-            <Button
-              type="button"
+            <IconButton
               variant="ghost"
               size="sm"
-              icon-only
+              shape="circle"
               class="date-calendar-jump-btn"
               :title="item.jumpTitle"
               :aria-label="item.jumpAriaLabel"
@@ -82,7 +82,7 @@ const emit = defineEmits<{
               <slot name="jump-icon" :item="item">
                 <AppIcon :icon="FORM_FIELD_ICONS.date" :size="16" group="formFields" />
               </slot>
-            </Button>
+            </IconButton>
           </div>
         </div>
         <div class="popover-buttons">
@@ -246,16 +246,6 @@ const emit = defineEmits<{
 }
 
 .date-calendar-jump-btn {
-  @include touch-target;
-  flex: 0 0 34px !important;
-  width: 34px !important;
-  height: 34px !important;
-  min-width: 34px !important;
-  max-width: 34px !important;
-  min-height: 34px !important;
-  max-height: 34px !important;
-  padding: 0 !important;
-  border-radius: var(--radius-pill);
   color: var(--color-text-muted);
 }
 
