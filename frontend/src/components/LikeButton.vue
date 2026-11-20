@@ -37,8 +37,8 @@ const emit = defineEmits<{ (e: 'toggle'): void }>();
 }
 
 @include can-hover {
-  .like-btn.liked:hover {
-    background: var(--color-like-tint);
+  .like-btn.btn.liked:hover:not(:disabled) {
+    background-color: var(--color-like-tint);
   }
 }
 

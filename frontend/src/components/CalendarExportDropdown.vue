@@ -153,11 +153,11 @@ function downloadIcs() {
 }
 
 .calendar-btn--sm:not(.always-show-label) {
-  width: var(--input-width-sm, 38px);
+  width: var(--control-height-sm, 36px);
 }
 
 .calendar-btn--md:not(.always-show-label) {
-  width: var(--input-width, 46px);
+  width: var(--control-height-md, 46px);
 }
 
 .calendar-btn-label {

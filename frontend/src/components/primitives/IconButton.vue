@@ -79,39 +79,6 @@ const emit = defineEmits<{
 
 <style lang="scss" scoped>
 .icon-btn {
-  position: relative;
-  width: var(--control-height-md, 46px);
-  height: var(--control-height-md, 46px);
-  min-width: var(--control-height-md, 46px);
-  min-height: var(--control-height-md, 46px);
-}
-
-.icon-btn.btn--xs {
-  width: var(--control-height-xs, 30px);
-  height: var(--control-height-xs, 30px);
-  min-width: var(--control-height-xs, 30px);
-  min-height: var(--control-height-xs, 30px);
-  @include touch-target($expand: true);
-}
-
-.icon-btn.btn--sm {
-  width: var(--control-height-sm, 36px);
-  height: var(--control-height-sm, 36px);
-  min-width: var(--control-height-sm, 36px);
-  min-height: var(--control-height-sm, 36px);
-  @include touch-target($expand: true);
-}
-
-.icon-btn.btn--lg {
-  width: var(--control-height-lg, 52px);
-  height: var(--control-height-lg, 52px);
-  min-width: var(--control-height-lg, 52px);
-  min-height: var(--control-height-lg, 52px);
-}
-
-.icon-btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
+  flex-shrink: 0;
 }
 </style>

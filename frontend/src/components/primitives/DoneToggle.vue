@@ -96,7 +96,7 @@ function onClick(event: MouseEvent) {
 
 <style lang="scss" scoped>
 .done-toggle {
-  @include control-physics-progressive;
+  @include control-physics-progressive('&:active:not(:disabled), &.is-dropdown-open');
   @include touch-target($expand: true);
   position: relative;
   display: inline-flex;
@@ -312,23 +312,6 @@ function onClick(event: MouseEvent) {
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border-width: 0;
-  }
-}
-
-/* Virtuelles Touch-Target (mind. 44px Höhe gemäß DESIGN.md §7.1 / WCAG 2.5.5) */
-.done-toggle::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  inset-inline: 0;
-  height: 44px;
-  min-height: 44px;
-}
-
-@media (pointer: fine) {
-  .done-toggle::after {
-    display: none;
   }
 }
 

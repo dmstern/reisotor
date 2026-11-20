@@ -197,14 +197,14 @@ const emit = defineEmits<{
 .tour-leg-pill.is-row-break {
   flex-wrap: wrap;
   gap: var(--space-2);
-  padding: 0 var(--space-3);
+  padding: 6px var(--space-3);
   max-width: 90%;
   text-align: center;
 }
 
 .tour-leg-add-btn.is-row-break {
   gap: 6px;
-  padding: 0 var(--space-3);
+  padding: 6px var(--space-3);
 }
 
 .tour-leg-add-wrap {
@@ -266,12 +266,5 @@ const emit = defineEmits<{
   color: var(--tour-theme-color, var(--color-primary));
   line-height: 1.1;
   white-space: nowrap;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tour-leg-pill,
-  .tour-leg-add-btn {
-    transition: none;
-  }
 }
 </style>

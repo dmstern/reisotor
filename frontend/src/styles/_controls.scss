@@ -211,7 +211,7 @@
 
   @include can-hover {
     &:hover:not(:disabled):not(.is-disabled) {
-      background-color: var(--color-surface-glass-hover);
+      background-color: color-mix(in srgb, var(--color-surface) 95%, transparent);
       background-image: var(--gradient-glass-highlight);
       border-color: var(--color-surface-glass-hover-border);
       color: var(--color-primary-dark);
@@ -227,7 +227,7 @@
   }
 
   #{$active-selector} {
-    background-color: var(--color-surface-glass-active);
+    background-color: var(--color-surface);
     background-image: var(--gradient-glass-active);
     border-color: var(--color-surface-glass-active-border);
     box-shadow: none;
@@ -605,7 +605,7 @@
 
 @mixin card-disclosure-pill-hover($mode: 'tonal') {
   @if $mode == 'overlay' {
-    background-color: var(--color-surface-glass-hover);
+    background-color: color-mix(in srgb, var(--color-surface) 95%, transparent);
     border-color: var(--color-surface-glass-hover-border);
     color: var(--color-primary-dark);
     box-shadow: var(--shadow-sm);

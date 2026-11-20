@@ -449,7 +449,7 @@ a.btn.is-loading {
 
 /* Abwärtskompatibles kompaktes Default-Sizing nur für Legacy-Alias card-action (ohne explizites size-Prop) */
 .btn--card-action {
-  @include touch-target($expand: true);
+  @include touch-target($expand: true, $position: null);
   gap: var(--control-gap-sm, 6px);
   padding: 6px 12px;
   min-height: var(--control-height-sm, 36px);
@@ -637,7 +637,7 @@ a.btn.is-loading {
 
 /* Einheitliche Größenstufen (Issue #810): xs (30px), sm (36px), md (46px), lg (52px) */
 .btn--xs {
-  @include touch-target($expand: true);
+  @include touch-target($expand: true, $position: null);
   gap: var(--control-gap-xs, 4px);
   padding: 4px 10px;
   font-size: var(--font-size-xs);
@@ -647,7 +647,7 @@ a.btn.is-loading {
 }
 
 .btn--sm {
-  @include touch-target($expand: true);
+  @include touch-target($expand: true, $position: null);
   gap: var(--control-gap-sm, 6px);
   padding: 6px 12px;
   font-size: var(--font-size-sm);
@@ -718,7 +718,7 @@ a.btn.is-loading {
 /* Linked-Entity Pill: harmonisiert auf sm-Grundlinie (36px) & Progressive 3D (#810) */
 .btn--linked-entity {
   @include control-physics-progressive;
-  @include touch-target($expand: true);
+  @include touch-target($expand: true, $position: null);
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
