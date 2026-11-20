@@ -132,6 +132,7 @@ onUnmounted(() => {
     <Button
       ref="buttonRef"
       variant="secondary"
+      dashed
       size="sm"
       :active="open"
       :icon="compact ? ACTION_ICONS.mapPinPlus : undefined"
