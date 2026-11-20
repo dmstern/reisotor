@@ -2,12 +2,12 @@
 import { computed, ref } from 'vue';
 import type { User } from '../api/types';
 import { ACTION_ICONS } from '../utils/actionIcons';
-import Button from './primitives/Button.vue';
+import IconButton from './primitives/IconButton.vue';
 import DropdownMenu from './primitives/DropdownMenu.vue';
 import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 
-// AssigneeMenu: Runder Avatar-Button (initial ghost, beim Hover 3D) mit Aktions-Menü zum Neuzuweisen
+// AssigneeMenu: Kompakter Avatar-Trigger (ghost xs squircle, passend zum benachbarten EditButton) mit Aktions-Menü zum Neuzuweisen
 // eines Listeneintrags (Einkaufsliste: Käufer:in, ToDo-Liste: Zuständige:r). Die Auswahl löst direkt
 // die Neuzuweisung aus (Aktion, kein Formularfeld) – daher DropdownMenu statt Select.vue.
 
@@ -61,10 +61,9 @@ function select(userId: number | null) {
 <template>
   <DropdownMenu :open="isOpen" align="right" aria-haspopup="menu" @toggle="toggle">
     <template #trigger="{ toggle: toggleMenu }">
-      <Button
+      <IconButton
         variant="ghost"
-        shape="circle"
-        size="sm"
+        size="xs"
         :title="title"
         :aria-label="title"
         :aria-expanded="isOpen"
@@ -74,7 +73,7 @@ function select(userId: number | null) {
         @click.stop="toggleMenu"
       >
         <span class="assignee-avatar" aria-hidden="true">{{ avatar }}</span>
-      </Button>
+      </IconButton>
     </template>
 
     <PickerMenu position="absolute" origin="top-right" :aria-label="roleLabel" @close="close">

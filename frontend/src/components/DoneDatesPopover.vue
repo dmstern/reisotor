@@ -73,7 +73,6 @@ const emit = defineEmits<{
             <IconButton
               variant="ghost"
               size="sm"
-              shape="circle"
               class="date-calendar-jump-btn"
               :title="item.jumpTitle"
               :aria-label="item.jumpAriaLabel"

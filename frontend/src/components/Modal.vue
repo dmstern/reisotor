@@ -423,7 +423,6 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
                 v-if="closable"
                 variant="ghost"
                 class="close-btn"
-                shape="circle"
                 :icon="ACTION_ICONS.close"
                 size="sm"
                 title="Schließen"
@@ -728,26 +727,6 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   align-items: center;
   gap: var(--space-1);
   flex-shrink: 0;
-}
-
-.close-btn {
-  position: relative;
-}
-
-.close-btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo);
-}
-
-.close-btn::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 44px;
-  height: 44px;
-  transform: translate(-50%, -50%);
 }
 
 .modal.confirm-close-dialog {
