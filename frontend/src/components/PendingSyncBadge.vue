@@ -3,6 +3,7 @@
 // synchronisiert. Bei Klick wird sofort ein Synchronisationsversuch angestoßen.
 import { computed } from 'vue';
 import AppIcon from './AppIcon.vue';
+import LoadingSpinner from './primitives/LoadingSpinner.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { useConnectivityStore } from '../stores/connectivity';
 
@@ -32,12 +33,8 @@ function onClick(event: MouseEvent) {
     title="Offline gespeichert – klicken, um Synchronisation jetzt anzustoßen"
     @click="onClick"
   >
-    <AppIcon
-      :icon="isSyncing ? ACTION_ICONS.syncPending : ACTION_ICONS.offline"
-      :size="12"
-      group="actions"
-      :class="{ 'is-spinning': isSyncing }"
-    />
+    <LoadingSpinner v-if="isSyncing" size="sm" decorative />
+    <AppIcon v-else :icon="ACTION_ICONS.offline" :size="12" group="actions" />
     <span>{{ isSyncing ? 'synchronisiere…' : 'nur lokal gespeichert' }}</span>
   </button>
 </template>
@@ -87,26 +84,9 @@ function onClick(event: MouseEvent) {
   opacity: 0.85;
 }
 
-.pending-sync-badge .is-spinning {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .pending-sync-badge {
     transition: none;
-  }
-
-  .pending-sync-badge .is-spinning {
-    animation: none;
   }
 }
 </style>
