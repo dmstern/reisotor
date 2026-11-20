@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue';
 import Card from '../primitives/Card.vue';
 import Button from '../primitives/Button.vue';
 import Badge from '../primitives/Badge.vue';
+import LoadingSpinner from '../primitives/LoadingSpinner.vue';
 import AppIcon from '../AppIcon.vue';
 import ViewLoadingState from '../ViewLoadingState.vue';
 import CreateUserDialog from '../CreateUserDialog.vue';
@@ -125,7 +126,7 @@ onMounted(() => {
                   class="role-badge"
                 >
                   <span>{{ getUserRoleLabel(u) }}</span>
-                  <span v-if="changingRoleId === u.id" class="role-spinner" aria-hidden="true" />
+                  <LoadingSpinner v-if="changingRoleId === u.id" size="sm" decorative />
                   <AppIcon
                     v-else
                     :icon="ACTION_ICONS.chevronDown"
@@ -335,22 +336,6 @@ onMounted(() => {
 .role-badge-select.is-loading {
   pointer-events: none;
   opacity: 0.7;
-}
-
-.role-spinner {
-  width: 10px;
-  height: 10px;
-  border: 2px solid currentColor;
-  border-top-color: transparent;
-  border-radius: var(--radius-pill);
-  animation: role-spin 0.6s linear infinite;
-  flex-shrink: 0;
-}
-
-@keyframes role-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .self-label {
