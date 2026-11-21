@@ -59,6 +59,25 @@ const checkinCheckoutText = computed(() => {
 
   return props.spot.checkin || props.spot.checkout || '';
 });
+
+/**
+ * Zerlegt eine einzeilige Adresse an Kommas in zusammenhängende Segmente
+ * (z. B. ["Av. 24 de Julho 49,", "1200-479 Lisboa"]), damit PLZ + Ort
+ * nicht vor dem Komma an der Straße kleben bleiben und erst in sich umbrechen,
+ * wenn ein einzelnes Segment breiter als die gesamte Spalte ist.
+ */
+const addressChunks = computed(() => {
+  const raw = props.spot.address?.trim();
+
+  if (!raw) {
+    return [];
+  }
+
+  return raw
+    .split(/,\s*/)
+    .filter(Boolean)
+    .map((part, index, list) => (index < list.length - 1 ? `${part},` : part));
+});
 </script>
 
 <template>
@@ -69,8 +88,10 @@ const checkinCheckoutText = computed(() => {
         label="Zeitraum"
         icon="period"
       >
-        {{ formatAccommodationDate(spot.start_date) || '?' }} –
-        {{ formatAccommodationDate(spot.end_date) || '?' }}
+        <span class="detail-chunk">
+          {{ formatAccommodationDate(spot.start_date) || '?' }} –
+          {{ formatAccommodationDate(spot.end_date) || '?' }}
+        </span>
         <CopyButton
           v-if="periodText"
           :text="periodText"
@@ -79,7 +100,10 @@ const checkinCheckoutText = computed(() => {
         />
       </DetailRow>
       <DetailRow v-if="spot.address" label="Adresse" icon="location">
-        <span>{{ spot.address }}</span>
+        <template v-for="(chunk, idx) in addressChunks" :key="idx">
+          <span class="detail-chunk">{{ chunk }}</span
+          >{{ idx < addressChunks.length - 1 ? ' ' : '' }}
+        </template>
         <CopyButton
           :text="spot.address"
           label="Adresse kopieren"
@@ -88,7 +112,7 @@ const checkinCheckoutText = computed(() => {
       </DetailRow>
       <template v-if="isAccommodation">
         <DetailRow v-if="spot.checkin || spot.checkout" label="Check-in/-out" icon="time">
-          {{ spot.checkin || '–' }} · {{ spot.checkout || '–' }}
+          <span class="detail-chunk">{{ spot.checkin || '–' }} · {{ spot.checkout || '–' }}</span>
           <CopyButton
             v-if="checkinCheckoutText"
             :text="checkinCheckoutText"
@@ -130,7 +154,7 @@ const checkinCheckoutText = computed(() => {
         </DetailRow>
         <DetailRow v-if="spot.amount != null" label="Kosten" icon="amount">
           <span class="nobr">{{ spot.amount.toFixed(2) }}&nbsp;€</span>
-          <span v-if="hasMultipleMembers !== false && spot.paid_by_user_id">
+          <span v-if="hasMultipleMembers !== false && spot.paid_by_user_id" class="detail-chunk">
             · bezahlt von {{ payerLabel }}</span
           >
           <CopyButton
@@ -167,37 +191,38 @@ const checkinCheckoutText = computed(() => {
         :icon="ACTION_ICONS.distance"
         icon-group="actions"
       >
-        <span>
+        <span class="detail-chunk">
           {{
             formatSpotDistance(
               accommodationDistance.distanceMeters,
               accommodationDistance.isFallback
             )
           }}
-          <template v-if="accommodationDistance.durationSeconds != null">
-            ·
-            <AppIcon
-              :icon="
-                travelTypeIconDef(
-                  accommodationDistance.profile === 'foot-walking' ? 'zu Fuß' : 'Auto'
-                )
-              "
-              :size="13"
-              group="categories"
-              class="spot-distance-transport-icon"
-            />
-            ca.
-            {{
-              formatTravelDuration(
-                Math.max(1, Math.round(accommodationDistance.durationSeconds / 60))
-              )
-            }}
-          </template>
-          <template v-else-if="accommodationDistance.isFallback"> · Luftlinie </template>
-          <span class="spot-accommodation-name">
-            (von {{ accommodationDistance.accommodationTitle }})
-          </span>
         </span>
+        <span v-if="accommodationDistance.durationSeconds != null" class="detail-chunk">
+          ·
+          <AppIcon
+            :icon="
+              travelTypeIconDef(
+                accommodationDistance.profile === 'foot-walking' ? 'zu Fuß' : 'Auto'
+              )
+            "
+            :size="13"
+            group="categories"
+            class="spot-distance-transport-icon"
+          />
+          ca.
+          {{
+            formatTravelDuration(
+              Math.max(1, Math.round(accommodationDistance.durationSeconds / 60))
+            )
+          }}
+        </span>
+        <span v-else-if="accommodationDistance.isFallback" class="detail-chunk"> · Luftlinie </span>
+        {{ ' '
+        }}<span class="spot-accommodation-name detail-chunk"
+          >(von {{ accommodationDistance.accommodationTitle }})</span
+        >
       </DetailRow>
     </dl>
   </div>

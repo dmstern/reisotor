@@ -287,8 +287,10 @@ onMounted(() => {
             :icon="ACTION_ICONS.currency"
             icon-group="actions"
           >
-            {{ regionInfo.currency.name }} ({{ regionInfo.currency.code }})
-            <span v-if="regionInfo.exchangeRate != null">
+            <span class="detail-chunk"
+              >{{ regionInfo.currency.name }} ({{ regionInfo.currency.code }})</span
+            >
+            <span v-if="regionInfo.exchangeRate != null" class="detail-chunk">
               · <span class="nobr">1&nbsp;{{ regionInfo.currency.code }}</span> ≈
               <span class="nobr"
                 >{{ regionInfo.exchangeRate.toFixed(2) }}&nbsp;{{ homeCurrency.currency }}</span
@@ -304,7 +306,7 @@ onMounted(() => {
             icon-group="actions"
           >
             {{ regionInfo.advisory.message }}
-            <span class="region-advisory-score"
+            <span class="region-advisory-score detail-chunk"
               >({{ regionInfo.advisory.score.toFixed(1) }}/5)</span
             >
           </DetailRow>

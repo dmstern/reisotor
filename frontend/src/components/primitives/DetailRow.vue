@@ -87,4 +87,9 @@ const resolvedIcon = computed<IconDef | undefined>(() => {
   color: var(--color-text);
   overflow-wrap: break-word;
 }
+
+.detail-row__value :deep(.detail-chunk) {
+  display: inline-block;
+  max-width: 100%;
+}
 </style>
