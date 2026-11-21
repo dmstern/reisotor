@@ -39,12 +39,6 @@ const emptyForm = () => ({
 const editForm = ref(emptyForm());
 const editTitleTouched = ref(false);
 
-const editDraft = useDraftAutosave(
-  () => `todos:edit:${props.item?.id}`,
-  editForm,
-  computed(() => props.item !== null)
-);
-
 watch(
   () => props.item,
   (newItem) => {
@@ -63,6 +57,12 @@ watch(
     }
   },
   { immediate: true }
+);
+
+const editDraft = useDraftAutosave(
+  () => `todos:edit:${props.item?.id}`,
+  editForm,
+  computed(() => props.item !== null)
 );
 
 watch(

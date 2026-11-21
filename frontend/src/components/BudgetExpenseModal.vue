@@ -108,12 +108,6 @@ const detailsCount = computed(() => {
   return count > 0 ? count : undefined;
 });
 
-const draft = useDraftAutosave(
-  () => (props.expense ? `budgetExpense:edit:${props.expense.id}` : 'budgetExpense:new'),
-  form,
-  () => props.modelValue
-);
-
 watch(
   () => [props.modelValue, props.expense] as const,
   ([isOpen, exp]) => {
@@ -163,6 +157,12 @@ watch(
     }
   },
   { immediate: true }
+);
+
+const draft = useDraftAutosave(
+  () => (props.expense ? `budgetExpense:edit:${props.expense.id}` : 'budgetExpense:new'),
+  form,
+  () => props.modelValue
 );
 
 watch(
