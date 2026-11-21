@@ -215,11 +215,45 @@ describe('TrackPlayback', () => {
     cleanUp();
   });
 
-  it('speed multiplier selector toggles between 1x, 2x, 5x, 10x', async () => {
+  it('renders dedicated scrubber section with range times and transport bar', async () => {
+    const { container, cleanUp } = mountPlayback({
+      points: samplePoints,
+      progress: 0.5,
+    });
+    await nextTick();
+
+    const scrubberSection = container.querySelector('.track-playback-scrubber');
+    const slider = scrubberSection?.querySelector<HTMLInputElement>('.playback-slider');
+    const rangeRow = scrubberSection?.querySelector('.track-playback-range');
+    const transportBar = container.querySelector('.track-playback-transport');
+    const playBtn = transportBar?.querySelector<HTMLButtonElement>('.playback-btn');
+    const closeBtn = container.querySelector<HTMLButtonElement>('.playback-close-btn');
+
+    expect(scrubberSection).toBeTruthy();
+    expect(slider).toBeTruthy();
+    expect(slider?.style.getPropertyValue('--progress-pct')).toBe('50.00%');
+    expect(rangeRow).toBeTruthy();
+    expect(rangeRow?.querySelector('.start-time')).toBeTruthy();
+    expect(rangeRow?.querySelector('.current-time')).toBeTruthy();
+    expect(rangeRow?.querySelector('.end-time')).toBeTruthy();
+    expect(transportBar).toBeTruthy();
+    expect(playBtn?.classList.contains('btn--lg')).toBe(true);
+    expect(closeBtn).toBeTruthy();
+    expect(closeBtn?.classList.contains('btn--xs')).toBe(false);
+    expect(closeBtn?.classList.contains('btn--sm')).toBe(false);
+    expect(closeBtn?.classList.contains('btn--lg')).toBe(false);
+
+    cleanUp();
+  });
+
+  it('inline segmented speed selector toggles between 1x, 2x, 5x, 10x', async () => {
     const { container, cleanUp } = mountPlayback({ points: samplePoints });
     await nextTick();
 
-    const speedButtons = container.querySelectorAll<HTMLButtonElement>('.speed-btn');
+    const inlineGroup = container.querySelector('.speed-inline-group');
+    expect(inlineGroup).toBeTruthy();
+
+    const speedButtons = inlineGroup!.querySelectorAll<HTMLButtonElement>('.speed-btn');
     expect(speedButtons.length).toBe(4);
 
     const buttonTexts = Array.from(speedButtons).map((btn) => btn.textContent?.trim());
@@ -227,11 +261,13 @@ describe('TrackPlayback', () => {
 
     // Default 1x is active
     expect(speedButtons[0].classList.contains('active')).toBe(true);
+    expect(speedButtons[0].getAttribute('aria-pressed')).toBe('true');
 
     // Click 2x
     speedButtons[1].click();
     await nextTick();
     expect(speedButtons[1].classList.contains('active')).toBe(true);
+    expect(speedButtons[1].getAttribute('aria-pressed')).toBe('true');
     expect(speedButtons[0].classList.contains('active')).toBe(false);
 
     // Click 5x
@@ -247,12 +283,15 @@ describe('TrackPlayback', () => {
     cleanUp();
   });
 
-  it('opens and closes speed popover and updates trigger label', async () => {
+  it('opens and closes speed popover and syncs active speed with inline group', async () => {
     const { container, cleanUp } = mountPlayback();
+    await nextTick();
 
     const trigger = container.querySelector<HTMLButtonElement>('.speed-trigger-btn');
     expect(trigger).toBeTruthy();
     expect(trigger?.textContent?.trim()).toBe('1x');
+    expect(trigger?.classList.contains('btn--xs')).toBe(false);
+    expect(trigger?.classList.contains('btn--sm')).toBe(false);
 
     const popover = container.querySelector<HTMLElement>('.speed-popover');
     expect(popover).toBeTruthy();
@@ -264,13 +303,19 @@ describe('TrackPlayback', () => {
     expect(popover?.style.display).not.toBe('none');
     expect(trigger?.getAttribute('aria-expanded')).toBe('true');
 
-    // Select 5x
-    const speedButtons = container.querySelectorAll<HTMLButtonElement>('.speed-btn');
-    speedButtons[2].click();
+    // Select 5x inside popover
+    const popoverSpeedButtons = popover!.querySelectorAll<HTMLButtonElement>('.speed-btn');
+    expect(popoverSpeedButtons.length).toBe(4);
+    popoverSpeedButtons[2].click();
     await nextTick();
 
     expect(trigger?.textContent?.trim()).toBe('5x');
     expect(popover?.style.display).toBe('none');
+
+    const inlineSpeedButtons = container.querySelectorAll<HTMLButtonElement>(
+      '.speed-inline-group .speed-btn'
+    );
+    expect(inlineSpeedButtons[2].classList.contains('active')).toBe(true);
 
     // Reopen and close via Escape
     trigger?.click();
