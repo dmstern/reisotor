@@ -668,6 +668,10 @@ const isNewHighlight = computed(() => {
   padding: var(--space-2) var(--space-3);
 }
 
+.card-content {
+  min-width: 0;
+}
+
 .card-header {
   margin-bottom: var(--space-2);
   min-width: 0;

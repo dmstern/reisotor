@@ -592,6 +592,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 
 .modal-body-wrap {
   flex: 1;
+  min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -601,6 +602,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 
 .modal-body {
   flex: 1;
+  min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -651,6 +653,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-width: 0;
   min-height: 0;
 }
 

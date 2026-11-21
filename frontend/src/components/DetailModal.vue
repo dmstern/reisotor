@@ -175,6 +175,7 @@ const hasPhoto = computed(() => {
 .detail-modal-card {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 /* 1. Header-Balken */
@@ -325,6 +326,7 @@ const hasPhoto = computed(() => {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 /* Dark-Mode Anpassungen für den Polaroid-Frame */
