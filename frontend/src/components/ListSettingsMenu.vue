@@ -201,7 +201,6 @@ function resetDefaults() {
     <Button
       ref="btnRef"
       variant="ghost"
-      shape="circle"
       :active="activeCount > 0"
       :icon="icon"
       :title="title"
