@@ -11,6 +11,7 @@ import { DEMO_MODE } from '../../demo/isDemoMode';
 import AppIcon from '../AppIcon.vue';
 import Alert from '../primitives/Alert.vue';
 import DetailRow from '../primitives/DetailRow.vue';
+import HorizontalScroller from '../primitives/HorizontalScroller.vue';
 import LoadingSpinner from '../primitives/LoadingSpinner.vue';
 import WeatherDayDetailDialog from '../WeatherDayDetailDialog.vue';
 import DashboardWeatherTodayRow from './DashboardWeatherTodayRow.vue';
@@ -155,7 +156,12 @@ onMounted(() => {
         <p v-else-if="!vacationForecastDays.length" class="hint">
           Für diesen Zeitraum sind keine Wetterdaten gespeichert.
         </p>
-        <div v-else class="weather-days">
+        <HorizontalScroller
+          v-else
+          class="weather-days"
+          prev-label="Urlaubswetter nach links scrollen"
+          next-label="Urlaubswetter nach rechts scrollen"
+        >
           <DashboardWeatherDayItem
             v-for="day in vacationForecastDays"
             :key="day.date"
@@ -165,7 +171,7 @@ onMounted(() => {
             :alert="getDayAlert(day)"
             @click="openWeatherDayDialog(day)"
           />
-        </div>
+        </HorizontalScroller>
 
         <p v-if="DEMO_MODE" class="weather-source static">
           Demo-Wetterdaten (keine echte Vorhersage)
@@ -205,7 +211,12 @@ onMounted(() => {
         liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden ~16 Tage ab, schau kurz
         vorher nochmal vorbei.
       </p>
-      <div v-else class="weather-days">
+      <HorizontalScroller
+        v-else
+        class="weather-days"
+        prev-label="Wetter zuhause nach links scrollen"
+        next-label="Wetter zuhause nach rechts scrollen"
+      >
         <DashboardWeatherDayItem
           v-for="day in homeForecastDays"
           :key="day.date"
@@ -221,7 +232,7 @@ onMounted(() => {
             })
           "
         />
-      </div>
+      </HorizontalScroller>
     </template>
     <p v-else-if="!home && !isTripOver" class="hint">
       Markiere in der Karte unter Spots einen Spot mit
@@ -348,10 +359,8 @@ onMounted(() => {
 }
 
 .weather-days {
-  display: flex;
-  gap: var(--space-2);
-  overflow-x: auto;
-  padding: 8px 6px;
+  --horizontal-scroller-gap: var(--space-2);
+  --horizontal-scroller-padding: 8px 6px;
   margin: -6px -6px calc(-8px + var(--space-1));
 }
 
