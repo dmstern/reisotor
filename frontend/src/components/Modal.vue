@@ -547,7 +547,9 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: var(--shadow-md);
+  box-shadow:
+    inset 0 1px 0 var(--shadow-control-highlight),
+    var(--shadow-md);
   transition:
     height 0.35s cubic-bezier(0.34, 1.2, 0.64, 1),
     max-height 0.35s ease;
@@ -675,7 +677,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   margin-top: var(--space-4);
   padding-top: var(--space-3);
   padding-bottom: var(--space-3);
-  border-top: 1px solid var(--color-border-divider);
+  @include divider-engraved('top');
 }
 
 .modal-body :slotted(form) .actions-row .spacer,

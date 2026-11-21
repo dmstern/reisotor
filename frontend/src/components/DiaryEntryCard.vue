@@ -330,7 +330,7 @@ function excursionTooltip(ex: Excursion): string {
   gap: var(--space-2);
   margin-top: var(--space-2);
   padding-top: var(--space-2);
-  border-top: var(--border-width) solid var(--color-border-divider);
+  @include divider-engraved('top');
   min-width: 0;
   max-width: 100%;
 }

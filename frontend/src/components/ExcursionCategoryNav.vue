@@ -109,7 +109,7 @@ const emit = defineEmits<{
   padding-right: var(--space-3);
   --category-nav-bg: var(--color-surface);
   background: var(--category-nav-bg);
-  border-bottom: 1px solid var(--color-border-divider);
+  @include divider-engraved('bottom');
   transition:
     box-shadow 0.2s ease,
     background-color 0.2s ease,

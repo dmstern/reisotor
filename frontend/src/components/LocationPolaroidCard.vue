@@ -475,11 +475,15 @@ defineExpose({
   left: 12px;
   width: 320px;
   max-width: calc(100% - 24px);
-  background: var(--color-surface);
+  background-color: var(--color-surface);
+  background-image: var(--gradient-surface-3d);
+  background-origin: border-box;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  box-shadow: var(--shadow-md);
+  box-shadow:
+    inset 0 1px 0 var(--shadow-control-highlight),
+    var(--shadow-md);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -501,6 +505,7 @@ defineExpose({
 .polaroid-card.is-modified {
   border-color: var(--color-accent);
   box-shadow:
+    inset 0 1px 0 var(--shadow-control-highlight),
     var(--shadow-md),
     0 0 0 1px var(--color-accent);
 }

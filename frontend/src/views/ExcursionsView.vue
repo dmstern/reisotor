@@ -2256,11 +2256,26 @@ onUnmounted(() => {
   transition: background-color 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+/* Obere Glanzkante als eigenes Overlay-Layer über .spots-col-body und sticky .category-nav-wrap,
+   damit der opake Hintergrund der fixierten Tab-Leiste beim Scrollen die Kante nicht überdeckt. */
+.spots-col::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  border-radius: inherit;
+  corner-shape: inherit;
+  box-shadow: inset 0 1px 0 var(--shadow-control-highlight);
+}
+
 /* Wie bei Apple Karten: im eingeklappten ("klein") und angeschnittenen ("halb") Zustand schwebt
    das Sheet mit Liquid-Glass-Effekt über der Karte; erst ganz hochgezogen (.full) wird es
    undurchsichtig. */
 .spots-col.collapsed,
 .spots-col.partial {
+  --color-divider-groove: var(--color-divider-groove-glass);
+  --color-divider-highlight: var(--color-divider-highlight-glass);
   border-color: var(--color-surface-glass-border);
   box-shadow: var(--shadow-floating-island);
 }
@@ -2273,18 +2288,18 @@ onUnmounted(() => {
 
 /* Kategorie-TabNav auf dem Liquid-Glass-Sheet: im ungescrollten Zustand transparent (ohne eigenen
    Blur-Block), damit keine doppelte Blur-Kante auf dem Glas entsteht; sobald gescrollter Inhalt
-   darunter liegt (auch beim Zurückstufen von full -> partial mit erhaltenem scrollTop), trennt
-   eine dichtere Frosted-Glass-Fläche + verstärkter backdrop-filter die Leiste sauber vom Content. */
+   darunter liegt (auch beim Zurückstufen von full -> partial mit erhaltenem scrollTop), bleibt
+   der Hintergrund transparent und ein verstärkter backdrop-filter: blur(...) verhindert das
+   Durchscheinen des Contents, ohne eine opake Fläche auf das Glas zu legen. */
 .spots-col.collapsed :deep(.category-nav-wrap),
 .spots-col.partial :deep(.category-nav-wrap) {
   --category-nav-bg: transparent;
   background: var(--category-nav-bg);
   backdrop-filter: none;
-  border-bottom-color: var(--color-surface-glass-border);
 }
 
 .spots-col.partial :deep(.category-nav-wrap.is-stuck) {
-  --category-nav-bg: var(--color-surface-glass-dense);
+  --category-nav-bg: transparent;
   background: var(--category-nav-bg);
   backdrop-filter: blur(max(16px, calc(var(--glass-blur, 6px) * 2))) saturate(180%);
 }
@@ -2319,10 +2334,6 @@ onUnmounted(() => {
   corner-shape: squircle;
   height: min(100vh, var(--sheet-max-height));
   height: min(100dvh, var(--sheet-max-height));
-
-  &::before {
-    box-shadow: inset 0 1px 0 var(--shadow-control-highlight);
-  }
 
   .spots-col-body {
     padding-bottom: var(--navbar-bottom-offset, 0px);
@@ -2693,9 +2704,9 @@ onUnmounted(() => {
       border-radius: var(--radius-md-squircle);
       corner-shape: squircle;
       border: 1px solid var(--color-border);
-      box-shadow:
-        inset 0 1px 0 var(--shadow-control-highlight),
-        var(--shadow-md);
+      box-shadow: var(--shadow-md);
+      --color-divider-groove: var(--color-divider-groove-surface);
+      --color-divider-highlight: var(--color-divider-highlight-surface);
       width: var(--spots-col-width);
       /* Hält mindestens 380px Freiraum am rechten Rand von .app-main frei,
          damit nicht nur die Floating- und Zoom-Buttons Platz haben, sondern auch der
@@ -2730,7 +2741,6 @@ onUnmounted(() => {
       --category-nav-bg: var(--color-surface);
       background: var(--category-nav-bg);
       backdrop-filter: none;
-      border-bottom-color: var(--color-border-divider);
     }
 
     .sheet-handle-row {
@@ -2914,7 +2924,7 @@ onUnmounted(() => {
   margin-left: calc(var(--space-3) * -1);
   margin-right: calc(var(--space-3) * -1);
   margin-bottom: 0;
-  border-bottom: 1px solid var(--color-border-divider);
+  @include divider-engraved('bottom');
   transition:
     background 0.25s ease,
     box-shadow 0.25s ease,
@@ -2922,7 +2932,7 @@ onUnmounted(() => {
 }
 
 .category-group.is-tour-group:first-of-type {
-  border-top: 1px solid var(--color-border-divider);
+  @include divider-engraved('both');
 }
 
 .tour-empty-group {
@@ -2967,7 +2977,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   padding: var(--space-1) 0 var(--space-2);
-  border-bottom: 1px solid var(--color-border-divider);
+  @include divider-engraved('bottom');
 }
 
 .tour-detail-back-btn {

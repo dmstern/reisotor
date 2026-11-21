@@ -266,7 +266,7 @@ const {
   />
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .fit-btn {
   position: absolute;
   top: var(--fit-btn-top-inset, var(--fit-btn-inset));
@@ -301,7 +301,7 @@ const {
 
 .picker-divider {
   border: none;
-  border-top: 1px solid var(--color-border-divider);
+  @include divider-engraved('bottom');
   margin: var(--space-1) 0;
 }
 

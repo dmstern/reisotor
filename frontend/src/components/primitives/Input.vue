@@ -226,6 +226,8 @@ defineExpose({
 /* Spezifische Handhabung für Suchfelder (Pill-Form) */
 .input--pill,
 .input[type='search'] {
+  --input-border-color: var(--color-search-field-border);
+  --control-field-rest-shadow: var(--shadow-search-field-inset);
   border-radius: var(--radius-pill);
   corner-shape: round;
   padding-left: 14px;

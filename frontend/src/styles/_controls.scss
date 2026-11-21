@@ -17,7 +17,7 @@
 ///
 /// @param {Boolean} $focus-within [false] - Ob :focus-within und .is-focused statt :focus verwendet werden sollen (für Container)
 @mixin control-field-inset($focus-within: false) {
-  box-shadow: none;
+  box-shadow: var(--control-field-rest-shadow, none);
   background: var(--color-input-bg);
   border: 1.5px solid var(--input-border-color);
   border-radius: var(--radius-sm-squircle);
@@ -615,5 +615,25 @@
     border-color: var(--color-primary);
     box-shadow: var(--shadow-control-hover);
     translate: 0 -1px;
+  }
+}
+
+/// Eingefräste horizontale Trennlinie (Licht von oben: oben dunkle Rille, direkt darunter
+/// feine Glanzkante). Passt sich über `--color-divider-groove` / `--color-divider-highlight`
+/// automatisch an opake Flächen und Liquid-Glass-Container an.
+/// @param {String} $edge - 'top' (border-top + inset-Glanzkante), 'bottom' (border-bottom + äußere Glanzkante), 'both' (beide Kanten)
+@mixin divider-engraved($edge: 'top') {
+  @if $edge == 'bottom' {
+    border-bottom: 1px solid var(--color-divider-groove);
+    box-shadow: 0 1px 0 var(--color-divider-highlight);
+  } @else if $edge == 'both' {
+    border-top: 1px solid var(--color-divider-groove);
+    border-bottom: 1px solid var(--color-divider-groove);
+    box-shadow:
+      inset 0 1px 0 var(--color-divider-highlight),
+      0 1px 0 var(--color-divider-highlight);
+  } @else {
+    border-top: 1px solid var(--color-divider-groove);
+    box-shadow: inset 0 1px 0 var(--color-divider-highlight);
   }
 }
