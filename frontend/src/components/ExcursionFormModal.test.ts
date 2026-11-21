@@ -137,14 +137,17 @@ describe('ExcursionFormModal', () => {
       roleSelect.compareDocumentPosition(dateInput) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
 
-    const doneToggle = document.querySelector('.done-toggle') as HTMLButtonElement;
-    expect(doneToggle).not.toBeNull();
-    expect(doneToggle.textContent).toContain('Gemacht');
-    expect(doneToggle.getAttribute('aria-pressed')).toBe('true');
+    const doneSwitch = document.querySelector(
+      '.tour-done-field button[role="switch"]'
+    ) as HTMLButtonElement;
+    const doneLabel = document.querySelector('.tour-done-toggle-label');
+    expect(doneSwitch).not.toBeNull();
+    expect(doneLabel?.textContent).toContain('Gemacht');
+    expect(doneSwitch.getAttribute('aria-checked')).toBe('true');
 
-    doneToggle.click();
+    doneSwitch.click();
     await nextTick();
-    expect(doneToggle.getAttribute('aria-pressed')).toBe('false');
+    expect(doneSwitch.getAttribute('aria-checked')).toBe('false');
     cleanUp();
   });
 });
