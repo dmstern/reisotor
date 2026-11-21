@@ -39,8 +39,7 @@ const resolvedIcon = computed<IconDef | undefined>(() => {
           :size="13"
           :group="iconGroup"
           class="detail-row__icon"
-        />
-        <span v-if="label">{{ label }}</span>
+        /><span v-if="label" class="detail-row__label-text">{{ label }}</span>
       </dt>
     </slot>
     <dd class="detail-row__value">
@@ -69,15 +68,16 @@ const resolvedIcon = computed<IconDef | undefined>(() => {
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .detail-row__icon {
-  flex-shrink: 0;
-  align-self: center;
+  vertical-align: -2px;
+}
+
+.detail-row__icon + .detail-row__label-text {
+  margin-left: var(--space-xs);
 }
 
 .detail-row__value {
