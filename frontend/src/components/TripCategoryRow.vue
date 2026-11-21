@@ -49,13 +49,15 @@ const usageLabel = computed(() => {
     <div class="category-main">
       <CategoryChip :category="category.name" :type="activeType" />
 
-      <Badge v-if="category.isCustom" variant="primary">Urlaub</Badge>
-      <Badge v-else-if="category.isAdapted" variant="accent">Standard (angepasst)</Badge>
-      <Badge v-else variant="default">Standard</Badge>
+      <div class="category-meta">
+        <Badge v-if="category.isCustom" variant="primary">Urlaub</Badge>
+        <Badge v-else-if="category.isAdapted" variant="accent">Standard (angepasst)</Badge>
+        <Badge v-else variant="default">Standard</Badge>
 
-      <span class="usage-count" :class="{ 'has-usage': category.usageCount > 0 }">
-        {{ category.usageCount }} {{ usageLabel }}
-      </span>
+        <span class="usage-count" :class="{ 'has-usage': category.usageCount > 0 }">
+          {{ category.usageCount }} {{ usageLabel }}
+        </span>
+      </div>
     </div>
 
     <div class="row-actions">
@@ -104,7 +106,7 @@ const usageLabel = computed(() => {
   align-items: center;
   justify-content: space-between;
   padding: var(--space-2) var(--space-1);
-  gap: var(--space-2);
+  gap: var(--space-3);
   @include divider-engraved-row;
 }
 
@@ -122,10 +124,21 @@ const usageLabel = computed(() => {
   min-width: 0;
 }
 
+.category-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 .usage-count {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   white-space: nowrap;
+  min-width: 72px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .usage-count.has-usage {
@@ -150,6 +163,10 @@ const usageLabel = computed(() => {
   .category-row {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .usage-count {
+    min-width: auto;
   }
 
   .row-actions {
