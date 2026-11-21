@@ -5,6 +5,7 @@ import { formatInline } from '../utils/richText';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
+import Divider from './primitives/Divider.vue';
 
 const props = defineProps<{
   groups?: ChangelogGroup[];
@@ -258,6 +259,7 @@ const changelogGithubUrl = computed(() => {
     </template>
 
     <!-- 6. Link zum vollständigen GitHub-Changelog -->
+    <Divider />
     <div class="changelog-footer">
       <a
         :href="changelogGithubUrl"
@@ -356,8 +358,6 @@ const changelogGithubUrl = computed(() => {
 }
 
 .changelog-footer {
-  padding-top: var(--space-md);
-  border-top: 1px dashed var(--color-border-divider);
   display: flex;
   align-items: center;
 }
