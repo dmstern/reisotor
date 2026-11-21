@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
+import CheckboxCard from './primitives/CheckboxCard.vue';
 import IconButton from './primitives/IconButton.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -51,25 +52,20 @@ const emit = defineEmits<{
             class="date-check-row"
             :class="item.sourceClass"
           >
-            <button
-              type="button"
-              class="date-check-item btn"
-              :class="{ checked: item.done }"
-              @click="emit('toggle-item', item)"
+            <CheckboxCard
+              variant="popover"
+              :model-value="item.done"
+              :label="formatDateShared(item.date)"
+              class="date-check-item"
+              @update:model-value="emit('toggle-item', item)"
             >
-              <AppIcon
-                :icon="item.done ? ACTION_ICONS.done : ACTION_ICONS.notDone"
-                :size="15"
-                group="actions"
-              />
-              <span class="date-check-info">
-                <span class="date-check-date">{{ formatDateShared(item.date) }}</span>
-                <span v-if="item.title" class="date-check-title" :title="item.title">
-                  {{ item.title }}
-                </span>
-              </span>
-              <span class="date-check-status">{{ item.statusLabel }}</span>
-            </button>
+              <template v-if="item.title" #description>
+                <span :title="item.title">{{ item.title }}</span>
+              </template>
+              <template #extra>
+                <span class="date-check-status">{{ item.statusLabel }}</span>
+              </template>
+            </CheckboxCard>
             <IconButton
               variant="ghost"
               size="sm"
@@ -130,9 +126,7 @@ const emit = defineEmits<{
 }
 
 .dates-checklist {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
+  @include uniform-height-list(var(--space-1));
   max-height: 220px;
   overflow-y: auto;
   overflow-x: hidden;
@@ -142,7 +136,7 @@ const emit = defineEmits<{
 
 .date-check-row {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: var(--space-1);
   width: 100%;
   min-width: 0;
@@ -150,89 +144,30 @@ const emit = defineEmits<{
 }
 
 .date-check-item {
-  @include control-3d-raised;
   @include min-touch-target(44px);
   flex: 1 1 auto;
   min-width: 0;
-  display: flex;
-  justify-content: flex-start;
+  height: 100%;
+  margin: 0;
   align-items: center;
   gap: var(--space-2);
-  padding: 6px var(--space-2);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  border: var(--border-width) solid var(--color-border-strong);
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  cursor: pointer;
-  text-align: left;
-  user-select: none;
-  width: auto;
-  box-sizing: border-box;
+  padding: var(--space-2);
 }
 
-@include can-hover {
-  .date-check-item:hover:not(:disabled) {
-    background-color: var(--color-control-hover-bg);
-    border-color: var(--color-primary-dark);
-  }
+.date-check-item :deep(.checkbox-card__control) {
+  padding-top: 0;
 }
 
-.date-check-item:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-hover);
-}
-
-.date-check-item:active {
-  background-color: var(--color-control-active-bg);
-}
-
-.date-check-item.checked {
-  background-color: var(--color-control-active-tint);
-  border-color: var(--color-primary);
-  color: var(--color-primary-dark);
-}
-
-@include can-hover {
-  .date-check-item.checked:hover {
-    background-color: var(--color-control-active-tint-hover);
-    border-color: var(--color-primary-dark);
-    box-shadow: var(--shadow-control-hover);
-  }
-}
-
-.date-check-item.checked:active {
-  background-color: var(--color-control-active-tint);
-  box-shadow: var(--shadow-control-active);
-}
-
-.date-check-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1 1 auto;
-  text-align: left;
-}
-
-.date-check-date {
-  font-weight: 500;
+.date-check-item :deep(.checkbox-card__label) {
   white-space: nowrap;
 }
 
-.date-check-title {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+.date-check-item :deep(.checkbox-card__description) {
+  margin-top: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
-}
-
-.date-check-item.checked .date-check-title {
-  color: inherit;
-  opacity: 0.8;
 }
 
 .date-check-status {
@@ -245,6 +180,7 @@ const emit = defineEmits<{
 }
 
 .date-calendar-jump-btn {
+  align-self: center;
   color: var(--color-text-muted);
 }
 
@@ -254,12 +190,12 @@ const emit = defineEmits<{
   }
 }
 
-.is-calendar .date-check-item:not(.checked) {
+.is-calendar .date-check-item:not(.is-checked) {
   border-color: color-mix(in srgb, var(--color-scheduled) 40%, transparent);
 }
 
 @include can-hover {
-  .is-calendar .date-check-item:not(.checked):hover {
+  .is-calendar .date-check-item:not(.is-checked):hover {
     border-color: var(--color-scheduled);
   }
 }
@@ -268,12 +204,12 @@ const emit = defineEmits<{
   color: var(--color-scheduled);
 }
 
-.is-diary .date-check-item:not(.checked) {
+.is-diary .date-check-item:not(.is-checked) {
   border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
 }
 
 @include can-hover {
-  .is-diary .date-check-item:not(.checked):hover {
+  .is-diary .date-check-item:not(.is-checked):hover {
     border-color: var(--color-primary);
   }
 }
@@ -288,12 +224,12 @@ const emit = defineEmits<{
   }
 }
 
-.is-tour .date-check-item:not(.checked) {
+.is-tour .date-check-item:not(.is-checked) {
   border-color: var(--color-tour-border);
 }
 
 @include can-hover {
-  .is-tour .date-check-item:not(.checked):hover {
+  .is-tour .date-check-item:not(.is-checked):hover {
     border-color: var(--color-tour);
   }
 }
@@ -308,12 +244,12 @@ const emit = defineEmits<{
   }
 }
 
-.is-travel .date-check-item:not(.checked) {
+.is-travel .date-check-item:not(.is-checked) {
   border-color: color-mix(in srgb, var(--color-travel) 40%, transparent);
 }
 
 @include can-hover {
-  .is-travel .date-check-item:not(.checked):hover {
+  .is-travel .date-check-item:not(.is-checked):hover {
     border-color: var(--color-travel);
   }
 }
@@ -325,14 +261,6 @@ const emit = defineEmits<{
 @include can-hover {
   .is-travel .date-calendar-jump-btn:hover {
     color: var(--color-travel-dark);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .date-check-item {
-    transition: none !important;
-    transform: none !important;
-    translate: none !important;
   }
 }
 </style>

@@ -49,31 +49,33 @@ const usageLabel = computed(() => {
     <div class="category-main">
       <CategoryChip :category="category.name" :type="activeType" />
 
-      <Badge v-if="category.isCustom" variant="primary">Urlaub</Badge>
-      <Badge v-else-if="category.isAdapted" variant="accent">Standard (angepasst)</Badge>
-      <Badge v-else variant="default">Standard</Badge>
+      <div class="category-meta">
+        <!-- Standardkategorie auf Standard zurücksetzen -->
+        <Button
+          v-if="category.isAdapted"
+          type="button"
+          variant="ghost"
+          size="sm"
+          class="reset-btn"
+          :icon="ACTION_ICONS.restore"
+          title="Auf Standard zurücksetzen"
+          aria-label="Auf Standard zurücksetzen"
+          @click="$emit('reset', category)"
+        >
+          Zurücksetzen
+        </Button>
 
-      <span class="usage-count" :class="{ 'has-usage': category.usageCount > 0 }">
-        {{ category.usageCount }} {{ usageLabel }}
-      </span>
+        <Badge v-if="category.isCustom" variant="primary">Urlaub</Badge>
+        <Badge v-else-if="category.isAdapted" variant="accent">Standard (angepasst)</Badge>
+        <Badge v-else variant="default">Standard</Badge>
+
+        <span class="usage-count" :class="{ 'has-usage': category.usageCount > 0 }">
+          {{ category.usageCount }} {{ usageLabel }}
+        </span>
+      </div>
     </div>
 
     <div class="row-actions">
-      <!-- Standardkategorie auf Standard zurücksetzen -->
-      <Button
-        v-if="category.isAdapted"
-        type="button"
-        variant="ghost"
-        size="sm"
-        class="reset-btn"
-        :icon="ACTION_ICONS.restore"
-        title="Auf Standard zurücksetzen"
-        aria-label="Auf Standard zurücksetzen"
-        @click="$emit('reset', category)"
-      >
-        Zurücksetzen
-      </Button>
-
       <!-- Bearbeiten (Pencil) -->
       <EditButton
         small
@@ -94,6 +96,7 @@ const usageLabel = computed(() => {
       >
         {{ category.isHidden ? 'Einblenden' : 'Ausblenden' }}
       </Button>
+      <span v-else class="hide-btn-placeholder" aria-hidden="true" />
     </div>
   </div>
 </template>
@@ -104,7 +107,7 @@ const usageLabel = computed(() => {
   align-items: center;
   justify-content: space-between;
   padding: var(--space-2) var(--space-1);
-  gap: var(--space-2);
+  gap: var(--space-3);
   @include divider-engraved-row;
 }
 
@@ -122,10 +125,21 @@ const usageLabel = computed(() => {
   min-width: 0;
 }
 
+.category-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 .usage-count {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   white-space: nowrap;
+  min-width: 80px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .usage-count.has-usage {
@@ -144,6 +158,20 @@ const usageLabel = computed(() => {
 .hide-btn {
   font-size: var(--font-size-xs);
   padding: var(--space-1) var(--space-2);
+  justify-content: flex-start;
+  white-space: nowrap;
+}
+
+.hide-btn,
+.hide-btn-placeholder {
+  width: 112px;
+  flex-shrink: 0;
+}
+
+.hide-btn-placeholder {
+  display: inline-block;
+  height: 1px;
+  pointer-events: none;
 }
 
 @include container-down('tablet-sm') {
@@ -152,10 +180,27 @@ const usageLabel = computed(() => {
     align-items: stretch;
   }
 
+  .category-meta {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .usage-count {
+    min-width: auto;
+  }
+
   .row-actions {
     justify-content: flex-end;
     flex-wrap: wrap;
     padding-top: var(--space-1);
+  }
+
+  .hide-btn {
+    width: auto;
+  }
+
+  .hide-btn-placeholder {
+    display: none;
   }
 }
 </style>

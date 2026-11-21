@@ -19,7 +19,7 @@ describe('TripCategoryRow', () => {
     return renderToString(app);
   }
 
-  it('rendert eine Custom-Kategorie mit Urlaub-Badge und Ausgaben-Zähler', async () => {
+  it('rendert eine Custom-Kategorie mit Urlaub-Badge, Ausgaben-Zähler und Platzhalter für Ausblenden-Button', async () => {
     const cat: DisplayCategory = {
       id: 42,
       name: 'Tauchen',
@@ -36,8 +36,9 @@ describe('TripCategoryRow', () => {
     expect(html).toContain('Urlaub');
     expect(html).toContain('5 Ausgaben');
     expect(html).toContain('title="Kategorie bearbeiten"');
-    // Kein Ausblenden-Button bei Urlaub/Custom
+    // Kein Ausblenden-Button bei Urlaub/Custom, aber Platzhalter für Spaltenausrichtung
     expect(html).not.toContain('Ausblenden');
+    expect(html).toContain('hide-btn-placeholder');
   });
 
   it('rendert eine Standardkategorie mit Standard-Badge und Ausblenden-Button', async () => {
@@ -125,5 +126,6 @@ describe('TripCategoryRow', () => {
     expect(html).toContain('Standard (angepasst)');
     expect(html).toContain('Zurücksetzen');
     expect(html).toContain('2 Spots');
+    expect(html.indexOf('Zurücksetzen')).toBeLessThan(html.indexOf('Standard (angepasst)'));
   });
 });

@@ -188,6 +188,10 @@ function onChange(event: Event) {
   corner-shape: squircle;
 }
 
+.checkbox-card--popover {
+  border-radius: var(--radius-sm-squircle);
+}
+
 .checkbox-card--muted:hover:not(.is-disabled),
 .checkbox-card--popover:hover:not(.is-disabled),
 .checkbox-card--muted:focus-within:not(.is-disabled),
