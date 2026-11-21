@@ -220,6 +220,7 @@ Jeder Prüfdurchlauf analysiert systematisch folgende fünf Kriterien:
    - Halten alle Abstände die Token-Skala (`--space-xs` bis `--space-2xl`) ein?
    - Sind Sekundär- und Badge-Labels lesbar (nicht unter 11-12px) und semantisch gefärbt?
    - Werden für Badges/Pillen niemals `border-radius: 50%`, sondern `--radius-pill` verwendet?
+   - Werden alle Punkte der „Praxis-Checkliste für harmonische Abstände (Audit-Learnings)“ in DESIGN.md eingehalten (einheitliches Card-Padding --space-lg, symmetrische <Divider /> / @include divider-engraved statt flacher 1px-Linien, kein doppeltes Padding/margin-bottom bei h3/p/FormField/.edit-form/.actions-row, quadratische <IconButton :badge /> statt <Button>)?
 5. **Desktop-Drawer-Stresstest (1280x800px mit Kalenderschublade auf 500px+):**
    - Hält der Inhaltsbereich die reduzierte Breite stabil aus?
    - Springen Elemente oder bricht das Layout unruhig um?

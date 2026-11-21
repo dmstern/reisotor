@@ -277,6 +277,14 @@ Typische Abstandsfehler, die im Code unauffällig wirken, aber das visuelle Glei
 8. **Globale `h3`/`p`-Margins in Flex-Cards & veraltete `:deep()`-Selektoren:**
    - Die globalen Basisregeln `h1, h2, h3 { margin: 0 0 var(--space-3); }` und `p { margin: 0 0 var(--space-3); }` aus `style.css` bleiben auch in Flex-Karten aktiv: Sie erzeugen unter `<h3/>` doppelten Abstand (`16px` + Container-`gap`) und hängen am letzten `<p>` der Karte unsichtbare `16px` Extra-Luft an (`32px` unten vs. `16px` oben). In Flex-Cards `h3` und `p` explizit auf `margin: 0` (bzw. `margin: auto 0 0` für Bottom-Pinned-Texte) zurücksetzen und Spezifität beachten (`.hero .countdown` statt `.countdown`, wenn `.hero p` existiert).
    - Bei `:deep(.klassenname)` in Wrapper-Komponenten (z. B. `DashboardTile` → `BudgetMeter`) nach Umbenennungen der Kind-Wurzelklasse (`.budget-meter` → `.meter-row`) prüfen, ob der Selektor noch greift – tote `:deep()`-Regeln fallen ohne Compiler-Warnung still aus.
+9. **Modal-Formulare & `.actions-row` (Kein doppeltes Modal-Padding):**
+   - `Modal.vue` bringt bereits eigenes Container-Padding (`--space-lg` / `--space-xl`), `.modal-head`-Margin (`--space-lg`) sowie zentrale `:slotted(form) .actions-row`-Regeln (mit `@include divider-engraved('top')` und symmetrischem `16px`-Abstand) mit.
+   - Formulare im Modal-Slot (`.edit-form`) dürfen **niemals eigenes vertikales `padding`** (wie `padding: var(--space-4) 0`) setzen und **niemals `.actions-row` lokal mit `border-top: 1px solid ...` duplizieren** (überschreibt den zentralen engraved Divider und verdoppelt die Abstände nach oben und unten).
+10. **Einheitliches Card-Padding & Primitives statt Ad-hoc-Elementen (`<Divider />`, `<IconButton :badge />`, `<FormField />`):**
+    - Cards und Formular-Cards (z. B. `.add-form`) nutzen standardmäßig auf allen vier Seiten denselben Innenabstand (`padding: var(--space-lg)` statt `16px` vertikal / `24px` horizontal), damit linke und untere Innenkante optisch gleichmäßig sitzen.
+    - Innerhalb von CSS-Grids/Flex-Rows mit `gap` (z. B. `.form-details-grid`) immer `:deep(.form-field) { margin-bottom: 0; }` setzen, damit kein unsichtbarer Zusatzabstand am unteren Card-Rand entsteht.
+    - Trennlinien zwischen Inhaltsblöcken in Cards immer über `<Divider spacing="md" />` (oder `@include divider-engraved`) mit symmetrischem Abstand ziehen – niemals per flachem `border-top: 1px solid/dashed`.
+    - Quadratische Icon-Trigger mit Zähler-Badge (z. B. Filter-/Settings-Buttons in `SearchFilterBar` und `ListSettingsMenu`) immer über `<IconButton :badge="count" />` bauen – niemals `<Badge>` in den Default-Slot eines normalen `<Button>` legen (macht den Button durch Text-Padding + Slot-Gap rechteckig).
 
 ## Eckenrundung: Squircle-Prinzip
 
