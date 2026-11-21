@@ -420,23 +420,33 @@
 /// @param {String} $active-selector ['&:active:not(:disabled)'] - Selektor für den Active-Zustand
 @mixin control-glass-interactive($mode: 'floating', $active-selector: '&:active:not(:disabled)') {
   position: relative;
+  --control-grad-top: transparent;
+  --control-grad-bottom: transparent;
+  background-image: linear-gradient(
+    180deg,
+    var(--control-grad-top) 0%,
+    var(--control-grad-bottom) 100%
+  );
+  background-origin: border-box;
   transition: var(--transition-glass);
 
   @if $mode == 'floating' {
     background-color: var(--color-surface-glass);
-    background-image: none;
     backdrop-filter: var(--backdrop-blur-md);
     color: var(--color-text);
     border: 1px solid var(--color-surface-glass-border);
     box-shadow: var(--shadow-floating-island);
 
-    &:hover:not(:disabled) {
-      background-color: var(--color-surface-glass-hover);
-      background-image: var(--gradient-glass-highlight);
-      border-color: var(--color-surface-glass-hover-border);
-      color: var(--color-primary-dark);
-      box-shadow: var(--shadow-floating-island-hover);
-      translate: 0 -1.5px;
+    @include can-hover {
+      &:hover:not(:disabled) {
+        background-color: var(--color-surface-glass-hover);
+        --control-grad-top: var(--gradient-glass-highlight-top);
+        --control-grad-bottom: var(--gradient-glass-highlight-bottom);
+        border-color: var(--color-surface-glass-hover-border);
+        color: var(--color-primary-dark);
+        box-shadow: var(--shadow-floating-island-hover);
+        translate: 0 -1.5px;
+      }
     }
 
     &:focus-visible {
@@ -449,7 +459,8 @@
 
     #{$active-selector} {
       background-color: var(--color-surface-glass-active);
-      background-image: var(--gradient-glass-active);
+      --control-grad-top: var(--gradient-glass-active-top);
+      --control-grad-bottom: var(--gradient-glass-active-bottom);
       border-color: var(--color-surface-glass-active-border);
       box-shadow: var(--shadow-floating-island-active);
       transform: translateY(1px) scale(0.985);
@@ -457,18 +468,20 @@
     }
   } @else if $mode == 'embedded' {
     background-color: transparent;
-    background-image: none;
     color: var(--color-text);
     border: 1px solid transparent;
     box-shadow: none;
 
-    &:hover:not(:disabled) {
-      background-color: var(--color-glass-control-hover);
-      background-image: var(--gradient-glass-highlight);
-      border-color: var(--color-glass-control-hover-border);
-      color: var(--color-primary-dark);
-      box-shadow: var(--shadow-glass-control-hover);
-      translate: 0 -0.5px;
+    @include can-hover {
+      &:hover:not(:disabled) {
+        background-color: var(--color-glass-control-hover);
+        --control-grad-top: var(--gradient-glass-highlight-top);
+        --control-grad-bottom: var(--gradient-glass-highlight-bottom);
+        border-color: var(--color-glass-control-hover-border);
+        color: var(--color-primary-dark);
+        box-shadow: var(--shadow-glass-control-hover);
+        translate: 0 -0.5px;
+      }
     }
 
     &:focus-visible {
@@ -480,7 +493,8 @@
 
     #{$active-selector} {
       background-color: var(--color-glass-control-active);
-      background-image: var(--gradient-glass-active);
+      --control-grad-top: var(--gradient-glass-active-top);
+      --control-grad-bottom: var(--gradient-glass-active-bottom);
       border-color: var(--color-glass-control-active-border);
       box-shadow: var(--shadow-glass-control-active);
       transform: translateY(0.5px) scale(0.96);
@@ -493,6 +507,8 @@
       background-color 0.15s ease,
       border-color 0.15s ease,
       box-shadow 0.15s ease,
+      --control-grad-top 0.15s ease,
+      --control-grad-bottom 0.15s ease,
       color 0.15s ease !important;
     translate: none !important;
     transform: none !important;
