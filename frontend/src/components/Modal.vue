@@ -547,7 +547,9 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: var(--shadow-md);
+  box-shadow:
+    inset 0 1px 0 var(--shadow-control-highlight),
+    var(--shadow-md);
   transition:
     height 0.35s cubic-bezier(0.34, 1.2, 0.64, 1),
     max-height 0.35s ease;
