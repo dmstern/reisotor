@@ -8,7 +8,6 @@ import {
 import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
 import Badge from './primitives/Badge.vue';
-import Divider from './primitives/Divider.vue';
 import AppIcon from './AppIcon.vue';
 import SettingsCardHeader from './settings/SettingsCardHeader.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
@@ -53,24 +52,6 @@ function resetColor() {
         <span class="color-swatch"></span>
         <span class="color-name">{{ preset.name }}</span>
       </button>
-    </div>
-
-    <Divider spacing="lg" />
-
-    <!-- Eigene Farbe (Color Picker) -->
-    <div class="color-picker-row">
-      <label for="accent-color-picker" class="picker-label">
-        <span class="picker-title">Eigene Farbe wählen</span>
-        <div class="picker-input-wrap">
-          <input
-            id="accent-color-picker"
-            type="color"
-            v-model="uiSettings.primaryColor"
-            class="color-input"
-          />
-          <span class="hex-code">{{ uiSettings.primaryColor.toUpperCase() }}</span>
-        </div>
-      </label>
     </div>
 
     <!-- Live Demo Vorschau -->
@@ -140,45 +121,6 @@ function resetColor() {
   white-space: nowrap;
 }
 
-.color-picker-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-lg);
-  flex-wrap: wrap;
-}
-
-.picker-label {
-  display: flex;
-  align-items: center;
-  gap: var(--space-lg);
-  cursor: pointer;
-}
-
-.picker-title {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.picker-input-wrap {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-xs) var(--space-sm);
-  border: var(--border-width) solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  background: var(--color-surface);
-}
-
-.hex-code {
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  color: var(--color-text-muted);
-}
-
 .color-preview-stage {
   margin-top: var(--space-xl);
   padding: var(--space-lg);
@@ -205,48 +147,5 @@ function resetColor() {
 .preview-actions {
   display: flex;
   gap: var(--space-sm);
-}
-
-.color-input {
-  width: var(--input-width, var(--input-default-width, 36px));
-  height: var(--input-height, var(--input-default-height, 36px));
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-}
-
-.color-input::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
-
-.color-input::-webkit-color-swatch {
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  box-shadow: none;
-  transition: box-shadow 0.15s ease;
-}
-
-.color-input:hover::-webkit-color-swatch,
-.color-input:active::-webkit-color-swatch,
-.color-input:focus::-webkit-color-swatch {
-  box-shadow: var(--shadow-sm);
-}
-
-.color-input::-moz-color-swatch {
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  box-shadow: none;
-  transition: box-shadow 0.15s ease;
-}
-
-.color-input:hover::-moz-color-swatch,
-.color-input:active::-moz-color-swatch,
-.color-input:focus::-moz-color-swatch {
-  box-shadow: var(--shadow-sm);
 }
 </style>
