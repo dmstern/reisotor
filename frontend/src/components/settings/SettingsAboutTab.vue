@@ -246,6 +246,10 @@ h3 {
   margin-bottom: 0;
 }
 
+.intro-hint + :deep(.btn) {
+  margin-top: 0;
+}
+
 .services-info-card .intro-hint {
   margin-bottom: var(--space-3-5);
 }
