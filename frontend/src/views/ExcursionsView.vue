@@ -179,6 +179,7 @@ const SEARCH_PLACEHOLDER_BY_MODE = {
 const searchPlaceholder = computed(() => SEARCH_PLACEHOLDER_BY_MODE[groupMode.value]);
 
 const selectedExcursionId = ref<number | null>(null);
+const tourDetailScreenEl = ref<HTMLElement | null>(null);
 
 const selectedExcursion = computed(() =>
   selectedExcursionId.value != null
@@ -872,19 +873,43 @@ function focusLastViewedExcursionCard() {
   cardEl.focus({ preventScroll: true });
 }
 
+const TOUR_DETAIL_FOCUSABLE_SELECTOR =
+  'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
+
+function focusFirstElementInTourDetail() {
+  if (!isTourDetailOpen.value || selectedExcursionId.value == null) {
+    return;
+  }
+
+  const container = tourDetailScreenEl.value;
+
+  if (!container) {
+    return;
+  }
+
+  if (document.activeElement && container.contains(document.activeElement)) {
+    return;
+  }
+
+  const firstFocusable = container.querySelector<HTMLElement>(TOUR_DETAIL_FOCUSABLE_SELECTOR);
+  firstFocusable?.focus({ preventScroll: true });
+}
+
 watch(
   () => [loading.value, isTourDetailOpen.value, groupMode.value] as const,
   ([isLoading, detailOpen, mode]) => {
-    if (
-      isLoading ||
-      detailOpen ||
-      mode !== 'tours' ||
-      excursionsStore.lastViewedExcursionId == null
-    ) {
+    if (isLoading || mode !== 'tours') {
       return;
     }
 
-    focusLastViewedExcursionCard();
+    if (detailOpen) {
+      focusFirstElementInTourDetail();
+      return;
+    }
+
+    if (excursionsStore.lastViewedExcursionId != null) {
+      focusLastViewedExcursionCard();
+    }
   },
   { flush: 'post' }
 );
@@ -896,6 +921,7 @@ function onTourViewEnter() {
 
   if (isTourDetailOpen.value && selectedExcursionId.value != null) {
     spotsColBodyEl.value.scrollTop = 0;
+    nextTick(focusFirstElementInTourDetail);
     return;
   }
 
@@ -906,6 +932,7 @@ function onTourViewEnter() {
 function onTourViewAfterEnter() {
   if (isTourDetailOpen.value && selectedExcursionId.value != null) {
     recomputeTourLine(selectedExcursionId.value);
+    focusFirstElementInTourDetail();
     return;
   }
 
@@ -1878,6 +1905,7 @@ onUnmounted(() => {
               <div
                 v-if="isTourDetailOpen && selectedExcursion"
                 key="tour-detail"
+                ref="tourDetailScreenEl"
                 class="tour-detail-screen"
               >
                 <div class="tour-detail-back-bar">
