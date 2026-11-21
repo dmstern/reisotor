@@ -5,7 +5,7 @@ import type { IconGroup } from '../stores/iconStyle';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
-import Badge from './primitives/Badge.vue';
+import IconButton from './primitives/IconButton.vue';
 import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import { observePopoverPosition, type PopoverPositionResult } from '../utils/popoverPosition';
@@ -198,20 +198,17 @@ function resetDefaults() {
 
 <template>
   <div class="dropdown list-settings-dropdown">
-    <Button
+    <IconButton
       ref="btnRef"
       variant="ghost"
       :active="activeCount > 0"
+      :badge="activeCount > 0 ? activeCount : undefined"
       :icon="icon"
       :title="title"
       :aria-label="ariaLabel"
       class="bar-icon-btn list-settings-trigger"
       @click="toggleMenu($event)"
-    >
-      <Badge v-if="activeCount > 0" variant="primary" class="active-badge">
-        {{ activeCount }}
-      </Badge>
-    </Button>
+    />
 
     <Teleport to="body">
       <PickerMenu
@@ -302,24 +299,6 @@ function resetDefaults() {
 .dropdown {
   position: relative;
   display: inline-flex;
-}
-
-.bar-icon-btn {
-  position: relative;
-}
-
-.active-badge {
-  position: absolute;
-  top: -3px;
-  right: -3px;
-  justify-content: center;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 var(--space-1);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  line-height: var(--line-height-none);
-  text-align: center;
 }
 
 :global(.list-settings-popover-menu) {

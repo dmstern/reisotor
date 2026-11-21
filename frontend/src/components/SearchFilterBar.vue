@@ -288,6 +288,7 @@ function clearFilters() {
         ref="filterBtnRef"
         variant="ghost"
         :active="totalActiveCount > 0"
+        :badge="totalActiveCount > 0 ? totalActiveCount : undefined"
         :icon="ACTION_ICONS.filterSettings"
         :title="
           totalActiveCount > 0
@@ -301,11 +302,7 @@ function clearFilters() {
         "
         class="bar-icon-btn"
         @click="toggleFilterMenu($event)"
-      >
-        <Badge v-if="totalActiveCount > 0" variant="primary" class="active-badge">{{
-          totalActiveCount
-        }}</Badge>
-      </IconButton>
+      />
 
       <Teleport to="body">
         <template v-if="filterMenuOpen">
@@ -646,22 +643,6 @@ function clearFilters() {
     min-width: var(--input-width-sm, 38px);
     min-height: var(--input-height-sm, 38px);
   }
-}
-
-.active-badge {
-  position: absolute;
-  top: -3px;
-  right: -3px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 var(--space-xs);
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  line-height: var(--line-height-none);
-  text-align: center;
 }
 
 :global(.filter-popover-menu) {
