@@ -266,7 +266,9 @@ describe('TrackPlayback & Geometry Adversarial Stress Tests', () => {
       await nextTick();
 
       const playBtn = container.querySelector<HTMLButtonElement>('.playback-btn')!;
-      const speedBtns = container.querySelectorAll<HTMLButtonElement>('.speed-btn');
+      const speedBtns = container.querySelectorAll<HTMLButtonElement>(
+        '.speed-inline-group .speed-btn'
+      );
 
       // 1x speed: BASE_PLAYBACK_MS = 10,000ms. After dt = 1000ms, progress += 1000*1/10000 = 0.1
       vi.spyOn(performance, 'now').mockReturnValue(1000);
@@ -598,6 +600,30 @@ describe('TrackPlayback & Geometry Adversarial Stress Tests', () => {
       expect(container.innerHTML).not.toContain('Infinity');
 
       cleanUp();
+    });
+
+    it('clamps invalid or out-of-bounds progress values for scrubber ARIA and --progress-pct', async () => {
+      const { container, cleanUp } = mountPlayback({
+        points: basePoints,
+        progress: Number.NaN,
+      });
+      await nextTick();
+
+      const slider = container.querySelector<HTMLInputElement>('.playback-slider')!;
+      expect(slider.style.getPropertyValue('--progress-pct')).toBe('0.00%');
+      expect(slider.getAttribute('aria-valuenow')).toBe('0');
+      cleanUp();
+
+      const { container: overContainer, cleanUp: cleanOver } = mountPlayback({
+        points: basePoints,
+        progress: 1.75,
+      });
+      await nextTick();
+
+      const overSlider = overContainer.querySelector<HTMLInputElement>('.playback-slider')!;
+      expect(overSlider.style.getPropertyValue('--progress-pct')).toBe('100.00%');
+      expect(overSlider.getAttribute('aria-valuenow')).toBe('100');
+      cleanOver();
     });
   });
 

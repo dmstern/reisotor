@@ -1,7 +1,12 @@
 <script lang="ts">
 import type { LocationTrack, TrackPoint } from '../api/types';
 
-export const SPEEDS = [1, 2, 5, 10] as const;
+const SPEED_1X = 1;
+const SPEED_2X = 2;
+const SPEED_5X = 5;
+const SPEED_10X = 10;
+
+export const SPEEDS = [SPEED_1X, SPEED_2X, SPEED_5X, SPEED_10X] as const;
 export type PlaybackSpeed = (typeof SPEEDS)[number];
 
 export interface TrackPlaybackProps {
@@ -230,13 +235,20 @@ const duration = computed(() => {
 
   return 0;
 });
+const MAX_VALID_SPEED_KMH = 300;
+const SECONDS_PER_HOUR = 3600;
+const MS_PER_HOUR = 3_600_000;
+const HEADER_ICON_SIZE = 16;
+const METRIC_ICON_SIZE = 14;
+const PERCENT_MULTIPLIER = 100;
+
 const avgSpeed = computed(() => trackAverageSpeedKmh(distance.value, duration.value));
 const avgSpeedLabel = computed(() => {
   if (avgSpeed.value == null || avgSpeed.value <= 0) {
     return '';
   }
 
-  if (avgSpeed.value > 300) {
+  if (avgSpeed.value > MAX_VALID_SPEED_KMH) {
     return '';
   }
 
@@ -262,8 +274,8 @@ function formatTimeDisplay(ms: number, forceHours = false): string {
   }
 
   const totalSeconds = Math.floor(ms / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const hours = Math.floor(totalSeconds / SECONDS_PER_HOUR);
+  const minutes = Math.floor((totalSeconds % SECONDS_PER_HOUR) / 60);
   const seconds = totalSeconds % 60;
   const pad = (num: number) => num.toString().padStart(2, '0');
 
@@ -274,12 +286,25 @@ function formatTimeDisplay(ms: number, forceHours = false): string {
   return `${pad(minutes)}:${pad(seconds)}`;
 }
 
-const hasHours = computed(() => duration.value >= 3600_000);
+const hasHours = computed(() => duration.value >= MS_PER_HOUR);
 const currentElapsedMs = computed(() => (props.progress ?? 0) * duration.value);
 const currentElapsedLabel = computed(() =>
   formatTimeDisplay(currentElapsedMs.value, hasHours.value)
 );
 const totalDurationLabel = computed(() => formatTimeDisplay(duration.value, hasHours.value));
+
+const clampedProgress = computed(() => {
+  const raw = props.progress ?? 0;
+
+  if (!Number.isFinite(raw)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(1, raw));
+});
+const progressPercent = computed(
+  () => `${(clampedProgress.value * PERCENT_MULTIPLIER).toFixed(2)}%`
+);
 
 // --- Uhrzeiten der Aufzeichnung (Start/Aktuell/Ende) ---
 const timeOfDayFormatter = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' });
@@ -331,7 +356,7 @@ const currentTimeOfDay = computed(() => {
       const tEnd = new Date(props.track.ended_at).getTime();
 
       if (Number.isFinite(tStart) && Number.isFinite(tEnd) && tEnd > tStart) {
-        const cur = tStart + (props.progress ?? 0) * (tEnd - tStart);
+        const cur = tStart + clampedProgress.value * (tEnd - tStart);
         return timeOfDayFormatter.format(new Date(cur));
       }
     }
@@ -339,7 +364,7 @@ const currentTimeOfDay = computed(() => {
     return '';
   }
 
-  const currentMs = startMs + (props.progress ?? 0) * (endMs - startMs);
+  const currentMs = startMs + clampedProgress.value * (endMs - startMs);
   return timeOfDayFormatter.format(new Date(currentMs));
 });
 
@@ -384,12 +409,12 @@ defineExpose({
 
 <template>
   <div class="track-playback" role="region" aria-label="Aufzeichnungs-Wiedergabe">
-    <!-- Header: Titel, Datum & Schließen-Button -->
+    <!-- Reihe 1: Header mit Titel, Autor, Datum & 46px-Schließen-Button -->
     <div class="track-playback-header">
       <div class="track-playback-title-wrap">
         <AppIcon
           :icon="ACTION_ICONS.history"
-          :size="15"
+          :size="HEADER_ICON_SIZE"
           group="actions"
           class="track-playback-icon"
         />
@@ -403,22 +428,22 @@ defineExpose({
       <IconButton
         class="playback-close-btn"
         variant="ghost"
-        size="sm"
+        size="md"
         :icon="ACTION_ICONS.close"
-        :aria-label="'Wiedergabe schließen'"
+        aria-label="Wiedergabe schließen"
         title="Schließen"
         @click="emit('close')"
       />
     </div>
 
-    <!-- Metriken-Chips: Distanz, Dauer, Durchschnittsgeschwindigkeit, Höhenmeter -->
+    <!-- Reihe 2: Metriken-Chips (Distanz, Dauer, Durchschnittsgeschwindigkeit, Höhenmeter) -->
     <div class="track-playback-stats" aria-label="Aufzeichnungs-Statistiken">
       <span class="metric-chip" data-testid="metric-distance" title="Gesamtdistanz">
-        <AppIcon :icon="ACTION_ICONS.distance" :size="13" group="actions" />
+        <AppIcon :icon="ACTION_ICONS.distance" :size="METRIC_ICON_SIZE" group="actions" />
         <span>{{ formatDistanceShort(distance) }}</span>
       </span>
       <span class="metric-chip" data-testid="metric-duration" title="Gesamtdauer">
-        <AppIcon :icon="ACTION_ICONS.duration" :size="13" group="actions" />
+        <AppIcon :icon="ACTION_ICONS.duration" :size="METRIC_ICON_SIZE" group="actions" />
         <span>{{ formatDurationShort(duration) }}</span>
       </span>
       <span
@@ -427,7 +452,7 @@ defineExpose({
         data-testid="metric-speed"
         title="Durchschnittsgeschwindigkeit"
       >
-        <AppIcon :icon="SPEED_ICON" :size="13" group="actions" />
+        <AppIcon :icon="SPEED_ICON" :size="METRIC_ICON_SIZE" group="actions" />
         <span>{{ avgSpeedLabel }}</span>
       </span>
       <span
@@ -436,17 +461,44 @@ defineExpose({
         data-testid="metric-elevation"
         title="Höhenmeter (Aufstieg / Abstieg)"
       >
-        <AppIcon :icon="ELEVATION_ICON" :size="13" group="actions" />
+        <AppIcon :icon="ELEVATION_ICON" :size="METRIC_ICON_SIZE" group="actions" />
         <span>{{ elevationLabel }}</span>
       </span>
     </div>
 
-    <!-- Playback-Steuerelemente: Play/Pause, Scrubber-Slider, Speed-Gruppe, Zeitanzeige -->
-    <div class="track-playback-controls">
+    <!-- Reihe 3: Vollbreiter Scrubber mit 44px Touch-Ziel & Uhrzeit-Spanne direkt darunter -->
+    <div class="track-playback-scrubber">
+      <input
+        type="range"
+        class="playback-slider"
+        min="0"
+        max="1"
+        step="0.001"
+        :value="clampedProgress"
+        :disabled="points.length < 2"
+        :style="{ '--progress-pct': progressPercent }"
+        @input="onScrub"
+        aria-label="Position in der Aufzeichnung"
+        :aria-valuenow="Math.round(clampedProgress * PERCENT_MULTIPLIER)"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        :aria-valuetext="`${currentElapsedLabel} von ${totalDurationLabel}`"
+      />
+      <div v-if="points.length >= 2" class="track-playback-range">
+        <span class="range-time start-time" title="Startzeit">{{ startTimeOfDay }}</span>
+        <span v-if="currentTimeOfDay" class="range-time current-time" title="Aktuelle Uhrzeit">{{
+          currentTimeOfDay
+        }}</span>
+        <span class="range-time end-time" title="Endzeit">{{ endTimeOfDay }}</span>
+      </div>
+    </div>
+
+    <!-- Reihe 4: Transportleiste (52px Play/Pause, 46px Speed-Steuerung, Laufzeit) -->
+    <div class="track-playback-transport">
       <IconButton
         class="playback-btn"
         :variant="playing ? 'secondary' : 'primary'"
-        size="sm"
+        size="lg"
         shape="squircle"
         :icon="playing ? ACTION_ICONS.pause : ACTION_ICONS.play"
         :aria-label="playing ? 'Pause' : 'Abspielen'"
@@ -455,26 +507,29 @@ defineExpose({
         @click="togglePlay"
       />
 
-      <input
-        type="range"
-        class="playback-slider"
-        min="0"
-        max="1"
-        step="0.001"
-        :value="progress ?? 0"
-        :disabled="points.length < 2"
-        @input="onScrub"
-        aria-label="Position in der Aufzeichnung"
-        :aria-valuenow="Math.round((progress ?? 0) * 100)"
-        aria-valuemin="0"
-        aria-valuemax="100"
-        :aria-valuetext="`${currentElapsedLabel} von ${totalDurationLabel}`"
-      />
+      <div
+        class="playback-speed-group speed-inline-group"
+        role="group"
+        aria-label="Wiedergabegeschwindigkeit"
+      >
+        <button
+          v-for="s in SPEEDS"
+          :key="`inline-${s}`"
+          type="button"
+          class="speed-btn"
+          :class="{ active: speed === s }"
+          :aria-pressed="speed === s"
+          :title="`Geschwindigkeit ${s}x`"
+          @click="selectSpeed(s)"
+        >
+          {{ s }}x
+        </button>
+      </div>
 
       <div ref="speedWrapperRef" class="speed-picker-wrapper">
         <Button
           variant="secondary"
-          size="xs"
+          size="md"
           class="speed-trigger-btn"
           :class="{ 'is-open': showSpeedPopover }"
           aria-label="Wiedergabegeschwindigkeit ändern"
@@ -495,7 +550,7 @@ defineExpose({
           <div class="playback-speed-group" role="group" aria-label="Wiedergabegeschwindigkeit">
             <button
               v-for="s in SPEEDS"
-              :key="s"
+              :key="`popover-${s}`"
               type="button"
               class="speed-btn"
               :class="{ active: speed === s }"
@@ -513,29 +568,20 @@ defineExpose({
         {{ currentElapsedLabel }} / {{ totalDurationLabel }}
       </span>
     </div>
-
-    <!-- Uhrzeit-Spanne der Aufzeichnung (Start, aktuelle Position, Ende) -->
-    <div v-if="points.length >= 2" class="track-playback-range">
-      <span class="range-time start-time" title="Startzeit">{{ startTimeOfDay }}</span>
-      <span v-if="currentTimeOfDay" class="range-time current-time" title="Aktuelle Uhrzeit">{{
-        currentTimeOfDay
-      }}</span>
-      <span class="range-time end-time" title="Endzeit">{{ endTimeOfDay }}</span>
-    </div>
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .track-playback {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3);
-  container-type: inline-size;
-  background: var(--color-surface-glass, rgba(255, 255, 255, 0.92));
+  container: track-playback / inline-size;
+  background: var(--color-surface-glass-dense, var(--color-surface-glass, var(--color-surface)));
   backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border, var(--color-border));
-  border-radius: var(--radius-md-squircle, 12px);
+  border-radius: var(--radius-md-squircle, 16px);
   corner-shape: squircle;
   box-shadow: var(--shadow-md);
 }
@@ -545,6 +591,7 @@ defineExpose({
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .track-playback-title-wrap {
@@ -561,16 +608,17 @@ defineExpose({
 }
 
 .track-playback-title {
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   font-weight: 700;
   color: var(--color-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .track-playback-date {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   font-weight: 500;
   color: var(--color-text-muted);
   white-space: nowrap;
@@ -581,7 +629,7 @@ defineExpose({
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   flex-shrink: 0;
 }
@@ -594,13 +642,7 @@ defineExpose({
   white-space: nowrap;
 }
 
-@container (max-width: 500px) {
-  .track-playback-author-name {
-    display: none;
-  }
-}
-
-@media (max-width: 500px) {
+@include container-down('track-playback', 'mobile') {
   .track-playback-author-name {
     display: none;
   }
@@ -617,53 +659,177 @@ defineExpose({
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  padding: 2px 7px;
+  padding: 3px var(--space-2);
   border-radius: var(--radius-pill);
   background: var(--color-hover);
   border: 1px solid var(--color-border-divider);
   color: var(--color-text-muted);
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   white-space: nowrap;
-  line-height: 1.3;
+  line-height: 1.25;
 }
 
-.track-playback-controls {
+.track-playback-scrubber {
   display: flex;
-  align-items: center;
-  gap: var(--space-2);
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .playback-slider {
-  flex: 1 1 0;
-  min-width: 40px;
-  height: 6px;
-  accent-color: var(--color-primary);
-  border-radius: var(--radius-pill);
+  --progress-pct: 0%;
+  --scrubber-track-height: 8px;
+  --scrubber-thumb-size: 26px;
+  appearance: none;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
   cursor: pointer;
+  touch-action: pan-y;
   outline: none;
 }
 
+.playback-slider::-webkit-slider-runnable-track {
+  width: 100%;
+  height: var(--scrubber-track-height);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(
+    to right,
+    var(--color-primary) 0%,
+    var(--color-primary) var(--progress-pct),
+    var(--color-control-track-bg) var(--progress-pct),
+    var(--color-control-track-bg) 100%
+  );
+  border: 1px solid var(--color-border-divider);
+  box-shadow: var(--shadow-inset);
+}
+
+.playback-slider::-moz-range-track {
+  width: 100%;
+  height: var(--scrubber-track-height);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(
+    to right,
+    var(--color-primary) 0%,
+    var(--color-primary) var(--progress-pct),
+    var(--color-control-track-bg) var(--progress-pct),
+    var(--color-control-track-bg) 100%
+  );
+  border: 1px solid var(--color-border-divider);
+  box-shadow: var(--shadow-inset);
+}
+
+.playback-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: var(--scrubber-thumb-size);
+  height: var(--scrubber-thumb-size);
+  margin-top: calc((var(--scrubber-track-height) - var(--scrubber-thumb-size)) / 2 - 1px);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  border: 3px solid var(--color-primary);
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.playback-slider::-moz-range-thumb {
+  width: var(--scrubber-thumb-size);
+  height: var(--scrubber-thumb-size);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  border: 3px solid var(--color-primary);
+  box-shadow: var(--shadow-sm);
+  box-sizing: border-box;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+@include can-hover {
+  .playback-slider:not(:disabled):hover::-webkit-slider-thumb {
+    transform: scale(1.1);
+    border-color: var(--color-primary-dark);
+    box-shadow: var(--shadow-md);
+  }
+
+  .playback-slider:not(:disabled):hover::-moz-range-thumb {
+    transform: scale(1.1);
+    border-color: var(--color-primary-dark);
+    box-shadow: var(--shadow-md);
+  }
+}
+
+.playback-slider:not(:disabled):active::-webkit-slider-thumb {
+  transform: scale(1.16);
+  border-color: var(--color-primary-dark);
+  box-shadow:
+    0 0 0 6px var(--color-control-active-tint),
+    var(--shadow-md);
+}
+
+.playback-slider:not(:disabled):active::-moz-range-thumb {
+  transform: scale(1.16);
+  border-color: var(--color-primary-dark);
+  box-shadow:
+    0 0 0 6px var(--color-control-active-tint),
+    var(--shadow-md);
+}
+
 .playback-slider:disabled {
-  opacity: 0.4;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
 .playback-slider:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
   outline-offset: var(--focus-ring-offset, 2px);
   box-shadow: var(--focus-ring-halo);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm-squircle);
+}
+
+.track-playback-range {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+  padding: 0 2px;
+}
+
+.range-time.current-time {
+  font-weight: 700;
+  color: var(--color-primary-dark, var(--color-primary));
+}
+
+.track-playback-transport {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.speed-inline-group {
+  display: inline-flex;
+  flex-shrink: 0;
 }
 
 .speed-picker-wrapper {
   position: relative;
-  display: inline-flex;
+  display: none;
   align-items: center;
   flex-shrink: 0;
 }
 
 .speed-trigger-btn {
+  min-width: 56px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--color-text);
@@ -678,15 +844,13 @@ defineExpose({
 
 .speed-popover {
   position: absolute;
-  bottom: calc(100% + var(--space-1) + 2px);
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
+  bottom: calc(100% + var(--space-2));
+  left: 0;
+  z-index: var(--z-popover, 1100);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-dropdown-menu);
   padding: var(--space-1);
   white-space: nowrap;
 }
@@ -695,101 +859,84 @@ defineExpose({
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  background: var(--color-hover);
-  padding: 2px;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  background-color: var(--color-control-track-bg);
+  padding: 3px;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--color-border-divider);
+  box-shadow: var(--shadow-inset);
 }
 
 .speed-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-height-md, 46px);
+  min-width: 44px;
+  padding: 0 var(--space-2);
   border: none;
   background: transparent;
   color: var(--color-text-muted);
-  padding: 2px 6px;
-  border-radius: calc(var(--radius-sm-squircle) - 2px);
-  corner-shape: squircle;
-  font-size: 0.75rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   cursor: pointer;
-  line-height: 1.2;
+  line-height: 1;
   transition:
     background-color 0.15s ease,
-    color 0.15s ease;
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.speed-btn:hover {
-  color: var(--color-text);
+@include can-hover {
+  .speed-btn:hover {
+    color: var(--color-text);
+    background: var(--color-control-hover-bg);
+  }
+}
+
+.speed-btn:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: var(--focus-ring-offset, 2px);
+  box-shadow: var(--focus-ring-halo);
 }
 
 .speed-btn.active {
   background: var(--color-surface);
-  color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
+  color: var(--color-primary-dark, var(--color-primary));
+  box-shadow: var(--shadow-pill-raised);
 }
 
 .playback-time {
+  margin-left: auto;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
   white-space: nowrap;
 }
 
-@container (max-width: 380px) {
+@include container-down('track-playback', 'mobile-sm') {
   .track-playback {
     padding: var(--space-2);
     gap: var(--space-1);
   }
 
-  .track-playback-controls {
-    gap: var(--space-1);
+  .speed-inline-group {
+    display: none;
   }
 
-  .playback-time {
-    font-size: 0.72rem;
-  }
-
-  .metric-chip {
-    padding: 1px 5px;
-    font-size: 0.7rem;
+  .speed-picker-wrapper {
+    display: inline-flex;
   }
 }
 
-@media (max-width: 380px) {
-  .track-playback {
-    padding: var(--space-2);
-    gap: var(--space-1);
+@media (prefers-reduced-motion: reduce) {
+  .playback-slider::-webkit-slider-thumb,
+  .playback-slider::-moz-range-thumb,
+  .speed-btn {
+    transition: none;
   }
-
-  .track-playback-controls {
-    gap: var(--space-1);
-  }
-
-  .playback-time {
-    font-size: 0.72rem;
-  }
-
-  .metric-chip {
-    padding: 1px 5px;
-    font-size: 0.7rem;
-  }
-}
-
-.track-playback-range {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.72rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--color-text-muted);
-  padding: 0 2px;
-}
-
-.range-time.current-time {
-  font-weight: 600;
-  color: var(--color-primary-dark, var(--color-primary));
 }
 </style>
