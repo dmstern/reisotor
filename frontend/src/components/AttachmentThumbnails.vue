@@ -448,14 +448,13 @@ const stackTooltip = computed(() => {
   box-shadow:
     0 4px 10px rgba(0, 0, 0, 0.16),
     0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--color-border-divider);
   display: flex;
   flex-direction: column;
 }
 
 :root[data-theme='dark'] .fanned-polaroid.is-photo {
   background: #2a2825;
-  border-color: rgba(255, 255, 255, 0.16);
   box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.45),
     0 1px 3px rgba(0, 0, 0, 0.25);
@@ -464,7 +463,6 @@ const stackTooltip = computed(() => {
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .fanned-polaroid.is-photo {
     background: #2a2825;
-    border-color: rgba(255, 255, 255, 0.16);
     box-shadow:
       0 4px 12px rgba(0, 0, 0, 0.45),
       0 1px 3px rgba(0, 0, 0, 0.25);
@@ -525,7 +523,7 @@ const stackTooltip = computed(() => {
   padding: 0;
   border-radius: 2px;
   background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.14);
+  border: 1px solid var(--color-border-divider);
   box-shadow:
     0 4px 10px rgba(0, 0, 0, 0.18),
     0 1px 3px rgba(0, 0, 0, 0.12);
@@ -535,7 +533,6 @@ const stackTooltip = computed(() => {
 
 :root[data-theme='dark'] .fanned-polaroid.is-doc {
   background: #f8fafc;
-  border-color: rgba(255, 255, 255, 0.22);
   box-shadow:
     0 4px 14px rgba(0, 0, 0, 0.55),
     0 1px 3px rgba(0, 0, 0, 0.3);
@@ -544,7 +541,6 @@ const stackTooltip = computed(() => {
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .fanned-polaroid.is-doc {
     background: #f8fafc;
-    border-color: rgba(255, 255, 255, 0.22);
     box-shadow:
       0 4px 14px rgba(0, 0, 0, 0.55),
       0 1px 3px rgba(0, 0, 0, 0.3);

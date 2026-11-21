@@ -100,7 +100,7 @@ export const ColorPalette: Story = {
         <p style="color: var(--color-text-muted); margin-bottom: 24px;">Zentrale CSS-Farbtokens (Light & Dark Mode automatisch angepasst).</p>
 
         <div v-for="group in colorGroups" :key="group.name" style="margin-bottom: 28px;">
-          <h3 style="margin-bottom: 12px; font-size: 1.1rem; border-bottom: 1px solid var(--color-border); padding-bottom: 4px;">{{ group.name }}</h3>
+          <h3 style="margin-bottom: 12px; font-size: 1.1rem; border-bottom: 1px solid var(--color-border-divider); padding-bottom: 4px;">{{ group.name }}</h3>
           <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px;">
             <div
               v-for="t in group.tokens"

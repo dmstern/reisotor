@@ -163,7 +163,8 @@ const isFeedbackActive = computed(() =>
             Diese Instanz von Reisotor wird eigenverantwortlich durch den oben genannten Betreiber
             betrieben.
             <template v-if="config.hostingLocation">
-              Hosting-Standort des Servers: <strong>{{ config.hostingLocation }}</strong>.
+              Hosting-Standort des Servers: <strong>{{ config.hostingLocation }}</strong
+              >.
             </template>
           </p>
           <p v-if="hasHostingProvider" class="legal-address">
@@ -351,7 +352,8 @@ const isFeedbackActive = computed(() =>
             <strong>Name:</strong> {{ operator.name }}<br />
             <template v-if="operator.address">
               <strong>Anschrift:</strong><br />
-              <span class="multiline-text">{{ operator.address }}</span><br />
+              <span class="multiline-text">{{ operator.address }}</span
+              ><br />
             </template>
             <strong>E-Mail:</strong>{{ ' '
             }}<a :href="`mailto:${operator.email}`">{{ operator.email }}</a>
@@ -408,7 +410,8 @@ const isFeedbackActive = computed(() =>
             bereitgestellt:
           </p>
           <p class="legal-address">
-            <strong>{{ hostingProvider?.name }}</strong><br />
+            <strong>{{ hostingProvider?.name }}</strong
+            ><br />
             <span v-if="hostingProvider?.address" class="multiline-text">{{
               hostingProvider.address
             }}</span>
@@ -429,7 +432,8 @@ const isFeedbackActive = computed(() =>
             dass der Dienstleister die personenbezogenen Daten unserer Nutzer:innen streng
             weisungsgebunden und unter Einhaltung des europäischen Datenschutzniveaus verarbeitet.
             <template v-if="config.hostingLocation">
-              Hosting-Standort des Servers: <strong>{{ config.hostingLocation }}</strong>.
+              Hosting-Standort des Servers: <strong>{{ config.hostingLocation }}</strong
+              >.
             </template>
           </p>
         </div>

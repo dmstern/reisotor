@@ -118,7 +118,7 @@ const currentFont = computed(() => {
 
 .font-option-card:hover {
   background: var(--color-hover);
-  border-color: var(--color-border-divider);
+  border-color: var(--color-border-strong);
 }
 
 .font-option-card.active {

@@ -333,7 +333,6 @@ const hasPhoto = computed(() => {
   box-shadow:
     0 4px 16px rgba(0, 0, 0, 0.35),
     0 1px 4px rgba(0, 0, 0, 0.2);
-  border-color: var(--color-border-divider);
 }
 
 :root[data-theme='dark'] .detail-polaroid-frame.is-placeholder .detail-polaroid-inner {
@@ -346,7 +345,6 @@ const hasPhoto = computed(() => {
 
 :root[data-theme='dark'] .detail-placeholder-icon-tile {
   background: #2a2825;
-  border-color: var(--color-border-divider);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 
@@ -360,7 +358,6 @@ const hasPhoto = computed(() => {
     box-shadow:
       0 4px 16px rgba(0, 0, 0, 0.35),
       0 1px 4px rgba(0, 0, 0, 0.2);
-    border-color: var(--color-border-divider);
   }
 
   :root:not([data-theme='light']) .detail-polaroid-frame.is-placeholder .detail-polaroid-inner {
@@ -373,7 +370,6 @@ const hasPhoto = computed(() => {
 
   :root:not([data-theme='light']) .detail-placeholder-icon-tile {
     background: #2a2825;
-    border-color: var(--color-border-divider);
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
   }
 

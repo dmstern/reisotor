@@ -175,7 +175,7 @@ function resetColor() {
   align-items: center;
   gap: var(--space-2);
   padding: 4px 8px;
-  border: var(--border-width) solid var(--color-border-divider);
+  border: var(--border-width) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
