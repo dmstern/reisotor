@@ -179,12 +179,7 @@ async function removeMember(user: User) {
       <span>Mitglieder laden…</span>
     </div>
     <TransitionGroup v-else tag="ul" name="list" class="member-list">
-      <li
-        v-for="member in members"
-        :key="member.id"
-        class="member-avatar-item"
-        :class="{ 'is-current-user': member.id === authStore.user?.id }"
-      >
+      <li v-for="member in members" :key="member.id" class="member-avatar-item">
         <div class="member-avatar-wrap">
           <div class="member-avatar-circle" :title="member.username">
             <span class="member-avatar-emoji" aria-hidden="true">{{ member.avatar }}</span>
@@ -193,7 +188,7 @@ async function removeMember(user: User) {
             v-if="member.id !== authStore.user?.id"
             class="member-remove-btn"
             title="Mitglied entfernen"
-            aria-label="Mitglied entfernen"
+            :aria-label="`${member.username} entfernen`"
             @click="removeMember(member)"
           />
         </div>
@@ -243,14 +238,14 @@ async function removeMember(user: User) {
     </div>
 
     <TransitionGroup v-else-if="results.length" tag="ul" name="list" class="search-results">
-      <li v-for="u in results" :key="u.id">
+      <li v-for="user in results" :key="user.id">
         <div class="search-result-user">
           <div class="search-avatar-circle" aria-hidden="true">
-            <span>{{ u.avatar }}</span>
+            <span>{{ user.avatar }}</span>
           </div>
-          <span class="member-user" :title="u.username">{{ u.username }}</span>
+          <span class="member-user" :title="user.username">{{ user.username }}</span>
         </div>
-        <Button variant="primary" size="sm" :disabled="loading" @click="invite(u)">
+        <Button variant="primary" size="sm" :disabled="loading" @click="invite(user)">
           <AppIcon :icon="ACTION_ICONS.userPlus" :size="14" group="actions" /> Einladen
         </Button>
       </li>
@@ -289,7 +284,7 @@ async function removeMember(user: User) {
 .member-list {
   list-style: none;
   margin: 0;
-  padding: var(--space-2) var(--space-1) var(--space-1);
+  padding: var(--space-2) var(--space-1) var(--space-1) calc(var(--space-1) + 10px);
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
@@ -304,11 +299,8 @@ async function removeMember(user: User) {
   align-items: center;
   gap: var(--space-1);
   width: 72px;
+  margin-left: -10px;
   transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-
-  &:not(:first-child) {
-    margin-left: -10px;
-  }
 
   &:focus-within {
     z-index: 15;
@@ -336,20 +328,24 @@ async function removeMember(user: User) {
   justify-content: center;
 }
 
-.member-avatar-circle {
-  width: 72px;
-  height: 72px;
+.member-avatar-circle,
+.search-avatar-circle {
   border-radius: var(--radius-pill);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.25rem;
   line-height: 1;
   user-select: none;
   background-color: var(--color-surface);
   background-image: var(--gradient-surface-3d);
   border: var(--border-width) solid var(--color-border);
   box-shadow: var(--shadow-card-interactive);
+}
+
+.member-avatar-circle {
+  width: 72px;
+  height: 72px;
+  font-size: 2.25rem;
   transition:
     transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
     border-color 0.2s ease,
@@ -411,7 +407,7 @@ async function removeMember(user: User) {
 .search-result-user {
   display: flex;
   align-items: center;
-  gap: var(--space-2-5, 10px);
+  gap: var(--space-2);
   flex: 1;
   min-width: 0;
 }
@@ -419,18 +415,8 @@ async function removeMember(user: User) {
 .search-avatar-circle {
   width: 40px;
   height: 40px;
-  border-radius: var(--radius-pill);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex-shrink: 0;
   font-size: 1.35rem;
-  line-height: 1;
-  user-select: none;
-  background-color: var(--color-surface);
-  background-image: var(--gradient-surface-3d);
-  border: var(--border-width) solid var(--color-border);
-  box-shadow: var(--shadow-card-interactive);
 }
 
 .member-user {

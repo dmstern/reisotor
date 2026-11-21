@@ -180,6 +180,11 @@ const usageLabel = computed(() => {
     align-items: stretch;
   }
 
+  .category-meta {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
   .usage-count {
     min-width: auto;
   }

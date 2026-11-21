@@ -112,10 +112,6 @@ const afterCategoryMeta = computed(() => {
   };
 });
 
-const hasAdaptedCategory = computed(() =>
-  filteredCategories.value.some((cat) => Boolean(cat.isAdapted))
-);
-
 const categoryListRef = ref<HTMLElement | null>(null);
 const { canScrollUp, canScrollDown, updateScrollFade } = useScrollFade(categoryListRef);
 

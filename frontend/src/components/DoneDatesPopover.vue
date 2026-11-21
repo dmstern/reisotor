@@ -57,7 +57,6 @@ const emit = defineEmits<{
               :model-value="item.done"
               :label="formatDateShared(item.date)"
               class="date-check-item"
-              :class="{ checked: item.done }"
               @update:model-value="emit('toggle-item', item)"
             >
               <template v-if="item.title" #description>
