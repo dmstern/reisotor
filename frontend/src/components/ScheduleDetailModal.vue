@@ -182,6 +182,8 @@ const emit = defineEmits<{
   align-items: flex-start;
   gap: var(--space-1);
   min-width: 0;
+  width: 100%;
+  max-width: 100%;
 }
 
 .detail-actions {

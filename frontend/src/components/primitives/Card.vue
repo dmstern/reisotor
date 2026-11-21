@@ -305,6 +305,9 @@ const isNewHighlight = computed(() => {
 <style>
 .card {
   position: relative;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   background-color: var(--color-surface);
   background-image: var(--gradient-surface-3d);
   border: var(--border-width) solid var(--color-border);
@@ -665,14 +668,24 @@ const isNewHighlight = computed(() => {
   padding: var(--space-2) var(--space-3);
 }
 
+.card-content {
+  min-width: 0;
+}
+
 .card-header {
   margin-bottom: var(--space-2);
+  min-width: 0;
+}
+
+.card-body {
+  min-width: 0;
 }
 
 .card-footer {
   margin-top: var(--space-3);
   padding-top: var(--space-2);
   border-top: 1px solid var(--color-border-divider);
+  min-width: 0;
 }
 
 .card-expanded-slot {
