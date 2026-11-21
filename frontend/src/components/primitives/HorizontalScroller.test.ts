@@ -21,7 +21,6 @@ describe('HorizontalScroller', () => {
 
   function mountScroller(
     props: {
-      fadeBg?: 'bg' | 'surface' | string;
       prevLabel?: string;
       nextLabel?: string;
       scrollRatio?: number;
@@ -84,12 +83,13 @@ describe('HorizontalScroller', () => {
     await nextTick();
 
     expect(container.querySelector('.horizontal-scroller-arrow')).toBeNull();
-    expect(container.querySelector('.horizontal-scroller-fade')).toBeNull();
+    expect(viewport?.classList.contains('fade-left')).toBe(false);
+    expect(viewport?.classList.contains('fade-right')).toBe(false);
 
     cleanUp();
   });
 
-  it('shows left/right fades and PagerButtons with custom labels when scrollable', async () => {
+  it('applies fade classes and shows PagerButtons with custom labels when scrollable', async () => {
     const { container, cleanUp } = mountScroller({
       prevLabel: 'Urlaubswetter nach links scrollen',
       nextLabel: 'Urlaubswetter nach rechts scrollen',
@@ -106,15 +106,13 @@ describe('HorizontalScroller', () => {
     viewport?.dispatchEvent(new Event('scroll'));
     await nextTick();
 
-    const leftFade = container.querySelector('.horizontal-scroller-fade.left');
-    const rightFade = container.querySelector('.horizontal-scroller-fade.right');
     const arrowLeft = container.querySelector<HTMLButtonElement>('.horizontal-scroller-arrow.left');
     const arrowRight = container.querySelector<HTMLButtonElement>(
       '.horizontal-scroller-arrow.right'
     );
 
-    expect(leftFade).not.toBeNull();
-    expect(rightFade).not.toBeNull();
+    expect(viewport?.classList.contains('fade-left')).toBe(true);
+    expect(viewport?.classList.contains('fade-right')).toBe(true);
     expect(arrowLeft).not.toBeNull();
     expect(arrowRight).not.toBeNull();
     expect(arrowLeft?.getAttribute('aria-label')).toBe('Urlaubswetter nach links scrollen');
@@ -157,38 +155,5 @@ describe('HorizontalScroller', () => {
     });
 
     cleanUp();
-  });
-
-  it('sets --horizontal-scroller-fade-bg for surface, bg, and custom value', async () => {
-    const { container: surfaceContainer, cleanUp: cleanUpSurface } = mountScroller({
-      fadeBg: 'surface',
-    });
-    await nextTick();
-
-    const surfaceScroller = surfaceContainer.querySelector<HTMLElement>('.horizontal-scroller');
-    expect(surfaceScroller?.style.getPropertyValue('--horizontal-scroller-fade-bg')).toBe(
-      'var(--color-surface)'
-    );
-    cleanUpSurface();
-
-    const { container: bgContainer, cleanUp: cleanUpBg } = mountScroller({
-      fadeBg: 'bg',
-    });
-    await nextTick();
-
-    const bgScroller = bgContainer.querySelector<HTMLElement>('.horizontal-scroller');
-    expect(bgScroller?.style.getPropertyValue('--horizontal-scroller-fade-bg')).toBe(
-      'var(--color-bg)'
-    );
-    cleanUpBg();
-
-    const { container: customContainer, cleanUp: cleanUpCustom } = mountScroller({
-      fadeBg: '#abcdef',
-    });
-    await nextTick();
-
-    const customScroller = customContainer.querySelector<HTMLElement>('.horizontal-scroller');
-    expect(customScroller?.style.getPropertyValue('--horizontal-scroller-fade-bg')).toBe('#abcdef');
-    cleanUpCustom();
   });
 });

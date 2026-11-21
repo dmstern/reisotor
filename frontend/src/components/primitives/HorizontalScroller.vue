@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import { useScrollArrows } from '../../composables/useScrollArrows';
 import PagerButton from './PagerButton.vue';
 
@@ -7,7 +7,6 @@ const DEFAULT_SCROLL_RATIO = 0.7;
 
 const props = withDefaults(
   defineProps<{
-    fadeBg?: 'bg' | 'surface' | (string & {});
     prevLabel?: string;
     nextLabel?: string;
     scrollRatio?: number;
@@ -15,7 +14,6 @@ const props = withDefaults(
     ariaLabel?: string;
   }>(),
   {
-    fadeBg: undefined,
     prevLabel: 'Nach links scrollen',
     nextLabel: 'Nach rechts scrollen',
     scrollRatio: DEFAULT_SCROLL_RATIO,
@@ -23,22 +21,6 @@ const props = withDefaults(
     ariaLabel: undefined,
   }
 );
-
-const effectiveFadeBg = computed(() => {
-  if (props.fadeBg === 'surface') {
-    return 'var(--color-surface)';
-  }
-
-  if (props.fadeBg === 'bg') {
-    return 'var(--color-bg)';
-  }
-
-  if (props.fadeBg) {
-    return props.fadeBg;
-  }
-
-  return undefined;
-});
 
 const viewportEl = ref<HTMLElement | null>(null);
 
@@ -59,13 +41,11 @@ defineExpose({
 </script>
 
 <template>
-  <div
-    class="horizontal-scroller"
-    :style="effectiveFadeBg ? { '--horizontal-scroller-fade-bg': effectiveFadeBg } : undefined"
-  >
+  <div class="horizontal-scroller">
     <div
       ref="viewportEl"
       class="horizontal-scroller-viewport"
+      :class="{ 'fade-left': canScrollLeft, 'fade-right': canScrollRight }"
       :role="role"
       :aria-label="ariaLabel"
       @scroll="updateScrollArrows"
@@ -75,7 +55,6 @@ defineExpose({
       </div>
     </div>
 
-    <span v-if="canScrollLeft" class="horizontal-scroller-fade left" aria-hidden="true"></span>
     <PagerButton
       v-if="canScrollLeft"
       direction="prev"
@@ -84,7 +63,6 @@ defineExpose({
       @click="scrollBy(-1)"
     />
 
-    <span v-if="canScrollRight" class="horizontal-scroller-fade right" aria-hidden="true"></span>
     <PagerButton
       v-if="canScrollRight"
       direction="next"
@@ -98,36 +76,6 @@ defineExpose({
 <style lang="scss" scoped>
 .horizontal-scroller {
   position: relative;
-  --horizontal-scroller-effective-fade-bg: var(
-    --horizontal-scroller-fade-bg,
-    var(--scroll-fade-bg, var(--color-bg))
-  );
-}
-
-:where(
-    .modal,
-    dialog,
-    [role='dialog'],
-    .drawer,
-    .drawer-panel,
-    .sheet,
-    .bottom-sheet,
-    .card,
-    [data-surface]
-  )
-  .horizontal-scroller,
-.horizontal-scroller:where(.on-surface, [data-surface]) {
-  --horizontal-scroller-effective-fade-bg: var(
-    --horizontal-scroller-fade-bg,
-    var(--scroll-fade-bg, var(--color-surface))
-  );
-}
-
-.horizontal-scroller:where(.on-bg) {
-  --horizontal-scroller-effective-fade-bg: var(
-    --horizontal-scroller-fade-bg,
-    var(--scroll-fade-bg, var(--color-bg))
-  );
 }
 
 .horizontal-scroller-viewport {
@@ -142,38 +90,31 @@ defineExpose({
   display: none;
 }
 
+.horizontal-scroller-viewport.fade-left {
+  mask-image: linear-gradient(to right, transparent 0, transparent 8px, black 52px, black 100%);
+}
+
+.horizontal-scroller-viewport.fade-right {
+  mask-image: linear-gradient(to left, transparent 0, transparent 8px, black 52px, black 100%);
+}
+
+.horizontal-scroller-viewport.fade-left.fade-right {
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    transparent 8px,
+    black 52px,
+    black calc(100% - 52px),
+    transparent calc(100% - 8px),
+    transparent 100%
+  );
+}
+
 .horizontal-scroller-track {
   display: flex;
   gap: var(--horizontal-scroller-gap, var(--space-2));
   padding: var(--horizontal-scroller-padding, 0);
   min-width: max-content;
-}
-
-.horizontal-scroller-fade {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  z-index: 1;
-  width: 48px;
-  pointer-events: none;
-}
-
-.horizontal-scroller-fade.left {
-  left: 0;
-  background: linear-gradient(
-    to right,
-    var(--horizontal-scroller-effective-fade-bg) 65%,
-    transparent
-  );
-}
-
-.horizontal-scroller-fade.right {
-  right: 0;
-  background: linear-gradient(
-    to left,
-    var(--horizontal-scroller-effective-fade-bg) 65%,
-    transparent
-  );
 }
 
 .horizontal-scroller-arrow {
