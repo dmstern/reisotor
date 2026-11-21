@@ -39,9 +39,16 @@ export const useExcursionsStore = defineStore('excursions', () => {
   const liveSync = useLiveSyncStore();
   const excursions = shallowRef<Excursion[]>([]);
   const loaded = ref(false);
+  const lastViewedExcursionId = ref<number | null>(null);
+  let loadedTripId: number | null = null;
 
   async function load() {
     const tripId = tripStore.currentTripId;
+
+    if (tripId !== loadedTripId) {
+      lastViewedExcursionId.value = null;
+      loadedTripId = tripId;
+    }
 
     if (tripId == null) {
       excursions.value = [];
@@ -141,5 +148,15 @@ export const useExcursionsStore = defineStore('excursions', () => {
     excursions.value = next;
   }
 
-  return { excursions, loaded, load, create, update, remove, setDate, setDone };
+  return {
+    excursions,
+    loaded,
+    lastViewedExcursionId,
+    load,
+    create,
+    update,
+    remove,
+    setDate,
+    setDone,
+  };
 });

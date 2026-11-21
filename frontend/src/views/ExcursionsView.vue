@@ -179,7 +179,6 @@ const SEARCH_PLACEHOLDER_BY_MODE = {
 const searchPlaceholder = computed(() => SEARCH_PLACEHOLDER_BY_MODE[groupMode.value]);
 
 const selectedExcursionId = ref<number | null>(null);
-const lastViewedExcursionId = ref<number | null>(null);
 
 const selectedExcursion = computed(() =>
   selectedExcursionId.value != null
@@ -718,6 +717,10 @@ const tourViewTransitionName = ref<'tour-drill-forward' | 'tour-drill-back' | ''
 
 watch(selectedExcursionId, (newId, oldId) => {
   clearTourLineTimeouts();
+
+  if (newId != null) {
+    excursionsStore.lastViewedExcursionId = newId;
+  }
 
   if (newId != null && oldId == null && groupMode.value === 'tours') {
     tourViewTransitionName.value = 'tour-drill-forward';
@@ -1955,7 +1958,7 @@ onUnmounted(() => {
                     :highlighted="highlightedExcursionIds.has(grp.excursion.id)"
                     :focused="
                       dayFocusExcursionIds.has(grp.excursion.id) ||
-                      lastViewedExcursionId === grp.excursion.id
+                      excursionsStore.lastViewedExcursionId === grp.excursion.id
                     "
                     :like-count="excursionLikesFor(grp.excursion.id).length"
                     :liked="excursionLikedByMe(grp.excursion.id)"
