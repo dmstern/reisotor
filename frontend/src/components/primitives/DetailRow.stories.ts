@@ -53,10 +53,10 @@ export const MultipleRows: Story = {
   render: () => ({
     components: { DetailRow },
     template: `
-      <dl style="font-family: var(--font-sans); max-width: 400px; margin: 0;">
-        <DetailRow label="Adresse" icon="location">Via del Corso 12, Rom</DetailRow>
-        <DetailRow label="Zeitraum" icon="period">01.09.2026 – 08.09.2026</DetailRow>
-        <DetailRow label="Kosten" icon="amount">120.00 €</DetailRow>
+      <dl style="font-family: var(--font-sans); max-width: 400px; margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--space-sm); row-gap: var(--space-1-5);">
+        <DetailRow label="Adresse" icon="location" style="grid-column: 1 / -1; grid-template-columns: subgrid; margin: 0;">Via del Corso 12, Rom</DetailRow>
+        <DetailRow label="Zeitraum" icon="period" style="grid-column: 1 / -1; grid-template-columns: subgrid; margin: 0;">01.09.2026 – 08.09.2026</DetailRow>
+        <DetailRow label="Kosten" icon="amount" style="grid-column: 1 / -1; grid-template-columns: subgrid; margin: 0;">120.00 €</DetailRow>
       </dl>
     `,
   }),

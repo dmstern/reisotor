@@ -52,10 +52,11 @@ const resolvedIcon = computed<IconDef | undefined>(() => {
 .detail-row {
   margin: 0 0 var(--space-2);
   font-size: var(--font-size-sm);
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: baseline;
-  flex-wrap: wrap;
-  gap: var(--space-2xs) var(--space-1-5);
+  column-gap: var(--space-sm);
+  row-gap: var(--space-2xs);
   overflow-wrap: break-word;
   min-width: 0;
 }
@@ -68,7 +69,6 @@ const resolvedIcon = computed<IconDef | undefined>(() => {
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  flex-shrink: 0;
   white-space: nowrap;
 }
 
@@ -85,6 +85,6 @@ const resolvedIcon = computed<IconDef | undefined>(() => {
   min-width: 0;
   line-height: var(--line-height-snug);
   color: var(--color-text);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 </style>

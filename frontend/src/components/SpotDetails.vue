@@ -222,15 +222,20 @@ const checkinCheckoutText = computed(() => {
 }
 
 .spot-accordion-inner {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1-5);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: var(--space-sm);
+  row-gap: var(--space-1-5);
+  align-items: baseline;
   overflow: hidden;
   padding: 3px;
   margin: -3px;
 }
 
 .spot-accordion-inner :deep(.detail-row) {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
   margin: 0;
 }
 
@@ -280,6 +285,10 @@ const checkinCheckoutText = computed(() => {
 .spot-distance-transport-icon {
   vertical-align: -1px;
   margin-right: 1px;
+}
+
+.spot-accommodation-name {
+  color: var(--color-text-muted);
 }
 
 @media (prefers-reduced-motion: reduce) {

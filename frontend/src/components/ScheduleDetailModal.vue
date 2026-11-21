@@ -179,18 +179,22 @@ const emit = defineEmits<{
 
 .detail-list {
   margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1-5);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: var(--space-sm);
+  row-gap: var(--space-1-5);
+  align-items: baseline;
 }
 
 .detail-list :deep(.detail-row) {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
   margin: 0;
 }
 
-.linked-entity-row {
-  margin-top: var(--space-2);
-  margin-bottom: var(--space-1);
+.detail-list :deep(.linked-entity-row) {
+  margin-top: var(--space-1);
   display: flex;
   flex-direction: column;
   align-items: flex-start;

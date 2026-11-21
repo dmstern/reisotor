@@ -167,12 +167,17 @@ function travelDuration(item: TravelItem) {
 <style scoped>
 .detail-list {
   margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1-5);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: var(--space-sm);
+  row-gap: var(--space-1-5);
+  align-items: baseline;
 }
 
 .detail-list :deep(.detail-row) {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
   margin: 0;
 }
 
