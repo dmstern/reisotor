@@ -1619,13 +1619,6 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <div v-if="isTourDetailOpen" class="tour-detail-back-bar">
-            <button type="button" class="tour-detail-back-btn" @click="closeTourDetail">
-              <AppIcon :icon="ACTION_ICONS.arrowLeft" :size="16" group="actions" />
-              <span>Alle Touren</span>
-            </button>
-          </div>
-
           <!-- Touren-Formular: Modale Komponente mit useTourForm (#446) -->
           <ExcursionFormModal
             ref="excursionFormModalRef"
