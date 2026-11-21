@@ -195,10 +195,12 @@ const showPwaInstallDialog = ref(false);
           >
         </dd>
       </dl>
-      <AppFooterLinks
-        :repo-url="backendBuildInfo?.repoUrl"
-        :hosting-location="backendBuildInfo?.hostingLocation"
-      />
+      <div class="about-footer">
+        <AppFooterLinks
+          :repo-url="backendBuildInfo?.repoUrl"
+          :hosting-location="backendBuildInfo?.hostingLocation"
+        />
+      </div>
     </Card>
 
     <FeedbackDialog v-model="showFeedbackDialog" />
@@ -207,8 +209,14 @@ const showPwaInstallDialog = ref(false);
 </template>
 
 <style scoped>
-.about-tab :deep(.card) {
-  margin-bottom: var(--space-4);
+.about-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+h2 {
+  margin: 0 0 var(--space-md);
 }
 
 h2:has(.app-icon) {
@@ -221,24 +229,34 @@ h2:has(.app-icon) {
 
 h3 {
   font-size: var(--font-size-md);
-  margin: var(--space-4) 0 var(--space-3) 0;
+  margin: var(--space-xl) 0 var(--space-md);
 }
 
-.hint {
-  margin: 0 0 var(--space-3);
+.about-changelog-wrap > h3:first-child {
+  margin-top: 0;
+}
+
+.intro-hint {
+  margin: 0 0 var(--space-lg);
   font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
 }
 
-.hint.intro-hint {
-  margin-bottom: var(--space-3);
+.intro-hint:last-child {
+  margin-bottom: 0;
+}
+
+.services-info-card .intro-hint {
+  margin-bottom: var(--space-3-5);
 }
 
 .build-info-list {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: var(--space-1) var(--space-3);
+  gap: var(--space-sm) var(--space-xl);
   margin: 0;
   font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
 }
 
 .build-info-list dt {
@@ -258,7 +276,7 @@ h3 {
   }
 
   .build-info-list dt {
-    margin-top: var(--space-2);
+    margin-top: var(--space-md);
     font-weight: 600;
   }
 
@@ -267,22 +285,10 @@ h3 {
   }
 }
 
-.changelog-notes :deep(h4) {
-  margin-top: var(--space-3);
-  margin-bottom: var(--space-1);
-  color: var(--color-primary);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  border-bottom: 1px solid var(--color-border-divider);
-  padding-bottom: var(--space-1);
-}
-
-.changelog-notes :deep(h4:first-child) {
-  margin-top: var(--space-1);
-}
-
-.services-info-card :deep(.app-footer-repo-link) {
-  margin-top: var(--space-4);
+.about-footer {
+  margin-top: var(--space-xl);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--color-border-divider);
 }
 
 .service-note {
