@@ -285,6 +285,15 @@ Typische Abstandsfehler, die im Code unauffällig wirken, aber das visuelle Glei
     - Innerhalb von CSS-Grids/Flex-Rows mit `gap` (z. B. `.form-details-grid`) immer `:deep(.form-field) { margin-bottom: 0; }` setzen, damit kein unsichtbarer Zusatzabstand am unteren Card-Rand entsteht.
     - Trennlinien zwischen Inhaltsblöcken in Cards immer über `<Divider spacing="md" />` (oder `@include divider-engraved`) mit symmetrischem Abstand ziehen – niemals per flachem `border-top: 1px solid/dashed`.
     - Quadratische Icon-Trigger mit Zähler-Badge (z. B. Filter-/Settings-Buttons in `SearchFilterBar` und `ListSettingsMenu`) immer über `<IconButton :badge="count" />` bauen – niemals `<Badge>` in den Default-Slot eines normalen `<Button>` legen (macht den Button durch Text-Padding + Slot-Gap rechteckig).
+11. **Container-Query-Schwellenwerte auf gepolsterten Containern (`content-box`-Falle):**
+    - `container-type: inline-size` misst bei Container-Queries die **Content-Box** (ohne `padding` und `border`). Bei einem `480px`-Modal (`.modal.size-md`) mit `2 × 24px` Padding (`430px` Content-Box) feuert `@include container-down('mobile')` (`480px`) fälschlicherweise permanent auch auf Desktop. Schwellenwerte auf gepolsterten Containern müssen daher das eigene Padding/Border einrechnen (z. B. `mobile-sm` = `420px` für einen echten Desktop/Mobile-Umbruch im `480px`-Dialog).
+12. **Globale `h4`-Top-Margin & `<RichTextDisplay>`-Trailing-Margins in Flex-Containern:**
+    - Neben `h1–h3` und `p` besitzt auch `h4` in `style.css` eigene Basis-Margins (`margin: var(--space-2) 0 var(--space-1)`). Überschriften wie `.heading` in `FileAttachments` müssen ihre obere Margin explizit auf `0` zurücksetzen (`margin: 0 0 var(--space-sm)`).
+    - `<RichTextDisplay>` rendert HTML-`<p>`-Absätze mit globalem `margin-bottom: var(--space-3)` und schließt diesen über `.richtext :deep(> :last-child) { margin-bottom: 0; }` zentral ab, damit Notizblöcke keine überhängende Unterkante in Flex-Containern leaken.
+13. **Negative Korrektur-Margins gegen Container-`gap` bei Breakpoints:**
+    - Ein negatives `margin-top` zum Heranrücken eines Elements (z. B. `-4px` gegen `8px` Gap) darf bei engeren Breakpoints niemals auf einen kleineren Container-`gap` (z. B. `2px`) treffen, sonst entstehen negative Netto-Abstände bzw. Textüberlappungen.
+14. **Full-Bleed-Trennlinien & Sticky-Leisten bei responsivem Drawer-Padding über lokale CSS-Variable:**
+    - Wechselt ein Drawer- oder Karten-Container sein Padding responsiv (z. B. `--spots-col-pad`: `16px` mobil → `24px` Desktop), beziehen alle Full-Bleed-Kinder (negative Seitenmargins, innere Fluchtlinien wie `ExcursionCard` und Sticky-Abdeckschatten wie `ExcursionCategoryNav`) denselben Token mit identischem Fallback.
 
 ## Eckenrundung: Squircle-Prinzip
 
