@@ -3,7 +3,7 @@ import { ref, toRef, watch } from 'vue';
 import type { Excursion, IdeaRole, LocationTrack, User } from '../api/types';
 import Modal from './Modal.vue';
 import FormField from './FormField.vue';
-import DoneStatusField from './DoneStatusField.vue';
+import ToggleSwitch from './primitives/ToggleSwitch.vue';
 import Input from './primitives/Input.vue';
 import Select from './primitives/Select.vue';
 import Button from './primitives/Button.vue';
@@ -258,22 +258,30 @@ defineExpose({
         >
           <Input :id="id" v-model="activeExcursionForm.date" type="date" :modified="modified" />
         </FormField>
-        <DoneStatusField
+        <FormField
+          :icon="ACTION_ICONS.done"
+          label="Status"
           class="tour-done-field"
-          :done="activeExcursionForm.done"
-          :planned="Boolean(activeExcursionForm.date)"
-          toggle-label="Gemacht"
           :modified="isEditTourDoneModified"
-          :aria-label="
-            activeExcursionForm.done
-              ? 'Tour nicht mehr als gemacht markieren'
-              : 'Tour als gemacht markieren'
-          "
-          :title="
-            activeExcursionForm.done ? 'Als nicht gemacht markieren' : 'Als gemacht markieren'
-          "
-          @toggle="activeExcursionForm.done = !activeExcursionForm.done"
-        />
+          v-slot="{ id }"
+        >
+          <label :for="id" class="tour-done-toggle-row">
+            <ToggleSwitch
+              :id="id"
+              :model-value="activeExcursionForm.done"
+              :aria-label="
+                activeExcursionForm.done
+                  ? 'Tour nicht mehr als gemacht markieren'
+                  : 'Tour als gemacht markieren'
+              "
+              :title="
+                activeExcursionForm.done ? 'Als nicht gemacht markieren' : 'Als gemacht markieren'
+              "
+              @update:model-value="activeExcursionForm.done = $event"
+            />
+            <span class="tour-done-toggle-label">Gemacht</span>
+          </label>
+        </FormField>
       </div>
       <CollapsibleFieldset
         :model-value="
@@ -449,6 +457,21 @@ defineExpose({
 
 .tour-done-field {
   flex: 0 0 auto;
+}
+
+.tour-done-toggle-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 36px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tour-done-toggle-label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 .actions-row {
