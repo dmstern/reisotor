@@ -16,6 +16,7 @@ import ListSettingsMenu from '../components/ListSettingsMenu.vue';
 import QuickAddRow from '../components/QuickAddRow.vue';
 import Combobox from '../components/Combobox.vue';
 import Select from '../components/primitives/Select.vue';
+import Divider from '../components/primitives/Divider.vue';
 import EmptyState from '../components/primitives/EmptyState.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import ShoppingAddForm from '../components/ShoppingAddForm.vue';
@@ -125,6 +126,8 @@ async function quickAddToGroup(group: Group, label: string) {
             </EmptyState>
           </TransitionGroup>
 
+          <Divider spacing="md" />
+
           <QuickAddRow
             class="group-quick-add"
             :icon="ACTION_ICONS.shoppingCartPlus"
@@ -212,9 +215,8 @@ async function quickAddToGroup(group: Group, label: string) {
 
 .group-quick-add,
 .group-quick-add.expanded {
-  padding: var(--space-md) 0 0 0;
-  @include divider-engraved('top');
-  margin-top: var(--space-md);
+  padding: 0;
+  margin-top: 0;
   border-radius: 0;
   box-shadow: none;
 }
