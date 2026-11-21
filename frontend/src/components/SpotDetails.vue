@@ -5,6 +5,7 @@ import { parseContact } from '../utils/contact';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { linkLabel } from '../utils/linkLabel';
+import { travelTypeIconDef } from '../utils/travelTypeIcon';
 import { formatTravelDuration } from '../utils/travelDuration';
 import {
   formatSpotDistance,
@@ -174,7 +175,18 @@ const checkinCheckoutText = computed(() => {
             )
           }}
           <template v-if="accommodationDistance.durationSeconds != null">
-            · ca.
+            ·
+            <AppIcon
+              :icon="
+                travelTypeIconDef(
+                  accommodationDistance.profile === 'foot-walking' ? 'zu Fuß' : 'Auto'
+                )
+              "
+              :size="13"
+              group="categories"
+              class="spot-distance-transport-icon"
+            />
+            ca.
             {{
               formatTravelDuration(
                 Math.max(1, Math.round(accommodationDistance.durationSeconds / 60))
@@ -263,6 +275,11 @@ const checkinCheckoutText = computed(() => {
 
 .spot-external-link:hover {
   color: var(--color-primary-hover, var(--color-primary));
+}
+
+.spot-distance-transport-icon {
+  vertical-align: -1px;
+  margin-right: 1px;
 }
 
 @media (prefers-reduced-motion: reduce) {

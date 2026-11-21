@@ -66,7 +66,7 @@ import {
   IconPlayerPauseFilled,
   IconHourglass,
   IconHourglassFilled,
-  IconRulerMeasure,
+  IconRuler2,
   IconPlayerPlay,
   IconPlayerPlayFilled,
   IconSparkles,
@@ -360,7 +360,7 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   unliked: { id: 'heart', emoji: '🤍', outline: IconHeart, filled: IconHeart },
   pending: { id: 'hourglass', emoji: '⏳', outline: IconHourglass, filled: IconHourglassFilled },
   syncPending: { id: 'rotate-clockwise-2', emoji: '🔄', outline: IconRotateClockwise2 },
-  distance: { id: 'ruler-measure', emoji: '📏', outline: IconRulerMeasure },
+  distance: { id: 'ruler-2', emoji: '📏', outline: IconRuler2 },
   play: { id: 'player-play', emoji: '▶️', outline: IconPlayerPlay, filled: IconPlayerPlayFilled },
   warning: {
     id: 'alert-triangle',
