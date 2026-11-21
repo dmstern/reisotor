@@ -733,10 +733,89 @@ watch(selectedExcursionId, (newId, oldId) => {
   );
 });
 
+function parseRouteExcursionId(param: unknown): number | null {
+  const raw = Array.isArray(param) ? param[0] : param;
+
+  if (raw == null || raw === '') {
+    return null;
+  }
+
+  const parsed = Number(raw);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function syncTourDetailRoute(excursionId: number | null, mode: 'push' | 'replace' = 'push') {
+  const currentRouteId = parseRouteExcursionId(route.params.excursionId);
+
+  if (currentRouteId === excursionId) {
+    return;
+  }
+
+  const targetTripId = route.params.tripId ? String(route.params.tripId) : String(tripId);
+  const params: Record<string, string> = {
+    tripId: targetTripId,
+    excursionId: excursionId != null ? String(excursionId) : '',
+  };
+
+  void router[mode]({
+    name: 'excursions',
+    params,
+    query: route.query,
+  });
+}
+
 watch(
-  () => [selectedExcursionId.value, selectedExcursion.value, loading.value] as const,
-  ([id, excursion, isLoading]) => {
-    if (id == null || excursion != null || isLoading) {
+  () => route.params.excursionId,
+  (newParam, oldParam) => {
+    const routeId = parseRouteExcursionId(newParam);
+
+    if (routeId != null) {
+      if (groupMode.value !== 'tours') {
+        groupMode.value = 'tours';
+      }
+
+      if (selectedExcursionId.value !== routeId) {
+        if (selectedExcursionId.value == null && spotsColBodyEl.value) {
+          savedTourListScrollTop = spotsColBodyEl.value.scrollTop;
+        }
+
+        if (oldParam !== undefined) {
+          tourViewTransitionName.value = 'tour-drill-forward';
+        }
+
+        selectedExcursionId.value = routeId;
+        expandedSpotId.value = null;
+      }
+
+      return;
+    }
+
+    if (selectedExcursionId.value == null) {
+      return;
+    }
+
+    const closingId = selectedExcursionId.value;
+    tourViewTransitionName.value = groupMode.value === 'tours' ? 'tour-drill-back' : '';
+    selectedExcursionId.value = null;
+    expandedSpotId.value = null;
+
+    if (drawers.mapFocusExcursionId === closingId) {
+      drawers.mapFocusExcursionId = null;
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () =>
+    [
+      selectedExcursionId.value,
+      selectedExcursion.value,
+      loading.value,
+      excursionsStore.loaded,
+    ] as const,
+  ([id, excursion, isLoading, isLoaded]) => {
+    if (id == null || excursion != null || isLoading || !isLoaded) {
       return;
     }
 
@@ -746,6 +825,8 @@ watch(
     if (drawers.mapFocusExcursionId === id) {
       drawers.mapFocusExcursionId = null;
     }
+
+    syncTourDetailRoute(null, 'replace');
   }
 );
 
@@ -762,6 +843,10 @@ watch(groupMode, (newMode) => {
   if (newMode !== 'tours' && selectedExcursionId.value != null) {
     selectedExcursionId.value = null;
     expandedSpotId.value = null;
+  }
+
+  if (newMode !== 'tours' && parseRouteExcursionId(route.params.excursionId) != null) {
+    syncTourDetailRoute(null, 'replace');
   }
 });
 
@@ -800,6 +885,7 @@ async function openTourDetail(excursionId: number) {
   tourViewTransitionName.value = 'tour-drill-forward';
   selectedExcursionId.value = excursionId;
   expandedSpotId.value = null;
+  syncTourDetailRoute(excursionId, 'push');
 
   await nextTick();
   recomputeTourLine(excursionId);
@@ -814,6 +900,8 @@ async function closeTourDetail() {
   if (closingId != null && drawers.mapFocusExcursionId === closingId) {
     drawers.mapFocusExcursionId = null;
   }
+
+  syncTourDetailRoute(null, 'push');
 
   await nextTick();
 }
@@ -1210,6 +1298,11 @@ function onTourDetailKeydown(event: KeyboardEvent) {
 onMounted(async () => {
   window.addEventListener('keydown', onTourDetailKeydown);
   applyRouteQuery();
+
+  if (parseRouteExcursionId(route.params.excursionId) != null && groupMode.value !== 'tours') {
+    groupMode.value = 'tours';
+  }
+
   filter.markSeenForGroupMode(groupMode.value);
   const hashId = hashHighlightId(route.hash, 'spot');
   const excursionHashId =
