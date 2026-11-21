@@ -302,7 +302,7 @@ const isNewHighlight = computed(() => {
   </component>
 </template>
 
-<style>
+<style lang="scss">
 .card {
   position: relative;
   min-width: 0;
@@ -330,13 +330,7 @@ const isNewHighlight = computed(() => {
 }
 
 .card.is-map-focused {
-  position: relative;
-  z-index: var(--z-map-focus, 6);
-  border-color: var(--color-primary) !important;
-  box-shadow:
-    0 0 0 2px var(--color-primary),
-    0 8px 24px -4px color-mix(in srgb, var(--color-primary) 32%, transparent),
-    0 2px 8px -1px color-mix(in srgb, var(--color-primary) 20%, transparent) !important;
+  @include card-focus-ring;
   animation: cardMapFocusPulse 0.9s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

@@ -283,6 +283,7 @@ const {
   scrollToExcursion,
   scrollToSpot,
   isCardWellVisibleInBody,
+  getExcursionElement,
   getSpotElement,
   cancelProgrammaticScroll,
 } = navSpy;
@@ -854,6 +855,40 @@ watch(groupMode, (newMode) => {
   }
 });
 
+function focusLastViewedExcursionCard() {
+  const excursionId = excursionsStore.lastViewedExcursionId;
+
+  if (excursionId == null || isTourDetailOpen.value || groupMode.value !== 'tours') {
+    return;
+  }
+
+  const cardEl = getExcursionElement(excursionId);
+
+  if (!cardEl) {
+    return;
+  }
+
+  excursionsStore.lastViewedExcursionId = null;
+  cardEl.focus({ preventScroll: true });
+}
+
+watch(
+  () => [loading.value, isTourDetailOpen.value, groupMode.value] as const,
+  ([isLoading, detailOpen, mode]) => {
+    if (
+      isLoading ||
+      detailOpen ||
+      mode !== 'tours' ||
+      excursionsStore.lastViewedExcursionId == null
+    ) {
+      return;
+    }
+
+    focusLastViewedExcursionCard();
+  },
+  { flush: 'post' }
+);
+
 function onTourViewEnter() {
   if (!spotsColBodyEl.value) {
     return;
@@ -865,12 +900,16 @@ function onTourViewEnter() {
   }
 
   spotsColBodyEl.value.scrollTop = savedTourListScrollTop;
+  nextTick(focusLastViewedExcursionCard);
 }
 
 function onTourViewAfterEnter() {
   if (isTourDetailOpen.value && selectedExcursionId.value != null) {
     recomputeTourLine(selectedExcursionId.value);
+    return;
   }
+
+  focusLastViewedExcursionCard();
 }
 
 async function openTourDetail(excursionId: number) {
@@ -1956,10 +1995,7 @@ onUnmounted(() => {
                     class="tour-group-card"
                     :excursion="grp.excursion"
                     :highlighted="highlightedExcursionIds.has(grp.excursion.id)"
-                    :focused="
-                      dayFocusExcursionIds.has(grp.excursion.id) ||
-                      excursionsStore.lastViewedExcursionId === grp.excursion.id
-                    "
+                    :focused="dayFocusExcursionIds.has(grp.excursion.id)"
                     :like-count="excursionLikesFor(grp.excursion.id).length"
                     :liked="excursionLikedByMe(grp.excursion.id)"
                     :comments="excursionCommentItemsFor(grp.excursion.id)"

@@ -183,8 +183,8 @@ function onCardKeydown(event: KeyboardEvent) {
     box-shadow 0.2s ease;
 }
 
-.card.excursion-card:not(.is-map-focused),
-.excursion-card:not(.is-map-focused) {
+.card.excursion-card:not(.is-map-focused):not(:focus):not(:focus-visible),
+.excursion-card:not(.is-map-focused):not(:focus):not(:focus-visible) {
   border: none !important;
   border-radius: 0 !important;
   corner-shape: auto !important;
@@ -192,9 +192,21 @@ function onCardKeydown(event: KeyboardEvent) {
 }
 
 .card.excursion-card.is-map-focused,
-.excursion-card.is-map-focused {
-  /* Abstand links/rechts, damit der 2px-Fokus-Ring von Card.vue nicht durch overflow-x: hidden abgeschnitten wird */
+.excursion-card.is-map-focused,
+.card.excursion-card:focus,
+.card.excursion-card:focus-visible,
+.excursion-card:focus,
+.excursion-card:focus-visible {
+  /* Abstand links/rechts, damit der 2px-Fokus-Ring nicht durch overflow-x: hidden abgeschnitten wird */
   margin-inline: 2px;
+}
+
+.card.excursion-card:focus,
+.card.excursion-card:focus-visible,
+.excursion-card:focus,
+.excursion-card:focus-visible {
+  outline: none;
+  @include card-focus-ring;
 }
 
 .excursion-card.is-travel,
@@ -230,8 +242,8 @@ function onCardKeydown(event: KeyboardEvent) {
     background: var(--color-hover) !important;
   }
 
-  .card.card--interactive.excursion-card:not(.is-map-focused):hover,
-  .excursion-card:not(.is-map-focused):hover {
+  .card.card--interactive.excursion-card:not(.is-map-focused):not(:focus):not(:focus-visible):hover,
+  .excursion-card:not(.is-map-focused):not(:focus):not(:focus-visible):hover {
     box-shadow: none !important;
   }
 

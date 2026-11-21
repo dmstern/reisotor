@@ -110,6 +110,10 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     setExcursionRef(excursionId, el);
   }
 
+  function getExcursionElement(excursionId: number): HTMLElement | null {
+    return excursionRefs.get(excursionId) ?? null;
+  }
+
   const spotRefs = new Map<number, HTMLElement>();
   const spotInstances = new Map<number, Map<number | null, HTMLElement>>();
 
@@ -714,6 +718,7 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     scrollToCategory,
     scrollToExcursion,
     scrollToSpot,
+    getExcursionElement,
     getSpotElement,
     isCardWellVisibleInBody,
     cancelProgrammaticScroll,
