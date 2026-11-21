@@ -92,9 +92,7 @@ test('clicking a projected tour entry jumps directly to the tour (#800)', async 
 
   // Direkt projizierte Touren springen per Klick direkt zur Tour statt ein Detail-Modal zu öffnen
   // (siehe ScheduleView.vue openEntry()); auf Desktop bleibt die Kalender-Schublade dabei offen.
-  await expect(page).toHaveURL(
-    new RegExp(`/trip/\\d+/excursions\\?group=tours#excursion-${excursion.id}$`)
-  );
+  await expect(page).toHaveURL(new RegExp(`/trip/\\d+/excursions/${excursion.id}\\?group=tours$`));
   await expect(page.locator('.overlay .modal')).toHaveCount(0);
   await expect(
     page.getByRole('heading', { name: 'Kalender', exact: true, level: 2 })

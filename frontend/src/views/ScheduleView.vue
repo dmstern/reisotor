@@ -136,9 +136,8 @@ function openEntry(entry: CalendarEntry) {
     drawers.openMapForExcursion(entry.ideaId);
     drawers.restoreMaximized();
     router.push({
-      path: `${tripPrefix}/excursions`,
+      path: `${tripPrefix}/excursions/${entry.ideaId}`,
       query: { group: 'tours' },
-      hash: `#excursion-${entry.ideaId}`,
     });
   } else if (entry.kind === 'spot' && entry.spotId != null) {
     drawers.openMapAt(`spot-${entry.spotId}`);
