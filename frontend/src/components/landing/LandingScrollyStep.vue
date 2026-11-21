@@ -216,10 +216,9 @@ function isRevealed(hIdx: number): boolean {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   font-weight: 500;
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  padding: var(--space-1) var(--space-2);
-  margin: 0 calc(-1 * var(--space-2));
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
+  margin: 0 calc(-1 * var(--space-1));
   cursor: pointer;
   opacity: 0;
   max-height: 0;
@@ -231,19 +230,13 @@ function isRevealed(hIdx: number): boolean {
     transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
     max-height 0.35s ease,
     background-color 0.25s ease,
-    box-shadow 0.25s ease,
     color 0.25s ease;
 
   @include can-hover {
     &:hover {
       background-color: var(--color-glass-control-hover);
-      box-shadow: inset 0 1px 0 var(--shadow-control-highlight);
       color: var(--color-text);
     }
-  }
-
-  &:active {
-    transform: translateY(0.5px) scale(0.995);
   }
 
   &:focus-visible {
@@ -265,10 +258,6 @@ function isRevealed(hIdx: number): boolean {
   font-weight: 600;
   color: var(--color-text);
   background-color: var(--color-control-active-tint);
-  background-image: var(--gradient-control-3d);
-  box-shadow:
-    inset 0 1px 0 var(--shadow-control-highlight),
-    var(--shadow-2xs);
 }
 
 .check-icon-wrapper {
@@ -277,19 +266,9 @@ function isRevealed(hIdx: number): boolean {
   justify-content: center;
   width: 24px;
   height: 24px;
-  border-radius: var(--radius-full);
-  transition:
-    transform 0.25s ease,
-    background-color 0.25s ease,
-    box-shadow 0.25s ease;
+  border-radius: var(--radius-pill);
+  transition: background-color 0.25s ease;
   flex-shrink: 0;
-}
-
-.step-highlight-item.is-current .check-icon-wrapper {
-  transform: scale(1.08);
-  box-shadow:
-    inset 0 1px 0 var(--shadow-control-highlight),
-    var(--shadow-2xs);
 }
 
 .check-icon {

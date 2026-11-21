@@ -15,7 +15,7 @@ defineProps<{
   </section>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .self-hosting {
   text-align: center;
   width: calc(100% - 2 * var(--space-4));
@@ -23,16 +23,8 @@ defineProps<{
   box-sizing: border-box;
   margin: 0 auto;
   padding: var(--space-5);
-  background-color: var(--color-surface-glass);
-  background-image: var(--gradient-surface-3d);
-  background-origin: border-box;
-  backdrop-filter: var(--backdrop-blur-md);
-  border-radius: var(--radius-xl-squircle);
-  corner-shape: squircle;
-  border: 1px dashed var(--color-border-strong);
-  box-shadow:
-    inset 0 1px 0 var(--shadow-control-highlight),
-    var(--shadow-card);
+  @include surface-sunken-box(var(--radius-xl-squircle), dashed);
+  border-color: var(--color-border-strong);
 }
 
 @container landing (max-width: 480px) {
