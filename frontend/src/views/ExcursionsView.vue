@@ -25,6 +25,7 @@ import { useIsDesktop } from '../composables/useIsDesktop';
 import { hashHighlightId } from '../utils/hashHighlight';
 import SpotCard from '../components/SpotCard.vue';
 import ExcursionCard from '../components/ExcursionCard.vue';
+import TourDetailView from '../components/TourDetailView.vue';
 import SegmentedToggle from '../components/SegmentedToggle.vue';
 import SearchFilterBar from '../components/SearchFilterBar.vue';
 import TripMap from '../components/TripMap.vue';
@@ -168,10 +169,6 @@ const {
   spotGroups,
   filterCategoryOptions,
   excursionForGroupTitle,
-  isTourAllSpotsFiltered,
-  isTourPartiallyFiltered,
-  tourFilterReason,
-  tourPartialFilteredPrefix,
 } = filter;
 
 const SEARCH_PLACEHOLDER_BY_MODE = {
@@ -569,7 +566,7 @@ watch(showSpotModal, (isOpen) => {
 
 async function onAddExistingSpotToTour(excursion: Excursion, spotId: number) {
   const current = excursionsStore.excursions.find((item) => item.id === excursion.id) ?? excursion;
-  expandedExcursionId.value = current.id;
+  selectedExcursionId.value = current.id;
 
   await excursionsStore.update(current.id, {
     title: current.title,
@@ -633,7 +630,7 @@ async function onSpotCreated(spot: Spot) {
   const excursion = excursionsStore.excursions.find((e) => e.id === tourId);
 
   if (excursion) {
-    expandedExcursionId.value = excursion.id;
+    selectedExcursionId.value = excursion.id;
 
     if (!excursion.spot_ids.includes(spot.id)) {
       await onAddExistingSpotToTour(excursion, spot.id);
@@ -668,30 +665,67 @@ function onAddButtonClick() {
 
 // Card Expansion & Map Cross-Focus Orchestration
 const expandedSpotId = ref<number | null>(null);
-const expandedExcursionId = ref<number | null>(null);
+const selectedExcursionId = ref<number | null>(null);
+let savedTourListScrollTop = 0;
 
-let excursionOpenSequenceToken = 0;
-let spotOpenSequenceToken = 0;
+const selectedExcursion = computed(() =>
+  selectedExcursionId.value != null
+    ? (excursionsStore.excursions.find((e) => e.id === selectedExcursionId.value) ?? null)
+    : null
+);
 
-watch(expandedExcursionId, (newId, oldId) => {
-  if (newId != null) {
-    nextTick(() => recomputeTourLine(newId));
-    setTimeout(() => recomputeTourLine(newId), 320);
-    setTimeout(() => recomputeTourLine(newId), 420);
+const isTourDetailOpen = computed(
+  () => groupMode.value === 'tours' && selectedExcursion.value != null
+);
+
+const selectedExcursionStationItems = computed(() => {
+  const excursion = selectedExcursion.value;
+
+  if (!excursion) {
+    return [];
   }
 
-  if (oldId == null) {
+  const spotById = new Map(spotsStore.spots.map((spot) => [spot.id, spot]));
+  const items: Array<{ kind: 'spot'; spot: Spot }> = [];
+
+  for (const spotId of excursion.spot_ids) {
+    const spot = spotById.get(spotId);
+
+    if (spot) {
+      items.push({ kind: 'spot', spot });
+    }
+  }
+
+  return items;
+});
+
+let spotOpenSequenceToken = 0;
+
+watch(selectedExcursionId, (newId) => {
+  if (newId == null) {
     return;
   }
 
-  nextTick(() => recomputeTourLine(oldId));
-  setTimeout(() => recomputeTourLine(oldId), 320);
-  setTimeout(() => recomputeTourLine(oldId), 420);
+  nextTick(() => recomputeTourLine(newId));
+  setTimeout(() => recomputeTourLine(newId), 320);
+  setTimeout(() => recomputeTourLine(newId), 420);
 });
 
-async function openExcursionWithScroll(excursionId: number) {
-  const token = ++excursionOpenSequenceToken;
+watch(selectedExcursionStationItems, () => {
+  if (selectedExcursionId.value != null) {
+    const id = selectedExcursionId.value;
+    nextTick(() => recomputeTourLine(id));
+  }
+});
 
+watch(groupMode, (newMode) => {
+  if (newMode !== 'tours' && selectedExcursionId.value != null) {
+    selectedExcursionId.value = null;
+    expandedSpotId.value = null;
+  }
+});
+
+async function openTourDetail(excursionId: number) {
   if (drawers.mapFocusExcursionId && drawers.mapFocusExcursionId !== excursionId) {
     drawers.mapFocusExcursionId = null;
   }
@@ -700,81 +734,36 @@ async function openExcursionWithScroll(excursionId: number) {
     drawers.mapFocusKey = null;
   }
 
-  const previousExcursionId = expandedExcursionId.value;
-
-  if (previousExcursionId === excursionId) {
-    const targetEl = excursionRefs.get(excursionId);
-
-    if (targetEl && isCardWellVisibleInBody(targetEl)) {
-      return;
-    }
-
-    await scrollToExcursion(excursionId);
-    return;
+  if (selectedExcursionId.value == null && spotsColBodyEl.value) {
+    savedTourListScrollTop = spotsColBodyEl.value.scrollTop;
   }
 
-  const prefersReduced =
-    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  let offsetAdjustment = 0;
-
-  if (previousExcursionId != null) {
-    const prevEl = excursionRefs.get(previousExcursionId);
-    const targetEl = excursionRefs.get(excursionId);
-
-    if (prevEl && targetEl) {
-      const isPrevAbove = Boolean(
-        prevEl.compareDocumentPosition(targetEl) & Node.DOCUMENT_POSITION_FOLLOWING
-      );
-
-      if (
-        isPrevAbove &&
-        targetEl.getBoundingClientRect().top > prevEl.getBoundingClientRect().top + 10
-      ) {
-        const prevGroup = prevEl.closest('.category-group');
-        const prevAccordion = prevGroup?.querySelector(
-          '.tour-station-accordion'
-        ) as HTMLElement | null;
-
-        if (prevAccordion) {
-          offsetAdjustment = -prevAccordion.getBoundingClientRect().height;
-        }
-      }
-    }
-  }
-
-  expandedExcursionId.value = excursionId;
+  selectedExcursionId.value = excursionId;
   expandedSpotId.value = null;
 
   await nextTick();
 
-  if (token !== excursionOpenSequenceToken) {
-    return;
+  if (spotsColBodyEl.value) {
+    spotsColBodyEl.value.scrollTop = 0;
   }
 
-  const targetEl = excursionRefs.get(excursionId);
+  recomputeTourLine(excursionId);
+}
 
-  if (targetEl && isCardWellVisibleInBody(targetEl, offsetAdjustment)) {
-    return;
+async function closeTourDetail() {
+  const closingId = selectedExcursionId.value;
+  selectedExcursionId.value = null;
+  expandedSpotId.value = null;
+
+  if (closingId != null && drawers.mapFocusExcursionId === closingId) {
+    drawers.mapFocusExcursionId = null;
   }
 
-  await scrollToExcursion(excursionId, offsetAdjustment);
+  await nextTick();
 
-  if (token !== excursionOpenSequenceToken) {
-    return;
+  if (spotsColBodyEl.value) {
+    spotsColBodyEl.value.scrollTop = savedTourListScrollTop;
   }
-
-  if (prefersReduced) {
-    return;
-  }
-
-  await new Promise<void>((resolve) => setTimeout(resolve, 420));
-
-  if (token !== excursionOpenSequenceToken) {
-    return;
-  }
-
-  await scrollToExcursion(excursionId, 0, 'auto');
 }
 
 let lastActiveSpotEl: HTMLElement | null = null;
@@ -792,7 +781,7 @@ async function openSpotWithScroll(spotId: number, targetEl?: HTMLElement | null)
 
   const previousSpotId = expandedSpotId.value;
   const resolvedTarget =
-    targetEl && targetEl.isConnected ? targetEl : getSpotElement(spotId, expandedExcursionId.value);
+    targetEl && targetEl.isConnected ? targetEl : getSpotElement(spotId, selectedExcursionId.value);
 
   if (previousSpotId === spotId) {
     if (resolvedTarget && isCardWellVisibleInBody(resolvedTarget)) {
@@ -812,7 +801,7 @@ async function openSpotWithScroll(spotId: number, targetEl?: HTMLElement | null)
     const prevEl =
       lastActiveSpotEl && lastActiveSpotEl.isConnected
         ? lastActiveSpotEl
-        : getSpotElement(previousSpotId, expandedExcursionId.value);
+        : getSpotElement(previousSpotId, selectedExcursionId.value);
     const target = resolvedTarget;
 
     if (prevEl && target) {
@@ -853,7 +842,7 @@ async function openSpotWithScroll(spotId: number, targetEl?: HTMLElement | null)
   const currentTarget =
     resolvedTarget && resolvedTarget.isConnected
       ? resolvedTarget
-      : getSpotElement(spotId, expandedExcursionId.value);
+      : getSpotElement(spotId, selectedExcursionId.value);
 
   if (currentTarget && isCardWellVisibleInBody(currentTarget, offsetAdjustment)) {
     return;
@@ -878,7 +867,7 @@ async function openSpotWithScroll(spotId: number, targetEl?: HTMLElement | null)
   const finalTarget =
     resolvedTarget && resolvedTarget.isConnected
       ? resolvedTarget
-      : getSpotElement(spotId, expandedExcursionId.value);
+      : getSpotElement(spotId, selectedExcursionId.value);
   await scrollToSpot(finalTarget ?? spotId, 0, 'auto');
 }
 
@@ -894,17 +883,10 @@ function onSpotCardClose() {
 }
 
 function onExcursionCardOpen(excursion: Excursion) {
-  openExcursionWithScroll(excursion.id);
-}
-
-function onExcursionCardClose() {
-  excursionOpenSequenceToken++;
-  expandedExcursionId.value = null;
-  drawers.mapFocusExcursionId = null;
+  openTourDetail(excursion.id);
 }
 
 function onCancelProgrammaticScroll() {
-  excursionOpenSequenceToken++;
   spotOpenSequenceToken++;
   cancelProgrammaticScroll();
 }
@@ -918,7 +900,7 @@ function onSpotShowOnMap(spot: Spot) {
       const el =
         lastActiveSpotEl && lastActiveSpotEl.isConnected
           ? lastActiveSpotEl
-          : getSpotElement(spot.id, expandedExcursionId.value);
+          : getSpotElement(spot.id, selectedExcursionId.value);
       scrollToSpot(el ?? spot.id);
     });
   }
@@ -926,14 +908,8 @@ function onSpotShowOnMap(spot: Spot) {
 
 function onExcursionShowOnMap(excursionId: number) {
   sheetState.value = 'partial';
-  expandedExcursionId.value = excursionId;
+  selectedExcursionId.value = excursionId;
   drawers.openMapForExcursion(excursionId);
-
-  if (isSheetOverlayMode.value) {
-    nextTick(() => {
-      scrollToExcursion(excursionId);
-    });
-  }
 }
 
 async function onFocusSpotFromMap(spotId: number) {
@@ -964,16 +940,12 @@ async function onFocusSpotFromMap(spotId: number) {
 async function onFocusExcursionFromMap(excursionId: number) {
   groupMode.value = 'tours';
 
-  if (searchQuery.value) {
-    searchQuery.value = '';
-  }
-
   if (sheetState.value === 'collapsed' || sheetState.value === 'full') {
     sheetState.value = 'partial';
   }
 
   await nextTick();
-  await openExcursionWithScroll(excursionId);
+  await openTourDetail(excursionId);
 }
 
 // Drawer & Map Focus Watchers
@@ -1107,7 +1079,7 @@ watch(
         return;
       }
 
-      const el = getSpotElement(firstSpotId, expandedExcursionId.value);
+      const el = getSpotElement(firstSpotId, selectedExcursionId.value);
       scrollToSpot(el ?? firstSpotId);
     });
   },
@@ -1164,7 +1136,27 @@ watch(
   }
 );
 
+function onTourDetailKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Escape' || event.defaultPrevented || !isTourDetailOpen.value) {
+    return;
+  }
+
+  if (
+    showSpotModal.value ||
+    showExcursionModal.value ||
+    showCardLegModal.value ||
+    showTrackRecordingWarningModal.value ||
+    editingTrack.value != null ||
+    document.querySelector('.modal, .picker-backdrop, .dropdown-menu, [role="dialog"]')
+  ) {
+    return;
+  }
+
+  closeTourDetail();
+}
+
 onMounted(async () => {
+  window.addEventListener('keydown', onTourDetailKeydown);
   applyRouteQuery();
   filter.markSeenForGroupMode(groupMode.value);
   const hashId = hashHighlightId(route.hash, 'spot');
@@ -1220,6 +1212,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  window.removeEventListener('keydown', onTourDetailKeydown);
   clearExpandSearchTimeout();
 
   drawers.mapFocusKey = null;
@@ -1573,6 +1566,13 @@ onUnmounted(() => {
             </div>
           </div>
 
+          <div v-if="isTourDetailOpen" class="tour-detail-back-bar">
+            <button type="button" class="tour-detail-back-btn" @click="closeTourDetail">
+              <AppIcon :icon="ACTION_ICONS.arrowLeft" :size="16" group="actions" />
+              <span>Alle Touren</span>
+            </button>
+          </div>
+
           <!-- Touren-Formular: Modale Komponente mit useTourForm (#446) -->
           <ExcursionFormModal
             ref="excursionFormModalRef"
@@ -1686,114 +1686,131 @@ onUnmounted(() => {
           />
 
           <template v-if="groupMode !== 'tracks'">
-            <section
-              class="group category-group"
-              :class="{
-                'is-tour-group': !!grp.excursion,
-                'is-expanded': !!(grp.excursion && expandedExcursionId === grp.excursion.id),
-              }"
-              :style="
-                grp.excursion
-                  ? {
-                      '--tour-theme-color': grp.excursion.role
-                        ? 'var(--color-travel)'
-                        : 'var(--color-tour)',
-                      '--tour-theme-tint': grp.excursion.role
-                        ? 'var(--color-travel-tint)'
-                        : 'var(--color-tour-tint)',
-                      '--tour-theme-border': grp.excursion.role
-                        ? 'var(--color-travel-border)'
-                        : 'var(--color-tour-border)',
-                    }
-                  : undefined
-              "
-              v-for="grp in spotGroups"
-              :key="grp.category"
+            <TourDetailView
+              v-if="isTourDetailOpen && selectedExcursion"
+              :excursion="selectedExcursion"
+              :creator-label="creatorLabel(selectedExcursion.created_by)"
+              :like-count="excursionLikesFor(selectedExcursion.id).length"
+              :liked="excursionLikedByMe(selectedExcursion.id)"
+              :comments="excursionCommentItemsFor(selectedExcursion.id)"
+              :stations="spotsStore.spots"
+              :travel-items="travelItems"
+              @edit="startEditExcursion"
+              @toggle-like="toggleExcursionLike(selectedExcursion.id)"
+              @submit-comment="(content) => submitExcursionComment(selectedExcursion!.id, content)"
+              @remove-comment="removeExcursionComment"
+              @update-comment="updateExcursionComment"
+              @toggle-comment-like="toggleExcursionCommentLike"
+              @show-on-map="onExcursionShowOnMap(selectedExcursion.id)"
             >
-              <ExcursionCard
-                v-if="grp.excursion"
-                :ref="(el) => setTourCardRef(grp.category, grp.excursion!.id, el)"
-                class="tour-group-card"
-                :excursion="grp.excursion"
-                :highlighted="highlightedExcursionIds.has(grp.excursion.id)"
-                :focused="dayFocusExcursionIds.has(grp.excursion.id)"
-                :creator-label="creatorLabel(grp.excursion.created_by)"
-                :like-count="excursionLikesFor(grp.excursion.id).length"
-                :liked="excursionLikedByMe(grp.excursion.id)"
-                :comments="excursionCommentItemsFor(grp.excursion.id)"
-                :stations="spotsStore.spots"
-                :travel-items="travelItems"
-                :expanded="expandedExcursionId === grp.excursion.id"
-                @edit="startEditExcursion"
-                @toggle-like="toggleExcursionLike(grp.excursion.id)"
-                @submit-comment="(content) => submitExcursionComment(grp.excursion!.id, content)"
-                @remove-comment="removeExcursionComment"
-                @update-comment="updateExcursionComment"
-                @toggle-comment-like="toggleExcursionCommentLike"
-                @show-on-map="onExcursionShowOnMap(grp.excursion.id)"
-                @open="onExcursionCardOpen(grp.excursion)"
-                @close="onExcursionCardClose"
-              />
-              <h3 v-else class="category-heading" :ref="(el) => setCategoryRef(grp.category, el)">
-                <AppIcon :icon="grp.iconDef" group="categories" :color="groupIconColor(grp)" />
-                {{ grp.category }}
-              </h3>
-              <!-- Tour-Gruppe: eingerückte, per gebogener gestrichelter SVG-Linie verbundene vertikale Liste
-             statt des normalen Karten-Grids (siehe .tour-station-wrap/.tour-station-line unten, #100)
-             - die Reihenfolge entspricht spotGroups' Sortierung nach der echten Tour-Reihenfolge
-             (spot_ids), macht den Rundgang direkt sichtbar. Ersetzt die früheren Mini-Stations-Chips
-             auf der ExcursionCard selbst (redundant, sobald die echten Spot-Karten direkt darunter
-             erscheinen). Das Wrapper-Div (nur bei Touren-Gruppierung gebraucht) ist position:relative
-             und dadurch offsetParent der Spot-Karten - recomputeTourLine() liest deren offsetTop/
-             offsetHeight direkt relativ dazu aus (siehe dortiger Kommentar). -->
-              <div
-                class="tour-station-accordion"
-                :class="{
-                  'is-expanded': !grp.excursion || expandedExcursionId === grp.excursion.id,
-                }"
-                :inert="!!(grp.excursion && expandedExcursionId !== grp.excursion.id)"
-              >
-                <div class="tour-station-accordion-inner">
-                  <!-- Touren: Schlangen-Layout (Serpentine) via TourSerpentineWrap (#446) -->
-                  <TourSerpentineWrap
-                    v-if="grp.excursion"
-                    :excursion="grp.excursion"
-                    :items="grp.items"
-                    :tour-line="tourLines.get(grp.excursion.id)"
-                    :cols="getTourCols(grp.excursion.id)"
-                    :rows="getTourRows(grp.excursion, grp.items)"
-                    :expanded-spot-id="expandedSpotId"
-                    :highlighted-ids="highlightedSpotIds"
-                    :day-focus-highlighted-ids="dayFocusSpotIds"
-                    :spot-scheduled-dates="spotScheduledDates"
-                    :users="users"
-                    :spot-comment-items-for="spotCommentItemsFor"
-                    :get-tour-layover="getTourLayover"
-                    :set-spot-ref="setSpotRef"
-                    :set-tour-wrap-ref="(el) => setTourWrapRef(grp.excursion!.id, el)"
-                    :spot-accommodation-distances="spotAccommodationDistances"
-                    @open-leg-modal="
-                      (fromSpot, toSpot) => openCardLegModal(grp.excursion!, fromSpot, toSpot)
-                    "
-                    @edit-spot="(spot) => startEditSpot(spot.id)"
-                    @toggle-spot-like="toggleSpotLike"
-                    @submit-spot-comment="
-                      ({ spotId, content }) => submitSpotComment(spotId, content)
-                    "
-                    @remove-spot-comment="removeSpotComment"
-                    @update-spot-comment="
-                      ({ commentId, content }) => updateSpotComment(commentId, content)
-                    "
-                    @toggle-spot-comment-like="toggleSpotCommentLike"
-                    @open-spot="onSpotCardOpen"
-                    @close-spot="onSpotCardClose"
-                    @show-spot-on-map="onSpotShowOnMap"
-                    @add-spot-to-tour="(spotId) => onAddExistingSpotToTour(grp.excursion!, spotId)"
-                    @create-spot-for-tour="onCreateSpotForTourCard(grp.excursion!)"
-                  />
+              <template #stations>
+                <TourSerpentineWrap
+                  v-if="selectedExcursionStationItems.length"
+                  :excursion="selectedExcursion"
+                  :items="selectedExcursionStationItems"
+                  :tour-line="tourLines.get(selectedExcursion.id)"
+                  :cols="getTourCols(selectedExcursion.id)"
+                  :rows="getTourRows(selectedExcursion, selectedExcursionStationItems)"
+                  :expanded-spot-id="expandedSpotId"
+                  :highlighted-ids="highlightedSpotIds"
+                  :day-focus-highlighted-ids="dayFocusSpotIds"
+                  :spot-scheduled-dates="spotScheduledDates"
+                  :users="users"
+                  :spot-comment-items-for="spotCommentItemsFor"
+                  :get-tour-layover="getTourLayover"
+                  :set-spot-ref="setSpotRef"
+                  :set-tour-wrap-ref="(el) => setTourWrapRef(selectedExcursion!.id, el)"
+                  :spot-accommodation-distances="spotAccommodationDistances"
+                  @open-leg-modal="
+                    (fromSpot, toSpot) => openCardLegModal(selectedExcursion!, fromSpot, toSpot)
+                  "
+                  @edit-spot="(spot) => startEditSpot(spot.id)"
+                  @toggle-spot-like="toggleSpotLike"
+                  @submit-spot-comment="({ spotId, content }) => submitSpotComment(spotId, content)"
+                  @remove-spot-comment="removeSpotComment"
+                  @update-spot-comment="
+                    ({ commentId, content }) => updateSpotComment(commentId, content)
+                  "
+                  @toggle-spot-comment-like="toggleSpotCommentLike"
+                  @open-spot="onSpotCardOpen"
+                  @close-spot="onSpotCardClose"
+                  @show-spot-on-map="onSpotShowOnMap"
+                  @add-spot-to-tour="
+                    (spotId) => onAddExistingSpotToTour(selectedExcursion!, spotId)
+                  "
+                  @create-spot-for-tour="onCreateSpotForTourCard(selectedExcursion!)"
+                />
+                <div v-else class="empty tour-empty-group">
+                  <p class="tour-empty-text">
+                    Noch keine Spots zugeordnet – füge Stationen hinzu oder bearbeite die
+                    Tour-Details.
+                  </p>
+                  <div class="tour-empty-actions">
+                    <TourSpotAssignDropdown
+                      :spots="spotsStore.spots"
+                      :like-count="spotsStore.likeCountFor"
+                      @select-spot="(spotId) => onAddExistingSpotToTour(selectedExcursion!, spotId)"
+                      @create-spot="onCreateSpotForTourCard(selectedExcursion!)"
+                    />
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      class="tour-empty-action-btn"
+                      @click="startEditExcursion(selectedExcursion)"
+                    >
+                      <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+                      <span>Tour bearbeiten</span>
+                    </Button>
+                  </div>
+                </div>
+              </template>
+            </TourDetailView>
 
+            <template v-else>
+              <section
+                class="group category-group"
+                :class="{
+                  'is-tour-group': !!grp.excursion,
+                }"
+                :style="
+                  grp.excursion
+                    ? {
+                        '--tour-theme-color': grp.excursion.role
+                          ? 'var(--color-travel)'
+                          : 'var(--color-tour)',
+                        '--tour-theme-tint': grp.excursion.role
+                          ? 'var(--color-travel-tint)'
+                          : 'var(--color-tour-tint)',
+                        '--tour-theme-border': grp.excursion.role
+                          ? 'var(--color-travel-border)'
+                          : 'var(--color-tour-border)',
+                      }
+                    : undefined
+                "
+                v-for="grp in spotGroups"
+                :key="grp.category"
+              >
+                <ExcursionCard
+                  v-if="grp.excursion"
+                  :ref="(el) => setTourCardRef(grp.category, grp.excursion!.id, el)"
+                  class="tour-group-card"
+                  :excursion="grp.excursion"
+                  :highlighted="highlightedExcursionIds.has(grp.excursion.id)"
+                  :focused="dayFocusExcursionIds.has(grp.excursion.id)"
+                  :like-count="excursionLikesFor(grp.excursion.id).length"
+                  :liked="excursionLikedByMe(grp.excursion.id)"
+                  :comments="excursionCommentItemsFor(grp.excursion.id)"
+                  :stations="spotsStore.spots"
+                  :travel-items="travelItems"
+                  @open="onExcursionCardOpen(grp.excursion)"
+                />
+                <template v-else>
+                  <h3 class="category-heading" :ref="(el) => setCategoryRef(grp.category, el)">
+                    <AppIcon :icon="grp.iconDef" group="categories" :color="groupIconColor(grp)" />
+                    {{ grp.category }}
+                  </h3>
                   <!-- Nicht-Touren (Kategorie-Modus): Standard-Grid -->
-                  <TransitionGroup v-else tag="div" name="list" class="grid cards">
+                  <TransitionGroup tag="div" name="list" class="grid cards">
                     <template v-for="(item, index) in grp.items" :key="`spot-${item.spot.id}`">
                       <SpotCard
                         :ref="(el) => setSpotRef(item.spot.id, el, null)"
@@ -1825,59 +1842,10 @@ onUnmounted(() => {
                       />
                     </template>
                   </TransitionGroup>
-
-                  <!-- Hinweis, wenn einige Spots der Tour gerade durch Filter ausgeblendet sind (#partially-filtered) -->
-                  <p
-                    v-if="grp.excursion && isTourPartiallyFiltered(grp.excursion, grp.items.length)"
-                    class="empty tour-partial-filter-hint"
-                  >
-                    {{ tourPartialFilteredPrefix(grp.excursion, grp.items.length) }}
-                    <button type="button" class="filter-reset-link" @click="clearAllFilters">
-                      Filter zurücksetzen
-                    </button>
-                    <span>, um alle Stationen zu sehen.</span>
-                  </p>
-                </div>
-              </div>
-              <!-- Zwei unterschiedliche Gründe für eine leere Gruppe: entweder ist der Tour wirklich noch
-              kein Spot zugeordnet (getTourTotalSpotsCount(grp.excursion) === 0), oder es sind welche zugeordnet,
-              aber der aktive Filter (Kategorie, Status oder Suchbegriff) blendet sie gerade alle aus – ohne diese
-              Unterscheidung wirkte eine reine Filter-Situation fälschlich wie eine leere Tour. -->
-              <p
-                v-if="grp.excursion && isTourAllSpotsFiltered(grp.excursion, grp.items.length)"
-                class="empty"
-              >
-                Die zugeordneten Spots sind gerade durch {{ tourFilterReason() }} ausgeblendet –
-                <button type="button" class="filter-reset-link" @click="clearAllFilters">
-                  Filter zurücksetzen
-                </button>
-                <span>, um sie wieder zu sehen.</span>
-              </p>
-              <div v-else-if="grp.excursion && !grp.items.length" class="empty tour-empty-group">
-                <p class="tour-empty-text">
-                  Noch keine Spots zugeordnet – füge Stationen hinzu oder bearbeite die
-                  Tour-Details.
-                </p>
-                <div class="tour-empty-actions">
-                  <TourSpotAssignDropdown
-                    :spots="spotsStore.spots"
-                    :like-count="spotsStore.likeCountFor"
-                    @select-spot="(spotId) => onAddExistingSpotToTour(grp.excursion!, spotId)"
-                    @create-spot="onCreateSpotForTourCard(grp.excursion!)"
-                  />
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    class="tour-empty-action-btn"
-                    @click="startEditExcursion(grp.excursion)"
-                  >
-                    <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
-                    <span>Tour bearbeiten</span>
-                  </Button>
-                </div>
-              </div>
-            </section>
-            <div v-if="!spotGroups.length" class="empty-state-wrap">
+                </template>
+              </section>
+            </template>
+            <div v-if="!isTourDetailOpen && !spotGroups.length" class="empty-state-wrap">
               <EmptyState
                 v-if="isAccommodationFilterActive && !searchQuery.trim() && !statusFilter.length"
               >
@@ -2833,46 +2801,42 @@ onUnmounted(() => {
   align-items: start;
 }
 
-.tour-station-accordion {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  min-width: 0;
+.tour-detail-back-bar {
+  display: flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3) var(--space-2);
+  border-bottom: 1px solid var(--color-border-divider);
 }
 
-.tour-station-accordion.is-expanded {
-  grid-template-rows: 1fr;
-}
-
-.tour-station-accordion-inner {
-  min-height: 0;
-  min-width: 0;
-  width: 100%;
-  overflow: hidden;
-  transition: overflow 0s 0s;
-  box-sizing: border-box;
-  max-width: 100%;
-}
-
-.tour-station-accordion.is-expanded .tour-station-accordion-inner {
-  overflow: visible;
-  transition: overflow 0s 0.4s allow-discrete;
-}
-
-.tour-station-accordion :deep(.staggered-spot) {
+.tour-detail-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  margin-left: calc(var(--space-2) * -1);
+  border: none;
+  border-radius: var(--radius-sm-squircle);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
   transition:
-    opacity 0.35s ease,
-    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  opacity: 0;
-  transform: translateY(-24px) scale(0.95);
-  transition-delay: calc((var(--stagger-total) - var(--stagger-idx) - 1) * 25ms);
+    color 0.15s ease,
+    background-color 0.15s ease;
 }
 
-.tour-station-accordion.is-expanded :deep(.staggered-spot) {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  transition-delay: calc(var(--stagger-idx) * 50ms + 50ms);
+@include can-hover {
+  .tour-detail-back-btn:hover {
+    color: var(--color-primary-dark);
+    background: var(--color-hover);
+  }
+}
+
+.tour-detail-back-btn:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+  outline-offset: var(--focus-ring-offset, 2px);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2885,19 +2849,6 @@ onUnmounted(() => {
   }
   .recording-pulse-dot {
     animation: none;
-  }
-  .tour-station-accordion {
-    transition: none;
-  }
-  .tour-station-accordion-inner,
-  .tour-station-accordion.is-expanded .tour-station-accordion-inner {
-    transition: none;
-  }
-  .tour-station-accordion :deep(.staggered-spot),
-  .tour-station-accordion.is-expanded :deep(.staggered-spot) {
-    transition: none;
-    transform: none;
-    opacity: 1;
   }
   .drawer-search-accordion {
     transition: none;

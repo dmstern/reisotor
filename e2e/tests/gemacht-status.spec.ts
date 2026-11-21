@@ -336,9 +336,9 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     await page.goto('/excursions');
     await page.getByRole('button', { name: 'Touren' }).click();
     const tourCard = page.locator('.excursion-card', { hasText: tourTitle });
-    // Titel anklicken zum Aufklappen (analog zu spotCard unten), da Aktionen in der kompakten Zeilen-Ansicht erst nach dem Aufklappen sichtbar sind
+    // Titel anklicken öffnet die Tour-Detailansicht, in der der volle Status sichtbar ist
     await tourCard.locator('.card-title').click();
-    await expect(tourCard.locator('.status.status-done')).toBeVisible();
+    await expect(page.locator('.tour-detail-view .status.status-done')).toBeVisible();
 
     await page.goto('/excursions');
     await page.locator('.segmented-option', { hasText: 'Spots' }).click();

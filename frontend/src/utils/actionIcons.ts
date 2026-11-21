@@ -1,4 +1,5 @@
 import {
+  IconArrowLeft,
   IconMail,
   IconMailFilled,
   IconPencil,
@@ -225,6 +226,7 @@ export type ActionIconKey =
   | 'upload'
   | 'scrollLeft'
   | 'scrollRight'
+  | 'arrowLeft'
   | 'arrowRight'
   | 'chevronDown'
   | 'chevronUp'
@@ -422,6 +424,7 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   upload: { id: 'upload', emoji: '⬆️', outline: IconUpload },
   scrollLeft: { id: 'chevron-left', emoji: '◀️', outline: IconChevronLeft },
   scrollRight: { id: 'chevron-right', emoji: '▶️', outline: IconChevronRight },
+  arrowLeft: { id: 'arrow-left', emoji: '⬅️', outline: IconArrowLeft },
   arrowRight: { id: 'arrow-right', emoji: '➡️', outline: IconArrowRight },
   // Ein Chevron statt getrennter Auf-/Zu-/Rechts-Glyphen für alle Auf-/Zuklapp-Umschalter im Code
   // (Picker-Umschalter, Dropdown-Pfeile, Sortierrichtung, Verschieben-Buttons) - Ausrichtung per

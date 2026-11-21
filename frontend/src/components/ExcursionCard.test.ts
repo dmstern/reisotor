@@ -48,13 +48,11 @@ describe('ExcursionCard', () => {
 
   function mountComponent(props: {
     excursion: Excursion;
-    creatorLabel: string | null;
     likeCount: number;
     liked: boolean;
     comments: CommentItem[];
     stations: Spot[];
     travelItems: TravelItem[];
-    expanded: boolean;
     highlighted?: boolean;
   }) {
     const app = createApp({
@@ -64,16 +62,14 @@ describe('ExcursionCard', () => {
     return renderToString(app);
   }
 
-  it('rendert den eingeklappten Zustand mit Titel, Badges und Edit-Button', async () => {
+  it('rendert den kompakten Listen-Eintrag mit Titel, Route, Badges und Rechts-Pfeil ohne Edit-Button und Notiz', async () => {
     const html = await mountComponent({
       excursion: mockExcursion,
-      creatorLabel: 'Daniel',
       likeCount: 3,
       liked: false,
       comments: [],
       stations: mockStations,
       travelItems: [],
-      expanded: false,
     });
 
     expect(html).toContain('Wanderung zum Wasserfall');
@@ -84,41 +80,13 @@ describe('ExcursionCard', () => {
     expect(html).toContain('excursion-card');
     expect(html).toContain('tour-status-meta');
     expect(html).toContain('is-readonly');
-    expect(html).toContain('disclosure-pill');
-    expect(html).toContain('tour-edit-btn');
-    expect(html).not.toContain('Einklappen');
-    expect(html).not.toContain('card-title-meta');
+    expect(html).toContain('tour-detail-chevron');
+    expect(html).not.toContain('tour-edit-btn');
+    expect(html).not.toContain('Festes Schuhwerk erforderlich');
+    expect(html).not.toContain('disclosure-pill');
     expect(html).not.toContain('calendar-drag-handle');
     expect(html).not.toContain('like-btn');
     expect(html).not.toContain('Als gemacht markieren');
-  });
-
-  it('rendert den ausgeklappten Zustand mit Header-Metadaten und Aktionen', async () => {
-    const html = await mountComponent({
-      excursion: mockExcursion,
-      creatorLabel: 'Daniel',
-      likeCount: 3,
-      liked: true,
-      comments: [],
-      stations: mockStations,
-      travelItems: [],
-      expanded: true,
-    });
-
-    expect(html).toContain('Wanderung zum Wasserfall');
-    expect(html).toContain('card-title-meta');
-    expect(html).toContain('Von Daniel');
-    expect(html).toContain('2 Stationen');
-    expect(html).toContain('Auf Karte anzeigen');
-    expect(html).toContain('done-toggle');
-    expect(html).toContain('like-btn');
-    expect(html).toContain('disclosure-pill disclosure-pill--tonal is-expanded');
-    expect(html).toContain('Einklappen');
-    expect(html).toContain('tour-edit-btn');
-    expect(html).toContain('btn--ghost');
-    expect(html).not.toContain('btn--circle');
-    expect(html).not.toContain('btn--secondary');
-    expect(html).toContain('is-translucent');
   });
 
   it('rendert Travel-Leg mit Route und Transportart-Rolle korrekt', async () => {
@@ -130,25 +98,14 @@ describe('ExcursionCard', () => {
 
     const html = await mountComponent({
       excursion: travelExcursion,
-      creatorLabel: null,
       likeCount: 0,
       liked: false,
       comments: [],
       stations: mockStations,
       travelItems: [],
-      expanded: false,
     });
 
     expect(html).toContain('is-travel');
     expect(html).toContain('has-role');
-  });
-
-  it('verifies tour-note-container and clamped note styles using raw source code', async () => {
-    // Dynamically import or read ExcursionCard source via the existing raw import or fs check
-    const rawSource = (await import('./ExcursionCard.vue?raw')).default;
-    expect(rawSource).toContain('overflow: clip;');
-    expect(rawSource).toContain('max-height: none;');
-    expect(rawSource).toContain('overflow: visible;');
-    expect(rawSource).toContain('.note.is-clamped:not(.is-expanded) :deep(p)');
   });
 });

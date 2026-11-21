@@ -78,64 +78,13 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     await page.locator('.segmented-option', { hasText: 'Spots' }).click();
   });
 
-  test('Durch den Kategorie-Filter ausgeblendete Tour-Spots zeigen einen eigenen Hinweis statt "keine Spots zugeordnet"', async ({
+  test('Tour-Detailansicht zeigt alle Stationen unabhängig von aktiven Listen-Filtern und erhält Filter bei Rückkehr', async ({
     page,
   }) => {
     const marker = `E2E-Tour-Filter-${Date.now()}`;
-    const spotTitle = `Aussichtspunkt ${marker}`;
-    const tourTitle = `Stadtrundgang ${marker}`;
-
-    const spotRes = await page.request.post('/api/spots', {
-      data: { trip_id: tripId, title: spotTitle, category: 'Sehenswürdigkeit' },
-    });
-    expect(spotRes.ok()).toBeTruthy();
-    const spot = await spotRes.json();
-    const tourRes = await page.request.post('/api/ideas', {
-      data: { trip_id: tripId, title: tourTitle, spot_ids: [spot.id] },
-    });
-    expect(tourRes.ok()).toBeTruthy();
-
-    await page.goto('/excursions');
-    await page.locator('.segmented-option', { hasText: 'Touren' }).click();
-    const group = page.locator('.category-group', { hasText: tourTitle });
-    await group.locator('.excursion-card h3').click();
-    await expect(group.locator('.spot-card', { hasText: spotTitle })).toBeVisible();
-    await expect(group.locator('.empty')).toHaveCount(0);
-
-    // Kategorie-Filter setzen, der den zugeordneten Spot (Sehenswürdigkeit) ausschließt - die Tour
-    // hat weiterhin einen zugeordneten Spot, er ist nur gerade nicht sichtbar.
-    await page.getByRole('button', { name: 'Filtern & Sortieren' }).click();
-    await page.locator('.popover-section-toggle', { hasText: 'Spots' }).click();
-    const restOption = page.locator('.dropdown-item', { hasText: 'Restaurant' }).first();
-    await restOption.evaluate((el: HTMLElement) => el.click());
-    await page.locator('.picker-backdrop').click({ position: { x: 10, y: 10 } });
-    await expect(page.locator('.picker-backdrop')).toBeHidden();
-
-    await expect(group.locator('.spot-card', { hasText: spotTitle })).toHaveCount(0);
-    await expect(group.locator('.empty')).toContainText(
-      'durch den Kategorie-/Status-Filter ausgeblendet'
-    );
-    await expect(group.locator('.empty')).not.toContainText('Noch keine Spots zugeordnet');
-
-    // Filter zurücksetzen: der Hinweis verschwindet wieder, der Spot ist erneut sichtbar.
-    await page.getByRole('button', { name: 'Filtern & Sortieren' }).click();
-    const restOptionReset = page.locator('.dropdown-item', { hasText: 'Restaurant' }).first();
-    await restOptionReset.evaluate((el: HTMLElement) => el.click());
-    await page.locator('.picker-backdrop').click({ position: { x: 10, y: 10 } });
-    await expect(page.locator('.picker-backdrop')).toBeHidden();
-    await expect(group.locator('.spot-card', { hasText: spotTitle })).toBeVisible();
-    await expect(group.locator('.empty')).toHaveCount(0);
-
-    await page.locator('.segmented-option', { hasText: 'Spots' }).click();
-  });
-
-  test('Teilweise ausgeblendete Tour-Spots zeigen einen Hinweis und erlauben Filter-Reset', async ({
-    page,
-  }) => {
-    const marker = `E2E-Tour-Partial-${Date.now()}`;
     const spotATitle = `Aussicht ${marker}`;
     const spotBTitle = `Restaurant ${marker}`;
-    const tourTitle = `Teilfilter ${marker}`;
+    const tourTitle = `Stadtrundgang ${marker}`;
 
     const spotARes = await page.request.post('/api/spots', {
       data: { trip_id: tripId, title: spotATitle, category: 'Sehenswürdigkeit' },
@@ -156,50 +105,28 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
 
     await page.goto('/excursions');
     await page.locator('.segmented-option', { hasText: 'Touren' }).click();
-    const group = page.locator('.category-group', { hasText: tourTitle });
-    await group.locator('.excursion-card h3').click();
 
-    // Beide Spots sind sichtbar, kein Hinweis
-    await expect(group.locator('.spot-card', { hasText: spotATitle })).toBeVisible();
-    await expect(group.locator('.spot-card', { hasText: spotBTitle })).toBeVisible();
-    await expect(group.locator('.tour-partial-filter-hint')).toHaveCount(0);
-
-    // 1. Sucheingabe: Nach spotATitle filtern -> spotB wird ausgeblendet
+    // Suchfilter und Kategorie-Filter in der Tour-Liste setzen
     const searchInput = page.getByPlaceholder('Touren suchen...');
     await searchInput.fill(spotATitle);
+    await expect(page.locator('.excursion-card', { hasText: tourTitle })).toBeVisible();
 
-    await expect(group.locator('.spot-card', { hasText: spotATitle })).toBeVisible();
-    await expect(group.locator('.spot-card', { hasText: spotBTitle })).toHaveCount(0);
-    const hint = group.locator('.tour-partial-filter-hint');
-    await expect(hint).toBeVisible();
-    await expect(hint).toContainText('durch den Suchfilter ausgeblendet');
+    // Tour-Detailansicht öffnen: SearchFilterBar wird ausgeblendet, Back-Zeile erscheint und
+    // ALLE Stationen (inkl. Restaurant) werden unabhängig vom Listen-Filter angezeigt.
+    await page.locator('.excursion-card', { hasText: tourTitle }).click();
+    const detail = page.locator('.tour-detail-view', { hasText: tourTitle });
+    await expect(detail).toBeVisible();
+    await expect(searchInput).toBeHidden();
+    await expect(page.locator('.tour-detail-back-btn')).toBeVisible();
+    await expect(detail.locator('.spot-card', { hasText: spotATitle })).toBeVisible();
+    await expect(detail.locator('.spot-card', { hasText: spotBTitle })).toBeVisible();
 
-    // Klick auf "Filter zurücksetzen" innerhalb der Meldung
-    await hint.locator('.filter-reset-link').click();
-
-    // Beide Spots wieder sichtbar, Hinweis verschwunden
-    await expect(group.locator('.spot-card', { hasText: spotATitle })).toBeVisible();
-    await expect(group.locator('.spot-card', { hasText: spotBTitle })).toBeVisible();
-    await expect(group.locator('.tour-partial-filter-hint')).toHaveCount(0);
-
-    // 2. Kategorie-Filter: Restaurant wählen -> spotA wird ausgeblendet
-    await page.getByRole('button', { name: 'Filtern & Sortieren' }).click();
-    await page.locator('.popover-section-toggle', { hasText: 'Spots' }).click();
-    const restOption = page.locator('.dropdown-item', { hasText: 'Restaurant' }).first();
-    await restOption.evaluate((el: HTMLElement) => el.click());
-    await page.locator('.picker-backdrop').click({ position: { x: 10, y: 10 } });
-    await expect(page.locator('.picker-backdrop')).toBeHidden();
-
-    await expect(group.locator('.spot-card', { hasText: spotBTitle })).toBeVisible();
-    await expect(group.locator('.spot-card', { hasText: spotATitle })).toHaveCount(0);
-    await expect(hint).toBeVisible();
-    await expect(hint).toContainText('durch den Kategorie-/Status-Filter ausgeblendet');
-
-    // Zurücksetzen über den Link
-    await hint.locator('.filter-reset-link').click();
-    await expect(group.locator('.spot-card', { hasText: spotATitle })).toBeVisible();
-    await expect(group.locator('.spot-card', { hasText: spotBTitle })).toBeVisible();
-    await expect(group.locator('.tour-partial-filter-hint')).toHaveCount(0);
+    // Zurück zur Tour-Liste: aktive Suchbegriffe bleiben erhalten
+    await page.locator('.tour-detail-back-btn').click();
+    await expect(detail).toBeHidden();
+    await expect(searchInput).toBeVisible();
+    await expect(searchInput).toHaveValue(spotATitle);
+    await searchInput.fill('');
 
     await page.locator('.segmented-option', { hasText: 'Spots' }).click();
   });
@@ -278,14 +205,15 @@ test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in
     const tourCard = page.locator('.excursion-card', { hasText: tourTitle });
     await expect(tourCard).toBeVisible();
 
-    // Klick auf den Titel klappt die Tour-Karte auf, "Auf Karte anzeigen" visualisiert die Tour auf der Karte.
+    // Klick auf den Titel öffnet die Tour-Detailansicht, "Auf Karte anzeigen" visualisiert die Tour auf der Karte.
     await tourCard.locator('h3').click();
-    await expect(tourCard).toHaveClass(/expanded/);
-    await tourCard.locator('.btn--tonal', { hasText: 'Auf Karte anzeigen' }).click();
+    const detailView = page.locator('.tour-detail-view', { hasText: tourTitle });
+    await expect(detailView).toBeVisible();
+    await detailView.locator('.btn--tonal', { hasText: 'Auf Karte anzeigen' }).click();
     await expect(page.locator('.focus-banner', { hasText: tourTitle })).toBeVisible();
 
-    // Bearbeiten-Button ist in der aufgeklappten Karte erreichbar.
-    await tourCard.getByRole('button', { name: 'Bearbeiten' }).click();
+    // Bearbeiten-Button ist in der Detailansicht erreichbar.
+    await detailView.getByRole('button', { name: 'Bearbeiten' }).click();
     const editModal = page.locator('.modal', { hasText: 'Tour bearbeiten' });
     await editModal.locator('.collapsible-toggle', { hasText: 'Stationen & Route' }).click();
     await expect(editModal.locator('.planned-row .spot-title')).toHaveText([
@@ -294,6 +222,14 @@ test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in
       new RegExp(spotATitle),
     ]);
     await editModal.locator('.close-btn').click();
+    await expect(editModal).toBeHidden();
+
+    // Escape in der Detailansicht kehrt zur Tour-Liste zurück und löst den Karten-Fokus
+    await page.keyboard.press('Escape');
+    await expect(detailView).toBeHidden();
+    await expect(tourCard).toBeVisible();
+    await expect(page.locator('.focus-banner')).toHaveCount(0);
+
     await page.locator('.segmented-option', { hasText: 'Spots' }).click();
   });
 });

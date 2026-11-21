@@ -55,12 +55,8 @@ test('clicking a travel entry in the calendar jumps to and highlights the matchi
   await page.locator('.day-detail .items .item', { hasText: title }).click();
 
   await expect(page).toHaveURL(new RegExp(`/excursions(?:\\?.*)?#excursion-\\d+$`));
-  const travelCard = page.locator('.excursion-card', { hasText: title });
-  await expect(travelCard).toBeVisible();
-  await expect(travelCard).toHaveClass(/is-map-focused/);
-  // Playwright-eigenes toBeInViewport() statt der strikten Vollständig-eingeschlossen-Prüfung aus
-  // helpers/layout.ts (die für Überlappungs-/Verdeckungs-Tests gedacht ist): Desktop hat parallel
-  // die globale Kalender-Schublade offen (App.vue), die dem Excursions-Inhalt Höhe wegnimmt - der
-  // Router scrollt trotzdem zuverlässig bis das Ziel mindestens teilweise sichtbar ist.
-  await expect(travelCard).toBeInViewport();
+  const detailView = page.locator('.tour-detail-view', { hasText: title });
+  await expect(detailView).toBeVisible();
+  await expect(page.locator('.focus-banner', { hasText: title })).toBeVisible();
+  await expect(detailView.locator('.tour-detail-title')).toBeInViewport();
 });

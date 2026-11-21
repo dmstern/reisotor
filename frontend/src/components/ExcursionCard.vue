@@ -1,31 +1,22 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import type { Excursion, Spot, TravelItem } from '../api/types';
 import { useDrawersStore } from '../stores/drawers';
-import { useDiaryStore } from '../stores/diary';
 import { useExcursionStations } from '../composables/useExcursionStations';
-import EditButton from './EditButton.vue';
-import Comments, { type CommentItem } from './Comments.vue';
-import RichTextDisplay from './RichTextDisplay.vue';
+import type { CommentItem } from './Comments.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import SocialRow from './SocialRow.vue';
 import Card from './primitives/Card.vue';
-import DisclosurePill from './primitives/DisclosurePill.vue';
-import Accordion from './primitives/Accordion.vue';
-import FileAttachments from './FileAttachments.vue';
 import TourRoleBadge from './TourRoleBadge.vue';
 import ExcursionCoverStack from './ExcursionCoverStack.vue';
 import ExcursionDoneStatus from './ExcursionDoneStatus.vue';
 import ExcursionRouteMeta from './ExcursionRouteMeta.vue';
-import ExcursionMapLinks from './ExcursionMapLinks.vue';
-import LinkedDiaryPills from './LinkedDiaryPills.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 const props = withDefaults(
   defineProps<{
     excursion: Excursion;
-    creatorLabel: string | null;
     likeCount: number;
     liked: boolean;
     comments: CommentItem[];
@@ -33,7 +24,6 @@ const props = withDefaults(
     travelItems: TravelItem[];
     highlighted?: boolean;
     focused?: boolean;
-    expanded: boolean;
     /** Semantisches HTML-Überschriften-Tag für den Card-Titel (Standard: 'h3') */
     headingTag?: 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
   }>(),
@@ -43,61 +33,22 @@ const props = withDefaults(
     headingTag: 'h3',
   }
 );
+
 const emit = defineEmits<{
-  (e: 'edit', excursion: Excursion): void;
-  (e: 'toggle-like'): void;
-  (e: 'submit-comment', content: string): void;
-  (e: 'remove-comment', id: number): void;
-  (e: 'update-comment', id: number, content: string): void;
-  (e: 'toggle-comment-like', id: number): void;
-  (e: 'show-on-map'): void;
   (e: 'open', excursion: Excursion): void;
-  (e: 'close'): void;
 }>();
 
 const drawers = useDrawersStore();
-const diaryStore = useDiaryStore();
-
-const linkedDiaryEntries = computed(() =>
-  diaryStore.entries.filter(
-    (entry) => !entry.is_draft && (entry.excursion_ids ?? []).includes(props.excursion.id)
-  )
-);
-
-function onCardClick(event?: MouseEvent) {
-  const target = event?.target as HTMLElement | null;
-
-  if (target?.closest('.tour-edit-btn, a, button')) {
-    return;
-  }
-
-  if (props.expanded) {
-    if (target && !target.closest('.card-header-row')) {
-      return;
-    }
-
-    emit('close');
-
-    if (drawers.mapFocusExcursionId === props.excursion.id) {
-      drawers.mapFocusExcursionId = null;
-    }
-  } else {
-    emit('open', props.excursion);
-  }
-}
 
 const isMapFocused = computed(() => drawers.mapFocusExcursionId === props.excursion.id);
-const showComments = ref(false);
 
 const {
   resolvedStations,
-  hasMappedStations,
   routeLabel,
   effectiveDepartureTime,
   effectiveArrivalTime,
   travelDuration,
   stationsSummaryText,
-  linkedTracks,
 } = useExcursionStations({
   excursion: () => props.excursion,
   stations: () => props.stations,
@@ -110,30 +61,20 @@ const {
     class="excursion-card"
     :class="{
       'new-highlight': highlighted,
-      expanded,
       'has-role': !!excursion.role,
       'is-travel': !!excursion.role,
     }"
     :highlight="highlighted"
     :map-focused="isMapFocused"
     :focused="focused"
-    @click="onCardClick"
+    @click="emit('open', excursion)"
   >
     <div class="tour-card-main">
-      <!-- Linke visuelle Spalte: Polaroid-Stapel (Stationen) im eingeklappten Zustand (#layout) -->
-      <ExcursionCoverStack
-        v-if="!expanded"
-        :excursion="excursion"
-        :resolved-stations="resolvedStations"
-      />
+      <!-- Linke visuelle Spalte: Polaroid-Stapel (Stationen) -->
+      <ExcursionCoverStack :excursion="excursion" :resolved-stations="resolvedStations" />
 
       <div class="body">
-        <div
-          class="card-header-row"
-          :class="{ 'is-expanded': expanded }"
-          :title="expanded ? 'Klicken zum Einklappen' : 'Klicken zum Aufklappen'"
-        >
-          <!-- Obere Zeile: Titel links, Badges (Rolle + Sync + Edit-Button) rechts -->
+        <div class="card-header-row" title="Tour-Details öffnen">
           <div class="card-header-top">
             <div class="card-title-block card-title-row">
               <component :is="headingTag" class="card-title" :title="excursion.title">
@@ -142,64 +83,22 @@ const {
             </div>
 
             <div class="card-badge-group">
-              <TourRoleBadge :role="excursion.role" :translucent="expanded" />
+              <TourRoleBadge :role="excursion.role" />
               <PendingSyncBadge v-if="excursion._pending" />
-              <EditButton
-                size="sm"
-                shape="squircle"
-                variant="ghost"
-                class="tour-edit-btn"
-                @click="emit('edit', excursion)"
+              <AppIcon
+                :icon="ACTION_ICONS.scrollRight"
+                :size="16"
+                group="actions"
+                class="tour-detail-chevron"
+                aria-hidden="true"
               />
-              <DisclosurePill v-if="!expanded" compact />
             </div>
-          </div>
-
-          <!-- Untere Zeile (nur im aufgeklappten Zustand): Metadaten links, Collapse-Pille rechts -->
-          <div v-if="expanded" class="card-header-bottom">
-            <div class="card-title-meta-wrap">
-              <Transition name="fade">
-                <div
-                  v-if="
-                    creatorLabel ||
-                    routeLabel ||
-                    resolvedStations.length ||
-                    travelDuration ||
-                    linkedTracks.length
-                  "
-                  class="card-title-meta"
-                >
-                  <span v-if="creatorLabel" class="overlay-author">Von {{ creatorLabel }}</span>
-                  <span v-if="routeLabel" class="overlay-submeta">
-                    <template v-if="creatorLabel">· </template>{{ routeLabel }}
-                  </span>
-                  <span v-else-if="resolvedStations.length" class="overlay-submeta">
-                    <template v-if="creatorLabel">· </template>{{ resolvedStations.length }}
-                    {{ resolvedStations.length === 1 ? 'Station' : 'Stationen' }}
-                  </span>
-                  <span v-if="travelDuration" class="overlay-submeta">· {{ travelDuration }}</span>
-                  <span v-if="linkedTracks.length" class="overlay-submeta">
-                    <template
-                      v-if="creatorLabel || routeLabel || resolvedStations.length || travelDuration"
-                      >·
-                    </template>
-                    {{ linkedTracks.length }}
-                    {{ linkedTracks.length === 1 ? 'Aufzeichnung' : 'Aufzeichnungen' }}
-                  </span>
-                </div>
-              </Transition>
-            </div>
-
-            <DisclosurePill expanded />
           </div>
         </div>
 
-        <!-- Strecken- und Zeit-Info (nur im eingeklappten Zustand, im aufgeklappten Zustand in der Header-Meta) -->
+        <!-- Strecken- und Zeit-Info -->
         <ExcursionRouteMeta
-          v-if="
-            !expanded &&
-            (routeLabel || stationsSummaryText || effectiveDepartureTime || effectiveArrivalTime)
-          "
+          v-if="routeLabel || stationsSummaryText || effectiveDepartureTime || effectiveArrivalTime"
           :route-label="routeLabel"
           :stations-summary-text="stationsSummaryText"
           :effective-departure-time="effectiveDepartureTime"
@@ -207,72 +106,26 @@ const {
           :travel-duration="travelDuration"
         />
 
-        <!-- Auf Karte anzeigen (analog zur SpotCard direkt unter dem Header) -->
-        <ExcursionMapLinks
-          v-if="expanded"
-          :has-mapped-stations="hasMappedStations"
-          :linked-tracks="linkedTracks"
-          @show-on-map="emit('show-on-map')"
-        />
-
-        <!-- Tour-Notiz: Trunkiert mit Ellipsis sowohl im collapsed als auch im expanded Zustand (#235) -->
-        <div v-if="excursion.note" class="tour-note-container" :class="{ 'is-expanded': expanded }">
-          <RichTextDisplay
-            class="note is-clamped"
-            :class="{ 'is-expanded': expanded }"
-            :content="excursion.note"
-            :format="excursion.note_format"
-          />
-        </div>
-
-        <!-- Tour-Anhänge (Dateien / Tickets / Buchungen) - nur im aufgeklappten Zustand laden -->
-        <div v-if="expanded" class="tour-attachments-wrap">
-          <FileAttachments domain="ideas" :entity-id="excursion.id" :editable="false" />
-        </div>
-
-        <!-- Verknüpfte Aufzeichnungen & Tagebucheinträge gemeinsam als Pill-Zeile -->
-        <LinkedDiaryPills
-          v-if="expanded && (linkedTracks.length || linkedDiaryEntries.length)"
-          :tracks="linkedTracks"
-          :entries="linkedDiaryEntries"
-        />
-
         <div
-          v-if="
-            expanded || excursion.done || excursion.date || likeCount > 0 || comments.length > 0
-          "
+          v-if="excursion.done || excursion.date || likeCount > 0 || comments.length > 0"
           class="card-actions-wrapper"
         >
           <div class="card-actions">
             <ExcursionDoneStatus
               :excursion="excursion"
-              :expanded="expanded"
+              :expanded="false"
               :resolved-stations="resolvedStations"
             />
           </div>
 
           <SocialRow
-            :class="{ 'is-expanded': expanded }"
-            :readonly="!expanded"
+            :readonly="true"
             :like-count="likeCount"
             :liked="liked"
             :comment-count="comments.length"
-            :comments-open="showComments"
-            @toggle-like="emit('toggle-like')"
-            @toggle-comments="showComments = !showComments"
+            :comments-open="false"
           />
         </div>
-
-        <Accordion :expanded="expanded && showComments">
-          <Comments
-            :comments="comments"
-            @click.stop
-            @submit="(content) => emit('submit-comment', content)"
-            @remove="(id) => emit('remove-comment', id)"
-            @update="(id, content) => emit('update-comment', id, content)"
-            @toggle-like="(id) => emit('toggle-comment-like', id)"
-          />
-        </Accordion>
       </div>
     </div>
   </Card>
@@ -319,7 +172,7 @@ const {
   --excursion-theme-border: var(--color-travel-border);
 }
 
-.excursion-card:not(.expanded)::before {
+.excursion-card::before {
   content: '';
   position: absolute;
   left: 0;
@@ -338,35 +191,38 @@ const {
 }
 
 @include can-hover {
-  .excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) {
+  .excursion-card:hover {
     transform: none;
     background: var(--color-hover) !important;
     box-shadow: none !important;
   }
 
-  .excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover))::before {
+  .excursion-card:hover::before {
     opacity: 1;
     transform: scaleY(1);
   }
 
-  .excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) .card-title {
+  .excursion-card:hover .card-title {
     color: var(--excursion-theme-dark);
   }
 
-  .excursion-card:not(.expanded):active:not(:has(.tour-edit-btn:hover)) {
+  .excursion-card:hover .tour-detail-chevron {
+    color: var(--excursion-theme-dark);
+    transform: translateX(2px);
+  }
+
+  .excursion-card:active {
     transform: none;
     background: color-mix(in srgb, var(--color-hover) 80%, var(--color-border)) !important;
   }
-}
 
-.excursion-card.expanded {
-  transform: none;
-  border: none !important;
-  border-radius: 0 !important;
-  corner-shape: auto !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  cursor: default;
+  .excursion-card:hover :deep(.tour-polaroid-stack .polaroid-tile) {
+    transform: var(--tile-fanned-transform);
+  }
+
+  .excursion-card:hover :deep(.tour-polaroid-stack .polaroid-tile:first-child) {
+    box-shadow: var(--shadow-md);
+  }
 }
 
 .tour-card-main {
@@ -380,14 +236,6 @@ const {
   gap: calc(var(--space-2) + var(--space-1));
 }
 
-.excursion-card.expanded .tour-card-main {
-  padding: var(--space-3) var(--space-3) var(--space-2) var(--space-3);
-}
-
-.tour-edit-btn {
-  flex-shrink: 0;
-}
-
 .body {
   position: relative;
   z-index: 2;
@@ -399,12 +247,6 @@ const {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-}
-
-.body > :not(.card-header-row, .accordion, .tour-note-container) {
-  transition:
-    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.2s ease;
 }
 
 .card-header-row {
@@ -422,62 +264,6 @@ const {
   gap: var(--space-2);
   width: 100%;
   min-width: 0;
-}
-
-.card-header-bottom {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-2);
-  width: 100%;
-  min-width: 0;
-}
-
-.card-title-meta-wrap {
-  flex: 1;
-  min-width: 0;
-}
-
-.excursion-card.expanded .card-header-row {
-  cursor: pointer;
-  padding: var(--space-2) calc(var(--space-2) + 2px);
-  margin-bottom: var(--space-1);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  background-color: color-mix(in srgb, var(--excursion-theme-color) 8%, transparent);
-  background-image: var(--gradient-control-3d);
-  border: 1px solid color-mix(in srgb, var(--excursion-theme-color) 24%, var(--color-border));
-  box-shadow:
-    inset 0 1px 0 var(--shadow-control-highlight),
-    var(--shadow-control);
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@include can-hover {
-  .excursion-card.expanded .card-header-row:hover:not(:has(.tour-edit-btn:hover)) {
-    background-color: color-mix(in srgb, var(--excursion-theme-color) 16%, transparent);
-    border-color: var(--excursion-theme-color);
-    box-shadow:
-      inset 0 1px 0 var(--shadow-control-highlight-strong),
-      var(--shadow-control-hover);
-    transform: translateY(-1px);
-  }
-
-  .excursion-card.expanded:has(.card-header-row:hover:not(:has(.tour-edit-btn:hover)))
-    .body
-    > :not(.card-header-row) {
-    transform: translateY(-2px);
-    opacity: 0.82;
-  }
-
-  .excursion-card.expanded .card-header-row:active:not(:has(.tour-edit-btn:hover)) {
-    transform: translateY(1px) scale(0.995);
-    box-shadow: var(--shadow-control-active);
-  }
 }
 
 .card-title-block {
@@ -510,34 +296,7 @@ const {
   -webkit-box-orient: vertical;
   word-break: break-word;
   overflow-wrap: break-word;
-  transition:
-    font-size 0.2s ease,
-    color 0.2s ease;
-}
-
-.excursion-card.expanded .card-title {
-  font-size: var(--font-size-lg);
-  line-height: 1.3;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-}
-
-.card-title-meta {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  flex-wrap: wrap;
-  margin-top: 2px;
-}
-
-.overlay-author {
-  font-weight: 600;
-}
-
-.overlay-submeta {
-  opacity: 0.9;
+  transition: color 0.2s ease;
 }
 
 .card-badge-group {
@@ -548,26 +307,11 @@ const {
   margin-top: 1px;
 }
 
-@include can-hover {
-  .excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) :deep(.disclosure-pill) {
-    @include card-disclosure-pill-hover('tonal');
-  }
-
-  .excursion-card:not(.expanded):hover:not(:has(.tour-edit-btn:hover)) :deep(.disclosure-chevron) {
-    transform: translateY(2px);
-  }
-
-  .excursion-card.expanded
-    .card-header-row:hover:not(:has(.tour-edit-btn:hover))
-    :deep(.disclosure-pill) {
-    @include card-disclosure-pill-hover('tonal');
-  }
-
-  .excursion-card.expanded
-    .card-header-row:hover:not(:has(.tour-edit-btn:hover))
-    :deep(.disclosure-chevron) {
-    transform: translateY(-2px);
-  }
+.tour-detail-chevron {
+  color: var(--color-text-muted);
+  transition:
+    color 0.2s ease,
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .card-actions-wrapper {
@@ -592,93 +336,6 @@ const {
   gap: var(--space-1);
   min-width: 0;
   flex: 0 1 auto;
-}
-
-/* Tour-Notiz: Fließender Übergang zwischen 1-2-zeiligem Teaser und voller Höhe (#235) */
-.tour-note-container {
-  display: block;
-  position: relative;
-  margin-top: 2px;
-  overflow: clip;
-  transition:
-    max-height 0.35s cubic-bezier(0.32, 0.72, 0, 1),
-    margin 0.25s ease,
-    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.2s ease;
-}
-
-.tour-note-container:not(.is-expanded) {
-  max-height: 2.85em;
-}
-
-.tour-note-container.is-expanded {
-  max-height: none;
-  overflow: visible;
-}
-
-.note {
-  overflow-wrap: anywhere;
-  font-size: var(--font-size-sm);
-  line-height: 1.45;
-  color: var(--color-text);
-  transition: color 0.2s ease;
-}
-
-.note.is-clamped {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: clip;
-  text-overflow: ellipsis;
-  font-size: var(--font-size-sm);
-  line-height: 1.4;
-  color: var(--color-text-muted);
-}
-
-.note.is-clamped.is-expanded {
-  -webkit-line-clamp: unset;
-  line-clamp: unset;
-  display: block;
-  overflow: visible;
-  color: var(--color-text);
-}
-
-.note.is-clamped:not(.is-expanded) :deep(p),
-.note.is-clamped:not(.is-expanded) :deep(div) {
-  display: inline;
-  margin: 0;
-}
-
-.note.is-clamped:not(.is-expanded) :deep(p + p::before),
-.note.is-clamped:not(.is-expanded) :deep(div + div::before) {
-  content: ' ';
-}
-
-/* Hover-Effekt auf der Collapsed Card: Sanftes Auffächern der Station-Polaroids (#235) */
-@include can-hover {
-  .excursion-card:not(.expanded):hover :deep(.tour-polaroid-stack .polaroid-tile) {
-    transform: var(--tile-fanned-transform);
-  }
-
-  .excursion-card:not(.expanded):hover :deep(.tour-polaroid-stack .polaroid-tile:first-child) {
-    box-shadow: var(--shadow-md);
-  }
-}
-
-.tour-attachments-wrap {
-  margin-top: var(--space-2);
-}
-
-@container excursion-card (max-width: 400px) {
-  :deep(.disclosure-pill.is-expanded) {
-    width: 26px;
-    padding: 0;
-  }
-
-  :deep(.disclosure-label) {
-    display: none;
-  }
 }
 
 @container excursion-card (max-width: 360px) {
@@ -710,42 +367,12 @@ const {
   .card-title {
     font-size: var(--font-size-md);
   }
-
-  .excursion-card.expanded .card-title {
-    font-size: var(--font-size-lg);
-  }
-
-  .tour-note-container:not(.is-expanded) {
-    max-height: 1.45em;
-  }
-
-  .tour-note-container.is-expanded {
-    max-height: none;
-    overflow: visible;
-  }
-
-  .note.is-clamped {
-    -webkit-line-clamp: 1;
-    line-clamp: 1;
-    font-size: var(--font-size-sm);
-    line-height: 1.4;
-  }
-
-  .note.is-clamped.is-expanded {
-    -webkit-line-clamp: unset;
-    line-clamp: unset;
-    display: block;
-    overflow: visible;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .excursion-card,
   .excursion-card::before,
-  .body,
-  .body > :not(.card-header-row, .accordion, .tour-note-container),
-  .card-header-row,
-  .tour-note-container {
+  .tour-detail-chevron {
     transform: none !important;
     transition: opacity 0.15s ease !important;
   }
