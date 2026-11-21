@@ -637,3 +637,27 @@
     box-shadow: inset 0 1px 0 var(--color-divider-highlight);
   }
 }
+
+/// Trennlinie für einzelne Zeilen in einer vertikalen Liste (eingefräste Glanzkante unten,
+/// am letzten Element automatisch entfernt).
+@mixin divider-engraved-row {
+  @include divider-engraved('bottom');
+
+  &:last-child {
+    border-bottom: none;
+    box-shadow: none;
+  }
+}
+
+/// Versenkte, ruhige Innenfläche für Fieldsets, Vorschau-Boxen und Inset-Bereiche
+/// (analog zu CollapsibleFieldset). Sorgt für konsistenten Kontrast im Light- und
+/// Dark-Mode inkl. korrekter Input-Hintergrundfarbe für darin liegende Eingabefelder.
+/// @param {Length|String} $radius - Eckenradius (Standard: var(--radius-md-squircle))
+/// @param {String} $border-style - Rahmenstil (Standard: solid, z. B. dashed für Platzhalter)
+@mixin surface-sunken-box($radius: var(--radius-md-squircle), $border-style: solid) {
+  background: var(--color-surface-sunken);
+  border: 1px $border-style var(--color-border-divider);
+  border-radius: $radius;
+  corner-shape: squircle;
+  --color-input-bg: var(--color-input-bg-sunken);
+}

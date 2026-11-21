@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import Card from './primitives/Card.vue';
 import Badge from './primitives/Badge.vue';
 import Button from './primitives/Button.vue';
 import EditButton from './EditButton.vue';
@@ -41,8 +40,7 @@ const usageLabel = computed(() => {
 </script>
 
 <template>
-  <Card
-    variant="flat"
+  <div
     class="category-row"
     :class="{
       'is-hidden': category.isHidden,
@@ -97,7 +95,7 @@ const usageLabel = computed(() => {
         {{ category.isHidden ? 'Einblenden' : 'Ausblenden' }}
       </Button>
     </div>
-  </Card>
+  </div>
 </template>
 
 <style scoped lang="scss">
@@ -105,8 +103,9 @@ const usageLabel = computed(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-1);
   gap: var(--space-2);
+  @include divider-engraved-row;
 }
 
 .category-row.is-hidden {
@@ -157,7 +156,6 @@ const usageLabel = computed(() => {
     justify-content: flex-end;
     flex-wrap: wrap;
     padding-top: var(--space-1);
-    border-top: 1px solid var(--color-border-divider);
   }
 }
 </style>

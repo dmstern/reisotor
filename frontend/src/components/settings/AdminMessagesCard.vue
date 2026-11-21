@@ -268,7 +268,7 @@ onMounted(() => {
   </Card>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .admin-messages-card {
   display: flex;
   flex-direction: column;
@@ -306,23 +306,23 @@ onMounted(() => {
 .messages-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 0;
 }
 
 .message-item {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-3);
-  border: 1px solid var(--color-border-divider);
-  border-radius: var(--radius-sm-squircle, 8px);
-  background: var(--color-surface);
+  padding: var(--space-3) 0;
+  @include divider-engraved-row;
   transition: border-color var(--transition-fast, 0.15s ease);
 }
 
 .message-item.unread {
-  border-left: 3px solid var(--color-warning, #f59e0b);
-  background: var(--color-surface-hover, rgba(245, 158, 11, 0.03));
+  border-left: 3px solid var(--color-warning);
+  padding-inline: var(--space-3);
+  border-radius: 0 var(--radius-sm-squircle) var(--radius-sm-squircle) 0;
+  background: color-mix(in srgb, var(--color-warning) 6%, transparent);
 }
 
 .message-header {
@@ -370,9 +370,7 @@ onMounted(() => {
   justify-content: space-between;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  background: var(--color-bg);
-  border: 1px solid var(--color-border-divider);
-  border-radius: var(--radius-sm-squircle, 6px);
+  @include surface-sunken-box(var(--radius-sm-squircle));
   font-size: var(--font-size-xs, 0.8rem);
   flex-wrap: wrap;
 }
@@ -385,9 +383,7 @@ onMounted(() => {
 
 .unmatched-user-box {
   padding: var(--space-2) var(--space-3);
-  background: var(--color-bg);
-  border: 1px dashed var(--color-border-divider);
-  border-radius: var(--radius-sm-squircle, 6px);
+  @include surface-sunken-box(var(--radius-sm-squircle), dashed);
   font-size: var(--font-size-xs, 0.8rem);
 }
 

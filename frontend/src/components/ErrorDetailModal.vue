@@ -221,7 +221,7 @@ function openBugReport() {
   />
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .error-detail-modal {
   display: flex;
   flex-direction: column;
@@ -234,10 +234,7 @@ function openBugReport() {
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3);
-  background: var(--color-bg);
-  border: 1px solid var(--color-border-divider);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
+  @include surface-sunken-box;
   font-size: 0.85rem;
 }
 
@@ -267,10 +264,7 @@ function openBugReport() {
 .stacktrace-box {
   margin: 0;
   padding: var(--space-2) var(--space-3);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-divider);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  @include surface-sunken-box(var(--radius-sm-squircle));
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.75rem;
   line-height: 1.45;

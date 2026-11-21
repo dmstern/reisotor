@@ -118,15 +118,11 @@ function toggle() {
   </fieldset>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .collapsible-fieldset {
-  border: 1px solid var(--color-border-divider);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
+  @include surface-sunken-box;
   padding: var(--space-2) var(--space-3) var(--space-3);
   margin: var(--space-2) 0;
-  background: var(--color-surface-sunken);
-  --color-input-bg: var(--color-surface);
   min-inline-size: 0;
   max-inline-size: 100%;
   box-sizing: border-box;
@@ -135,16 +131,6 @@ function toggle() {
     background-color 0.22s ease,
     padding 0.26s cubic-bezier(0.32, 0.72, 0, 1),
     margin 0.26s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-[data-theme='dark'] .collapsible-fieldset {
-  --color-input-bg: #11100f;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .collapsible-fieldset {
-    --color-input-bg: #11100f;
-  }
 }
 
 .collapsible-fieldset.is-closed {

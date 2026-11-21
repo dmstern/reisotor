@@ -108,7 +108,7 @@ function updateField<K extends keyof CategoryFormData>(field: K, val: CategoryFo
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .trip-category-form-fields {
   display: flex;
   flex-direction: column;
@@ -120,9 +120,7 @@ function updateField<K extends keyof CategoryFormData>(field: K, val: CategoryFo
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2);
-  background: var(--color-hover);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
+  @include surface-sunken-box;
 }
 
 .preview-label {

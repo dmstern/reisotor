@@ -216,7 +216,7 @@ async function copyToClipboard(text?: string | null, type?: 'password' | 'link')
   </Modal>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .reset-dialog-body,
 .result-body {
   display: flex;
@@ -272,10 +272,8 @@ async function copyToClipboard(text?: string | null, type?: 'password' | 'link')
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  background: var(--color-bg-secondary, var(--color-hover));
   padding: var(--space-3);
-  border-radius: var(--radius-sm-squircle);
-  border: 1px solid var(--color-border-divider);
+  @include surface-sunken-box(var(--radius-sm-squircle));
 }
 
 .credential-row {

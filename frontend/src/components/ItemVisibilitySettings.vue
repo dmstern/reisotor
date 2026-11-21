@@ -138,7 +138,7 @@ function onKeydown(e: KeyboardEvent, currentVal: TrackVisibility) {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .visibility-settings {
   display: flex;
   flex-direction: column;
@@ -319,9 +319,6 @@ function onKeydown(e: KeyboardEvent, currentVal: TrackVisibility) {
   font-size: 0.78rem;
   color: var(--color-text-muted);
   padding: var(--space-2) var(--space-3);
-  background: var(--color-bg);
-  border: 1px solid var(--color-border-divider);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  @include surface-sunken-box(var(--radius-sm-squircle));
 }
 </style>

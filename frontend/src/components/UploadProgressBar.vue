@@ -93,15 +93,13 @@ const statusLabel = computed(() => {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .upload-progress-container {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  @include surface-sunken-box;
   margin-top: var(--space-2);
 }
 
@@ -151,7 +149,7 @@ const statusLabel = computed(() => {
 .progress-track {
   width: 100%;
   height: 6px;
-  background: color-mix(in srgb, var(--color-primary) 15%, var(--color-surface-hover));
+  background: color-mix(in srgb, var(--color-primary) 15%, var(--color-hover));
   border-radius: var(--radius-pill);
   overflow: hidden;
 }

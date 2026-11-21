@@ -686,7 +686,7 @@ function handleModalClose(visible: boolean) {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .cover-image-picker {
   width: 100%;
 }
@@ -721,7 +721,7 @@ function handleModalClose(visible: boolean) {
   margin: 0;
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  background-color: var(--color-surface-hover);
+  background-color: var(--color-surface-sunken);
   border: 1px solid var(--color-border-divider);
   padding: var(--space-2);
 }
@@ -847,7 +847,7 @@ function handleModalClose(visible: boolean) {
   corner-shape: squircle;
   overflow: hidden;
   border: 1px solid var(--color-border-divider);
-  background: var(--color-surface-hover);
+  background: var(--color-surface-sunken);
 }
 
 .dialog-preview-img {
@@ -870,10 +870,7 @@ function handleModalClose(visible: boolean) {
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  background: var(--color-surface-hover);
-  border: 1px solid var(--color-border-divider);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
+  @include surface-sunken-box;
 }
 
 .browse-header {
