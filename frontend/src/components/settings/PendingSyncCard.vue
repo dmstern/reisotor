@@ -670,7 +670,7 @@ function handleMigrateData() {
 .error-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   font-size: var(--font-size-sm);
 }
 
@@ -697,7 +697,7 @@ function handleMigrateData() {
 .detail-field {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
 }
 
 .detail-label {

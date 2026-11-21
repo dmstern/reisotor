@@ -251,7 +251,7 @@ const checkinCheckoutText = computed(() => {
 .spot-external-link {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
   color: var(--color-primary);
   text-decoration: underline;
   text-underline-offset: 2px;

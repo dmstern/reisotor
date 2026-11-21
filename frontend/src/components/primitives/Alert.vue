@@ -149,7 +149,7 @@ const resolvedIcon = computed<IconDef | null>(() => {
 }
 
 .alert--sm {
-  padding: 6px 10px;
+  padding: var(--space-1-5) 10px;
   font-size: var(--font-size-xs);
 }
 
@@ -177,7 +177,7 @@ const resolvedIcon = computed<IconDef | null>(() => {
 .alert__content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   flex: 1;
   min-width: 0;
 }
@@ -231,8 +231,8 @@ const resolvedIcon = computed<IconDef | null>(() => {
   display: inline-flex;
   align-items: center;
   align-self: flex-start;
-  gap: 4px;
-  margin-top: 2px;
+  gap: var(--space-xs);
+  margin-top: var(--space-2xs);
   font-weight: 600;
   font-size: inherit;
   color: inherit;
@@ -244,7 +244,7 @@ const resolvedIcon = computed<IconDef | null>(() => {
 .alert__report-btn {
   background: transparent;
   border: none;
-  padding: 2px 0;
+  padding: var(--space-2xs) 0;
   min-block-size: 32px;
   font-family: inherit;
   cursor: pointer;

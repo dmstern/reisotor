@@ -2466,13 +2466,13 @@ onUnmounted(() => {
   height: 100%;
   box-sizing: border-box;
   align-items: center;
-  padding: 0 12px;
+  padding: 0 var(--space-md);
 }
 
 .sheet-title-group {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   min-width: 0;
 }
 
@@ -2567,7 +2567,7 @@ onUnmounted(() => {
 .sheet-handle {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   min-width: 0;
   cursor: grab;
   touch-action: none;
@@ -2581,7 +2581,7 @@ onUnmounted(() => {
 .sheet-title {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   margin: 0;
   min-width: 0;
   font-size: var(--font-size-xl);
@@ -2889,7 +2889,7 @@ onUnmounted(() => {
 .header h2 {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   margin: 0;
   min-width: 0;
 }
@@ -2916,7 +2916,7 @@ onUnmounted(() => {
     justify-content: center;
     font-size: var(--font-size-xs);
     line-height: var(--line-height-none);
-    padding: 0 4px;
+    padding: 0 var(--space-xs);
     min-width: 16px;
     height: 16px;
     border-radius: var(--radius-pill);
@@ -2977,7 +2977,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 6px 12px;
+  padding: var(--space-1-5) var(--space-md);
   background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
   border: 1px solid color-mix(in srgb, var(--color-danger) 30%, var(--color-border));
   border-radius: var(--radius-sm-squircle);
@@ -3200,10 +3200,10 @@ onUnmounted(() => {
 
 .drawer-search-accordion-inner {
   min-height: 0;
-  padding-top: 6px;
-  margin-top: -6px;
-  padding-bottom: 6px;
-  margin-bottom: -6px;
+  padding-top: var(--space-1-5);
+  margin-top: calc(-1 * var(--space-1-5));
+  padding-bottom: var(--space-1-5);
+  margin-bottom: calc(-1 * var(--space-1-5));
   overflow: visible;
 }
 
@@ -3234,7 +3234,7 @@ onUnmounted(() => {
 .category-heading {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   /* scrollToCategory() landet sonst mit der Überschrift teilweise unter der sticky Kategorie-Nav.
      Bewusst OHNE --app-header-height/--navbar-offset (anders als .spots-col/.map-col weiter oben
      und Drawer.vue, wo tatsächlich das Fenster/eine eigene Overlay-Ebene relativ zur AppHeader

@@ -393,7 +393,7 @@ function handleUploadClick() {
 }
 
 .attachments-polaroid-wrap {
-  padding: 4px 0 6px 4px;
+  padding: var(--space-xs) 0 var(--space-1-5) var(--space-xs);
 }
 
 .file-input-hidden {

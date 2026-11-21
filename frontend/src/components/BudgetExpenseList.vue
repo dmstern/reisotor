@@ -100,7 +100,7 @@ const store = useBudgetStore();
 .row-main {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   flex: 1 1 140px;
   min-width: 0;
 }

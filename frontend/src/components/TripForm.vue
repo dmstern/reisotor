@@ -488,7 +488,7 @@ label,
 .field-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-xs);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
@@ -496,11 +496,11 @@ label,
 .label-text {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2xs);
 }
 
 .hint {
-  margin: -4px 0 0;
+  margin: calc(-1 * var(--space-xs)) 0 0;
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
@@ -508,14 +508,14 @@ label,
 .hint.success {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
   color: var(--color-success);
 }
 
 .hint.error {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
   color: var(--color-danger);
 }
 

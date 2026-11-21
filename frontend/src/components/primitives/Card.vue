@@ -12,7 +12,7 @@ import { TILE_SHADOW_ALPHA } from '../../utils/widgetColors';
 const props = withDefaults(
   defineProps<{
     /** Card-Variante:
-     * - 'default': Standard-Fläche (weiß/surface, shadow-sm, padding var(--space-4))
+     * - 'default': Standard-Fläche (weiß/surface, shadow-sm, padding var(--space-lg))
      * - 'muted': Hinterlegte Fläche (background var(--color-hover))
      * - 'flat': Flacher Rand ohne Schatten
      * - 'elevated': Erhöhter Schatten (shadow-md) für schwebende Overlays
@@ -313,7 +313,8 @@ const isNewHighlight = computed(() => {
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  padding: var(--space-4);
+  --card-padding: var(--space-lg);
+  padding: var(--card-padding);
   box-shadow: var(--shadow-card);
   transition:
     padding 0.2s cubic-bezier(0.16, 1, 0.3, 1),
@@ -399,7 +400,7 @@ const isNewHighlight = computed(() => {
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-card-polaroid);
-  padding: 8px 8px 14px 8px;
+  padding: var(--space-sm) var(--space-sm) 14px var(--space-sm);
   transform-origin: center center;
   transition:
     transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
@@ -584,8 +585,12 @@ const isNewHighlight = computed(() => {
 }
 
 /* Condensed (Kompakter Zustand) */
+.card--condensed {
+  --card-padding: var(--space-md);
+}
+
 .card--condensed:not(.card--banner-left) {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--card-padding);
 }
 
 /* Banner Top Styles */
@@ -595,10 +600,10 @@ const isNewHighlight = computed(() => {
 }
 
 .card--has-banner:not(.card--banner-left) .card-banner {
-  width: calc(100% + var(--space-4) * 2);
-  margin-left: calc(-1 * var(--space-4));
-  margin-right: calc(-1 * var(--space-4));
-  margin-bottom: var(--space-3);
+  width: calc(100% + var(--card-padding, var(--space-lg)) * 2);
+  margin-left: calc(-1 * var(--card-padding, var(--space-lg)));
+  margin-right: calc(-1 * var(--card-padding, var(--space-lg)));
+  margin-bottom: var(--space-lg);
   height: 140px;
   overflow: hidden;
   position: relative;
@@ -607,10 +612,7 @@ const isNewHighlight = computed(() => {
 }
 
 .card--condensed.card--has-banner:not(.card--banner-left) .card-banner {
-  width: calc(100% + var(--space-3) * 2);
-  margin-left: calc(-1 * var(--space-3));
-  margin-right: calc(-1 * var(--space-3));
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-sm);
   height: 90px;
 }
 
@@ -652,14 +654,14 @@ const isNewHighlight = computed(() => {
 .card--banner-left .card-content {
   flex: 1;
   min-width: 0;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-lg);
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
 .card--banner-left.card--condensed .card-content {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-md);
 }
 
 .card-content {

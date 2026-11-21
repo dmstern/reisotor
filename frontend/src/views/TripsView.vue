@@ -212,8 +212,8 @@ function openMembers(trip: Trip) {
   text-align: left;
   background: none;
   border: none;
-  padding: 6px;
-  margin: -6px;
+  padding: var(--space-1-5);
+  margin: calc(-1 * var(--space-1-5));
   border-radius: var(--radius-xs-squircle);
   corner-shape: squircle;
   font-size: var(--font-size-md);

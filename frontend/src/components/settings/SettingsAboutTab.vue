@@ -254,7 +254,7 @@ h3 {
 @container app-main (max-width: 420px) {
   .build-info-list {
     grid-template-columns: 1fr;
-    gap: 2px 0;
+    gap: var(--space-2xs) 0;
   }
 
   .build-info-list dt {

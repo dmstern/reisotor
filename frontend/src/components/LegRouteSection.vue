@@ -243,7 +243,7 @@ const routeHeadingIconDef: IconDef = {
 .route-calc-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   flex: 1 1 200px;
   min-width: 0;
   min-height: 40px;
@@ -322,7 +322,7 @@ const routeHeadingIconDef: IconDef = {
 .route-calc-badge {
   display: inline-flex;
   align-items: center;
-  padding: 2px var(--space-2);
+  padding: var(--space-2xs) var(--space-2);
   font-size: var(--font-size-xs);
   font-weight: 700;
   letter-spacing: 0.03em;
@@ -404,7 +404,7 @@ const routeHeadingIconDef: IconDef = {
 }
 
 .route-direct-detail {
-  padding: var(--space-1) 6px;
+  padding: var(--space-1) var(--space-1-5);
 }
 
 .route-direct-detail .route-calc-hint {
@@ -496,7 +496,7 @@ const routeHeadingIconDef: IconDef = {
   }
 
   .route-mode-toggle :deep(.segmented-option) {
-    padding: 6px var(--space-1);
+    padding: var(--space-1-5) var(--space-1);
     font-size: var(--font-size-xs);
     gap: var(--space-1);
   }

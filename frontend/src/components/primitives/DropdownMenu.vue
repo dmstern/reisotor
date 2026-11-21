@@ -236,7 +236,7 @@ defineExpose({
   @include control-3d-progressive(
     '&.dropdown__button--active, &:active:not(:disabled), .dropdown--open &'
   );
-  padding: 9px 12px;
+  padding: 9px var(--space-md);
   color: var(--color-text);
   font-family: inherit;
   font-size: var(--font-size-md);
@@ -261,8 +261,8 @@ defineExpose({
 .dropdown--sm .dropdown__button.dropdown__field,
 .dropdown__button.dropdown__field.btn--sm {
   @include touch-target($expand: true);
-  padding: 6px 12px;
-  gap: var(--control-gap-sm, 6px);
+  padding: var(--space-1-5) var(--space-md);
+  gap: var(--control-gap-sm);
   height: var(--control-height-sm, 36px);
   min-height: var(--control-height-sm, 36px);
   font-size: var(--font-size-sm);
@@ -270,7 +270,7 @@ defineExpose({
 
 .dropdown--lg .dropdown__button.dropdown__field,
 .dropdown__button.dropdown__field.btn--lg {
-  padding: 12px 16px;
+  padding: var(--space-md) var(--space-lg);
   height: var(--control-height-lg, 52px);
   min-height: var(--control-height-lg, 52px);
   font-size: var(--font-size-md);

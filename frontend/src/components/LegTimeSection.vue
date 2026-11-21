@@ -353,7 +353,7 @@ function onArrivalChange(event: Event) {
 
 @container (max-width: 480px) {
   .time-input-wrap :deep(.input) {
-    padding: 9px 6px;
+    padding: 9px var(--space-1-5);
     font-size: var(--font-size-sm);
   }
 }

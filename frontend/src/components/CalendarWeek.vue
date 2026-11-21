@@ -323,7 +323,7 @@ function isTripEnd(date: string) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 2px;
+  gap: var(--space-2xs);
   min-height: 22px;
 }
 
@@ -331,7 +331,7 @@ function isTripEnd(date: string) {
   .day-badge-wrap {
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: var(--space-2xs);
   }
 
   .day-weather-row {
@@ -345,7 +345,7 @@ function isTripEnd(date: string) {
 
 @include container-down('mobile-compact') {
   .day {
-    padding: var(--space-1) 2px;
+    padding: var(--space-1) var(--space-2xs);
   }
 }
 
@@ -373,7 +373,7 @@ function isTripEnd(date: string) {
 .day-weather-row {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2xs);
 }
 
 .day-weather {
@@ -390,7 +390,7 @@ function isTripEnd(date: string) {
 .acc-bar {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2xs);
   background: var(--color-accent-secondary-bg);
   color: var(--color-accent-secondary);
   font-size: var(--font-size-xs);
@@ -418,13 +418,13 @@ function isTripEnd(date: string) {
 .items {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
 }
 
 .item-line {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2xs);
   font-size: var(--font-size-xs);
   background: var(--color-hover);
   border-radius: var(--radius-xs-squircle);
@@ -454,7 +454,7 @@ function isTripEnd(date: string) {
   flex-shrink: 0;
   width: 9px;
   height: 9px;
-  margin: 0 2px 0 0;
+  margin: 0 var(--space-2xs) 0 0;
   padding: 0;
   border: 1.5px solid var(--color-border-strong);
   border-radius: 2px;
@@ -487,7 +487,7 @@ function isTripEnd(date: string) {
 .time {
   color: var(--color-primary-dark);
   font-weight: 700;
-  margin-right: 2px;
+  margin-right: var(--space-2xs);
   flex-shrink: 0;
   white-space: nowrap;
 }
@@ -504,7 +504,7 @@ function isTripEnd(date: string) {
 @container (min-width: 520px) {
   .day {
     min-height: 84px;
-    padding: 7px 6px;
+    padding: 7px var(--space-1-5);
     gap: var(--space-1);
   }
 }

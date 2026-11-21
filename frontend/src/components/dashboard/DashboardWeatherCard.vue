@@ -360,8 +360,9 @@ onMounted(() => {
 
 .weather-days {
   --horizontal-scroller-gap: var(--space-2);
-  --horizontal-scroller-padding: 8px 6px;
-  margin: -6px -6px calc(-8px + var(--space-1));
+  --horizontal-scroller-padding: var(--space-sm) var(--space-1-5);
+  margin: calc(-1 * var(--space-1-5)) calc(-1 * var(--space-1-5))
+    calc(-1 * var(--space-sm) + var(--space-1));
 }
 
 .weather-source {

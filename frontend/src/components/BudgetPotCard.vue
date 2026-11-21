@@ -419,7 +419,7 @@ function onTotalSectionClick(e: MouseEvent) {
 .pot-title {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   min-width: 0;
   flex: 1 1 auto;
 }
@@ -482,7 +482,7 @@ function onTotalSectionClick(e: MouseEvent) {
 
 .categories-accordion {
   width: 100%;
-  margin-top: 2px;
+  margin-top: var(--space-2xs);
 }
 
 .categories-accordion:not(.is-expanded) {

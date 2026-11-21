@@ -306,7 +306,7 @@ function close() {
   display: block;
   font-weight: 600;
   color: var(--color-text);
-  margin-bottom: 2px;
+  margin-bottom: var(--space-2xs);
 }
 
 .feature-desc {

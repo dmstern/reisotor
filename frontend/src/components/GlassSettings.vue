@@ -203,7 +203,7 @@ const previewStyle = computed(() => {
 .slider-row {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-xs);
 }
 
 .slider-header {
@@ -271,7 +271,7 @@ const previewStyle = computed(() => {
   text-align: center;
   pointer-events: none;
   user-select: none;
-  padding-top: 2px;
+  padding-top: var(--space-2xs);
 }
 
 .bg-row {
@@ -292,7 +292,7 @@ const previewStyle = computed(() => {
   font-weight: 600;
   color: var(--color-primary-dark);
   font-size: var(--font-size-sm);
-  margin-top: 2px;
+  margin-top: var(--space-2xs);
 }
 
 .underlay-sub {
@@ -302,8 +302,8 @@ const previewStyle = computed(() => {
 .preview-tag {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
+  gap: var(--space-xs);
+  padding: var(--space-2xs) var(--space-sm);
   border-radius: 999px;
   font-size: var(--font-size-xs);
   font-weight: 700;
@@ -322,7 +322,7 @@ const previewStyle = computed(() => {
 .preview-badge {
   background: #e0f2fe;
   color: #075985;
-  padding: 2px 8px;
+  padding: var(--space-2xs) var(--space-sm);
   border-radius: 999px;
   font-size: var(--font-size-xs);
   font-weight: 700;
@@ -336,7 +336,7 @@ const previewStyle = computed(() => {
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  padding: 10px 24px;
+  padding: 10px var(--space-xl);
   border-radius: 999px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
   background: rgb(255 255 255 / var(--preview-glass-opacity, 0.42));

@@ -219,8 +219,8 @@ function toggle() {
   /* 4px Padding + -4px Margin reservieren Platz für Fokus-Rahmen von Kind-Elementen (z. B. Input-Felder
      mit 2px outline + 1px outline-offset = 3px), damit diese an den Rändern nicht durch overflow: hidden
      abgeschnitten werden, während der visuelle Inhalt exakt ausgerichtet bleibt. */
-  padding: var(--space-1, 4px) 0;
-  margin: calc(-1 * var(--space-1, 4px)) 0;
+  padding: var(--space-xs) 0;
+  margin: calc(-1 * var(--space-xs)) 0;
   transition: overflow 0s 0s;
 }
 

@@ -324,14 +324,14 @@ function handleMainClick(e: MouseEvent) {
 .qty {
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
-  margin-left: 2px;
+  margin-left: var(--space-2xs);
   white-space: nowrap;
 }
 
 .tally-control {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   flex-shrink: 0;
 }
 
@@ -345,7 +345,7 @@ function handleMainClick(e: MouseEvent) {
   gap: var(--space-2);
   height: 36px;
   min-height: 34px;
-  padding: 0 12px;
+  padding: 0 var(--space-md);
   border: 1.5px solid var(--color-border-strong);
   border-radius: var(--radius-pill);
   corner-shape: round;

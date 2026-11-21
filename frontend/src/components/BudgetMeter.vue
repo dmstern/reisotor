@@ -297,7 +297,7 @@ function fmt(value: number) {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  row-gap: 2px;
+  row-gap: var(--space-2xs);
   gap: var(--space-2);
   min-width: 0;
   font-size: var(--font-size-sm);

@@ -244,7 +244,7 @@ defineEmits<{
 
 @container schedule-view (max-width: 300px) {
   :deep(.segmented-option) {
-    padding: var(--space-1) 6px;
+    padding: var(--space-1) var(--space-1-5);
     font-size: var(--font-size-xs);
   }
 }

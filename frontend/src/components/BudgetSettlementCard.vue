@@ -152,7 +152,7 @@ const store = useBudgetStore();
   align-items: center;
   gap: var(--space-1);
   vertical-align: middle;
-  margin: 0 2px;
+  margin: 0 var(--space-2xs);
 }
 
 .debt-amount {

@@ -291,7 +291,7 @@ function excursionTooltip(ex: Excursion): string {
 
 .edited-by-avatar {
   font-size: var(--font-size-xs);
-  margin-right: 2px;
+  margin-right: var(--space-2xs);
 }
 
 .entry-actions {
@@ -371,7 +371,7 @@ function excursionTooltip(ex: Excursion): string {
 .chip-mismatch-badge {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2xs);
   background: var(--color-warning-tint);
   color: var(--color-warning-dark);
   padding: 1px var(--space-1);

@@ -105,7 +105,7 @@ function resetColor() {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 8px 12px;
+  padding: var(--space-sm) var(--space-md);
   border: var(--border-width) solid var(--color-border-divider);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
@@ -174,7 +174,7 @@ function resetColor() {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 4px 8px;
+  padding: var(--space-xs) var(--space-sm);
   border: var(--border-width) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;

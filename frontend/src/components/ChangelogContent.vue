@@ -328,7 +328,7 @@ const changelogGithubUrl = computed(() => {
   font-size: var(--font-size-sm);
   line-height: var(--line-height-normal);
   color: var(--color-text);
-  padding: 2px 0;
+  padding: var(--space-2xs) 0;
 }
 
 .note-bullet {

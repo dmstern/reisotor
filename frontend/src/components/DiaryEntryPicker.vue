@@ -130,7 +130,7 @@ function entryLabel(entry: DiaryEntry): string {
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
-  padding: 6px var(--space-2);
+  padding: var(--space-1-5) var(--space-2);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   cursor: pointer;
@@ -157,7 +157,7 @@ function entryLabel(entry: DiaryEntry): string {
 .diary-picker-option-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   flex: 1;
   min-width: 0;
 }
@@ -211,7 +211,7 @@ function entryLabel(entry: DiaryEntry): string {
 .diary-picker-badge.recommended {
   background: var(--color-primary-tint);
   color: var(--color-text);
-  padding: 2px var(--space-2);
+  padding: var(--space-2xs) var(--space-2);
   border-radius: var(--radius-pill);
   corner-shape: round;
   font-weight: 600;
@@ -221,7 +221,7 @@ function entryLabel(entry: DiaryEntry): string {
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-border);
   color: var(--color-text-muted);
-  padding: 2px var(--space-2);
+  padding: var(--space-2xs) var(--space-2);
   border-radius: var(--radius-pill);
   corner-shape: round;
   font-weight: 500;

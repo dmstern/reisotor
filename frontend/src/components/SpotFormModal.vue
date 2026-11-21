@@ -749,7 +749,7 @@ function handleOpenScheduledDate(date: string) {
   z-index: var(--z-card-elevated, 5);
   display: flex;
   flex-direction: column;
-  gap: var(--space-2, 8px);
+  gap: var(--space-sm);
 }
 
 .spot-location-section:focus-within,
@@ -777,7 +777,7 @@ function handleOpenScheduledDate(date: string) {
 .spot-region-label-group {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   min-width: 0;
   flex: 1;
 }
@@ -824,7 +824,7 @@ function handleOpenScheduledDate(date: string) {
   gap: var(--space-1);
   background: none;
   border: none;
-  padding: 4px 6px;
+  padding: var(--space-xs) var(--space-1-5);
   font-size: var(--font-size-xs);
   font-weight: 500;
   color: var(--color-text-muted);
@@ -952,7 +952,7 @@ function handleOpenScheduledDate(date: string) {
   @include touch-target;
   background: none;
   border: none;
-  padding: 2px;
+  padding: var(--space-2xs);
   color: inherit;
   cursor: pointer;
   display: inline-flex;
@@ -976,7 +976,7 @@ function handleOpenScheduledDate(date: string) {
 .assign-chip-action {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   background: none;
   border: none;
   padding: 0;
@@ -1026,7 +1026,7 @@ button.assign-chip-action:focus-visible {
   font-size: var(--font-size-xs);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   margin-top: var(--space-1);
 }
 

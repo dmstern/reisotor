@@ -63,7 +63,7 @@ withDefaults(
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-2);
-  padding: 9px var(--space-2);
+  padding: var(--space-sm) var(--space-md);
   @include divider-engraved('bottom');
   min-width: 0;
 }
@@ -194,7 +194,7 @@ withDefaults(
 :deep(.row-actions) {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   flex-shrink: 0;
   margin-left: auto;
   align-self: flex-start;

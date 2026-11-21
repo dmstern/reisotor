@@ -204,7 +204,7 @@ function startCheck() {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1-5, 6px);
+  gap: var(--space-1-5);
 }
 
 .scan-log li {
@@ -246,8 +246,8 @@ function startCheck() {
      Textlänge/Breite unterschiedlich) eine Reihe mit dem Label zu teilen – das war der
      eigentliche Grund für das Überlappen/Herausragen auf schmalen Mobile-Breiten. */
   flex-wrap: wrap;
-  gap: 2px var(--space-2);
-  padding: var(--space-1-5, 6px) var(--space-2);
+  gap: var(--space-2xs) var(--space-2);
+  padding: var(--space-1-5) var(--space-2);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-primary-tint);

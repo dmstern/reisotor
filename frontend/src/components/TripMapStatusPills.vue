@@ -56,7 +56,7 @@ function dismissTrackError() {
   border: 2px solid var(--color-primary);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  padding: 6px var(--space-2);
+  padding: var(--space-1-5) var(--space-2);
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-primary-dark);

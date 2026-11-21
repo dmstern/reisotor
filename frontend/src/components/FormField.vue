@@ -120,7 +120,7 @@ const id = computed(() => props.id || autoId);
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  margin: 2px 0 0;
+  margin: var(--space-2xs) 0 0;
   font-size: var(--font-size-xs);
   color: var(--color-danger, #ef4444);
   font-weight: 500;

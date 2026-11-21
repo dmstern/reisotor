@@ -429,7 +429,7 @@ async function deleteEditingTrack() {
   display: block;
   font-weight: 600;
   font-size: var(--font-size-sm);
-  margin-bottom: 2px;
+  margin-bottom: var(--space-2xs);
 }
 
 .track-status-alert__desc {
@@ -493,7 +493,7 @@ async function deleteEditingTrack() {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  padding: 4px var(--space-2);
+  padding: var(--space-xs) var(--space-2);
   background: var(--color-primary-tint);
   color: var(--color-primary);
   border-radius: var(--radius-pill);

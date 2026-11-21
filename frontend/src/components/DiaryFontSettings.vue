@@ -150,7 +150,7 @@ const currentFont = computed(() => {
   font-size: var(--font-size-md);
   color: var(--color-primary-dark);
   line-height: var(--line-height-snug);
-  margin-top: 2px;
+  margin-top: var(--space-2xs);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -599,7 +599,7 @@ async function remove(id: number) {
 }
 
 .syntax-hint {
-  margin: -4px 0 0;
+  margin: calc(-1 * var(--space-xs)) 0 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }

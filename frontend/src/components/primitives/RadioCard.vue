@@ -298,7 +298,7 @@ function onChange(event: Event) {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  padding-top: 2px;
+  padding-top: var(--space-2xs);
 }
 
 /* Focus-Visible über das innere Radio-Input hebt die Karte hervor */

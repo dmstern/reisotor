@@ -375,7 +375,7 @@ const profileTitle = computed(() => {
   width: 1px;
   height: 20px;
   background: var(--color-border-strong);
-  margin: 0 4px;
+  margin: 0 var(--space-xs);
   opacity: 0.5;
   flex-shrink: 0;
 }
@@ -384,8 +384,8 @@ const profileTitle = computed(() => {
   display: inline-flex;
   align-items: center;
   max-width: 900px;
-  padding: 6px;
-  margin: -6px;
+  padding: var(--space-1-5);
+  margin: calc(-1 * var(--space-1-5));
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
@@ -418,7 +418,7 @@ const profileTitle = computed(() => {
 .header-actions {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
   flex-shrink: 0;
   pointer-events: auto;
   border-radius: var(--radius-pill);

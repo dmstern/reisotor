@@ -120,10 +120,10 @@ const hasVisibleReadonlyItems = computed(
 .social-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2xs);
   font-size: var(--font-size-xs);
   line-height: var(--line-height-none);
-  padding: 2px var(--space-1);
+  padding: var(--space-2xs) var(--space-1);
   user-select: none;
 }
 
@@ -147,6 +147,6 @@ const hasVisibleReadonlyItems = computed(
 .social-count {
   font-size: var(--font-size-sm);
   font-weight: 600;
-  margin-left: 2px;
+  margin-left: var(--space-2xs);
 }
 </style>

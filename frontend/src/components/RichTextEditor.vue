@@ -358,8 +358,8 @@ defineExpose({
 .toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px;
-  padding: 4px;
+  gap: var(--space-2xs);
+  padding: var(--space-xs);
   /* Fixer Flex-Sibling außerhalb von .content-scroll (siehe unten) statt Teil des scrollenden
      Bereichs - bleibt dadurch beim Scrollen langer Texte immer sichtbar, ganz ohne position:sticky. */
   flex-shrink: 0;
@@ -377,7 +377,7 @@ defineExpose({
 .toolbar-btn {
   min-width: 28px;
   height: 28px;
-  padding: 0 6px;
+  padding: 0 var(--space-1-5);
   border: none;
   border-radius: 4px;
   background: transparent;
@@ -455,7 +455,7 @@ defineExpose({
 
 .richtext-editor :deep(.richtext-content ul),
 .richtext-editor :deep(.richtext-content ol) {
-  margin: 4px 0;
+  margin: var(--space-xs) 0;
   padding-left: 1.3em;
 }
 
@@ -465,7 +465,7 @@ defineExpose({
 .richtext-editor :deep(.richtext-content h4),
 .richtext-editor :deep(.richtext-content h5),
 .richtext-editor :deep(.richtext-content h6) {
-  margin: var(--space-2) 0 4px;
+  margin: var(--space-2) 0 var(--space-xs);
   font-weight: 600;
   line-height: var(--line-height-tight);
   color: var(--color-text);
@@ -490,8 +490,8 @@ defineExpose({
 }
 
 .richtext-editor :deep(.richtext-content blockquote) {
-  margin: 4px 0;
-  padding: 2px 0 2px 10px;
+  margin: var(--space-xs) 0;
+  padding: var(--space-2xs) 0 var(--space-2xs) 10px;
   border-left: 3px solid var(--color-border-divider);
   color: var(--color-text-muted);
 }

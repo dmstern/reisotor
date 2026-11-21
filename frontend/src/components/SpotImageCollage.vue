@@ -24,7 +24,7 @@ const extraCount = computed(() => Math.max(0, props.images.length - 4));
   position: absolute;
   inset: 0;
   display: grid;
-  gap: 2px;
+  gap: var(--space-2xs);
 }
 
 .collage.count-1 {

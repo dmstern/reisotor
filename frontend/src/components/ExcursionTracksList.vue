@@ -246,7 +246,7 @@ onMounted(() => {
   flex-direction: column;
   gap: var(--space-2);
   margin: 0;
-  padding: 4px 2px;
+  padding: var(--space-xs) var(--space-2xs);
   list-style: none;
 }
 
@@ -266,7 +266,7 @@ onMounted(() => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   background: none;
   border: none;
   padding: 0;
@@ -281,7 +281,7 @@ onMounted(() => {
 .track-row-title {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text);
@@ -360,7 +360,7 @@ onMounted(() => {
 .track-meta-live {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   color: var(--color-danger);
   font-weight: 600;
   flex-shrink: 0;

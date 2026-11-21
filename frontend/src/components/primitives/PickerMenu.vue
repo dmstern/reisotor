@@ -147,7 +147,7 @@ onUnmounted(() => {
   padding: var(--space-2);
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   box-sizing: border-box;
   transform-origin: top center;
   animation: popover-unfold 0.22s cubic-bezier(0.16, 1, 0.3, 1);
@@ -207,7 +207,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 6px 8px;
+  padding: var(--space-1-5) var(--space-sm);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   color: var(--color-text);
@@ -250,8 +250,8 @@ onUnmounted(() => {
 }
 
 .picker-menu :deep(.picker-menu-hint) {
-  margin: 0 0 2px;
-  padding: 4px 8px;
+  margin: 0 0 var(--space-2xs);
+  padding: var(--space-xs) var(--space-sm);
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   white-space: normal;

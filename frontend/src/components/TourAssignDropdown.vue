@@ -225,7 +225,7 @@ onUnmounted(() => {
 }
 
 .popup-head {
-  padding: 2px 6px 6px;
+  padding: var(--space-2xs) var(--space-1-5) var(--space-1-5);
   @include divider-engraved('bottom');
 }
 
@@ -242,14 +242,14 @@ onUnmounted(() => {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
 }
 
 .empty {
   margin: 0;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
-  padding: 6px 4px;
+  padding: var(--space-1-5) var(--space-xs);
   cursor: default;
 }
 

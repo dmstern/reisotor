@@ -101,13 +101,13 @@ function onClick(event: MouseEvent) {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: var(--control-gap-sm, 6px);
+  gap: var(--control-gap-sm);
   min-height: var(--control-height-sm, 36px);
   background-color: var(--color-surface);
   border: var(--border-width) solid var(--color-border-strong);
   border-radius: var(--radius-pill);
   corner-shape: round;
-  padding: var(--space-1) 12px;
+  padding: var(--space-1) var(--space-md);
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text-muted);
@@ -180,7 +180,7 @@ function onClick(event: MouseEvent) {
 }
 
 .done-toggle-chevron {
-  margin-left: 2px;
+  margin-left: var(--space-2xs);
   opacity: 0.75;
   flex-shrink: 0;
   transition:
@@ -202,7 +202,7 @@ function onClick(event: MouseEvent) {
 .status-text {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
@@ -231,7 +231,7 @@ function onClick(event: MouseEvent) {
 :deep(.done-toggle-weather) {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
   flex-shrink: 0;
   white-space: nowrap;
 }
@@ -242,7 +242,7 @@ function onClick(event: MouseEvent) {
 @container spots-col (max-width: 380px) {
   .done-toggle {
     padding: 3px 8px;
-    gap: 4px;
+    gap: var(--space-xs);
   }
 
   :deep(.done-toggle-prefix) {
@@ -261,7 +261,7 @@ function onClick(event: MouseEvent) {
 @container spot-card (max-width: 360px) {
   .done-toggle {
     padding: 3px 8px;
-    gap: 4px;
+    gap: var(--space-xs);
   }
 
   :deep(.done-toggle-prefix) {
@@ -280,7 +280,7 @@ function onClick(event: MouseEvent) {
 @container excursion-card (max-width: 360px) {
   .done-toggle {
     padding: 3px 8px;
-    gap: 4px;
+    gap: var(--space-xs);
   }
 
   :deep(.done-toggle-prefix) {
@@ -299,7 +299,7 @@ function onClick(event: MouseEvent) {
 @container (max-width: 360px) {
   .done-toggle {
     padding: 3px 8px;
-    gap: 4px;
+    gap: var(--space-xs);
   }
 
   :deep(.done-toggle-prefix) {

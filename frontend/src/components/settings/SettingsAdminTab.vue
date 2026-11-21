@@ -1530,7 +1530,7 @@ async function handleGenerateVapid() {
 }
 
 .mode-option :deep(.radio) {
-  margin-top: 2px;
+  margin-top: var(--space-2xs);
 }
 
 .mode-option:hover {

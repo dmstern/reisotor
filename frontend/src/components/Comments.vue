@@ -187,7 +187,7 @@ function formatCommentDate(dateStr?: string): string {
   flex: 1;
   min-width: 0;
   font-size: var(--font-size-sm);
-  gap: 2px;
+  gap: var(--space-2xs);
 }
 
 .comment-header {
@@ -209,7 +209,7 @@ function formatCommentDate(dateStr?: string): string {
 
 .comment-edited {
   font-style: italic;
-  margin-left: 2px;
+  margin-left: var(--space-2xs);
 }
 
 .comment-text {
@@ -221,7 +221,7 @@ function formatCommentDate(dateStr?: string): string {
 .comment-actions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2xs);
   flex-shrink: 0;
   margin-left: auto;
 }

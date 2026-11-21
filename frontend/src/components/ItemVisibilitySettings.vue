@@ -127,7 +127,7 @@ function onSelect(val: unknown) {
 .visibility-intro {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
 }
 
 .visibility-intro-title {

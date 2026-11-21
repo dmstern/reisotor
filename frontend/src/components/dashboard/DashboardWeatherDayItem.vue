@@ -67,7 +67,7 @@ const itemTitle = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2xs);
   min-width: 68px;
   padding: var(--space-2);
   border-radius: var(--radius-sm-squircle);

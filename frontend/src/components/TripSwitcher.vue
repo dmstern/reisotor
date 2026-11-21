@@ -273,7 +273,7 @@ function selectAndClose(id: number) {
 @include media-down('mobile') {
   .switcher-btn {
     padding: 5px 10px;
-    gap: 4px;
+    gap: var(--space-xs);
     font-size: var(--font-size-xs);
   }
 }
@@ -301,7 +301,7 @@ function selectAndClose(id: number) {
   min-width: 240px;
   max-width: min(340px, calc(100vw - 16px));
   max-height: min(70vh, 480px);
-  gap: 4px;
+  gap: var(--space-xs);
 }
 
 .trip-row {
@@ -319,13 +319,13 @@ function selectAndClose(id: number) {
 
 .row-actions {
   display: flex;
-  gap: 2px;
+  gap: var(--space-2xs);
   flex-shrink: 0;
 }
 
 .empty {
   font-size: var(--font-size-sm);
-  padding: 6px 8px;
+  padding: var(--space-1-5) var(--space-sm);
 }
 
 .new-trip-btn {
@@ -334,7 +334,7 @@ function selectAndClose(id: number) {
   border: 1px dashed var(--color-border-divider);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  padding: 6px 8px;
+  padding: var(--space-1-5) var(--space-sm);
   font-size: var(--font-size-sm);
   color: var(--color-primary-dark);
   display: flex;
@@ -359,7 +359,7 @@ function selectAndClose(id: number) {
   border: none;
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  padding: 6px 8px;
+  padding: var(--space-1-5) var(--space-sm);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   text-decoration: none;

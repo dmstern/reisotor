@@ -157,7 +157,7 @@ const emit = defineEmits<{
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  padding: 2px var(--space-2);
+  padding: var(--space-2xs) var(--space-2);
   border-radius: var(--radius-pill);
   font-size: var(--font-size-xs);
   font-weight: 600;

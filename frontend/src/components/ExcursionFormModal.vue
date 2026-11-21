@@ -539,7 +539,7 @@ defineExpose({
   font-size: var(--font-size-xs);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   margin-top: var(--space-1);
 }
 
@@ -593,7 +593,7 @@ defineExpose({
 .excursion-track-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   flex: 1;
   min-width: 0;
 }
@@ -618,7 +618,7 @@ defineExpose({
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  padding: 1px 6px;
+  padding: 1px var(--space-1-5);
   border-radius: var(--radius-pill);
   font-size: var(--font-size-xs);
   font-weight: 500;

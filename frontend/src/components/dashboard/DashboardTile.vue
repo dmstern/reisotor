@@ -112,7 +112,7 @@ const isLink = computed(() => !!props.to);
   text-align: center;
   font-size: var(--font-size-sm);
   margin-top: auto;
-  padding-top: 2px;
+  padding-top: var(--space-2xs);
   min-width: 0;
   word-break: break-word;
   overflow-wrap: break-word;

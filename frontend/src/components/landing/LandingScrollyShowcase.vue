@@ -176,7 +176,7 @@ const activeFrameIndex = computed(() => {
 
 .chrome-controls {
   display: flex;
-  gap: var(--space-1-5, 6px);
+  gap: var(--space-1-5);
 }
 
 .control-dot {
@@ -200,7 +200,7 @@ const activeFrameIndex = computed(() => {
 .chrome-address-bar {
   display: flex;
   align-items: center;
-  gap: var(--space-1-5, 6px);
+  gap: var(--space-1-5);
   background: var(--color-surface);
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-pill);

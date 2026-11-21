@@ -90,9 +90,9 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-2, 8px);
+  gap: var(--space-sm);
   margin: 0;
-  padding: 6px 0 0;
+  padding: var(--space-1-5) 0 0;
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   /* In Flex-Row-Formularen (z. B. ShoppingListView.vue's .add-form) soll dieser Text nie eine
@@ -107,7 +107,7 @@ const emit = defineEmits<{
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-1-5);
   min-width: 0;
 }
 

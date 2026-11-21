@@ -554,8 +554,8 @@ function clearFilters() {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding-top: 6px;
-  margin-top: -6px;
+  padding-top: var(--space-1-5);
+  margin-top: calc(-1 * var(--space-1-5));
   margin-bottom: var(--space-2);
   width: 100%;
 }
@@ -612,7 +612,7 @@ function clearFilters() {
 /* Responsiver Fallback auf schmalen Viewports und Containern (<= 360px) (#684) */
 @include media-down('mobile-compact') {
   .search-filter-bar {
-    gap: 6px;
+    gap: var(--space-1-5);
   }
 
   .search-input-wrapper .search-input {
@@ -631,7 +631,7 @@ function clearFilters() {
 
 @include container-spots-col-down('mobile-compact') {
   .search-filter-bar {
-    gap: 6px;
+    gap: var(--space-1-5);
   }
 
   .search-input-wrapper .search-input {
@@ -657,7 +657,7 @@ function clearFilters() {
   justify-content: center;
   min-width: 18px;
   height: 18px;
-  padding: 0 4px;
+  padding: 0 var(--space-xs);
   font-size: var(--font-size-xs);
   font-weight: 700;
   line-height: var(--line-height-none);
@@ -682,15 +682,15 @@ function clearFilters() {
 
 .popover-section + .popover-section {
   @include divider-engraved('top');
-  margin-top: 2px;
-  padding-top: 2px;
+  margin-top: var(--space-2xs);
+  padding-top: var(--space-2xs);
 }
 
 .popover-section-header.popover-section-toggle {
   justify-content: flex-start;
-  gap: 6px;
+  gap: var(--space-1-5);
   width: 100%;
-  padding: 6px 8px;
+  padding: var(--space-1-5) var(--space-sm);
   font-size: var(--font-size-xs);
   font-weight: 700;
   text-transform: uppercase;
@@ -726,7 +726,7 @@ function clearFilters() {
   text-transform: none;
   letter-spacing: normal;
   color: var(--color-text-muted);
-  padding: 1px 6px;
+  padding: 1px var(--space-1-5);
   border-radius: var(--radius-pill);
   background: var(--color-surface-sunken, var(--color-hover));
   flex-shrink: 0;
@@ -771,8 +771,8 @@ function clearFilters() {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  padding-top: 2px;
-  padding-bottom: 2px;
+  padding-top: var(--space-2xs);
+  padding-bottom: var(--space-2xs);
 }
 
 .popover-footer {

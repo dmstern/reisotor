@@ -335,7 +335,7 @@ function resetDefaults() {
 .popover-section-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   font-size: var(--font-size-xs);
   font-weight: 700;
   text-transform: uppercase;
@@ -357,7 +357,7 @@ function resetDefaults() {
   margin-top: 0;
   border-top: none;
   box-shadow: none;
-  padding-top: 2px;
+  padding-top: var(--space-2xs);
 }
 
 .popover-options-list {

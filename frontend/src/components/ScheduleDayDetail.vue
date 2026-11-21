@@ -191,7 +191,7 @@ defineEmits<{
 .temp-range {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2xs);
   white-space: nowrap;
   flex-shrink: 0;
 }

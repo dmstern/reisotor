@@ -565,13 +565,13 @@ watch(
 .pending-icon {
   color: var(--color-primary);
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: var(--space-2xs);
 }
 
 .pending-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   font-size: var(--font-size-xs);
 }
 

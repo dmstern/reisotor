@@ -162,7 +162,7 @@ const hasObjectJump = computed(() => jumpLabel.value !== undefined);
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  padding-top: 2px;
+  padding-top: var(--space-2xs);
 }
 
 .item-cat-icon {
@@ -179,7 +179,7 @@ const hasObjectJump = computed(() => jumpLabel.value !== undefined);
 }
 
 .todo-checkbox {
-  margin-top: 2px;
+  margin-top: var(--space-2xs);
 }
 
 .item-main {
@@ -243,7 +243,7 @@ const hasObjectJump = computed(() => jumpLabel.value !== undefined);
 
 .item .location :deep(.app-icon) {
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: var(--space-2xs);
 }
 
 .item .note {
@@ -264,7 +264,7 @@ const hasObjectJump = computed(() => jumpLabel.value !== undefined);
   align-items: center;
   justify-content: center;
   color: var(--color-text-muted);
-  padding: 2px;
+  padding: var(--space-2xs);
   border-radius: var(--radius-xs-squircle);
   corner-shape: squircle;
   transition:

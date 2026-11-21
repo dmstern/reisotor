@@ -673,7 +673,7 @@ defineExpose({
 .track-playback-scrubber {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   min-width: 0;
 }
 
@@ -801,7 +801,7 @@ defineExpose({
   font-size: var(--font-size-xs);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
-  padding: 0 2px;
+  padding: 0 var(--space-2xs);
 }
 
 .range-time.current-time {
@@ -859,7 +859,7 @@ defineExpose({
 .playback-speed-group {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2xs);
   background-color: var(--color-control-track-bg);
   padding: 3px;
   border-radius: var(--radius-pill);

@@ -174,7 +174,7 @@ const emit = defineEmits<{
   align-items: center;
   gap: var(--space-1);
   min-height: 34px;
-  padding: 4px 10px;
+  padding: var(--space-xs) 10px;
   font-size: var(--font-size-xs);
   max-width: 100%;
   min-width: 0;

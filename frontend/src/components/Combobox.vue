@@ -824,7 +824,7 @@ defineOptions({
   align-items: center;
   gap: var(--space-2);
   min-height: 44px;
-  padding: 10px 12px;
+  padding: 10px var(--space-md);
   box-sizing: border-box;
   font-size: var(--font-size-sm);
   cursor: pointer;

@@ -692,7 +692,7 @@ function formatDate(dateStr: string) {
 .location-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   font-weight: 500;
@@ -826,11 +826,11 @@ function formatDate(dateStr: string) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
   background: var(--color-surface);
   border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-md);
-  padding: 8px 4px;
+  padding: var(--space-sm) var(--space-xs);
   min-height: 76px;
   transition:
     transform 0.2s cubic-bezier(0.34, 1.2, 0.64, 1),
@@ -1004,7 +1004,7 @@ function formatDate(dateStr: string) {
 .model-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
 }
 
 .model-title {
@@ -1025,7 +1025,7 @@ function formatDate(dateStr: string) {
 .weather-pager {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2xs);
   margin-right: var(--space-1);
 }
 </style>

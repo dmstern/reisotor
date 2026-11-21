@@ -44,7 +44,7 @@ const OPTIONS = [
 .tool-label {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text-muted);

@@ -55,7 +55,7 @@ function reset() {
 
 .demo-banner-actions button {
   font-size: var(--font-size-sm);
-  padding: 0.25rem 0.6rem;
+  padding: var(--space-xs) 0.6rem;
 }
 
 .demo-banner-link {

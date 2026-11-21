@@ -241,7 +241,7 @@ function openBugReport() {
 .meta-row {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
 }
 
 .meta-row dt {

@@ -89,7 +89,7 @@ function handleConfirm() {
 }
 
 .track-warning-modal .track-warning-point h4 {
-  margin: 0 0 4px;
+  margin: 0 0 var(--space-xs);
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-primary-dark);

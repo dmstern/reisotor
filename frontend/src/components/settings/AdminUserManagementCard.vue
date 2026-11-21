@@ -278,7 +278,7 @@ onMounted(() => {
 }
 
 .role-badge {
-  padding-right: 6px;
+  padding-right: var(--space-1-5);
   user-select: none;
 }
 
@@ -342,7 +342,7 @@ onMounted(() => {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   font-weight: 500;
-  margin-left: 2px;
+  margin-left: var(--space-2xs);
 }
 
 .admin-card {

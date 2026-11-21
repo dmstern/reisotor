@@ -247,7 +247,7 @@ const hasDateMismatch = computed(() => {
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
-  padding: 6px var(--space-2);
+  padding: var(--space-1-5) var(--space-2);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   cursor: pointer;
@@ -275,7 +275,7 @@ const hasDateMismatch = computed(() => {
 .diary-picker-option-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   flex: 1;
   min-width: 0;
 }
@@ -330,7 +330,7 @@ const hasDateMismatch = computed(() => {
 .diary-picker-badge.recommended {
   background: var(--color-primary-tint);
   color: var(--color-text);
-  padding: 2px var(--space-2);
+  padding: var(--space-2xs) var(--space-2);
   border-radius: var(--radius-pill);
   corner-shape: round;
   font-weight: 600;
@@ -339,7 +339,7 @@ const hasDateMismatch = computed(() => {
 .diary-picker-badge.warning {
   background: var(--color-warning-tint);
   color: var(--color-warning-dark);
-  padding: 2px var(--space-2);
+  padding: var(--space-2xs) var(--space-2);
   border-radius: var(--radius-pill);
   corner-shape: round;
   font-weight: 600;
@@ -382,7 +382,7 @@ const hasDateMismatch = computed(() => {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   user-select: none;
-  margin-top: 2px;
+  margin-top: var(--space-2xs);
 }
 
 @include can-hover {

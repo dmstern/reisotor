@@ -187,18 +187,28 @@ dem jeweiligen Kontext unterordnen statt sich als eigene, andersfarbige Fläche 
 
 ## Abstände
 
-`--space-1` (4px) bis `--space-6` (48px), verdoppelnd/gestuft. Für Innenabstände/Gaps immer diese
-Stufen verwenden statt beliebiger px-Werte – macht Layouts über Views hinweg optisch konsistent und
-Design-Anpassungen global statt Datei für Datei nötig:
+10-stufige T-Shirt-Skala von `--space-2xs` (2px) bis `--space-3xl` (48px). Für Innenabstände, Außenabstände und Gaps immer diese Stufen verwenden statt beliebiger px-Werte – macht Layouts über Views hinweg optisch konsistent und Design-Anpassungen global statt Datei für Datei nötig:
 
-| Variable    | Wert | Typischer Verwendungszweck                                           |
-| ----------- | ---- | -------------------------------------------------------------------- |
-| `--space-1` | 4px  | Mikro-Abstände (Icon-Gaps, Badges, Chips, Button-Gap)                |
-| `--space-2` | 8px  | Standard-Gap für dichte Flex-Zeilen (Formularfelder, Button-Gruppen) |
-| `--space-3` | 16px | Standard Card-Padding (Mobil), Listen-Gaps, Fließtext-Abstand        |
-| `--space-4` | 24px | Großzügiges Card-Padding (Desktop), Dialoge, Sektions-Abstände       |
-| `--space-5` | 32px | Große Trennabstände zwischen Hauptbereichen einer View               |
-| `--space-6` | 48px | Maximale Außenabstände / Hero-Layouts                                |
+| Variable      | Wert | Alias (Legacy) | Typischer Verwendungszweck                                                   |
+| ------------- | ---- | -------------- | ---------------------------------------------------------------------------- |
+| `--space-2xs` | 2px  | —              | Haarfeine Abstände (Inline-Dots, Badge-Close-Offset, Switch-Padding)         |
+| `--space-xs`  | 4px  | `--space-1`    | Mikro-Abstände (Icon-Gaps, kompakte Badges, Chips, Button-Gap XS)            |
+| `--space-1-5` | 6px  | —              | Enge Control-Gaps (`--control-gap-sm`), kleine Button-/Listenaktions-Gaps    |
+| `--space-sm`  | 8px  | `--space-2`    | Standard-Gap für dichte Flex-Zeilen (Formularfelder, Button-Gruppen)         |
+| `--space-md`  | 12px | —              | Kompaktes Card-/Listen-Padding, horizontales Control-Padding, Drawer-Gap     |
+| `--space-lg`  | 16px | `--space-3`    | Standard Card-Padding, Modal-/Drawer-Padding (Mobil), Listen-Gaps, Fließtext |
+| `--space-3-5` | 20px | —              | Übergangs-Abstand zwischen Standard- und Groß-Sektion (z. B. Dialog-Köpfe)   |
+| `--space-xl`  | 24px | `--space-4`    | Großzügiges Padding (Modals & Drawers Desktop), Sektions-Abstände            |
+| `--space-2xl` | 32px | `--space-5`    | Große Trennabstände zwischen Hauptbereichen einer View                       |
+| `--space-3xl` | 48px | `--space-6`    | Maximale Außenabstände / Hero-Layouts                                        |
+
+> **Abwärtskompatible Aliase:** Die bisherigen numerischen Tokens `--space-1` (`--space-xs`), `--space-2` (`--space-sm`), `--space-3` (`--space-lg`), `--space-4` (`--space-xl`), `--space-5` (`--space-2xl`) und `--space-6` (`--space-3xl`) bleiben in `style.css` als Aliase erhalten, sodass bestehender Code nahtlos weiterfunktioniert. Für neuen Code und harmonisierte Primitives bevorzugt die T-Shirt-Namen verwenden.
+
+**Einheitliche Container-Innenabstände (verbindlich):**
+
+- **Cards:** Standard-Padding `--space-lg` (16px); kompakte/condensed Cards `--space-md` (12px).
+- **Modals & Drawers:** `--space-lg` (16px) auf Mobil, `--space-xl` (24px) auf Desktop.
+- **Listen-Einträge:** Vertikales Padding `--space-sm` (8px) bis `--space-md` (12px), horizontales Padding `--space-md` (12px) bis `--space-lg` (16px).
 
 **Absatz vor Button / Aktion (#69)**: Eine erklärende `<p>`-Zeile direkt vor einem Button oder einer
 Aktionsleiste braucht zwingend sichtbaren Freiraum nach unten (`margin-top: var(--space-3)` via

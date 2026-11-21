@@ -149,7 +149,7 @@ const emit = defineEmits<{
   justify-content: center;
   position: relative;
   z-index: 2;
-  padding: 0 4px;
+  padding: 0 var(--space-xs);
 }
 
 /* Zeilenumbruch-Verbinder im Schlangen-Layout */
@@ -189,7 +189,7 @@ const emit = defineEmits<{
 .tour-leg-pill.is-horizontal-leg,
 .tour-leg-add-btn.is-horizontal-leg {
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   padding: var(--space-2) var(--space-1);
   width: 100%;
   max-width: 68px;
@@ -200,14 +200,14 @@ const emit = defineEmits<{
 .tour-leg-pill.is-row-break {
   flex-wrap: wrap;
   gap: var(--space-2);
-  padding: 6px var(--space-3);
+  padding: var(--space-1-5) var(--space-3);
   max-width: 90%;
   text-align: center;
 }
 
 .tour-leg-add-btn.is-row-break {
-  gap: 6px;
-  padding: 6px var(--space-3);
+  gap: var(--space-1-5);
+  padding: var(--space-1-5) var(--space-3);
 }
 
 .tour-leg-add-wrap {
