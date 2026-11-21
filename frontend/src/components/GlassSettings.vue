@@ -8,9 +8,8 @@ import {
 } from '../stores/uiSettings';
 import SegmentedToggle from './SegmentedToggle.vue';
 import AppIcon from './AppIcon.vue';
-import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
-import { ACTION_ICONS } from '../utils/actionIcons';
+import SettingsCardHeader from './settings/SettingsCardHeader.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 
 const uiSettings = useUiSettingsStore();
@@ -77,21 +76,13 @@ const previewStyle = computed(() => {
 
 <template>
   <Card>
-    <div class="card-header-row">
-      <h2>Glass-Effekt & Transparenz</h2>
-      <Button
-        variant="ghost"
-        size="sm"
-        :icon="ACTION_ICONS.restore"
-        :disabled="isDefault"
-        aria-label="Auf Standard zurücksetzen"
-        :title="isDefault ? 'Bereits auf Standard-Glas-Effekt' : 'Auf Standard zurücksetzen'"
-        class="card-reset-btn"
-        @click="resetGlass"
-      >
-        <span class="card-reset-btn-label">Zurücksetzen</span>
-      </Button>
-    </div>
+    <SettingsCardHeader
+      title="Glass-Effekt & Transparenz"
+      show-reset
+      :is-default="isDefault"
+      :reset-title="isDefault ? 'Bereits auf Standard-Glas-Effekt' : 'Auf Standard zurücksetzen'"
+      @reset="resetGlass"
+    />
     <p class="hint">
       Passe das Erscheinungsbild der schwebenden Navigationsleiste und Overlays an. Wähle zwischen
       Klassischem Glas, mattem Milchglas (Frosted), komplett blickdicht (Solide) oder passe die
@@ -187,16 +178,12 @@ const previewStyle = computed(() => {
 </template>
 
 <style scoped lang="scss">
-.preset-toggle-wrap {
-  margin-top: var(--space-3);
-}
-
 .sliders-wrap {
-  margin-top: var(--space-3);
+  margin-top: var(--space-lg);
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-3);
+  gap: var(--space-lg);
+  padding: var(--space-lg);
   @include surface-sunken-box;
 }
 
@@ -236,8 +223,8 @@ const previewStyle = computed(() => {
 
 .preview-stage {
   position: relative;
-  margin-top: var(--space-4);
-  padding: var(--space-3) var(--space-3) var(--space-4);
+  margin-top: var(--space-xl);
+  padding: var(--space-lg) var(--space-lg) var(--space-xl);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   background: linear-gradient(135deg, #fef3c7 0%, #dbeafe 50%, #fce7f3 100%);
@@ -263,7 +250,7 @@ const previewStyle = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   width: 100%;
   font-size: var(--font-size-sm);
   font-weight: 500;
@@ -278,7 +265,7 @@ const previewStyle = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   flex-wrap: wrap;
   line-height: var(--line-height-snug);
 }
@@ -304,7 +291,7 @@ const previewStyle = computed(() => {
   align-items: center;
   gap: var(--space-xs);
   padding: var(--space-2xs) var(--space-sm);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: var(--font-size-xs);
   font-weight: 700;
 }
@@ -323,21 +310,21 @@ const previewStyle = computed(() => {
   background: #e0f2fe;
   color: #075985;
   padding: var(--space-2xs) var(--space-sm);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: var(--font-size-xs);
   font-weight: 700;
 }
 
 .preview-glass-pill {
   position: absolute;
-  bottom: 14px;
+  bottom: var(--space-md);
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  padding: 10px var(--space-xl);
-  border-radius: 999px;
+  gap: var(--space-xl);
+  padding: var(--space-sm) var(--space-xl);
+  border-radius: var(--radius-pill);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
   background: rgb(255 255 255 / var(--preview-glass-opacity, 0.42));
   border: 1px solid rgb(232 226 217 / calc(var(--preview-glass-opacity, 0.42) * 0.9));
@@ -366,7 +353,7 @@ const previewStyle = computed(() => {
 .preview-pill-item {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text-muted);
@@ -374,24 +361,5 @@ const previewStyle = computed(() => {
 
 .preview-pill-item.active {
   color: var(--color-primary);
-}
-
-.card-header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
-}
-
-.card-header-row h2 {
-  margin: 0;
-}
-
-@container app-main (max-width: 420px) {
-  .card-reset-btn-label {
-    display: none;
-  }
 }
 </style>

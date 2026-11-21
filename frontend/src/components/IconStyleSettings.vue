@@ -8,11 +8,10 @@ import {
 } from '../stores/iconStyle';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
-import { ACTION_ICONS } from '../utils/actionIcons';
 import AppIcon from './AppIcon.vue';
-import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
+import SettingsCardHeader from './settings/SettingsCardHeader.vue';
 
 // Issue #74: die Bereichseinstellungen sind der zentrale, immer sichtbare Teil dieser Karte
 // geworden (kein <details> mehr) - der "für alle Bereiche umstellen"-Umschalter oben in der
@@ -107,21 +106,15 @@ const isDefault = computed(() => {
 
 <template>
   <Card>
-    <div class="card-header-row">
-      <h2>Icons</h2>
-      <Button
-        variant="ghost"
-        size="sm"
-        :icon="ACTION_ICONS.restore"
-        :disabled="isDefault"
-        aria-label="Auf Standard zurücksetzen"
-        :title="isDefault ? 'Bereits auf Standard-Icon-Einstellungen' : 'Auf Standard zurücksetzen'"
-        class="card-reset-btn"
-        @click="iconStyle.resetToDefaults()"
-      >
-        <span class="card-reset-btn-label">Zurücksetzen</span>
-      </Button>
-    </div>
+    <SettingsCardHeader
+      title="Icons"
+      show-reset
+      :is-default="isDefault"
+      :reset-title="
+        isDefault ? 'Bereits auf Standard-Icon-Einstellungen' : 'Auf Standard zurücksetzen'
+      "
+      @reset="iconStyle.resetToDefaults()"
+    />
     <p class="hint">
       Emoji oder Symbole für Navigation, Kategorien und Wetter – dein Profilbild bleibt davon
       unberührt. Formularfelder und Aktionen/Buttons zeigen immer Symbole.
@@ -204,22 +197,22 @@ const isDefault = computed(() => {
 .icon-style-preview-row {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-2);
+  gap: var(--space-md);
 }
 
 .icon-style-preview {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3);
+  gap: var(--space-sm);
+  padding: var(--space-lg);
   @include surface-sunken-box;
 }
 
 .icon-style-preview-icons {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   color: var(--color-primary-dark);
 }
 
@@ -233,7 +226,7 @@ const isDefault = computed(() => {
    anderen SegmentedToggle-Stellen in der App (gleiches Prinzip wie SpotCard.vue's
    @container spots-col). */
 .group-overrides {
-  margin-top: var(--space-4);
+  margin-top: var(--space-xl);
   container-type: inline-size;
 }
 
@@ -244,13 +237,13 @@ const isDefault = computed(() => {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-lg);
 }
 
 .all-groups-row {
-  padding-bottom: var(--space-3);
-  margin-bottom: var(--space-2);
-  border-bottom: var(--border-width) solid var(--color-border-divider);
+  padding-bottom: var(--space-md);
+  margin-bottom: 0;
+  @include divider-engraved('bottom');
 }
 
 .all-groups-row .group-override-label {
@@ -266,17 +259,17 @@ const isDefault = computed(() => {
 .group-item {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding-top: var(--space-2);
-  padding-bottom: var(--space-3);
+  gap: var(--space-sm);
+  padding-block: var(--space-md);
+  @include divider-engraved-row;
 }
 
-.group-item:not(:last-child) {
-  border-bottom: var(--border-width) solid var(--color-border-divider);
+.group-item:last-child {
+  padding-bottom: 0;
 }
 
 .group-color-row {
-  padding-left: var(--space-3);
+  padding-left: var(--space-lg);
 }
 
 .group-color-label {
@@ -294,25 +287,6 @@ const isDefault = computed(() => {
 @container (max-width: 380px) {
   .group-style-row :deep(.segmented-option-label),
   .all-groups-row :deep(.segmented-option-label) {
-    display: none;
-  }
-}
-
-.card-header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
-}
-
-.card-header-row h2 {
-  margin: 0;
-}
-
-@container app-main (max-width: 420px) {
-  .card-reset-btn-label {
     display: none;
   }
 }

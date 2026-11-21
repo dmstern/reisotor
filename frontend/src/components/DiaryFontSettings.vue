@@ -6,10 +6,9 @@ import {
   DEFAULT_DIARY_FONT,
   type DiaryFont,
 } from '../stores/uiSettings';
-import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
 import Badge from './primitives/Badge.vue';
-import { ACTION_ICONS } from '../utils/actionIcons';
+import SettingsCardHeader from './settings/SettingsCardHeader.vue';
 
 const uiSettings = useUiSettingsStore();
 
@@ -34,21 +33,13 @@ const currentFont = computed(() => {
 
 <template>
   <Card>
-    <div class="card-header-row">
-      <h2>Tagebuch-Schriftart</h2>
-      <Button
-        variant="ghost"
-        size="sm"
-        :icon="ACTION_ICONS.restore"
-        :disabled="isDefault"
-        aria-label="Auf Standard zurücksetzen"
-        :title="isDefault ? 'Bereits auf Standard-Schriftart' : 'Auf Standard zurücksetzen'"
-        class="card-reset-btn"
-        @click="resetFont"
-      >
-        <span class="card-reset-btn-label">Zurücksetzen</span>
-      </Button>
-    </div>
+    <SettingsCardHeader
+      title="Tagebuch-Schriftart"
+      show-reset
+      :is-default="isDefault"
+      :reset-title="isDefault ? 'Bereits auf Standard-Schriftart' : 'Auf Standard zurücksetzen'"
+      @reset="resetFont"
+    />
     <p class="hint">
       Wähle die Schriftart, in der Tagebucheinträge für deinen Account dargestellt werden.
     </p>
@@ -98,8 +89,7 @@ const currentFont = computed(() => {
 .font-options-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
-  gap: var(--space-2);
-  margin-top: var(--space-3);
+  gap: var(--space-sm);
 }
 
 .font-option-card {
@@ -107,10 +97,12 @@ const currentFont = computed(() => {
   flex-direction: column;
   align-items: flex-start;
   text-align: left;
-  padding: var(--space-3);
+  padding: var(--space-lg);
+  gap: var(--space-1-5);
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-border-divider);
   border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
   cursor: pointer;
   transition: all 0.15s ease;
   box-shadow: none;
@@ -136,8 +128,7 @@ const currentFont = computed(() => {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  gap: var(--space-2);
-  margin-bottom: var(--space-1);
+  gap: var(--space-sm);
 }
 
 .font-name {
@@ -150,7 +141,6 @@ const currentFont = computed(() => {
   font-size: var(--font-size-md);
   color: var(--color-primary-dark);
   line-height: var(--line-height-snug);
-  margin-top: var(--space-2xs);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -158,8 +148,8 @@ const currentFont = computed(() => {
 }
 
 .preview-stage {
-  margin-top: var(--space-4);
-  padding: var(--space-3);
+  margin-top: var(--space-xl);
+  padding: var(--space-lg);
   @include surface-sunken-box;
 }
 
@@ -167,15 +157,16 @@ const currentFont = computed(() => {
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-border-divider);
   border-radius: var(--radius-sm-squircle);
-  padding: var(--space-3);
+  corner-shape: squircle;
+  padding: var(--space-lg);
   transition: font-family 0.2s ease;
 }
 
 .preview-entry-head {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-2);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
 }
 
 .preview-avatar {
@@ -186,6 +177,7 @@ const currentFont = computed(() => {
 .preview-meta {
   display: flex;
   flex-direction: column;
+  gap: var(--space-2xs);
 }
 
 .preview-title {

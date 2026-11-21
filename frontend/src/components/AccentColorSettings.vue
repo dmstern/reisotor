@@ -8,8 +8,9 @@ import {
 import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
 import Badge from './primitives/Badge.vue';
+import Divider from './primitives/Divider.vue';
 import AppIcon from './AppIcon.vue';
-import { ACTION_ICONS } from '../utils/actionIcons';
+import SettingsCardHeader from './settings/SettingsCardHeader.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 
 const uiSettings = useUiSettingsStore();
@@ -25,21 +26,13 @@ function resetColor() {
 
 <template>
   <Card>
-    <div class="card-header-row">
-      <h2>Akzentfarbe</h2>
-      <Button
-        variant="ghost"
-        size="sm"
-        :icon="ACTION_ICONS.restore"
-        :disabled="isDefault"
-        aria-label="Auf Standard zurücksetzen"
-        :title="isDefault ? 'Bereits auf Standard-Farbe' : 'Auf Standard zurücksetzen'"
-        class="card-reset-btn"
-        @click="resetColor"
-      >
-        <span class="card-reset-btn-label">Zurücksetzen</span>
-      </Button>
-    </div>
+    <SettingsCardHeader
+      title="Akzentfarbe"
+      show-reset
+      :is-default="isDefault"
+      :reset-title="isDefault ? 'Bereits auf Standard-Farbe' : 'Auf Standard zurücksetzen'"
+      @reset="resetColor"
+    />
     <p class="hint">
       Wähle deine persönliche Haupt-Akzentfarbe für Buttons, aktive Toggles, Links und Icons.
     </p>
@@ -61,6 +54,8 @@ function resetColor() {
         <span class="color-name">{{ preset.name }}</span>
       </button>
     </div>
+
+    <Divider spacing="lg" />
 
     <!-- Eigene Farbe (Color Picker) -->
     <div class="color-picker-row">
@@ -97,14 +92,13 @@ function resetColor() {
 .color-presets-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: var(--space-2);
-  margin-top: var(--space-3);
+  gap: var(--space-sm);
 }
 
 .color-preset-btn {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   padding: var(--space-sm) var(--space-md);
   border: var(--border-width) solid var(--color-border-divider);
   border-radius: var(--radius-md-squircle);
@@ -131,7 +125,7 @@ function resetColor() {
 .color-swatch {
   width: 18px;
   height: 18px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background: var(--preset-color);
   flex-shrink: 0;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
@@ -150,17 +144,14 @@ function resetColor() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
-  margin-top: var(--space-4);
-  padding-top: var(--space-3);
-  border-top: var(--border-width) solid var(--color-border-divider);
+  gap: var(--space-lg);
   flex-wrap: wrap;
 }
 
 .picker-label {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-lg);
   cursor: pointer;
 }
 
@@ -173,7 +164,7 @@ function resetColor() {
 .picker-input-wrap {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   padding: var(--space-xs) var(--space-sm);
   border: var(--border-width) solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
@@ -189,18 +180,18 @@ function resetColor() {
 }
 
 .color-preview-stage {
-  margin-top: var(--space-4);
-  padding: var(--space-3);
+  margin-top: var(--space-xl);
+  padding: var(--space-lg);
   @include surface-sunken-box;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-lg);
 }
 
 .preview-header {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   color: var(--color-primary);
 }
 
@@ -213,7 +204,7 @@ function resetColor() {
 
 .preview-actions {
   display: flex;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 
 .color-input {
@@ -257,24 +248,5 @@ function resetColor() {
 .color-input:active::-moz-color-swatch,
 .color-input:focus::-moz-color-swatch {
   box-shadow: var(--shadow-sm);
-}
-
-.card-header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
-}
-
-.card-header-row h2 {
-  margin: 0;
-}
-
-@container app-main (max-width: 420px) {
-  .card-reset-btn-label {
-    display: none;
-  }
 }
 </style>

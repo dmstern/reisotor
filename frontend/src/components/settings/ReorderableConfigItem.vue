@@ -75,12 +75,24 @@ const emit = defineEmits<{
 li {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) 0;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
   @include divider-engraved-row;
+
+  &:first-child {
+    padding-top: 0;
+  }
+
+  &:last-child {
+    padding-bottom: 0;
+  }
 }
 
 .nav-config-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4em;
   font-size: var(--font-size-lg);
   flex-shrink: 0;
 }
@@ -99,14 +111,14 @@ li {
 .nav-config-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   flex-shrink: 0;
 }
 
 .nav-config-visible {
   display: flex;
   align-items: center;
-  margin-left: var(--space-2);
+  margin-left: var(--space-sm);
   flex-shrink: 0;
 }
 </style>
