@@ -53,26 +53,31 @@ defineEmits<{
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .card-header-row {
+  container-type: inline-size;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
 }
 
 .card-header-row h2 {
   margin: 0;
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   min-width: 0;
   word-break: break-word;
 }
 
-@container app-main (max-width: 420px) {
+.card-reset-btn {
+  flex-shrink: 0;
+}
+
+@include container-down('mobile-compact') {
   .card-reset-btn-label {
     display: none;
   }

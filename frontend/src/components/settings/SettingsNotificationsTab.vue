@@ -226,10 +226,6 @@ onMounted(() => {
   gap: var(--space-xl);
 }
 
-.notifications-tab :deep(.card-header-row) {
-  margin-bottom: var(--space-md);
-}
-
 .toast-timeout-label {
   display: flex;
   flex-direction: column;
