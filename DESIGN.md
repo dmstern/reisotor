@@ -269,6 +269,8 @@ Typische Abstandsfehler, die im Code unauffällig wirken, aber das visuelle Glei
    - **Symmetrie um Trennlinien:** Ober- und unterhalb von `<Divider />` / `@include divider-engraved` stets symmetrische Abstände halten (nie `16px` oben / `8px` unten) und keine flachen `1px solid/dashed var(--color-border-divider)`-Linien mehr verwenden.
    - **Vertikale Textachse bei Emoji-/Icon-Bullets:** Bullets/Icons vor Listen-Labels mit fester Breite (`width: 1.25em`–`1.4em; text-align: center;`) versehen, damit alle Textanfänge exakt untereinander fluchten.
    - **Saubere Container-Enden:** Karten-Stapel (z. B. Settings-Tabs) über `display: flex; flex-direction: column; gap: var(--space-xl)` statt `margin-bottom` auf `:deep(.card)` trennen; letzte Hinweise/Fehlermeldungen in Cards ohne überhängendes `margin-bottom` (`:last-child { margin-bottom: 0; }`).
+6. **Karten-Header in Multi-Column-Grids: eigene Breite statt `app-main` abfragen:**
+   - Kompakt-Umschaltungen innerhalb einer Karte (z. B. Ausblenden von `.card-reset-btn-label` in `SettingsCardHeader`) müssen per eigenem `container-type: inline-size` + `@include container-down('mobile-compact')` auf der Header-Zeile/Karte erfolgen, nicht per `@container app-main`. In 3-Spalten-Grids ist `app-main` > 1000px breit, während einzelne Karten nur ~300px messen – ohne eigene Container-Query brechen Aktions-Buttons in schmalen Karten um und zerreißen die horizontale Grundlinie.
 
 ## Eckenrundung: Squircle-Prinzip
 
