@@ -716,9 +716,11 @@ function clearTourLineTimeouts() {
 }
 
 const tourViewTransitionName = ref<'tour-drill-forward' | 'tour-drill-back' | ''>('');
+let pendingDetailFocusExcursionId: number | null = null;
 
 watch(selectedExcursionId, (newId, oldId) => {
   clearTourLineTimeouts();
+  pendingDetailFocusExcursionId = newId;
 
   if (newId != null) {
     excursionsStore.lastViewedExcursionId = newId;
@@ -827,6 +829,7 @@ watch(
 
     selectedExcursionId.value = null;
     expandedSpotId.value = null;
+    excursionsStore.lastViewedExcursionId = null;
 
     if (drawers.mapFocusExcursionId === id) {
       drawers.mapFocusExcursionId = null;
@@ -845,6 +848,10 @@ watch(selectedExcursionStationItems, () => {
 
 watch(groupMode, (newMode) => {
   tourViewTransitionName.value = '';
+
+  if (newMode !== 'tours') {
+    excursionsStore.lastViewedExcursionId = null;
+  }
 
   if (newMode !== 'tours' && selectedExcursionId.value != null) {
     selectedExcursionId.value = null;
@@ -871,13 +878,21 @@ function focusLastViewedExcursionCard() {
 
   excursionsStore.lastViewedExcursionId = null;
   cardEl.focus({ preventScroll: true });
+
+  if (!isCardWellVisibleInBody(cardEl)) {
+    void scrollToExcursion(excursionId);
+  }
 }
 
 const TOUR_DETAIL_FOCUSABLE_SELECTOR =
   'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
 
 function focusFirstElementInTourDetail() {
-  if (!isTourDetailOpen.value || selectedExcursionId.value == null) {
+  if (
+    !isTourDetailOpen.value ||
+    selectedExcursionId.value == null ||
+    pendingDetailFocusExcursionId !== selectedExcursionId.value
+  ) {
     return;
   }
 
@@ -888,11 +903,16 @@ function focusFirstElementInTourDetail() {
   }
 
   if (document.activeElement && container.contains(document.activeElement)) {
+    pendingDetailFocusExcursionId = null;
     return;
   }
 
   const firstFocusable = container.querySelector<HTMLElement>(TOUR_DETAIL_FOCUSABLE_SELECTOR);
-  firstFocusable?.focus({ preventScroll: true });
+
+  if (firstFocusable) {
+    pendingDetailFocusExcursionId = null;
+    firstFocusable.focus({ preventScroll: true });
+  }
 }
 
 watch(
@@ -937,6 +957,10 @@ function onTourViewAfterEnter() {
   }
 
   focusLastViewedExcursionCard();
+
+  if (excursionsStore.lastViewedExcursionId != null) {
+    excursionsStore.lastViewedExcursionId = null;
+  }
 }
 
 async function openTourDetail(excursionId: number) {

@@ -91,6 +91,11 @@ export const useExcursionsStore = defineStore('excursions', () => {
     const { showToast } = useToast();
     await api.delete(`/ideas/${id}`);
     excursions.value = excursions.value.filter((e) => e.id !== id);
+
+    if (lastViewedExcursionId.value === id) {
+      lastViewedExcursionId.value = null;
+    }
+
     showToast({
       message: 'Element gelöscht. Es befindet sich nun im Papierkorb.',
       type: 'info',

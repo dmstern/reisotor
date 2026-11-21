@@ -174,6 +174,8 @@ function onCardKeydown(event: KeyboardEvent) {
   flex-direction: row;
   align-items: stretch;
   min-height: 5rem;
+  margin-inline: 2px;
+  border: var(--border-width) solid transparent;
   background: transparent !important;
   cursor: pointer;
   overflow: visible;
@@ -183,28 +185,16 @@ function onCardKeydown(event: KeyboardEvent) {
     box-shadow 0.2s ease;
 }
 
-.card.excursion-card:not(.is-map-focused):not(:focus):not(:focus-visible),
-.excursion-card:not(.is-map-focused):not(:focus):not(:focus-visible) {
-  border: none !important;
+.card.excursion-card:not(.is-map-focused):not(:focus),
+.excursion-card:not(.is-map-focused):not(:focus) {
+  border-color: transparent !important;
   border-radius: 0 !important;
   corner-shape: auto !important;
   box-shadow: none !important;
 }
 
-.card.excursion-card.is-map-focused,
-.excursion-card.is-map-focused,
 .card.excursion-card:focus,
-.card.excursion-card:focus-visible,
-.excursion-card:focus,
-.excursion-card:focus-visible {
-  /* Abstand links/rechts, damit der 2px-Fokus-Ring nicht durch overflow-x: hidden abgeschnitten wird */
-  margin-inline: 2px;
-}
-
-.card.excursion-card:focus,
-.card.excursion-card:focus-visible,
-.excursion-card:focus,
-.excursion-card:focus-visible {
+.excursion-card:focus {
   outline: none;
   @include card-focus-ring;
 }
@@ -242,8 +232,8 @@ function onCardKeydown(event: KeyboardEvent) {
     background: var(--color-hover) !important;
   }
 
-  .card.card--interactive.excursion-card:not(.is-map-focused):not(:focus):not(:focus-visible):hover,
-  .excursion-card:not(.is-map-focused):not(:focus):not(:focus-visible):hover {
+  .card.card--interactive.excursion-card:not(.is-map-focused):not(:focus):hover,
+  .excursion-card:not(.is-map-focused):not(:focus):hover {
     box-shadow: none !important;
   }
 
