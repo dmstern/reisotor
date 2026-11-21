@@ -119,28 +119,30 @@ anlegen, nicht als lokaler Wert in der Komponente.
 
 ### Zentrale Farb-Tokens
 
-| Variable                   | Bedeutung / Einsatz                                                                 | Light Mode               | Dark Mode                   |
-| -------------------------- | ----------------------------------------------------------------------------------- | ------------------------ | --------------------------- |
-| `--color-bg`               | Haupt-App-Hintergrund                                                               | `#faf8f5`                | `#181715`                   |
-| `--color-surface`          | Karten, Panels, Modal-Flächen                                                       | `#ffffff`                | `#232220`                   |
-| `--color-border`           | Dekorativer Rahmen (Cards, Drawers, Modals, Popovers, Dropdowns)                    | `#e8e2d9`                | `#0d0d0c`                   |
-| `--color-border-divider`   | Semantischer Trenner (Listen, `<hr>`, Tabellen, Sektions-Trenner, Sub-Boxen)        | `#e8e2d9`                | `#2e2c28`                   |
-| `--color-border-strong`    | Interaktive Controls (Inputs, Selects, Comboboxes, `btn--secondary`, Pill-Outlines) | `rgba(43, 42, 40, 0.23)` | `rgba(242, 239, 233, 0.22)` |
-| `--color-text`             | Primäre Textfarbe                                                                   | `#2b2a28`                | `#f2efe9`                   |
-| `--color-text-muted`       | Gedämpfter Fließtext & Untertitel                                                   | `#66625b`                | `#a8a29a`                   |
-| `--color-primary`          | Marken-Farbe (Haupt-Buttons & Fokus)                                                | `#9141ac`                | `#cf77dd`                   |
-| `--color-primary-dark`     | Hover-Status für Marken-Farbe                                                       | `#7b3793`                | `#d68ee3`                   |
-| `--color-primary-tint`     | Leichter Akzentton für Steuerungen & Badges                                         | `#f4ecf7`                | `#352538`                   |
-| `--color-hover`            | Hover-Hintergrund & Muted-Surface                                                   | `#f4f1ec`                | `#2a2823`                   |
-| `--color-accent`           | Echtzeit-Updates / Aufmerksamkeits-Akzent                                           | `#e08e45`                | `#f0a05a`                   |
-| `--color-danger`           | Gefahr / Löschen / Warnungen                                                        | `#c1503f`                | `#e0685a`                   |
-| `--color-success`          | Erfolg / Fertig-Status                                                              | `#3f8f5c`                | `#5cb37e`                   |
-| `--color-scheduled`        | Geplant (Kalender & Streifen)                                                       | `#1e96d1`                | `#52b8ea`                   |
-| `--color-scheduled-dark`   | Geplant (Text & Kontrast für Chips/Preise)                                          | `#0f70a0`                | `#7acaf2`                   |
-| `--color-tour`             | Touren / Ausflüge (Kacheln, Kalender, Spots)                                        | `#eb6834`                | `#f08254`                   |
-| `--color-travel`           | Reisen / Etappen (Kacheln, Kalender, Chips)                                         | `#1baf7a`                | `#2ecb91`                   |
-| `--color-highlight`        | Highlight-Fläche für Notizen                                                        | `#fff4e8`                | `#332a1c`                   |
-| `--color-accent-secondary` | Sekundärer Akzent (Indigo)                                                          | `#485acf`                | `#8b98f0`                   |
+| Variable                    | Bedeutung / Einsatz                                                                    | Light Mode                  | Dark Mode                   |
+| --------------------------- | -------------------------------------------------------------------------------------- | --------------------------- | --------------------------- |
+| `--color-bg`                | Haupt-App-Hintergrund                                                                  | `#faf8f5`                   | `#181715`                   |
+| `--color-surface`           | Karten, Panels, Modal-Flächen                                                          | `#ffffff`                   | `#232220`                   |
+| `--color-border`            | Dekorativer Rahmen (Cards, Drawers, Modals, Popovers, Dropdowns)                       | `#e8e2d9`                   | `#0d0d0c`                   |
+| `--color-border-divider`    | Semantischer Trenner für 4-seitige Inset-Boxen, Fieldsets & Zitat-Balken               | `#e8e2d9`                   | `#2e2c28`                   |
+| `--color-divider-groove`    | Eingefräste Rille horizontaler Trennlinien (`<Divider>`, `@mixin divider-engraved`)    | `rgba(43, 42, 40, 0.11)`    | `rgba(0, 0, 0, 0.36)`       |
+| `--color-divider-highlight` | Untere 3D-Lichtkante horizontaler Trennlinien (`<Divider>`, `@mixin divider-engraved`) | `rgba(255, 255, 255, 0.75)` | `rgba(255, 255, 255, 0.07)` |
+| `--color-border-strong`     | Interaktive Controls (Inputs, Selects, Comboboxes, `btn--secondary`, Pill-Outlines)    | `rgba(43, 42, 40, 0.23)`    | `rgba(242, 239, 233, 0.22)` |
+| `--color-text`              | Primäre Textfarbe                                                                      | `#2b2a28`                   | `#f2efe9`                   |
+| `--color-text-muted`        | Gedämpfter Fließtext & Untertitel                                                      | `#66625b`                   | `#a8a29a`                   |
+| `--color-primary`           | Marken-Farbe (Haupt-Buttons & Fokus)                                                   | `#9141ac`                   | `#cf77dd`                   |
+| `--color-primary-dark`      | Hover-Status für Marken-Farbe                                                          | `#7b3793`                   | `#d68ee3`                   |
+| `--color-primary-tint`      | Leichter Akzentton für Steuerungen & Badges                                            | `#f4ecf7`                   | `#352538`                   |
+| `--color-hover`             | Hover-Hintergrund & Muted-Surface                                                      | `#f4f1ec`                   | `#2a2823`                   |
+| `--color-accent`            | Echtzeit-Updates / Aufmerksamkeits-Akzent                                              | `#e08e45`                   | `#f0a05a`                   |
+| `--color-danger`            | Gefahr / Löschen / Warnungen                                                           | `#c1503f`                   | `#e0685a`                   |
+| `--color-success`           | Erfolg / Fertig-Status                                                                 | `#3f8f5c`                   | `#5cb37e`                   |
+| `--color-scheduled`         | Geplant (Kalender & Streifen)                                                          | `#1e96d1`                   | `#52b8ea`                   |
+| `--color-scheduled-dark`    | Geplant (Text & Kontrast für Chips/Preise)                                             | `#0f70a0`                   | `#7acaf2`                   |
+| `--color-tour`              | Touren / Ausflüge (Kacheln, Kalender, Spots)                                           | `#eb6834`                   | `#f08254`                   |
+| `--color-travel`            | Reisen / Etappen (Kacheln, Kalender, Chips)                                            | `#1baf7a`                   | `#2ecb91`                   |
+| `--color-highlight`         | Highlight-Fläche für Notizen                                                           | `#fff4e8`                   | `#332a1c`                   |
+| `--color-accent-secondary`  | Sekundärer Akzent (Indigo)                                                             | `#485acf`                   | `#8b98f0`                   |
 
 Semantische statt beschreibende Namen (`--color-danger`, nicht `--color-red`) – Töne können sich
 ändern, die Bedeutung bleibt.
@@ -165,7 +167,9 @@ klar benannte Variable anlegen statt eine bestehende zweitzuverwenden.
 Für alle neutralen Ränder und Trennlinien gilt verbindlich eine dreistufige Hierarchie (hartcodierte neutrale Farben wie `#e2e8f0`, `rgba(0,0,0,0.08)` oder `rgba(255,255,255,0.12)` sind nicht zulässig):
 
 1. **`--color-border` (Dekorativer Rahmen):** Für erhobene/schattierte Container (`Card`, `Drawer`, `Modal`, `Popover`, `PickerMenu`/Dropdowns). Im Dark Mode bewusst dunkel (`#0d0d0c`), da sich die Fläche bereits über Hintergrundton und Schatten abhebt.
-2. **`--color-border-divider` (Semantischer Trenner):** Für Trennlinien zwischen Bereichen gleicher oder ähnlicher Hintergrundfarbe — Listen-Trenner (`border-top`/`border-bottom`), `<hr>`, Tabellenzeilen, Sektions-Trenner in Cards/Modals/Menüs sowie verschachtelte Sub-Boxen auf gleicher Hintergrundfarbe. Im Light Mode identisch zu `--color-border` (`#e8e2d9`), im Dark Mode ein dezentes Warmgrau (`#2e2c28`) zwischen Surface und `--color-border-strong`.
+2. **Horizontale Trennlinien mit Lichtkante (`<Divider>` / `@mixin divider-engraved`) vs. `--color-border-divider` (Inset-Boxen):**
+   - **Horizontale Trennlinien (Sektions-Trenner in Cards/Modals/Drawers/Menüs, Listen-Zeilen, `<hr>`):** Dürfen **niemals** als flaches `border-top`/`border-bottom: 1px solid var(--color-border-divider)` gezeichnet werden! In Reisotor besitzen alle horizontalen Trennlinien einen eingefrästen 3D-Look (Licht von oben: oben dunkle Rille `--color-divider-groove`, direkt darunter eine feine 1px-Lichtkante `--color-divider-highlight`). Verwende dafür entweder die UI-Primitive **`<Divider />`** (`components/primitives/Divider.vue`, optional mit `spacing="xs" | "sm" | "md" | "lg" | "xl"`) oder direkt auf einem Sektions-/Zeilen-Container das SCSS-Mixin **`@include divider-engraved('top' | 'bottom' | 'both')`** bzw. **`@include divider-engraved-row`** für Listen-Einträge. Die Tokens passen sich auf opaken Surfaces (Light & Dark Mode) sowie in Liquid-Glass-Containern automatisch an.
+   - **`--color-border-divider` (4-seitige Inset-Boxen & vertikale Akzente):** Für geschlossene Rahmen verschachtelter Sub-Boxen/Fieldsets auf gleicher oder versenkter Fläche (`@mixin surface-sunken-box`), vertikale Zitat-Balken (`border-left`) oder gestrichelte Platzhalter-Boxen. Im Light Mode identisch zu `--color-border` (`#e8e2d9`), im Dark Mode ein dezentes Warmgrau (`#2e2c28`) zwischen Surface und `--color-border-strong`.
 3. **`--color-border-strong` (Interaktive Controls):** Für Eingabefelder (`--input-border-color`), Selects, Comboboxes, `btn--secondary`, Pill-/Control-Outlines und Toggle-Controls.
 
 _Ausnahmen (nicht Teil dieser Regel):_ Liquid-Glass-Borders (`--color-surface-glass-border`, `--color-glass-field-inset-border`) sowie farbige Akzent-, Domänen- und Status-Borders (`--color-primary`, `--color-danger`, `--color-tour-border`, `--color-travel-border`, `--color-like-border`, etc.).
@@ -856,6 +860,7 @@ unerwünschte Vererbungen in Spezialfällen (z. B. ungerahmte Inputs in `QuickAd
 - **`PickerMenu.vue` & `DropdownMenuItem.vue`**: Wiederverwendbare Popover-Menüs und Menü-Einträge für Filter-, Aktionen- und Options-Menüs mit Fokus-Management, Tastaturnavigation und Backdrop. Unterstützt Links (`href`), Aktions-Buttons und Checkbox-Mehrfachauswahl (`multiselect`).
 - **`CheckableListItem.vue`**: Wiederverwendbare Primitive für abhakbare Listeneinträge (`ShoppingListView`, `TodoView`, `PackingItem`). Kapselt Zeilen-Layout, Trennlinien, Strikethrough-Text (`row__text--done`), Done-Transparenz (`row--done`), Kalender-Fokus in Brand-Farbe mit Ambient Glow (`row.is-focused`) sowie Echtzeit-Highlighting in Grün mit Ambient Glow (`row.new-highlight`), Sparkle-Badge (`.list-item-sparkle` ✨) und Glanzanimation (`rowGlanceSweep`).
 - **`DetailRow.vue`**: Standardisierte Schlüssel-Wert-Zeile mit Icon, Label und Wert für Detailansichten, Modals und Listen.
+- **`Divider.vue`**: Semantische horizontale Trennlinie (`<hr class="divider">`) im eingefrästen Reisotor-3D-Look (`@include divider-engraved('bottom')`: oben dunkle Rille `--color-divider-groove`, darunter feine 1px-Lichtkante `--color-divider-highlight`). Unterstützt optionales vertikales Spacing (`spacing="none" | "xs" | "sm" | "md" | "lg" | "xl"`, Default `'none'` für Flex-/Grid-Container mit `gap`). Für Sektions-Container, die keinen eigenen `<Divider />`-Knoten rendern, stattdessen `@include divider-engraved('top' | 'bottom')` nutzen — niemals flaches `border-top: 1px solid var(--color-border-divider)` ohne Lichtkante.
 - **`EmptyState.vue`**: Einheitlicher Leerzustand mit Icon, Titel, Beschreibung und optionaler Aktions-Schaltfläche.
 - **`Kicker.vue`**: Kleiner Eyebrow-/Kicker-Text (`.kicker`) oberhalb von Hauptüberschriften.
 - **`UnseenDot.vue`**: Diskreter Indikator-Punkt (roter Punkt) für ungesehene bzw. geänderte Inhalte aus dem Echtzeit-Sync sowie anstehende System-Benachrichtigungen in der Benachrichtigungs-Inbox.

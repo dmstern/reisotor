@@ -290,7 +290,7 @@
 
   /* Dreistufige Border-Token-Regel (Details & Abgrenzung siehe DESIGN.md):
      1. --color-border: Dekorativer Rahmen für erhobene/schattierte Flächen (Cards, Drawers, Modals, Popovers, Dropdowns)
-     2. --color-border-divider: Semantischer Trenner zwischen Bereichen gleicher/ähnlicher Fläche (Listen, <hr>, Tabellen, Sektions-Trenner, Sub-Boxen)
+     2. Horizontale Trennlinien (<Divider /> / @include divider-engraved): Eingefräste 3D-Rille (--color-divider-groove) mit unterer Lichtkante (--color-divider-highlight); --color-border-divider für 4-seitige Inset-Boxen/Fieldsets
      3. --color-border-strong: Interaktive Controls (Inputs, Selects, Comboboxes, btn--secondary, Pill-/Control-Outlines)
      --color-button-edge zusätzlich für farbige Buttons (primary/danger) auf satte Hintergrundfarben. */
   --color-border-divider: #e8e2d9;

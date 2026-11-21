@@ -364,7 +364,7 @@ onMounted(() => {
   flex-direction: column;
   gap: var(--space-sm);
   padding-top: var(--space-md);
-  border-top: 1px solid var(--color-border-divider);
+  @include divider-engraved('top');
 }
 
 .weather-section-label {
