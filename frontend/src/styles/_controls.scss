@@ -663,7 +663,7 @@
 }
 
 /// Kräftiger, abgerundeter Brand-Fokus-Rahmen für Karten- und Listen-Elemente
-/// (geteilt zwischen Card.is-map-focused und ExcursionCard:focus/:focus-visible).
+/// (geteilt zwischen Card.is-map-focused und ExcursionCard:focus).
 @mixin card-focus-ring {
   position: relative;
   z-index: var(--z-map-focus, 6);
@@ -672,4 +672,16 @@
     0 0 0 2px var(--color-primary),
     0 8px 24px -4px color-mix(in srgb, var(--color-primary) 32%, transparent),
     0 2px 8px -1px color-mix(in srgb, var(--color-primary) 20%, transparent) !important;
+}
+
+/// Vertikale Liste, in der alle Einträge automatisch exakt die Höhe des höchsten
+/// Eintrags annehmen (ohne feste Pixel-Werte). Verhindert unruhige Höhen-Sprünge
+/// bei optionalen Action-Buttons oder Sublines.
+/// @param {Length|String} $gap - Vertikaler Abstand zwischen den Zeilen
+@mixin uniform-height-list($gap: var(--space-2)) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: 1fr;
+  align-content: start;
+  gap: $gap;
 }

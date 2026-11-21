@@ -366,6 +366,7 @@ Um CSS-Duplikate, Drift und doppelte Fokusrahmen im Error-/Modified-Zustand zu v
    - Schwebende Menü-/Popover-Oberflächen (`PickerMenu.vue`, `Combobox.vue`, `NotificationInbox.vue`) nutzen `@include control-menu-surface;`.
    - **Eingefräste Trennlinien & vertikale Listen (`@mixin divider-engraved`, `@mixin divider-engraved-row`)**: `divider-engraved($edge)` erzeugt eine feine Rille mit Glanzkante (`--color-divider-groove` / `--color-divider-highlight`); `divider-engraved-row` wendet sie für einzelne Listenzeilen unten an und entfernt die Linie automatisch beim letzten Element (`:last-child`).
    - **Versenkte Innenflächen & Inset-Boxen (`@mixin surface-sunken-box($radius, $border-style)`)**: Vereinheitlicht ruhige Fieldsets, Vorschau-Bereiche und Sub-Boxen (`--color-surface-sunken`, `--color-border-divider`, Squircle-Ecken) und setzt `--color-input-bg: var(--color-input-bg-sunken)` für guten Kontrast darin liegender Eingabefelder in Light & Dark Mode.
+   - **Einheitliche Zeilenhöhen in vertikalen Listen (`@mixin uniform-height-list($gap)`)**: CSS-Grid-Layout (`grid-template-columns: minmax(0, 1fr); grid-auto-rows: 1fr; align-content: start;`), bei dem alle Listeneinträge automatisch exakt die Höhe des höchsten Eintrags annehmen (ohne feste Pixel-Werte) und Höhen-Sprünge durch optionale Action-Buttons oder Sublines vermieden werden.
    - Alle Mixins sind über `_breakpoints.scss` in jeder `<style lang="scss" scoped>`-Komponente automatisch verfügbar.
 
 ## Animationen

@@ -97,9 +97,10 @@ describe('TripPermissionsSettings', () => {
     await new Promise((r) => setTimeout(r, 10));
     await nextTick();
 
-    const deleteButtons = container.querySelectorAll('[aria-label="Mitglied entfernen"]');
+    const deleteButtons = container.querySelectorAll('[aria-label$="entfernen"]');
     // Only 1 delete button (for bob, not alice who is current user)
     expect(deleteButtons.length).toBe(1);
+    expect(deleteButtons[0]?.getAttribute('aria-label')).toBe('bob entfernen');
     cleanUp();
   });
 
