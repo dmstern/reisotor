@@ -25,6 +25,9 @@ const emit = defineEmits<{
   (e: 'selectHighlight', stepIndex: number, highlightIndex: number): void;
 }>();
 
+const TRIGGER_VIEWPORT_OFFSET_RATIO = 0.45;
+const TRIGGER_SCROLL_NUDGE_PX = 5;
+
 const effectiveStepIndex = computed(() => props.activeStepIndex ?? props.activeIndex ?? 0);
 const effectiveHighlightIndex = computed(() => props.activeHighlightIndex ?? 0);
 
@@ -38,7 +41,11 @@ function onSelectHighlight(stepIdx: number, hIdx: number) {
 
     if (trigger && (trigger as HTMLElement).offsetParent !== null) {
       const rect = trigger.getBoundingClientRect();
-      const targetY = window.scrollY + rect.top - window.innerHeight * 0.45 + 5;
+      const targetY =
+        window.scrollY +
+        rect.top -
+        window.innerHeight * TRIGGER_VIEWPORT_OFFSET_RATIO +
+        TRIGGER_SCROLL_NUDGE_PX;
       window.scrollTo({ top: targetY, behavior: 'smooth' });
     }
   }
@@ -133,11 +140,11 @@ function onSelectHighlight(stepIdx: number, hIdx: number) {
   color: var(--color-primary-dark);
 }
 :root[data-theme='dark'] .section-title {
-  color: #f0abfc;
+  color: var(--color-like);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .section-title {
-    color: #f0abfc;
+    color: var(--color-like);
   }
 }
 

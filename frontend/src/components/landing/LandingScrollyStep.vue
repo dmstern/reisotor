@@ -117,7 +117,7 @@ function isRevealed(hIdx: number): boolean {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .scrolly-step {
   position: sticky;
   top: 14vh;
@@ -128,13 +128,17 @@ function isRevealed(hIdx: number): boolean {
 
 .step-card {
   width: 100%;
-  background: var(--color-surface-glass);
+  background-color: var(--color-surface-glass);
+  background-image: var(--gradient-surface-3d);
+  background-origin: border-box;
   backdrop-filter: var(--backdrop-blur-md);
   border: 1px solid var(--color-surface-glass-border);
   border-radius: var(--radius-xl-squircle);
   corner-shape: squircle;
   padding: var(--space-5);
-  box-shadow: var(--shadow-sm);
+  box-shadow:
+    inset 0 1px 0 var(--shadow-control-highlight),
+    var(--shadow-sm);
   transition:
     opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
     transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
@@ -147,8 +151,9 @@ function isRevealed(hIdx: number): boolean {
 .scrolly-step.is-active .step-card {
   opacity: 1;
   transform: scale(1);
-  border-color: var(--color-border-strong);
-  box-shadow: var(--shadow-lg);
+  border-color: var(--color-surface-glass-hover-border);
+  background-image: var(--gradient-glass-highlight);
+  box-shadow: var(--shadow-floating-island);
 }
 
 .step-kicker {
@@ -172,6 +177,12 @@ function isRevealed(hIdx: number): boolean {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  background-image: var(--gradient-control-3d);
+  background-origin: border-box;
+  border: 1px solid var(--color-surface-glass-border);
+  box-shadow:
+    inset 0 1px 0 var(--shadow-control-highlight),
+    var(--shadow-xs);
 }
 
 .step-title {
@@ -205,7 +216,8 @@ function isRevealed(hIdx: number): boolean {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   font-weight: 500;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
   padding: var(--space-1) var(--space-2);
   margin: 0 calc(-1 * var(--space-2));
   cursor: pointer;
@@ -219,12 +231,25 @@ function isRevealed(hIdx: number): boolean {
     transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
     max-height 0.35s ease,
     background-color 0.25s ease,
+    box-shadow 0.25s ease,
     color 0.25s ease;
-}
 
-.step-highlight-item:hover {
-  background: var(--color-hover);
-  color: var(--color-text);
+  @include can-hover {
+    &:hover {
+      background-color: var(--color-glass-control-hover);
+      box-shadow: inset 0 1px 0 var(--shadow-control-highlight);
+      color: var(--color-text);
+    }
+  }
+
+  &:active {
+    transform: translateY(0.5px) scale(0.995);
+  }
+
+  &:focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-focus-ring);
+    outline-offset: -2px;
+  }
 }
 
 .step-highlight-item.is-revealed {
@@ -239,7 +264,11 @@ function isRevealed(hIdx: number): boolean {
   opacity: 1;
   font-weight: 600;
   color: var(--color-text);
-  background: color-mix(in srgb, var(--color-surface-hover, currentColor) 10%, transparent);
+  background-color: var(--color-control-active-tint);
+  background-image: var(--gradient-control-3d);
+  box-shadow:
+    inset 0 1px 0 var(--shadow-control-highlight),
+    var(--shadow-2xs);
 }
 
 .check-icon-wrapper {
@@ -251,12 +280,16 @@ function isRevealed(hIdx: number): boolean {
   border-radius: var(--radius-full);
   transition:
     transform 0.25s ease,
-    background-color 0.25s ease;
+    background-color 0.25s ease,
+    box-shadow 0.25s ease;
   flex-shrink: 0;
 }
 
 .step-highlight-item.is-current .check-icon-wrapper {
   transform: scale(1.08);
+  box-shadow:
+    inset 0 1px 0 var(--shadow-control-highlight),
+    var(--shadow-2xs);
 }
 
 .check-icon {
@@ -273,11 +306,15 @@ function isRevealed(hIdx: number): boolean {
   max-width: 260px;
   margin: 0 auto;
   aspect-ratio: 390 / 844;
-  background: var(--color-surface);
+  background-color: var(--color-surface);
+  background-image: var(--gradient-surface-3d);
+  background-origin: border-box;
   border-radius: calc(var(--radius-xl-squircle) * 0.8);
   corner-shape: squircle;
   border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-md);
+  box-shadow:
+    inset 0 1px 0 var(--shadow-control-highlight),
+    var(--shadow-md);
   overflow: hidden;
   padding: var(--space-1);
 }

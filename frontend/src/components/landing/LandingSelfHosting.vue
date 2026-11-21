@@ -23,11 +23,16 @@ defineProps<{
   box-sizing: border-box;
   margin: 0 auto;
   padding: var(--space-5);
-  background: var(--color-surface-glass);
+  background-color: var(--color-surface-glass);
+  background-image: var(--gradient-surface-3d);
+  background-origin: border-box;
   backdrop-filter: var(--backdrop-blur-md);
   border-radius: var(--radius-xl-squircle);
   corner-shape: squircle;
   border: 1px dashed var(--color-border-strong);
+  box-shadow:
+    inset 0 1px 0 var(--shadow-control-highlight),
+    var(--shadow-card);
 }
 
 @container landing (max-width: 480px) {

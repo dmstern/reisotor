@@ -146,7 +146,7 @@ onUnmounted(() => {
 
 .glow-orb {
   position: absolute;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   filter: blur(120px);
   z-index: -1;
   pointer-events: none;

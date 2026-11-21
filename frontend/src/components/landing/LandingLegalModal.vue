@@ -148,7 +148,7 @@ onUnmounted(() => {
   </Teleport>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .landing-legal-overlay {
   position: fixed;
   inset: 0;
@@ -165,7 +165,7 @@ onUnmounted(() => {
   overflow-y: auto;
 }
 
-@media (max-width: 600px) {
+@include media-down('tablet-sm') {
   .landing-legal-overlay {
     padding-top: calc(var(--space-3) + env(safe-area-inset-top, 0px));
     padding-right: calc(var(--space-2) + env(safe-area-inset-right, 0px));
@@ -175,7 +175,9 @@ onUnmounted(() => {
 }
 
 .landing-legal-dialog {
-  background: var(--color-surface);
+  background-color: var(--color-surface);
+  background-image: var(--gradient-surface-3d);
+  background-origin: border-box;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg-squircle);
   corner-shape: squircle;
@@ -188,6 +190,17 @@ onUnmounted(() => {
   flex-direction: column;
   position: relative;
   overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    pointer-events: none;
+    border-radius: inherit;
+    corner-shape: inherit;
+    box-shadow: inset 0 1px 0 var(--shadow-control-highlight);
+  }
 }
 
 .close-button {
