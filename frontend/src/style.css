@@ -300,7 +300,8 @@
   --color-divider-highlight-glass: rgba(255, 255, 255, 0.55);
   --color-divider-groove: var(--color-divider-groove-surface);
   --color-divider-highlight: var(--color-divider-highlight-surface);
-  --color-border-strong: #d5cabc;
+  --color-border-strong: rgba(43, 42, 40, 0.23);
+  --color-search-field-border: rgba(43, 42, 40, 0.22);
   /* Rahmenfarbe aller Eingabefelder inkl. input-ähnlicher Wrapper (QuickAddRow, Combobox, Editor) */
   --input-border-color: var(--color-border-strong);
   /* Hintergrundfarbe aller Eingabefelder inkl. Selects und Inset-Controls */
@@ -482,7 +483,8 @@
   --shadow-glass-field-inset:
     inset 0 1px 2px rgba(43, 42, 40, 0.08), 0 1px 0 rgba(255, 255, 255, 0.45);
   --shadow-search-field-inset:
-    inset 0 1.5px 2.5px rgba(43, 42, 40, 0.1), 0 1px 0 rgba(255, 255, 255, 0.85);
+    inset 0 1.5px 2.5px rgba(43, 42, 40, 0.12), inset 0 -1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 0 rgba(255, 255, 255, 0.85);
   --transition-control:
     border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease,
     outline-color 0.15s ease, --control-grad-top 0.15s ease, --control-grad-bottom 0.15s ease,
@@ -726,7 +728,8 @@
     --color-divider-highlight-glass: rgba(255, 255, 255, 0.09);
     --color-divider-groove: var(--color-divider-groove-surface);
     --color-divider-highlight: var(--color-divider-highlight-surface);
-    --color-border-strong: #4a453c;
+    --color-border-strong: rgba(242, 239, 233, 0.22);
+    --color-search-field-border: rgba(0, 0, 0, 0.55);
     --input-border-color: var(--color-border-strong);
     --color-input-bg: #141311;
     --color-button-edge: rgba(0, 0, 0, 0.35);
@@ -759,7 +762,7 @@
     --shadow-glass-field-inset:
       inset 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.1);
     --shadow-search-field-inset:
-      inset 0 1.5px 2.5px rgba(0, 0, 0, 0.42), 0 1px 0 rgba(255, 255, 255, 0.09);
+      inset 0 1.5px 3px rgba(0, 0, 0, 0.52), 0 1px 0 rgba(255, 255, 255, 0.16);
     --shadow-control-highlight: rgba(255, 255, 255, 0.12);
     --shadow-control-highlight-strong: rgba(255, 255, 255, 0.2);
     --shadow-control:
@@ -908,7 +911,8 @@
   --color-divider-highlight-glass: rgba(255, 255, 255, 0.09);
   --color-divider-groove: var(--color-divider-groove-surface);
   --color-divider-highlight: var(--color-divider-highlight-surface);
-  --color-border-strong: #4a453c;
+  --color-border-strong: rgba(242, 239, 233, 0.22);
+  --color-search-field-border: rgba(0, 0, 0, 0.55);
   --input-border-color: var(--color-border-strong);
   --color-input-bg: #141311;
   --color-button-edge: rgba(0, 0, 0, 0.35);
@@ -940,7 +944,7 @@
   --color-glass-field-inset-border: rgba(255, 255, 255, 0.14);
   --shadow-glass-field-inset: inset 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.1);
   --shadow-search-field-inset:
-    inset 0 1.5px 2.5px rgba(0, 0, 0, 0.42), 0 1px 0 rgba(255, 255, 255, 0.09);
+    inset 0 1.5px 3px rgba(0, 0, 0, 0.52), 0 1px 0 rgba(255, 255, 255, 0.16);
   --shadow-control-highlight: rgba(255, 255, 255, 0.12);
   --shadow-control-highlight-strong: rgba(255, 255, 255, 0.2);
   --shadow-control:
@@ -1075,7 +1079,8 @@
   --color-divider-highlight-glass: rgba(255, 255, 255, 0.55);
   --color-divider-groove: var(--color-divider-groove-surface);
   --color-divider-highlight: var(--color-divider-highlight-surface);
-  --color-border-strong: #d5cabc;
+  --color-border-strong: rgba(43, 42, 40, 0.23);
+  --color-search-field-border: rgba(43, 42, 40, 0.22);
   --input-border-color: var(--color-border-strong);
   --color-input-bg: #faf8f5;
   --color-button-edge: rgba(0, 0, 0, 0.16);
@@ -1142,7 +1147,8 @@
   --shadow-glass-field-inset:
     inset 0 1px 2px rgba(43, 42, 40, 0.08), 0 1px 0 rgba(255, 255, 255, 0.45);
   --shadow-search-field-inset:
-    inset 0 1.5px 2.5px rgba(43, 42, 40, 0.1), 0 1px 0 rgba(255, 255, 255, 0.85);
+    inset 0 1.5px 2.5px rgba(43, 42, 40, 0.12), inset 0 -1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 0 rgba(255, 255, 255, 0.85);
   --shadow-control-highlight: rgba(255, 255, 255, 0.65);
   --shadow-control-highlight-strong: rgba(255, 255, 255, 0.85);
   --shadow-control:
