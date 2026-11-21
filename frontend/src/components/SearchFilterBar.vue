@@ -665,6 +665,7 @@ function clearFilters() {
 }
 
 :global(.filter-popover-menu) {
+  gap: 0;
   min-width: 220px;
   max-width: min(290px, calc(100vw - var(--space-4)));
   max-height: calc(100vh - 16px);
@@ -682,8 +683,8 @@ function clearFilters() {
 
 .popover-section + .popover-section {
   @include divider-engraved('top');
-  margin-top: var(--space-2xs);
-  padding-top: var(--space-2xs);
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
 }
 
 .popover-section-header.popover-section-toggle {
@@ -771,6 +772,11 @@ function clearFilters() {
   display: flex;
   flex-direction: column;
   gap: 1px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+:deep(.accordion.is-expanded > .popover-options-list) {
   padding-top: var(--space-2xs);
   padding-bottom: var(--space-2xs);
 }
@@ -778,7 +784,7 @@ function clearFilters() {
 .popover-footer {
   position: sticky;
   bottom: calc(-1 * var(--space-2));
-  margin: var(--space-1) calc(-1 * var(--space-2)) calc(-1 * var(--space-2));
+  margin: var(--space-md) calc(-1 * var(--space-2)) calc(-1 * var(--space-2));
   padding: var(--space-1) var(--space-2) var(--space-2);
   background: var(--color-surface);
   @include divider-engraved('top');
