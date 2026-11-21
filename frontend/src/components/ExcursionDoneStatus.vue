@@ -1,36 +1,26 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { Excursion } from '../api/types';
-import type { ExcursionStation } from '../utils/excursionStations';
-import { useExcursionWeather } from '../composables/useExcursionWeather';
 import { useExcursionDoneStatus } from '../composables/useExcursionDoneStatus';
 import { useDrawersStore } from '../stores/drawers';
 import DoneToggle from './primitives/DoneToggle.vue';
 import DoneUnplannedPopover from './DoneUnplannedPopover.vue';
 import DoneDatesPopover, { type DoneDateChecklistItem } from './DoneDatesPopover.vue';
-import WeatherIcon from './WeatherIcon.vue';
 import AppIcon from './AppIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 
-const props = withDefaults(
-  defineProps<{
-    excursion: Excursion;
-    expanded: boolean;
-    resolvedStations?: ExcursionStation[];
-  }>(),
-  {
-    resolvedStations: () => [],
-  }
-);
+const props = defineProps<{
+  excursion: Excursion;
+  expanded: boolean;
+}>();
 
 const drawers = useDrawersStore();
 
-const { weatherSummary, statusDateLabel } = useExcursionWeather({
-  excursion: () => props.excursion,
-  resolvedStations: () => props.resolvedStations,
-});
+const statusDateLabel = computed(() =>
+  props.excursion.date ? formatDateShared(props.excursion.date, { includeYear: false }) : ''
+);
 
 const {
   datesPopoverOpen,
@@ -114,10 +104,6 @@ function openCalendarAtDate(date: string) {
         </span>
       </template>
       <template v-else>Gemacht</template>
-      <span v-if="weatherSummary" class="done-toggle-weather">
-        · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-        {{ weatherSummary.tempLabel }}
-      </span>
     </template>
     <template v-else-if="excursion.date">
       <span class="done-toggle-prefix">Geplant für </span>
@@ -129,10 +115,6 @@ function openCalendarAtDate(date: string) {
           class="done-toggle-calendar-icon"
         />
         {{ statusDateLabel }}
-      </span>
-      <span v-if="weatherSummary" class="done-toggle-weather">
-        · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-        {{ weatherSummary.tempLabel }}
       </span>
     </template>
     <template v-else>Gemacht</template>
@@ -167,10 +149,6 @@ function openCalendarAtDate(date: string) {
         </span>
       </template>
       <template v-else>Gemacht</template>
-      <span v-if="weatherSummary" class="done-toggle-weather">
-        · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-        {{ weatherSummary.tempLabel }}
-      </span>
     </template>
     <template v-else-if="excursion.date">
       <span class="done-toggle-prefix">Geplant für </span>
@@ -182,10 +160,6 @@ function openCalendarAtDate(date: string) {
           class="done-toggle-calendar-icon"
         />
         {{ statusDateLabel }}
-      </span>
-      <span v-if="weatherSummary" class="done-toggle-weather">
-        · <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-        {{ weatherSummary.tempLabel }}
       </span>
     </template>
   </div>
@@ -259,14 +233,6 @@ function openCalendarAtDate(date: string) {
   align-items: center;
   flex-shrink: 0;
   opacity: 0.85;
-}
-
-.tour-status-meta :deep(.done-toggle-weather) {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  white-space: nowrap;
 }
 
 @container spots-col (max-width: 360px) {

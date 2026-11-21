@@ -49,5 +49,15 @@ describe('ExcursionRouteMeta', () => {
     expect(html).toContain('08:30');
     expect(html).toContain('10:45');
     expect(html).toContain('2 Std. 15 Min.');
+    expect(html).toContain('duration-separator');
+  });
+
+  it('renders travelDuration with clock icon and without separator when times are missing', async () => {
+    const html = await mountComponent({
+      travelDuration: '1\u00A0Std. 54\u00A0Min.',
+    });
+    expect(html).toContain('time-block');
+    expect(html).toContain('1\u00A0Std. 54\u00A0Min.');
+    expect(html).not.toContain('duration-separator');
   });
 });

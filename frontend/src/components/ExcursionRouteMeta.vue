@@ -21,8 +21,11 @@ defineProps<{
     >
       {{ stationsSummaryText }}
     </p>
-    <p v-if="effectiveDepartureTime || effectiveArrivalTime" class="departure-arrival">
-      <span class="time-block" v-if="effectiveDepartureTime">
+    <p
+      v-if="effectiveDepartureTime || effectiveArrivalTime || travelDuration"
+      class="departure-arrival"
+    >
+      <span v-if="effectiveDepartureTime" class="time-block">
         <AppIcon :icon="FORM_FIELD_ICONS.time" :size="13" group="formFields" />
         {{ effectiveDepartureTime
         }}<template v-if="effectiveArrivalTime">&ndash;{{ effectiveArrivalTime }}</template
@@ -32,8 +35,14 @@ defineProps<{
         <AppIcon :icon="FORM_FIELD_ICONS.time" :size="13" group="formFields" />
         Ankunft {{ effectiveArrivalTime }}&nbsp;Uhr
       </span>
-      <span v-if="travelDuration" class="duration-separator">·</span>
-      <span v-if="travelDuration" class="duration">{{ travelDuration }}</span>
+      <span v-else class="time-block">
+        <AppIcon :icon="FORM_FIELD_ICONS.time" :size="13" group="formFields" />
+        {{ travelDuration }}
+      </span>
+      <template v-if="(effectiveDepartureTime || effectiveArrivalTime) && travelDuration">
+        <span class="duration-separator">·</span>
+        <span class="duration">{{ travelDuration }}</span>
+      </template>
     </p>
   </div>
 </template>

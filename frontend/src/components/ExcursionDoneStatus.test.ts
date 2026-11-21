@@ -5,7 +5,6 @@ import { createPinia, setActivePinia } from 'pinia';
 import { renderToString } from 'vue/server-renderer';
 import ExcursionDoneStatus from './ExcursionDoneStatus.vue';
 import type { Excursion } from '../api/types';
-import type { ExcursionStation } from '../utils/excursionStations';
 
 describe('ExcursionDoneStatus', () => {
   beforeEach(() => {
@@ -21,11 +20,7 @@ describe('ExcursionDoneStatus', () => {
     created_by: 1,
   } as unknown as Excursion;
 
-  function mountComponent(props: {
-    excursion: Excursion;
-    expanded: boolean;
-    resolvedStations?: ExcursionStation[];
-  }) {
+  function mountComponent(props: { excursion: Excursion; expanded: boolean }) {
     const app = createApp({
       render: () => h(ExcursionDoneStatus, props),
     });
@@ -41,6 +36,7 @@ describe('ExcursionDoneStatus', () => {
     expect(html).toContain('Geplant für');
     expect(html).toContain('15.07');
     expect(html).toContain('tour-status-meta');
+    expect(html).not.toContain('done-toggle-weather');
     expect(html).not.toContain('done-toggle ');
     expect(html).not.toContain('<button');
   });

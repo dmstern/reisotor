@@ -3,17 +3,23 @@ import { computed, ref } from 'vue';
 import type { Excursion, Spot, TravelItem } from '../api/types';
 import { useDiaryStore } from '../stores/diary';
 import { useExcursionStations } from '../composables/useExcursionStations';
+import { useExcursionWeather } from '../composables/useExcursionWeather';
 import EditButton from './EditButton.vue';
 import Comments, { type CommentItem } from './Comments.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import SocialRow from './SocialRow.vue';
 import Accordion from './primitives/Accordion.vue';
+import Badge from './primitives/Badge.vue';
 import FileAttachments from './FileAttachments.vue';
 import TourRoleBadge from './TourRoleBadge.vue';
 import ExcursionDoneStatus from './ExcursionDoneStatus.vue';
 import ExcursionMapLinks from './ExcursionMapLinks.vue';
 import LinkedDiaryPills from './LinkedDiaryPills.vue';
+import WeatherIcon from './WeatherIcon.vue';
+import AppIcon from './AppIcon.vue';
+import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { ACTION_ICONS } from '../utils/actionIcons';
 
 const props = withDefaults(
   defineProps<{
@@ -50,20 +56,20 @@ const linkedDiaryEntries = computed(() =>
   )
 );
 
-const { resolvedStations, hasMappedStations, routeLabel, travelDuration, linkedTracks } =
-  useExcursionStations({
-    excursion: () => props.excursion,
-    stations: () => props.stations,
-    travelItems: () => props.travelItems,
-  });
+const { resolvedStations, hasMappedStations, travelDuration, linkedTracks } = useExcursionStations({
+  excursion: () => props.excursion,
+  stations: () => props.stations,
+  travelItems: () => props.travelItems,
+});
 
-const hasMeta = computed(() =>
+const { weatherSummary } = useExcursionWeather({
+  excursion: () => props.excursion,
+  resolvedStations: () => resolvedStations.value,
+});
+
+const hasInfoBadges = computed(() =>
   Boolean(
-    props.creatorLabel ||
-    routeLabel.value ||
-    resolvedStations.value.length ||
-    travelDuration.value ||
-    linkedTracks.value.length
+    props.creatorLabel || travelDuration.value || weatherSummary.value || linkedTracks.value.length
   )
 );
 </script>
@@ -95,31 +101,56 @@ const hasMeta = computed(() =>
         </div>
       </div>
 
-      <div v-if="hasMeta" class="tour-detail-meta">
-        <span v-if="creatorLabel" class="tour-detail-author">Von {{ creatorLabel }}</span>
-        <span v-if="routeLabel" class="tour-detail-submeta">
-          <template v-if="creatorLabel">· </template>{{ routeLabel }}
-        </span>
-        <span v-else-if="resolvedStations.length" class="tour-detail-submeta">
-          <template v-if="creatorLabel">· </template>{{ resolvedStations.length }}
-          {{ resolvedStations.length === 1 ? 'Station' : 'Stationen' }}
-        </span>
-        <span v-if="travelDuration" class="tour-detail-submeta">· {{ travelDuration }}</span>
-        <span v-if="linkedTracks.length" class="tour-detail-submeta">
-          <template v-if="creatorLabel || routeLabel || resolvedStations.length || travelDuration">
-            ·
-          </template>
+      <div v-if="hasInfoBadges" class="tour-detail-info-badges">
+        <Badge v-if="creatorLabel" variant="default" size="sm" class="tour-detail-info-badge">
+          <span class="tour-detail-info-badge-text">Von {{ creatorLabel }}</span>
+        </Badge>
+        <Badge v-if="travelDuration" variant="default" size="sm" class="tour-detail-info-badge">
+          <AppIcon :icon="FORM_FIELD_ICONS.time" :size="13" group="formFields" />
+          {{ travelDuration }}
+        </Badge>
+        <Badge v-if="weatherSummary" variant="default" size="sm" class="tour-detail-info-badge">
+          <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
+          {{ weatherSummary.tempLabel }}
+        </Badge>
+        <Badge
+          v-if="linkedTracks.length"
+          variant="default"
+          size="sm"
+          class="tour-detail-info-badge"
+        >
+          <AppIcon :icon="ACTION_ICONS.history" :size="13" group="actions" />
           {{ linkedTracks.length }}
           {{ linkedTracks.length === 1 ? 'Aufzeichnung' : 'Aufzeichnungen' }}
-        </span>
+        </Badge>
+      </div>
+
+      <div class="tour-detail-header-controls">
+        <div class="tour-detail-status">
+          <ExcursionDoneStatus :excursion="excursion" :expanded="true" />
+        </div>
+
+        <SocialRow
+          :readonly="false"
+          :like-count="likeCount"
+          :liked="liked"
+          :comment-count="comments.length"
+          :comments-open="showComments"
+          @toggle-like="emit('toggle-like')"
+          @toggle-comments="showComments = !showComments"
+        />
       </div>
     </header>
 
-    <ExcursionMapLinks
-      :has-mapped-stations="hasMappedStations"
-      :linked-tracks="linkedTracks"
-      @show-on-map="emit('show-on-map')"
-    />
+    <Accordion :expanded="showComments">
+      <Comments
+        :comments="comments"
+        @submit="(content) => emit('submit-comment', content)"
+        @remove="(id) => emit('remove-comment', id)"
+        @update="(id, content) => emit('update-comment', id, content)"
+        @toggle-like="(id) => emit('toggle-comment-like', id)"
+      />
+    </Accordion>
 
     <div v-if="excursion.note" class="tour-detail-note-wrap">
       <RichTextDisplay
@@ -136,41 +167,22 @@ const hasMeta = computed(() =>
       :editable="false"
     />
 
-    <LinkedDiaryPills
-      v-if="linkedTracks.length || linkedDiaryEntries.length"
-      :tracks="linkedTracks"
-      :entries="linkedDiaryEntries"
-    />
+    <div
+      v-if="hasMappedStations || linkedTracks.length || linkedDiaryEntries.length"
+      class="tour-detail-links-row"
+    >
+      <ExcursionMapLinks
+        :has-mapped-stations="hasMappedStations"
+        :linked-tracks="linkedTracks"
+        @show-on-map="emit('show-on-map')"
+      />
 
-    <div class="tour-detail-actions-row">
-      <div class="tour-detail-status">
-        <ExcursionDoneStatus
-          :excursion="excursion"
-          :expanded="true"
-          :resolved-stations="resolvedStations"
-        />
-      </div>
-
-      <SocialRow
-        :readonly="false"
-        :like-count="likeCount"
-        :liked="liked"
-        :comment-count="comments.length"
-        :comments-open="showComments"
-        @toggle-like="emit('toggle-like')"
-        @toggle-comments="showComments = !showComments"
+      <LinkedDiaryPills
+        v-if="linkedTracks.length || linkedDiaryEntries.length"
+        :tracks="linkedTracks"
+        :entries="linkedDiaryEntries"
       />
     </div>
-
-    <Accordion :expanded="showComments">
-      <Comments
-        :comments="comments"
-        @submit="(content) => emit('submit-comment', content)"
-        @remove="(id) => emit('remove-comment', id)"
-        @update="(id, content) => emit('update-comment', id, content)"
-        @toggle-like="(id) => emit('toggle-comment-like', id)"
-      />
-    </Accordion>
 
     <div class="tour-detail-stations">
       <slot name="stations" />
@@ -203,7 +215,7 @@ const hasMeta = computed(() =>
 .tour-detail-header {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
   padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--color-border-divider);
 }
@@ -238,21 +250,50 @@ const hasMeta = computed(() =>
   flex-shrink: 0;
 }
 
-.tour-detail-meta {
+.tour-detail-info-badges {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-1);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  min-width: 0;
 }
 
-.tour-detail-author {
-  font-weight: 600;
+.tour-detail-info-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
 }
 
-.tour-detail-submeta {
-  opacity: 0.9;
+.tour-detail-info-badge-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tour-detail-header-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding-top: var(--space-1);
+}
+
+.tour-detail-header-controls > :deep(.social-row) {
+  margin-left: auto;
+}
+
+.tour-detail-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
 }
 
 .tour-detail-note-wrap {
@@ -270,25 +311,17 @@ const hasMeta = computed(() =>
   margin-top: var(--space-1);
 }
 
-.tour-detail-actions-row {
+.tour-detail-links-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-2);
-  padding-top: var(--space-1);
-}
-
-.tour-detail-actions-row > :deep(.social-row) {
-  margin-left: auto;
-}
-
-.tour-detail-status {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1);
+  margin-top: var(--space-1);
   min-width: 0;
+}
+
+.tour-detail-links-row :deep(.links) {
+  margin-top: 0;
 }
 
 .tour-detail-stations {

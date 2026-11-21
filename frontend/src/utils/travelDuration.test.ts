@@ -88,4 +88,27 @@ describe('tourTotalDurationMinutes', () => {
     // 10:00->12:00 (120), 12:00->13:00 (60), 13:00->14:00 (60) => 240
     expect(tourTotalDurationMinutes({ legs })).toBe(240);
   });
+
+  it('sums mixed legs with departure/arrival times and duration_seconds', () => {
+    const legs = [
+      { departure_time: '09:00', arrival_time: '10:30' }, // 90m
+      { duration_seconds: 6840 }, // 114m (zu Fuß)
+    ];
+    expect(tourTotalDurationMinutes({ legs })).toBe(204);
+  });
+
+  it('does not count wait time after a pure duration_seconds leg when a timed leg follows', () => {
+    const legs = [
+      { departure_time: '09:00', arrival_time: '10:00' }, // 60m
+      { duration_seconds: 1800 }, // 30m, resets lastTime
+      { departure_time: '12:00', arrival_time: '13:00' }, // 60m without 2h wait
+    ];
+    expect(tourTotalDurationMinutes({ legs })).toBe(150);
+  });
+
+  it('sums pure duration_seconds legs without any times', () => {
+    const legs = [{ duration_seconds: 6840 }, { duration_seconds: 1800 }];
+    // 114m + 30m = 144m
+    expect(tourTotalDurationMinutes({ legs })).toBe(144);
+  });
 });
