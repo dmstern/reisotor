@@ -493,12 +493,12 @@ defineExpose({
       </div>
     </div>
 
-    <!-- Reihe 4: Transportleiste (52px Play/Pause, 46px Speed-Steuerung, Laufzeit) -->
+    <!-- Reihe 4: Transportleiste (46px Play/Pause, 46px Speed-Steuerung, Laufzeit) -->
     <div class="track-playback-transport">
       <IconButton
         class="playback-btn"
         :variant="playing ? 'secondary' : 'primary'"
-        size="lg"
+        size="md"
         shape="squircle"
         :icon="playing ? ACTION_ICONS.pause : ACTION_ICONS.play"
         :aria-label="playing ? 'Pause' : 'Abspielen'"

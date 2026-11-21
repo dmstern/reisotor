@@ -237,7 +237,10 @@ describe('TrackPlayback', () => {
     expect(rangeRow?.querySelector('.current-time')).toBeTruthy();
     expect(rangeRow?.querySelector('.end-time')).toBeTruthy();
     expect(transportBar).toBeTruthy();
-    expect(playBtn?.classList.contains('btn--lg')).toBe(true);
+    expect(playBtn).toBeTruthy();
+    expect(playBtn?.classList.contains('btn--xs')).toBe(false);
+    expect(playBtn?.classList.contains('btn--sm')).toBe(false);
+    expect(playBtn?.classList.contains('btn--lg')).toBe(false);
     expect(closeBtn).toBeTruthy();
     expect(closeBtn?.classList.contains('btn--xs')).toBe(false);
     expect(closeBtn?.classList.contains('btn--sm')).toBe(false);
