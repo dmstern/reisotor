@@ -4,6 +4,7 @@ import Card from '../primitives/Card.vue';
 import Checkbox from '../primitives/Checkbox.vue';
 import CheckboxCard from '../primitives/CheckboxCard.vue';
 import CollapsibleFieldset from '../primitives/CollapsibleFieldset.vue';
+import Divider from '../primitives/Divider.vue';
 import Select from '../primitives/Select.vue';
 import SegmentedToggle from '../SegmentedToggle.vue';
 import SettingsCardHeader from './SettingsCardHeader.vue';
@@ -143,6 +144,8 @@ onMounted(() => {
           </p>
         </div>
 
+        <Divider v-if="pushSupported" spacing="lg" />
+
         <div class="push-domains-section">
           <span class="push-domains-heading">Bereiche</span>
           <div class="notification-domains-table">
@@ -216,49 +219,56 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped>
-.notifications-tab :deep(.card) {
-  margin-bottom: var(--space-4);
+<style lang="scss" scoped>
+.notifications-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.notifications-tab :deep(.card-header-row) {
+  margin-bottom: var(--space-md);
 }
 
 .toast-timeout-label {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-sm);
   font-weight: 600;
   font-size: var(--font-size-sm);
   width: 100%;
   max-width: 320px;
-  margin-top: var(--space-4);
+  margin-top: var(--space-lg);
 }
 
 .update-dialogs-wrap {
-  margin-top: var(--space-4);
+  margin-top: var(--space-xl);
 }
 
 .hint {
-  margin: 0 0 var(--space-3);
+  margin: 0 0 var(--space-lg);
   font-size: var(--font-size-sm);
-}
-
-.hint.intro-hint {
-  margin-bottom: var(--space-3);
+  line-height: var(--line-height-normal);
 }
 
 .hint.error {
+  margin: var(--space-md) 0 0;
   color: var(--color-danger);
 }
 
-.push-details-collapsible {
-  margin-top: var(--space-3);
+.push-details-collapsible.collapsible-fieldset {
+  margin: var(--space-lg) 0 0;
+}
+
+.push-details-collapsible.collapsible-fieldset.is-closed {
+  margin: var(--space-lg) 0 0;
+  padding-inline: 0;
 }
 
 .push-scope-section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--color-border-divider);
+  gap: var(--space-sm);
   transition: opacity 0.2s ease;
 }
 
@@ -283,19 +293,14 @@ onMounted(() => {
 .push-domains-section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-}
-
-.notification-domains-table {
-  margin-top: var(--space-1);
+  gap: var(--space-xs);
 }
 
 .domains-table-header {
   display: flex;
   align-items: center;
-  padding: var(--space-2) 0;
-  border-bottom: 2px solid var(--color-border-divider);
+  padding: var(--space-sm) 0;
+  @include divider-engraved('bottom');
   font-weight: 600;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
@@ -330,13 +335,9 @@ onMounted(() => {
 .notification-domain-row {
   display: flex;
   align-items: center;
-  padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--color-border-divider);
-  gap: var(--space-2);
-}
-
-.notification-domain-row:last-child {
-  border-bottom: none;
+  padding: var(--space-sm) 0;
+  @include divider-engraved-row;
+  gap: var(--space-sm);
 }
 
 .domain-info {
@@ -348,6 +349,8 @@ onMounted(() => {
 }
 
 .domain-icon {
+  width: 1.4em;
+  text-align: center;
   font-size: var(--font-size-lg);
   flex-shrink: 0;
 }
