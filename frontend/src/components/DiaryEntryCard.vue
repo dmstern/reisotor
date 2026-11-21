@@ -260,8 +260,8 @@ function excursionTooltip(ex: Excursion): string {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-bottom: var(--space-2);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
 }
 
 .avatar {
@@ -296,12 +296,12 @@ function excursionTooltip(ex: Excursion): string {
 
 .entry-actions {
   display: flex;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   flex-shrink: 0;
 }
 
 .entry h3 {
-  margin: 0 0 var(--space-1);
+  margin: 0 0 var(--space-xs);
   font-family: var(--font-diary);
   font-size: var(--font-size-lg);
   font-weight: 600;
@@ -310,7 +310,7 @@ function excursionTooltip(ex: Excursion): string {
 }
 
 .content {
-  margin: 0 0 var(--space-2);
+  margin: 0 0 var(--space-md);
   font-family: var(--font-diary);
   font-size-adjust: from-font;
   font-size: var(--font-size-md);
@@ -320,16 +320,16 @@ function excursionTooltip(ex: Excursion): string {
 }
 
 .diary-polaroid-wrap {
-  margin: var(--space-2) 0;
-  padding: var(--space-1) var(--space-3) var(--space-2) var(--space-1);
+  margin: var(--space-sm) 0 var(--space-xs);
+  padding: var(--space-xs) var(--space-lg) var(--space-sm) var(--space-xs);
 }
 
 .card-footer {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-  padding-top: var(--space-2);
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
   @include divider-engraved('top');
   min-width: 0;
   max-width: 100%;
@@ -339,7 +339,7 @@ function excursionTooltip(ex: Excursion): string {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   min-width: 0;
   max-width: 100%;
 }
@@ -349,7 +349,7 @@ function excursionTooltip(ex: Excursion): string {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   min-width: 0;
   max-width: 100%;
 }
@@ -362,7 +362,7 @@ function excursionTooltip(ex: Excursion): string {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   flex: 1;
   min-width: 0;
   max-width: 100%;
@@ -374,7 +374,7 @@ function excursionTooltip(ex: Excursion): string {
   gap: var(--space-2xs);
   background: var(--color-warning-tint);
   color: var(--color-warning-dark);
-  padding: 1px var(--space-1);
+  padding: 1px var(--space-xs);
   border-radius: var(--radius-pill);
   corner-shape: round;
   font-size: var(--font-size-xs);
@@ -390,11 +390,11 @@ function excursionTooltip(ex: Excursion): string {
 .diary-weather {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   background: var(--color-hover);
   border-radius: var(--radius-pill);
   corner-shape: round;
-  padding: var(--space-1) var(--space-3);
+  padding: var(--space-xs) var(--space-lg);
   font-size: var(--font-size-sm);
   color: var(--color-text);
   white-space: nowrap;

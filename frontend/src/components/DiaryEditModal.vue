@@ -11,6 +11,7 @@ import Modal from './Modal.vue';
 import FormField from './FormField.vue';
 import Input from './primitives/Input.vue';
 import Button from './primitives/Button.vue';
+import ButtonGroup from './primitives/ButtonGroup.vue';
 import RichTextEditor from './RichTextEditor.vue';
 import UploadProgressBar from './UploadProgressBar.vue';
 import AttachmentThumbnails from './AttachmentThumbnails.vue';
@@ -238,7 +239,7 @@ function handleUploadClick() {
         @discard="discardEditDraft"
       />
 
-      <div class="actions-row">
+      <ButtonGroup no-margin class="actions-row">
         <Button
           v-if="editingEntry?.author_id === auth.user?.id"
           type="button"
@@ -268,7 +269,7 @@ function handleUploadClick() {
         <Button type="submit" :disabled="!canSave" :title="saveTooltip">
           {{ editingEntry?.is_draft ? 'Veröffentlichen' : 'Speichern' }}
         </Button>
-      </div>
+      </ButtonGroup>
     </form>
   </Modal>
 </template>
@@ -278,8 +279,7 @@ function handleUploadClick() {
   container-type: inline-size;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  margin-bottom: var(--space-4);
+  gap: var(--space-lg);
 }
 
 .file-input-hidden {
@@ -299,18 +299,6 @@ function handleUploadClick() {
 
 .hint.error {
   color: var(--color-danger);
-}
-
-.actions-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-}
-
-.spacer {
-  flex: 1;
 }
 
 .diary-editor :deep(.richtext-content) {
