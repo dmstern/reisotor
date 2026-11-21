@@ -2115,6 +2115,7 @@ onUnmounted(() => {
   border-radius: inherit;
   corner-shape: inherit;
   background: var(--color-surface);
+  box-shadow: inset 0 1px 0 var(--shadow-control-highlight);
   backdrop-filter: none;
   transform: translateZ(0);
   transition: background-color 0.3s cubic-bezier(0.32, 0.72, 0, 1);
