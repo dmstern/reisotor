@@ -686,7 +686,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   flex: 1;
 }
 
-@include container-down('mobile') {
+@include container-down('mobile-sm') {
   .modal-body :slotted(form) .actions-row,
   .modal-body :slotted(*) .actions-row,
   .modal-body :slotted(.actions-row) {
@@ -716,8 +716,8 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
 }
 
 .modal-head h2 {
@@ -730,7 +730,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 .modal-head-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   flex-shrink: 0;
 }
 

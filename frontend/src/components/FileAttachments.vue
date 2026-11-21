@@ -375,10 +375,6 @@ function handleUploadClick() {
 
 <style lang="scss" scoped>
 .file-attachments {
-  margin-top: var(--space-3);
-}
-
-.file-attachments.is-collapsed {
   margin-top: 0;
 }
 
@@ -389,7 +385,7 @@ function handleUploadClick() {
 .heading {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
-  margin-bottom: var(--space-2);
+  margin: 0 0 var(--space-sm);
 }
 
 .attachments-polaroid-wrap {
@@ -407,6 +403,6 @@ function handleUploadClick() {
 }
 
 .error {
-  margin-top: var(--space-1);
+  margin-top: var(--space-sm);
 }
 </style>

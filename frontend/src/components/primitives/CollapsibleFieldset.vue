@@ -121,8 +121,8 @@ function toggle() {
 <style scoped lang="scss">
 .collapsible-fieldset {
   @include surface-sunken-box;
-  padding: var(--space-2) var(--space-3) var(--space-3);
-  margin: var(--space-2) 0;
+  padding: var(--space-sm) var(--space-lg) var(--space-lg);
+  margin: 0;
   min-inline-size: 0;
   max-inline-size: 100%;
   box-sizing: border-box;
@@ -137,7 +137,7 @@ function toggle() {
   border-color: transparent;
   background: transparent;
   padding: 0;
-  margin: var(--space-1) 0;
+  margin: 0;
 }
 
 .collapsible-fieldset legend {
@@ -231,8 +231,8 @@ function toggle() {
 .collapsible-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
+  gap: var(--space-md);
+  margin-top: var(--space-md);
   min-width: 0;
   max-width: 100%;
 }

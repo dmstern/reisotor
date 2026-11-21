@@ -133,7 +133,7 @@ function onChange(event: Event) {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  gap: var(--space-3);
+  gap: var(--space-md);
   text-align: left;
   cursor: pointer;
   user-select: none;
@@ -160,7 +160,7 @@ function onChange(event: Event) {
 
 /* Card-Variante: Deutlich abgesetzte Fläche + sichtbare Kontrast-Umrandung */
 .radio-card--card {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-lg);
   background-color: color-mix(in srgb, var(--color-hover) 70%, var(--color-surface));
   background-image: var(--gradient-surface-3d);
   box-shadow: var(--shadow-card);

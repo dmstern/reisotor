@@ -96,6 +96,10 @@ const html = computed(() => {
   color: var(--color-text-muted);
 }
 
+.richtext :deep(> :last-child) {
+  margin-bottom: 0;
+}
+
 .richtext :deep(> br:last-child) {
   display: none;
 }
