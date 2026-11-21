@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 import type { Attachment } from '../api/types';
 import { isImage, normalizeAttachment, type AttachmentPreviewItem } from '../utils/attachment';
 import { useThumbnailStackAnimation } from '../composables/useThumbnailStackAnimation';
-import IconButton from './primitives/IconButton.vue';
+import CornerRemoveButton from './primitives/CornerRemoveButton.vue';
 import FileFormatGraphic from './primitives/FileFormatGraphic.vue';
 import PolaroidStack from './primitives/PolaroidStack.vue';
 import AppIcon from './AppIcon.vue';
@@ -222,16 +222,12 @@ const stackTooltip = computed(() => {
           </button>
 
           <!-- Roter X-Löschen-Button am Polaroid -->
-          <IconButton
+          <CornerRemoveButton
             v-if="editable"
-            variant="danger"
-            shape="circle"
-            size="xs"
-            :icon="ACTION_ICONS.close"
             class="remove-thumb remove-btn"
             :title="removeTitle"
             :aria-label="removeAriaLabel"
-            @click.stop="emit('remove', index)"
+            @click="emit('remove', index)"
           />
         </div>
       </div>
@@ -633,25 +629,13 @@ const stackTooltip = computed(() => {
 /* ==========================================================================
    LÖSCHEN-BADGE (Rotes X oben rechts)
    ========================================================================== */
-.remove-thumb {
-  position: absolute;
-  top: -7px;
-  right: -7px;
-  width: 22px;
-  height: 22px;
-  min-width: 22px;
-  min-height: 22px;
-  border: 1.5px solid var(--color-surface, #ffffff);
-  z-index: 12;
-}
-
 :root[data-theme='dark'] .remove-thumb {
-  border-color: #2a2825;
+  --corner-remove-ring: #2a2825;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .remove-thumb {
-    border-color: #2a2825;
+    --corner-remove-ring: #2a2825;
   }
 }
 
@@ -659,7 +643,6 @@ const stackTooltip = computed(() => {
   .stack-fan-pill,
   .fanned-item-wrap,
   .fanned-header-bar,
-  .remove-thumb,
   .attachment-thumbnails {
     animation: none !important;
     transition: none !important;

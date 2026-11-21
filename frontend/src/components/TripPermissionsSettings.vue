@@ -6,7 +6,7 @@ import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import FormField from './FormField.vue';
 import Input from './primitives/Input.vue';
-import IconButton from './primitives/IconButton.vue';
+import CornerRemoveButton from './primitives/CornerRemoveButton.vue';
 import Button from './primitives/Button.vue';
 import LoadingSpinner from './primitives/LoadingSpinner.vue';
 import AppIcon from './AppIcon.vue';
@@ -179,17 +179,25 @@ async function removeMember(user: User) {
       <span>Mitglieder laden…</span>
     </div>
     <TransitionGroup v-else tag="ul" name="list" class="member-list">
-      <li v-for="u in members" :key="u.id">
-        <span class="member-user">{{ u.avatar }} {{ u.username }}</span>
-        <IconButton
-          v-if="u.id !== authStore.user?.id"
-          variant="danger"
-          size="sm"
-          :icon="ACTION_ICONS.delete"
-          title="Mitglied entfernen"
-          aria-label="Mitglied entfernen"
-          @click="removeMember(u)"
-        />
+      <li
+        v-for="member in members"
+        :key="member.id"
+        class="member-avatar-item"
+        :class="{ 'is-current-user': member.id === authStore.user?.id }"
+      >
+        <div class="member-avatar-wrap">
+          <div class="member-avatar-circle" :title="member.username">
+            <span class="member-avatar-emoji" aria-hidden="true">{{ member.avatar }}</span>
+          </div>
+          <CornerRemoveButton
+            v-if="member.id !== authStore.user?.id"
+            class="member-remove-btn"
+            title="Mitglied entfernen"
+            aria-label="Mitglied entfernen"
+            @click="removeMember(member)"
+          />
+        </div>
+        <span class="member-avatar-name" :title="member.username">{{ member.username }}</span>
       </li>
       <li v-if="!members.length" key="empty-members" class="empty">Noch keine Mitglieder.</li>
     </TransitionGroup>
@@ -273,7 +281,126 @@ async function removeMember(user: User) {
   color: var(--color-text-muted);
 }
 
-.member-list,
+.member-list {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2) var(--space-1) var(--space-1);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  row-gap: var(--space-3);
+  position: relative;
+}
+
+.member-avatar-item {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  width: 72px;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &:not(:first-child) {
+    margin-left: -14px;
+  }
+
+  &:focus-within {
+    z-index: 15;
+  }
+}
+
+@include can-hover {
+  .member-avatar-item:hover {
+    z-index: 15;
+  }
+
+  .member-avatar-item:hover .member-avatar-circle {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow:
+      inset 0 1.5px 0 var(--shadow-control-highlight-strong),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.14),
+      0 0 0 1px color-mix(in srgb, var(--color-primary) 36%, var(--color-border-strong)),
+      0 12px 24px -4px rgba(0, 0, 0, 0.34),
+      0 4px 10px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.member-avatar-wrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.member-avatar-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.25rem;
+  line-height: 1;
+  user-select: none;
+  background-color: var(--color-surface);
+  background-image:
+    radial-gradient(
+      circle at 32% 24%,
+      color-mix(in srgb, var(--color-primary-tint) 65%, transparent) 0%,
+      transparent 68%
+    ),
+    var(--gradient-surface-3d);
+  border: 2px solid var(--color-surface);
+  box-shadow:
+    inset 0 1.5px 0 var(--shadow-control-highlight-strong),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.12),
+    0 0 0 1px color-mix(in srgb, var(--color-primary) 28%, var(--color-border-strong)),
+    0 8px 18px -4px rgba(0, 0, 0, 0.28),
+    0 2px 6px rgba(0, 0, 0, 0.16);
+  transition:
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.member-remove-btn {
+  --corner-remove-top: -2px;
+  --corner-remove-right: -2px;
+}
+
+.member-avatar-name {
+  max-width: 58px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-list .empty {
+  background: none;
+  padding: var(--space-1) 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  justify-content: flex-start;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .member-avatar-item,
+  .member-avatar-circle {
+    transition: none !important;
+  }
+
+  .member-avatar-item:hover .member-avatar-circle {
+    transform: none !important;
+  }
+}
+
 .search-results {
   @include uniform-height-list(var(--space-2));
   list-style: none;
@@ -282,7 +409,6 @@ async function removeMember(user: User) {
   position: relative;
 }
 
-.member-list li,
 .search-results li {
   display: flex;
   align-items: center;
@@ -304,14 +430,6 @@ async function removeMember(user: User) {
   font-weight: 500;
   color: var(--color-text);
   font-size: 0.95rem;
-}
-
-.member-list .empty {
-  background: none;
-  padding: var(--space-1) 0;
-  font-size: 0.9rem;
-  color: var(--color-text-muted);
-  justify-content: flex-start;
 }
 
 .invite-section {
