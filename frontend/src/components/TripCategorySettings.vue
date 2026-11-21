@@ -524,7 +524,7 @@ watch([() => filteredCategories.value.length, activeType], () => {
   flex-direction: column;
   gap: var(--space-2);
   background: var(--color-bg-subtle, rgba(0, 0, 0, 0.03));
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-md);
   padding: var(--space-3);
 }

@@ -586,7 +586,7 @@ defineExpose({
   padding: 3px 6px 3px 9px;
   border-radius: var(--radius-pill);
   background: var(--color-hover);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text);

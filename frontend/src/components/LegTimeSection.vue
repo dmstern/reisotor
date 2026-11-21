@@ -305,7 +305,7 @@ function onArrivalChange(event: Event) {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   transition:
     background-color var(--transition-fast, 0.15s ease),
     border-color var(--transition-fast, 0.15s ease),

@@ -163,7 +163,7 @@ const singleRouteDistance = computed(() => {
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
-  border: var(--border-width) solid var(--color-border);
+  border: var(--border-width) solid var(--color-border-divider);
   box-shadow: none;
   text-align: left;
   cursor: pointer;

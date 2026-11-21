@@ -275,7 +275,7 @@ async function copyToClipboard(text?: string | null, type?: 'password' | 'link')
   background: var(--color-bg-secondary, var(--color-hover));
   padding: var(--space-3);
   border-radius: var(--radius-sm-squircle);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
 }
 
 .credential-row {

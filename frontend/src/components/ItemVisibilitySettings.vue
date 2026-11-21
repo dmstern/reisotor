@@ -176,7 +176,7 @@ function onKeydown(e: KeyboardEvent, currentVal: TrackVisibility) {
   gap: var(--space-3);
   padding: var(--space-3);
   background: var(--color-surface);
-  border: 1.5px solid var(--color-border);
+  border: 1.5px solid var(--color-border-divider);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   cursor: pointer;
@@ -189,7 +189,7 @@ function onKeydown(e: KeyboardEvent, currentVal: TrackVisibility) {
 }
 
 .visibility-card:hover:not(.is-disabled) {
-  border-color: var(--color-primary-light, var(--color-border));
+  border-color: var(--color-primary-light, var(--color-border-divider));
   background: var(--color-hover);
 }
 
@@ -267,7 +267,7 @@ function onKeydown(e: KeyboardEvent, currentVal: TrackVisibility) {
 }
 
 .badge--private {
-  background: var(--color-border);
+  background: var(--color-border-divider);
   color: var(--color-text-muted);
 }
 
@@ -294,7 +294,7 @@ function onKeydown(e: KeyboardEvent, currentVal: TrackVisibility) {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  border: 2px solid var(--color-border);
+  border: 2px solid var(--color-border-strong);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -320,7 +320,7 @@ function onKeydown(e: KeyboardEvent, currentVal: TrackVisibility) {
   color: var(--color-text-muted);
   padding: var(--space-2) var(--space-3);
   background: var(--color-bg);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
 }

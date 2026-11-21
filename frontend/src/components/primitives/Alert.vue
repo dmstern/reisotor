@@ -145,7 +145,7 @@ const resolvedIcon = computed<IconDef | null>(() => {
     border-color 0.15s ease,
     color 0.15s ease;
   line-height: 1.4;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
 }
 
 .alert--sm {
@@ -300,7 +300,7 @@ const resolvedIcon = computed<IconDef | null>(() => {
 
 .alert--neutral {
   background: var(--color-hover);
-  border-color: var(--color-border);
+  border-color: var(--color-border-divider);
   color: var(--color-text-muted);
 }
 

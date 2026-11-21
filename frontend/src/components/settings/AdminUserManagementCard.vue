@@ -376,7 +376,7 @@ onMounted(() => {
 .users-table th {
   text-align: left;
   padding: var(--space-2) var(--space-3);
-  border-bottom: 2px solid var(--color-border);
+  border-bottom: 2px solid var(--color-border-divider);
   color: var(--color-text-muted);
   font-weight: 600;
   font-size: var(--font-size-xs);
@@ -387,7 +387,7 @@ onMounted(() => {
 
 .users-table td {
   padding: var(--space-3);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-divider);
   vertical-align: middle;
 }
 

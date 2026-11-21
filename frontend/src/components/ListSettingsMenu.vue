@@ -343,7 +343,7 @@ function resetDefaults() {
   color: var(--color-text-muted);
   padding: var(--space-1) var(--space-2) var(--space-1);
   margin-top: var(--space-1);
-  border-top: var(--border-width) solid var(--color-border);
+  border-top: var(--border-width) solid var(--color-border-divider);
 }
 
 .section-icon {
@@ -371,7 +371,7 @@ function resetDefaults() {
   margin: var(--space-2) calc(-1 * var(--space-2)) calc(-1 * var(--space-2));
   padding: var(--space-1) var(--space-2) var(--space-2);
   background: var(--color-surface);
-  border-top: var(--border-width) solid var(--color-border);
+  border-top: var(--border-width) solid var(--color-border-divider);
   z-index: 2;
 }
 

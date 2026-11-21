@@ -294,7 +294,7 @@ function isTripEnd(date: string) {
 .day.other-month {
   background: color-mix(in srgb, var(--color-surface) 60%, var(--color-hover));
   border-style: dashed;
-  border-color: color-mix(in srgb, var(--color-border) 80%, transparent);
+  border-color: color-mix(in srgb, var(--color-border-divider) 80%, transparent);
 }
 
 .day.other-month .num {

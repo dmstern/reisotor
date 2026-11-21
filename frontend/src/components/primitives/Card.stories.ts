@@ -144,7 +144,7 @@ export const ExpandableInteractive: Story = {
         </template>
 
         <template #expanded>
-          <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--color-border); font-size: 0.85rem;">
+          <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--color-border-divider); font-size: 0.85rem;">
             <p><strong>Notizen:</strong> Wunderschöner Strand mit seichtem Wasser, ideal zum Schnorcheln.</p>
             <p style="margin: 0;"><strong>Beste Zeit:</strong> Vormittags vor 11:00 Uhr wegen des Windes.</p>
           </div>

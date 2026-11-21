@@ -288,14 +288,12 @@
   --color-calendar-travel-tint: var(--color-travel-tint);
   --color-calendar-travel-border: var(--color-travel-border);
 
-  /* #95 "Eingabe Elemente cleanup": Buttons/Inputs/Selects/Dropdowns bekommen app-weit einen ganz
-     leicht kräftigeren Rahmen als das bisherige --color-border (das bleibt für dezentere Trennlinien
-     wie .richtext-Regeln/Karten-Rand unverändert). --color-border-strong für neutrale Flächen
-     (Inputs/Select/button.secondary/.btn--tonal/Popover-Menüs), --color-button-edge zusätzlich
-     für die farbigen Buttons (primary/danger) selbst - dort würde ein neutraler Beige-/Grauton gegen
-     die satte Hintergrundfarbe kaum wirken, ein dezent abdunkelnder Overlay-Ton (statt Hex, damit er
-     auf jedem --color-primary/--color-danger-Ton gleich funktioniert) zeichnet die Kante dagegen auch
-     auf farbigem Grund sichtbar nach. */
+  /* Dreistufige Border-Token-Regel (Details & Abgrenzung siehe DESIGN.md):
+     1. --color-border: Dekorativer Rahmen für erhobene/schattierte Flächen (Cards, Drawers, Modals, Popovers, Dropdowns)
+     2. --color-border-divider: Semantischer Trenner zwischen Bereichen gleicher/ähnlicher Fläche (Listen, <hr>, Tabellen, Sektions-Trenner, Sub-Boxen)
+     3. --color-border-strong: Interaktive Controls (Inputs, Selects, Comboboxes, btn--secondary, Pill-/Control-Outlines)
+     --color-button-edge zusätzlich für farbige Buttons (primary/danger) auf satte Hintergrundfarben. */
+  --color-border-divider: #e8e2d9;
   --color-border-strong: #d5cabc;
   /* Rahmenfarbe aller Eingabefelder inkl. input-ähnlicher Wrapper (QuickAddRow, Combobox, Editor) */
   --input-border-color: var(--color-border-strong);
@@ -713,6 +711,7 @@
     --color-calendar-appointment: #a8a8a4;
     --color-calendar-appointment-tint: rgba(168, 168, 164, 0.16);
     --color-calendar-appointment-border: rgba(168, 168, 164, 0.4);
+    --color-border-divider: #2e2c28;
     --color-border-strong: #4a453c;
     --input-border-color: var(--color-border-strong);
     --color-input-bg: #141311;
@@ -886,6 +885,7 @@
   --color-calendar-appointment: #a8a8a4;
   --color-calendar-appointment-tint: rgba(168, 168, 164, 0.16);
   --color-calendar-appointment-border: rgba(168, 168, 164, 0.4);
+  --color-border-divider: #2e2c28;
   --color-border-strong: #4a453c;
   --input-border-color: var(--color-border-strong);
   --color-input-bg: #141311;
@@ -1044,6 +1044,7 @@
   --color-travel-dark: #158f64;
   --color-travel-tint: rgba(27, 175, 122, 0.1);
   --color-travel-border: rgba(27, 175, 122, 0.35);
+  --color-border-divider: #e8e2d9;
   --color-border-strong: #d5cabc;
   --input-border-color: var(--color-border-strong);
   --color-input-bg: #faf8f5;

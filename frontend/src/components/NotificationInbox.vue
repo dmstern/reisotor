@@ -496,7 +496,7 @@ function dismissPwaInstall() {
   justify-content: space-between;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-divider);
   flex-shrink: 0;
 }
 
@@ -717,7 +717,7 @@ function dismissPwaInstall() {
 
 .system-divider {
   height: 1px;
-  background: var(--color-border);
+  background: var(--color-border-divider);
   margin: var(--space-1) var(--space-2);
 }
 </style>

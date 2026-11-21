@@ -82,7 +82,7 @@ function onToggle() {
   flex-shrink: 0;
   box-sizing: border-box;
   padding: 2px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-pill);
   background-color: color-mix(in srgb, var(--color-text-muted) 28%, var(--color-surface));
   box-shadow:

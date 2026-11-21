@@ -17,8 +17,24 @@ export const ColorPalette: Story = {
           tokens: [
             { var: '--color-bg', name: 'Hintergrund', light: '#faf8f5', dark: '#181715' },
             { var: '--color-surface', name: 'Karten & Panels', light: '#ffffff', dark: '#232220' },
-            { var: '--color-border', name: 'Standard-Rand', light: '#e8e2d9', dark: '#38352f' },
-            { var: '--color-border-strong', name: 'Feld-Rand', light: '#d5cabc', dark: '#4a453c' },
+            {
+              var: '--color-border',
+              name: 'Dekorativer Rahmen',
+              light: '#e8e2d9',
+              dark: '#0d0d0c',
+            },
+            {
+              var: '--color-border-divider',
+              name: 'Semantischer Trenner',
+              light: '#e8e2d9',
+              dark: '#2e2c28',
+            },
+            {
+              var: '--color-border-strong',
+              name: 'Interaktive Controls',
+              light: '#d5cabc',
+              dark: '#4a453c',
+            },
             { var: '--color-text', name: 'Text Haupt', light: '#2b2a28', dark: '#f2efe9' },
             { var: '--color-text-muted', name: 'Text Gedämpft', light: '#66625b', dark: '#a8a29a' },
           ],
@@ -84,7 +100,7 @@ export const ColorPalette: Story = {
         <p style="color: var(--color-text-muted); margin-bottom: 24px;">Zentrale CSS-Farbtokens (Light & Dark Mode automatisch angepasst).</p>
 
         <div v-for="group in colorGroups" :key="group.name" style="margin-bottom: 28px;">
-          <h3 style="margin-bottom: 12px; font-size: 1.1rem; border-bottom: 1px solid var(--color-border); padding-bottom: 4px;">{{ group.name }}</h3>
+          <h3 style="margin-bottom: 12px; font-size: 1.1rem; border-bottom: 1px solid var(--color-border-divider); padding-bottom: 4px;">{{ group.name }}</h3>
           <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px;">
             <div
               v-for="t in group.tokens"

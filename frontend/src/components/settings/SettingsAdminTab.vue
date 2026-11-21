@@ -1520,7 +1520,7 @@ async function handleGenerateVapid() {
   align-items: flex-start;
   gap: var(--space-3);
   padding: var(--space-3);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   cursor: pointer;
@@ -1662,7 +1662,7 @@ async function handleGenerateVapid() {
   align-items: center;
   gap: var(--space-3);
   padding-top: var(--space-3);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
 }
 
 .save-success-msg {
@@ -1681,7 +1681,7 @@ async function handleGenerateVapid() {
   flex-wrap: wrap;
   margin-top: var(--space-3);
   padding-top: var(--space-3);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
 }
 
 .smtp-test-input {
@@ -1743,7 +1743,7 @@ async function handleGenerateVapid() {
   padding: 1px 4px;
   background: var(--color-surface-elevated, rgba(255, 255, 255, 0.06));
   border-radius: var(--radius-xs, 4px);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
 }
 
 .smtp-guide-content a,
@@ -1780,7 +1780,7 @@ async function handleGenerateVapid() {
   padding: 1px 4px;
   background: var(--color-surface-elevated, rgba(255, 255, 255, 0.06));
   border-radius: var(--radius-xs, 4px);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
 }
 
 .feedback-alert {

@@ -130,7 +130,7 @@ watch(() => props.stations, render, { deep: true });
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   overflow: hidden;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
 }
 
 :root[data-theme='dark'] .mini-map :deep(.leaflet-tile-pane) {

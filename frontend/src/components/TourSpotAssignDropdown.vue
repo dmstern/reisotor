@@ -229,7 +229,7 @@ onUnmounted(() => {
 
 .popup-head {
   padding: 2px 6px 6px;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-divider);
 }
 
 .popup-title {
@@ -281,7 +281,7 @@ onUnmounted(() => {
 .create-spot-footer {
   margin-top: var(--space-1);
   padding-top: var(--space-1);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
 }
 
 .create-spot-btn {

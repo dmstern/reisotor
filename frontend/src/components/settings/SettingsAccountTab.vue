@@ -459,7 +459,7 @@ watch(
   border-radius: var(--radius-pill);
   font-size: var(--font-size-xs);
   font-weight: 600;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   background: var(--color-surface);
 }
 
@@ -524,13 +524,13 @@ watch(
 .username-form {
   margin-bottom: var(--space-4);
   padding-top: var(--space-4);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
 }
 
 .email-form {
   margin-bottom: var(--space-4);
   padding-top: var(--space-4);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
 }
 
 .label-row {

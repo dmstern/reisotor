@@ -346,7 +346,7 @@ function handleMainClick(e: MouseEvent) {
   height: 36px;
   min-height: 34px;
   padding: 0 12px;
-  border: 1.5px solid var(--color-border);
+  border: 1.5px solid var(--color-border-strong);
   border-radius: var(--radius-pill);
   corner-shape: round;
   background: var(--color-surface);
@@ -506,7 +506,7 @@ function handleMainClick(e: MouseEvent) {
   min-width: 34px;
   min-height: 34px;
   padding: 0;
-  border: 1.5px solid var(--color-border);
+  border: 1.5px solid var(--color-border-strong);
   border-radius: var(--radius-full);
   corner-shape: round;
   background: var(--color-surface);

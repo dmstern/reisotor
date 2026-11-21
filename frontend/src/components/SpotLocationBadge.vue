@@ -267,7 +267,7 @@ function onEditClick(closePopover?: () => void) {
 .popover-action {
   margin-top: var(--space-1);
   padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
 }
 
 .popover-edit-btn {

@@ -1005,7 +1005,7 @@ const isFeedbackActive = computed(() =>
   gap: var(--space-2);
   padding: var(--space-2) var(--space-6) 0;
   background: color-mix(in srgb, var(--color-primary-tint) 45%, var(--color-surface));
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-divider);
   min-width: 0;
   max-width: 100%;
 }
@@ -1113,7 +1113,7 @@ const isFeedbackActive = computed(() =>
 
 .legal-header {
   padding-bottom: var(--space-4);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-divider);
 }
 
 .legal-header h1 {
@@ -1141,7 +1141,7 @@ const isFeedbackActive = computed(() =>
 
 .legal-section + .legal-section {
   padding-top: var(--space-4);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
 }
 
 .legal-section h2 {
@@ -1156,7 +1156,7 @@ const isFeedbackActive = computed(() =>
 .legal-subsection,
 .legal-card-info {
   background: var(--color-surface-sunken, var(--color-bg));
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   padding: var(--space-3) var(--space-4);
@@ -1302,7 +1302,7 @@ const isFeedbackActive = computed(() =>
 .legal-disclaimer-note {
   margin-top: var(--space-2);
   padding-top: var(--space-4);
-  border-top: 1px dashed var(--color-border-strong, var(--color-border));
+  border-top: 1px dashed var(--color-border-divider);
   font-size: var(--font-size-sm, 0.85rem);
   color: var(--color-text-muted);
 }

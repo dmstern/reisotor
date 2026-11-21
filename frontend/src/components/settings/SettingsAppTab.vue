@@ -273,7 +273,7 @@ const {
 .mobile-nav-config-section {
   padding-top: var(--space-3);
   margin-top: var(--space-3);
-  border-top: 1px dashed var(--color-border);
+  border-top: 1px dashed var(--color-border-divider);
 }
 
 .mobile-nav-config-hint {

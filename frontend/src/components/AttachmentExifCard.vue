@@ -105,7 +105,7 @@ const { currentMetadata, hasExifMetadata, formatExifDateTime, onShowLocationOnMa
   padding: var(--space-3) var(--space-4);
   margin-top: var(--space-3);
   background: var(--color-surface-sunken);
-  border: var(--border-width) solid var(--color-border);
+  border: var(--border-width) solid var(--color-border-divider);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   transition: border-color var(--transition-fast);

@@ -64,7 +64,7 @@ withDefaults(
   justify-content: space-between;
   gap: var(--space-2);
   padding: 9px var(--space-2);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-divider);
   min-width: 0;
 }
 

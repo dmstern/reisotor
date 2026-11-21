@@ -183,7 +183,7 @@ function onChange(event: Event) {
   padding: var(--space-3);
   margin: var(--space-2) 0;
   background-color: var(--color-hover);
-  border: var(--border-width) solid var(--color-border);
+  border: var(--border-width) solid var(--color-border-strong);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
 }

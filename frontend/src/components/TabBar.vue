@@ -259,7 +259,7 @@ function onTabClick(key: string) {
 }
 
 .tab-bar {
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-divider);
   /* Scrollbar statt umbrechend, wenn zu viele/zu lange Tab-Label für die verfügbare Breite reichen
      (z. B. SettingsView.vue's 6 Tabs) - gleiches Muster wie NavBar.vue's mobile Scroll-Leiste, statt
      die Tabs auf mehrere Zeilen umbrechen zu lassen. */

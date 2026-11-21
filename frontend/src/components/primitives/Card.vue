@@ -672,7 +672,7 @@ const isNewHighlight = computed(() => {
 .card-footer {
   margin-top: var(--space-3);
   padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
 }
 
 .card-expanded-slot {

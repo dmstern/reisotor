@@ -171,7 +171,7 @@ const activeFrameIndex = computed(() => {
   justify-content: space-between;
   padding: var(--space-2) var(--space-3);
   background: var(--color-hover);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-divider);
 }
 
 .chrome-controls {
@@ -206,7 +206,7 @@ const activeFrameIndex = computed(() => {
   border-radius: var(--radius-pill);
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
 }
 
 .chrome-tag {
