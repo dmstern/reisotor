@@ -249,7 +249,7 @@ async function removeMember(user: User) {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .trip-permissions-settings {
   display: flex;
   flex-direction: column;
@@ -275,12 +275,10 @@ async function removeMember(user: User) {
 
 .member-list,
 .search-results {
+  @include uniform-height-list(var(--space-2));
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
   position: relative;
 }
 
