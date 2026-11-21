@@ -142,7 +142,7 @@ const hasInfoBadges = computed(() =>
       </div>
     </header>
 
-    <Accordion v-if="showComments" :expanded="showComments">
+    <Accordion class="tour-detail-comments-accordion" :expanded="showComments">
       <Comments
         :comments="comments"
         @submit="(content) => emit('submit-comment', content)"
@@ -293,6 +293,19 @@ const hasInfoBadges = computed(() =>
   align-items: center;
   gap: var(--space-xs);
   min-width: 0;
+}
+
+.tour-detail-comments-accordion {
+  margin-top: calc(-1 * var(--space-md));
+}
+
+.tour-detail-comments-accordion :deep(.comments) {
+  margin-top: var(--space-md);
+  padding-top: 0;
+  padding-bottom: var(--space-md);
+  border-top: none;
+  box-shadow: none;
+  @include divider-engraved('bottom');
 }
 
 .tour-detail-note-wrap {

@@ -358,7 +358,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
         </div>
       </div>
 
-      <Accordion v-if="expanded && showComments" :expanded="expanded && showComments">
+      <Accordion class="comments-accordion" :expanded="expanded && showComments">
         <Comments
           :comments="comments"
           @click.stop
@@ -563,6 +563,19 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 .spot-card.expanded .body {
   padding-top: var(--spot-card-pad);
   gap: var(--space-md);
+}
+
+.comments-accordion {
+  margin-top: calc(-1 * var(--space-2));
+}
+
+.spot-card.expanded .comments-accordion {
+  margin-top: calc(-1 * var(--space-md));
+}
+
+.comments-accordion :deep(.comments) {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
 }
 
 .card-title-block {
@@ -840,6 +853,10 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
     min-height: 64px;
     gap: var(--space-2xs);
     overflow: hidden;
+  }
+
+  .spot-card:not(.expanded) .comments-accordion {
+    margin-top: calc(-1 * var(--space-2xs));
   }
 
   .spot-card:not(.expanded) .card-title-block {
