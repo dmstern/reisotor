@@ -179,6 +179,7 @@ const SEARCH_PLACEHOLDER_BY_MODE = {
 const searchPlaceholder = computed(() => SEARCH_PLACEHOLDER_BY_MODE[groupMode.value]);
 
 const selectedExcursionId = ref<number | null>(null);
+const lastViewedExcursionId = ref<number | null>(null);
 
 const selectedExcursion = computed(() =>
   selectedExcursionId.value != null
@@ -1952,7 +1953,10 @@ onUnmounted(() => {
                     class="tour-group-card"
                     :excursion="grp.excursion"
                     :highlighted="highlightedExcursionIds.has(grp.excursion.id)"
-                    :focused="dayFocusExcursionIds.has(grp.excursion.id)"
+                    :focused="
+                      dayFocusExcursionIds.has(grp.excursion.id) ||
+                      lastViewedExcursionId === grp.excursion.id
+                    "
                     :like-count="excursionLikesFor(grp.excursion.id).length"
                     :liked="excursionLikedByMe(grp.excursion.id)"
                     :comments="excursionCommentItemsFor(grp.excursion.id)"

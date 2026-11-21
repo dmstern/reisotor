@@ -174,10 +174,6 @@ function onCardKeydown(event: KeyboardEvent) {
   flex-direction: row;
   align-items: stretch;
   min-height: 5rem;
-  border: none !important;
-  border-radius: 0 !important;
-  corner-shape: auto !important;
-  box-shadow: none !important;
   background: transparent !important;
   cursor: pointer;
   overflow: visible;
@@ -185,6 +181,20 @@ function onCardKeydown(event: KeyboardEvent) {
   transition:
     background 0.2s ease,
     box-shadow 0.2s ease;
+}
+
+.card.excursion-card:not(.is-map-focused),
+.excursion-card:not(.is-map-focused) {
+  border: none !important;
+  border-radius: 0 !important;
+  corner-shape: auto !important;
+  box-shadow: none !important;
+}
+
+.card.excursion-card.is-map-focused,
+.excursion-card.is-map-focused {
+  /* Abstand links/rechts, damit der 2px-Fokus-Ring von Card.vue nicht durch overflow-x: hidden abgeschnitten wird */
+  margin-inline: 2px;
 }
 
 .excursion-card.is-travel,
@@ -218,6 +228,10 @@ function onCardKeydown(event: KeyboardEvent) {
   .excursion-card:hover {
     transform: none;
     background: var(--color-hover) !important;
+  }
+
+  .card.card--interactive.excursion-card:not(.is-map-focused):hover,
+  .excursion-card:not(.is-map-focused):hover {
     box-shadow: none !important;
   }
 
