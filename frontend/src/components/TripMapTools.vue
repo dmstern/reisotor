@@ -301,7 +301,7 @@ const {
 
 .picker-divider {
   border: none;
-  @include divider-engraved('top');
+  @include divider-engraved('bottom');
   margin: var(--space-1) 0;
 }
 

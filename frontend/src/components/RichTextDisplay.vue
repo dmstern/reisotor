@@ -82,7 +82,7 @@ const html = computed(() => {
 .richtext :deep(hr) {
   margin: var(--space-2) 0;
   border: none;
-  @include divider-engraved('top');
+  @include divider-engraved('bottom');
 }
 
 .richtext :deep(code) {

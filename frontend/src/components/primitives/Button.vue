@@ -365,21 +365,6 @@ a.btn.is-loading {
   background-color: var(--color-control-active-bg);
 }
 
-/* Opake Oberfläche für gerahmte Buttons auf Rahmen- oder Verbindungslinien (z. B. CollapsibleFieldset, TourLegConnector) */
-.btn--secondary.btn--opaque {
-  background-color: var(--color-surface);
-}
-
-@include can-hover {
-  .btn--secondary.btn--opaque:hover:not(:disabled):not(.is-disabled) {
-    background-color: var(--color-hover);
-  }
-}
-
-.btn--secondary.btn--opaque:active:not(:disabled):not(.is-disabled) {
-  background-color: var(--color-hover);
-}
-
 /* Gestrichelte Sekundär-/Hinzufügen-Variante für leere/optionale Slots (#810) */
 .btn--dashed {
   border-style: dashed;
@@ -443,6 +428,21 @@ a.btn.is-loading {
 
 .btn--danger.btn--secondary:active:not(:disabled):not(.is-disabled) {
   background-color: color-mix(in srgb, var(--color-danger) 18%, transparent);
+}
+
+/* Opake Oberfläche für gerahmte Buttons auf Rahmen- oder Verbindungslinien (z. B. CollapsibleFieldset, TourLegConnector) */
+.btn--secondary.btn--opaque {
+  background-color: var(--color-surface);
+}
+
+@include can-hover {
+  .btn--secondary.btn--opaque:hover:not(:disabled):not(.is-disabled) {
+    background-color: var(--color-hover);
+  }
+}
+
+.btn--secondary.btn--opaque:active:not(:disabled):not(.is-disabled) {
+  background-color: var(--color-hover);
 }
 
 /* Tonal: sanft getönte Kontext-Aktion, initial flach -> Progressive 3D */

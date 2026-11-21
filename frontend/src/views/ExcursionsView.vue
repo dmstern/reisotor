@@ -2147,7 +2147,6 @@ onUnmounted(() => {
   --category-nav-bg: transparent;
   background: var(--category-nav-bg);
   backdrop-filter: none;
-  border-bottom-color: var(--color-divider-groove);
 }
 
 .spots-col.partial :deep(.category-nav-wrap.is-stuck) {
@@ -2593,7 +2592,6 @@ onUnmounted(() => {
       --category-nav-bg: var(--color-surface);
       background: var(--category-nav-bg);
       backdrop-filter: none;
-      border-bottom-color: var(--color-divider-groove);
     }
 
     .sheet-handle-row {
