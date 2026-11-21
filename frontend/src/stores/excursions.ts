@@ -39,9 +39,16 @@ export const useExcursionsStore = defineStore('excursions', () => {
   const liveSync = useLiveSyncStore();
   const excursions = shallowRef<Excursion[]>([]);
   const loaded = ref(false);
+  const lastViewedExcursionId = ref<number | null>(null);
+  let loadedTripId: number | null = null;
 
   async function load() {
     const tripId = tripStore.currentTripId;
+
+    if (tripId !== loadedTripId) {
+      lastViewedExcursionId.value = null;
+      loadedTripId = tripId;
+    }
 
     if (tripId == null) {
       excursions.value = [];
@@ -84,6 +91,11 @@ export const useExcursionsStore = defineStore('excursions', () => {
     const { showToast } = useToast();
     await api.delete(`/ideas/${id}`);
     excursions.value = excursions.value.filter((e) => e.id !== id);
+
+    if (lastViewedExcursionId.value === id) {
+      lastViewedExcursionId.value = null;
+    }
+
     showToast({
       message: 'Element gelöscht. Es befindet sich nun im Papierkorb.',
       type: 'info',
@@ -141,5 +153,15 @@ export const useExcursionsStore = defineStore('excursions', () => {
     excursions.value = next;
   }
 
-  return { excursions, loaded, load, create, update, remove, setDate, setDone };
+  return {
+    excursions,
+    loaded,
+    lastViewedExcursionId,
+    load,
+    create,
+    update,
+    remove,
+    setDate,
+    setDone,
+  };
 });

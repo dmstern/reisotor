@@ -179,6 +179,7 @@ const SEARCH_PLACEHOLDER_BY_MODE = {
 const searchPlaceholder = computed(() => SEARCH_PLACEHOLDER_BY_MODE[groupMode.value]);
 
 const selectedExcursionId = ref<number | null>(null);
+const tourDetailScreenEl = ref<HTMLElement | null>(null);
 
 const selectedExcursion = computed(() =>
   selectedExcursionId.value != null
@@ -283,6 +284,7 @@ const {
   scrollToExcursion,
   scrollToSpot,
   isCardWellVisibleInBody,
+  getExcursionElement,
   getSpotElement,
   cancelProgrammaticScroll,
 } = navSpy;
@@ -714,9 +716,15 @@ function clearTourLineTimeouts() {
 }
 
 const tourViewTransitionName = ref<'tour-drill-forward' | 'tour-drill-back' | ''>('');
+let pendingDetailFocusExcursionId: number | null = null;
 
 watch(selectedExcursionId, (newId, oldId) => {
   clearTourLineTimeouts();
+  pendingDetailFocusExcursionId = newId;
+
+  if (newId != null) {
+    excursionsStore.lastViewedExcursionId = newId;
+  }
 
   if (newId != null && oldId == null && groupMode.value === 'tours') {
     tourViewTransitionName.value = 'tour-drill-forward';
@@ -821,6 +829,7 @@ watch(
 
     selectedExcursionId.value = null;
     expandedSpotId.value = null;
+    excursionsStore.lastViewedExcursionId = null;
 
     if (drawers.mapFocusExcursionId === id) {
       drawers.mapFocusExcursionId = null;
@@ -840,6 +849,10 @@ watch(selectedExcursionStationItems, () => {
 watch(groupMode, (newMode) => {
   tourViewTransitionName.value = '';
 
+  if (newMode !== 'tours') {
+    excursionsStore.lastViewedExcursionId = null;
+  }
+
   if (newMode !== 'tours' && selectedExcursionId.value != null) {
     selectedExcursionId.value = null;
     expandedSpotId.value = null;
@@ -850,6 +863,77 @@ watch(groupMode, (newMode) => {
   }
 });
 
+function focusLastViewedExcursionCard() {
+  const excursionId = excursionsStore.lastViewedExcursionId;
+
+  if (excursionId == null || isTourDetailOpen.value || groupMode.value !== 'tours') {
+    return;
+  }
+
+  const cardEl = getExcursionElement(excursionId);
+
+  if (!cardEl) {
+    return;
+  }
+
+  excursionsStore.lastViewedExcursionId = null;
+  cardEl.focus({ preventScroll: true });
+
+  if (!isCardWellVisibleInBody(cardEl)) {
+    void scrollToExcursion(excursionId);
+  }
+}
+
+const TOUR_DETAIL_FOCUSABLE_SELECTOR =
+  'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
+
+function focusFirstElementInTourDetail() {
+  if (
+    !isTourDetailOpen.value ||
+    selectedExcursionId.value == null ||
+    pendingDetailFocusExcursionId !== selectedExcursionId.value
+  ) {
+    return;
+  }
+
+  const container = tourDetailScreenEl.value;
+
+  if (!container) {
+    return;
+  }
+
+  if (document.activeElement && container.contains(document.activeElement)) {
+    pendingDetailFocusExcursionId = null;
+    return;
+  }
+
+  const firstFocusable = container.querySelector<HTMLElement>(TOUR_DETAIL_FOCUSABLE_SELECTOR);
+
+  if (firstFocusable) {
+    pendingDetailFocusExcursionId = null;
+    firstFocusable.focus({ preventScroll: true });
+  }
+}
+
+watch(
+  () => [loading.value, isTourDetailOpen.value, groupMode.value] as const,
+  ([isLoading, detailOpen, mode]) => {
+    if (isLoading || mode !== 'tours') {
+      return;
+    }
+
+    if (detailOpen) {
+      focusFirstElementInTourDetail();
+      return;
+    }
+
+    if (excursionsStore.lastViewedExcursionId != null) {
+      focusLastViewedExcursionCard();
+    }
+  },
+  { flush: 'post' }
+);
+
 function onTourViewEnter() {
   if (!spotsColBodyEl.value) {
     return;
@@ -857,15 +941,25 @@ function onTourViewEnter() {
 
   if (isTourDetailOpen.value && selectedExcursionId.value != null) {
     spotsColBodyEl.value.scrollTop = 0;
+    nextTick(focusFirstElementInTourDetail);
     return;
   }
 
   spotsColBodyEl.value.scrollTop = savedTourListScrollTop;
+  nextTick(focusLastViewedExcursionCard);
 }
 
 function onTourViewAfterEnter() {
   if (isTourDetailOpen.value && selectedExcursionId.value != null) {
     recomputeTourLine(selectedExcursionId.value);
+    focusFirstElementInTourDetail();
+    return;
+  }
+
+  focusLastViewedExcursionCard();
+
+  if (excursionsStore.lastViewedExcursionId != null) {
+    excursionsStore.lastViewedExcursionId = null;
   }
 }
 
@@ -1835,6 +1929,7 @@ onUnmounted(() => {
               <div
                 v-if="isTourDetailOpen && selectedExcursion"
                 key="tour-detail"
+                ref="tourDetailScreenEl"
                 class="tour-detail-screen"
               >
                 <div class="tour-detail-back-bar">

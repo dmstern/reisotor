@@ -54,6 +54,7 @@ describe('ExcursionCard', () => {
     stations: Spot[];
     travelItems: TravelItem[];
     highlighted?: boolean;
+    focused?: boolean;
   }) {
     const app = createApp({
       render: () => h(ExcursionCard, props),
@@ -109,5 +110,20 @@ describe('ExcursionCard', () => {
 
     expect(html).toContain('is-travel');
     expect(html).toContain('has-role');
+  });
+
+  it('rendert is-map-focused ohne new-highlight wenn focused gesetzt ist', async () => {
+    const html = await mountComponent({
+      excursion: mockExcursion,
+      likeCount: 0,
+      liked: false,
+      comments: [],
+      stations: mockStations,
+      travelItems: [],
+      focused: true,
+    });
+
+    expect(html).toContain('is-map-focused');
+    expect(html).not.toContain('new-highlight');
   });
 });

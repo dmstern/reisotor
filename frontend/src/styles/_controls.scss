@@ -662,6 +662,18 @@
   --color-input-bg: var(--color-input-bg-sunken);
 }
 
+/// Kräftiger, abgerundeter Brand-Fokus-Rahmen für Karten- und Listen-Elemente
+/// (geteilt zwischen Card.is-map-focused und ExcursionCard:focus).
+@mixin card-focus-ring {
+  position: relative;
+  z-index: var(--z-map-focus, 6);
+  border-color: var(--color-primary) !important;
+  box-shadow:
+    0 0 0 2px var(--color-primary),
+    0 8px 24px -4px color-mix(in srgb, var(--color-primary) 32%, transparent),
+    0 2px 8px -1px color-mix(in srgb, var(--color-primary) 20%, transparent) !important;
+}
+
 /// Vertikale Liste, in der alle Einträge automatisch exakt die Höhe des höchsten
 /// Eintrags annehmen (ohne feste Pixel-Werte). Verhindert unruhige Höhen-Sprünge
 /// bei optionalen Action-Buttons oder Sublines.

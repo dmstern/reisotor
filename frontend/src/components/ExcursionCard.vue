@@ -174,10 +174,8 @@ function onCardKeydown(event: KeyboardEvent) {
   flex-direction: row;
   align-items: stretch;
   min-height: 5rem;
-  border: none !important;
-  border-radius: 0 !important;
-  corner-shape: auto !important;
-  box-shadow: none !important;
+  margin-inline: 2px;
+  border: var(--border-width) solid transparent;
   background: transparent !important;
   cursor: pointer;
   overflow: visible;
@@ -185,6 +183,20 @@ function onCardKeydown(event: KeyboardEvent) {
   transition:
     background 0.2s ease,
     box-shadow 0.2s ease;
+}
+
+.card.excursion-card:not(.is-map-focused):not(:focus),
+.excursion-card:not(.is-map-focused):not(:focus) {
+  border-color: transparent !important;
+  border-radius: 0 !important;
+  corner-shape: auto !important;
+  box-shadow: none !important;
+}
+
+.card.excursion-card:focus,
+.excursion-card:focus {
+  outline: none;
+  @include card-focus-ring;
 }
 
 .excursion-card.is-travel,
@@ -218,6 +230,10 @@ function onCardKeydown(event: KeyboardEvent) {
   .excursion-card:hover {
     transform: none;
     background: var(--color-hover) !important;
+  }
+
+  .card.card--interactive.excursion-card:not(.is-map-focused):not(:focus):hover,
+  .excursion-card:not(.is-map-focused):not(:focus):hover {
     box-shadow: none !important;
   }
 
