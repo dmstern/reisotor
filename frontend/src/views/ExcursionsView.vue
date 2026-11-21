@@ -2103,9 +2103,21 @@ onUnmounted(() => {
   corner-shape: inherit;
   background: var(--color-surface);
   backdrop-filter: none;
-  box-shadow: inset 0 1px 0 var(--shadow-control-highlight);
   transform: translateZ(0);
   transition: background-color 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Obere Glanzkante als eigenes Overlay-Layer über .spots-col-body und sticky .category-nav-wrap,
+   damit der opake Hintergrund der fixierten Tab-Leiste beim Scrollen die Kante nicht überdeckt. */
+.spots-col::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  border-radius: inherit;
+  corner-shape: inherit;
+  box-shadow: inset 0 1px 0 var(--shadow-control-highlight);
 }
 
 /* Wie bei Apple Karten: im eingeklappten ("klein") und angeschnittenen ("halb") Zustand schwebt
