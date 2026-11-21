@@ -31,7 +31,7 @@ const html = computed(() => {
   <div class="richtext" v-html="html"></div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .richtext :deep(> :first-child) {
   margin-top: 0;
 }
@@ -82,7 +82,7 @@ const html = computed(() => {
 .richtext :deep(hr) {
   margin: var(--space-2) 0;
   border: none;
-  border-top: 1px solid var(--color-border-divider);
+  @include divider-engraved('top');
 }
 
 .richtext :deep(code) {

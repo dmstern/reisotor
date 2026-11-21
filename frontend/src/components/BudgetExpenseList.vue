@@ -75,7 +75,7 @@ const store = useBudgetStore();
   </TransitionGroup>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .list {
   list-style: none;
   margin: 0;
@@ -87,13 +87,14 @@ const store = useBudgetStore();
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--color-border-divider);
+  @include divider-engraved('bottom');
   flex-wrap: wrap;
   min-width: 0;
 }
 
 .row:last-child {
   border-bottom: none;
+  box-shadow: none;
 }
 
 .row-main {

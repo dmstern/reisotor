@@ -160,11 +160,11 @@ function formatCommentDate(dateStr?: string): string {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .comments {
   margin-top: var(--space-3);
   padding-top: var(--space-3);
-  border-top: 1px solid var(--color-border-divider);
+  @include divider-engraved('top');
   display: flex;
   flex-direction: column;
   gap: var(--space-2);

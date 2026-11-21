@@ -383,7 +383,7 @@ const isNewHighlight = computed(() => {
 }
 </style>
 
-<style scoped>
+<style lang="scss" scoped>
 /* Varianten-Styles von Card.vue */
 .card--muted {
   background: var(--color-hover);
@@ -684,7 +684,7 @@ const isNewHighlight = computed(() => {
 .card-footer {
   margin-top: var(--space-3);
   padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border-divider);
+  @include divider-engraved('top');
   min-width: 0;
 }
 

@@ -675,7 +675,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   margin-top: var(--space-4);
   padding-top: var(--space-3);
   padding-bottom: var(--space-3);
-  border-top: 1px solid var(--color-border-divider);
+  @include divider-engraved('top');
 }
 
 .modal-body :slotted(form) .actions-row .spacer,
