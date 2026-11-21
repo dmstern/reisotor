@@ -71,7 +71,7 @@ defineProps<{
 }
 
 .tour-placeholder .placeholder {
-  font-size: 1.75rem;
+  font-size: var(--font-size-2xl);
   color: var(--excursion-theme-color, var(--color-tour));
   opacity: 0.7;
 }
@@ -122,7 +122,7 @@ defineProps<{
   }
 
   .tour-placeholder .placeholder {
-    font-size: 1.25rem;
+    font-size: var(--font-size-xl);
   }
 
   :deep(.tour-polaroid-stack) {

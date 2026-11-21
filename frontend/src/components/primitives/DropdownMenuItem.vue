@@ -185,7 +185,7 @@ function handleClick(event: MouseEvent) {
   font-family: inherit;
   font-size: var(--font-size-sm);
   font-weight: 500;
-  line-height: 1.3;
+  line-height: var(--line-height-snug);
   text-decoration: none;
   text-align: left;
   cursor: pointer;

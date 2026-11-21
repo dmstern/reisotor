@@ -482,7 +482,7 @@ function onDeleteLeg() {
 .leg-btn {
   min-width: 0;
   max-width: 100%;
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   font-weight: 500;
   text-align: left;
 }
@@ -516,7 +516,7 @@ function onDeleteLeg() {
 
 .leg-duration {
   color: var(--color-text-muted);
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
 }
 
 .leg-cost {
@@ -535,7 +535,7 @@ function onDeleteLeg() {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
   background: var(--color-hover);
@@ -564,7 +564,7 @@ function onDeleteLeg() {
 
 .planned-box legend,
 .spot-picker legend {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text-muted);
   padding: 0 var(--space-1);
@@ -572,7 +572,7 @@ function onDeleteLeg() {
 
 .order-hint {
   margin: 0 0 var(--space-1);
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
@@ -605,7 +605,7 @@ function onDeleteLeg() {
 }
 
 .order-num {
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
   font-weight: 700;
   color: var(--color-primary-dark);
   flex-shrink: 0;
@@ -622,7 +622,7 @@ function onDeleteLeg() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .remove-btn {
@@ -647,7 +647,7 @@ function onDeleteLeg() {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   white-space: nowrap;
   flex-shrink: 0;
@@ -658,7 +658,7 @@ function onDeleteLeg() {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   background: none;
   border: none;
   border-radius: var(--radius-sm-squircle);
@@ -702,7 +702,7 @@ function onDeleteLeg() {
 
 .spot-picker-empty {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 </style>

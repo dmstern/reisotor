@@ -336,7 +336,7 @@ async function emptyTrash() {
 
 .trash-icon {
   flex-shrink: 0;
-  font-size: 1.4rem;
+  font-size: var(--font-size-xl);
 }
 
 .trash-info {
@@ -356,7 +356,7 @@ async function emptyTrash() {
 }
 
 .trash-meta {
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   word-break: break-word;
 }

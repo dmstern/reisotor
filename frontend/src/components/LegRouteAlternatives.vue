@@ -221,7 +221,7 @@ const singleRouteDistance = computed(() => {
   font-size: var(--font-size-xs);
   font-weight: 600;
   border-radius: var(--radius-pill);
-  line-height: 1.3;
+  line-height: var(--line-height-snug);
 }
 
 .badge-fastest {

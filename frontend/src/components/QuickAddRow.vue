@@ -203,7 +203,7 @@ function onBlur(event: FocusEvent) {
   /* Mindestens 16px (1rem, siehe style.css's globale input-Regel) - iOS Safari zoomt beim
      Fokussieren eines Eingabefelds automatisch rein, sobald dessen font-size darunter liegt. */
   font-size: var(--font-size-md);
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
   color: var(--color-text);
   outline: none;
   box-shadow: none;

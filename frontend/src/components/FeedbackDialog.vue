@@ -334,8 +334,8 @@ function close() {
 
 .publish-confirm-text {
   margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.5;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
   color: var(--color-text);
 }
 
@@ -350,7 +350,7 @@ label {
   flex-direction: column;
   gap: var(--space-1);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .label-text {
@@ -367,7 +367,7 @@ label {
 
 .hint {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .hint.error {
@@ -395,7 +395,7 @@ label {
   gap: var(--space-1);
   align-self: flex-start;
   min-height: 44px;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 400;
   color: var(--color-primary);
   cursor: pointer;
@@ -428,7 +428,7 @@ label {
 
 .screenshot-github-note {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -455,7 +455,7 @@ label {
 .screenshot-name {
   flex: 1;
   min-width: 0;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;

@@ -18,7 +18,7 @@ import Badge from './primitives/Badge.vue';
 
 <style scoped>
 .draft-badge {
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   flex-shrink: 0;
 }
 </style>

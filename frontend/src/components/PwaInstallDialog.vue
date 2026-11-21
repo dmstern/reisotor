@@ -135,7 +135,7 @@ function close() {
 
 h3 {
   margin: 0 0 var(--space-2);
-  font-size: 0.95rem;
+  font-size: var(--font-size-sm);
   color: var(--color-primary-dark);
 }
 
@@ -145,7 +145,7 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .steps {
@@ -154,7 +154,7 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .hint {
@@ -162,7 +162,7 @@ h3 {
   align-items: center;
   gap: 6px;
   margin: 0 0 var(--space-2);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 </style>

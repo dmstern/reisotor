@@ -479,7 +479,7 @@ function onSubmit() {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: 0.95rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text);
 }
@@ -489,7 +489,7 @@ label,
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -501,7 +501,7 @@ label,
 
 .hint {
   margin: -4px 0 0;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -557,7 +557,7 @@ label,
 }
 
 .location-box .field-label {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text);
 }

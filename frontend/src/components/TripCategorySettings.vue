@@ -554,7 +554,7 @@ watch([() => filteredCategories.value.length, activeType], () => {
 }
 
 .stage-tag {
-  font-size: 0.68rem;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;

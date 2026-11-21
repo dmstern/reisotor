@@ -35,9 +35,9 @@ const licenseUrl = computed(() => `${resolvedRepoUrl.value}/blob/main/LICENSE`);
 .app-footer-copyright {
   margin: 0;
   text-align: center;
-  font-size: var(--font-size-sm, 0.85rem);
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
   width: 100%;
   container-type: inline-size;
 }

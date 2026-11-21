@@ -235,7 +235,7 @@ function openBugReport() {
   gap: var(--space-2);
   padding: var(--space-3);
   @include surface-sunken-box;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .meta-row {
@@ -247,7 +247,7 @@ function openBugReport() {
 .meta-row dt {
   font-weight: 600;
   color: var(--color-text-muted);
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
 }
 
 .meta-row dd {
@@ -258,7 +258,7 @@ function openBugReport() {
 
 .mono-inline {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
 }
 
 .stacktrace-box {
@@ -266,8 +266,8 @@ function openBugReport() {
   padding: var(--space-2) var(--space-3);
   @include surface-sunken-box(var(--radius-sm-squircle));
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 0.75rem;
-  line-height: 1.45;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
   color: var(--color-text);
   overflow-x: auto;
   max-height: 240px;

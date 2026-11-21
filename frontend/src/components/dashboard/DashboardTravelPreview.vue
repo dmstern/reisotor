@@ -172,8 +172,8 @@ const timeStr = computed(() => {
 }
 
 .ticket-icon {
-  font-size: 0.65rem;
-  line-height: 1;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-none);
 }
 
 .ticket-code {

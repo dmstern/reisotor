@@ -36,7 +36,7 @@ withDefaults(
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .weather-alert-card--warning {
@@ -58,7 +58,7 @@ withDefaults(
 }
 
 .weather-alert-card__alert-content strong {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
 }
 </style>

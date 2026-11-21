@@ -76,8 +76,8 @@ function handleConfirm() {
 <style scoped>
 .track-warning-modal .track-warning-intro {
   margin-bottom: var(--space-3);
-  font-size: 0.92rem;
-  line-height: 1.45;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
   color: var(--color-text);
 }
 
@@ -90,7 +90,7 @@ function handleConfirm() {
 
 .track-warning-modal .track-warning-point h4 {
   margin: 0 0 4px;
-  font-size: 0.92rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-primary-dark);
   display: flex;
@@ -100,8 +100,8 @@ function handleConfirm() {
 
 .track-warning-modal .track-warning-point p {
   margin: 0;
-  font-size: 0.88rem;
-  line-height: 1.45;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
   color: var(--color-text-muted);
 }
 </style>

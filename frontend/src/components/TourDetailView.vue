@@ -234,7 +234,7 @@ const hasInfoBadges = computed(() =>
   min-width: 0;
   font-size: var(--font-size-lg);
   font-weight: 700;
-  line-height: 1.3;
+  line-height: var(--line-height-snug);
   color: var(--color-text);
   overflow-wrap: break-word;
 }
@@ -303,7 +303,7 @@ const hasInfoBadges = computed(() =>
 .tour-detail-note {
   overflow-wrap: anywhere;
   font-size: var(--font-size-sm);
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
   color: var(--color-text);
 }
 

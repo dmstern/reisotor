@@ -90,7 +90,7 @@ const { robotPhase, onPackingDone } = useLandingRobot();
   font-size: clamp(1.1rem, 2vw, 1.4rem);
   max-width: 50ch;
   color: var(--color-text-muted);
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
 }
 
 .floating-island {
@@ -115,7 +115,7 @@ const { robotPhase, onPackingDone } = useLandingRobot();
   box-sizing: border-box;
   border-radius: var(--radius-pill);
   font-weight: 600;
-  font-size: 1.05rem;
+  font-size: var(--font-size-md);
   text-decoration: none;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }

@@ -228,7 +228,7 @@ const title = computed(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 :root[data-theme='dark'] .polaroid-title {

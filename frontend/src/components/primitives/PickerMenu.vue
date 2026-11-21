@@ -212,9 +212,9 @@ onUnmounted(() => {
   corner-shape: squircle;
   color: var(--color-text);
   font-family: inherit;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
-  line-height: 1.3;
+  line-height: var(--line-height-snug);
   text-decoration: none;
   white-space: nowrap;
   border: none;
@@ -252,7 +252,7 @@ onUnmounted(() => {
 .picker-menu :deep(.picker-menu-hint) {
   margin: 0 0 2px;
   padding: 4px 8px;
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   white-space: normal;
 }

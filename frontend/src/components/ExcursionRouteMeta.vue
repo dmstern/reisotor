@@ -58,7 +58,7 @@ defineProps<{
 .route {
   margin: 0;
   font-size: var(--font-size-xs);
-  line-height: 1.35;
+  line-height: var(--line-height-snug);
   color: var(--color-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -81,7 +81,7 @@ defineProps<{
   gap: var(--space-1);
   margin: 0;
   font-size: var(--font-size-xs);
-  line-height: 1.35;
+  line-height: var(--line-height-snug);
   color: var(--color-text-muted);
 }
 

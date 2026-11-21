@@ -244,7 +244,7 @@ function close() {
   margin: 0;
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
 }
 
 .roles-table-wrapper {
@@ -299,7 +299,7 @@ function close() {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   font-weight: normal;
-  line-height: 1.3;
+  line-height: var(--line-height-snug);
 }
 
 .feature-title {
@@ -313,14 +313,14 @@ function close() {
   display: block;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  line-height: 1.3;
+  line-height: var(--line-height-snug);
 }
 
 .cell-content {
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
 }
 
 .icon-wrap {
@@ -392,7 +392,7 @@ function close() {
   align-items: flex-start;
   gap: var(--space-2);
   font-size: var(--font-size-sm);
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
 }
 
 .role-card-item-text {

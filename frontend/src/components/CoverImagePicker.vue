@@ -755,10 +755,10 @@ function handleModalClose(visible: boolean) {
 }
 
 .banner-loading-text {
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text-secondary);
-  line-height: 1.2;
+  line-height: var(--line-height-tight);
 }
 
 .banner-loading-shimmer {
@@ -814,7 +814,7 @@ function handleModalClose(visible: boolean) {
 }
 
 .form-image-banner .placeholder {
-  font-size: 2.5rem;
+  font-size: var(--font-size-2xl);
   margin: auto;
 }
 
@@ -877,7 +877,7 @@ function handleModalClose(visible: boolean) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
 }
 
 .browse-title {
@@ -886,7 +886,7 @@ function handleModalClose(visible: boolean) {
 }
 
 .browse-counter {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
@@ -909,7 +909,7 @@ function handleModalClose(visible: boolean) {
 }
 
 .browse-msg {
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   font-style: italic;
 }

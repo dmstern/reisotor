@@ -77,6 +77,6 @@ const extraCount = computed(() => Math.max(0, props.images.length - 4));
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 </style>

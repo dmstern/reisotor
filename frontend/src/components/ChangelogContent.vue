@@ -296,7 +296,7 @@ const changelogGithubUrl = computed(() => {
 }
 
 .changelog-group-title {
-  font-size: 0.95rem;
+  font-size: var(--font-size-sm);
   font-weight: 700;
   color: var(--color-primary);
   margin: 0;
@@ -325,16 +325,16 @@ const changelogGithubUrl = computed(() => {
   display: flex;
   align-items: baseline;
   gap: var(--space-2);
-  font-size: 0.925rem;
-  line-height: 1.5;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
   color: var(--color-text);
   padding: 2px 0;
 }
 
 .note-bullet {
-  font-size: 1.05rem;
+  font-size: var(--font-size-md);
   flex-shrink: 0;
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
   user-select: none;
 }
 
@@ -371,7 +371,7 @@ const changelogGithubUrl = computed(() => {
   align-items: center;
   gap: var(--space-1);
   color: var(--color-primary);
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   text-decoration: none;
   transition: color var(--transition-fast, 0.15s ease);

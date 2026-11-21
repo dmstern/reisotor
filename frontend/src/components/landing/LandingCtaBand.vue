@@ -73,7 +73,7 @@ defineProps<{
 }
 .cta-band p {
   color: rgba(255, 255, 255, 0.9);
-  font-size: 1.2rem;
+  font-size: var(--font-size-lg);
   margin: 0 0 var(--space-3) 0;
   max-width: 50ch;
 }
@@ -89,7 +89,7 @@ defineProps<{
   box-sizing: border-box;
   border-radius: var(--radius-pill);
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: var(--font-size-lg);
   text-decoration: none;
   box-shadow: var(--shadow-md);
   transition:

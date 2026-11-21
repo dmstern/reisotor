@@ -595,7 +595,7 @@ defineExpose({
   font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text);
-  line-height: 1.25;
+  line-height: var(--line-height-tight);
 }
 
 .coords-missing-badge {
@@ -609,7 +609,7 @@ defineExpose({
   font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-warning-dark, var(--color-warning));
-  line-height: 1.25;
+  line-height: var(--line-height-tight);
 }
 
 .coords-clear-inline-btn.btn--icon-only.btn--xs {
@@ -780,7 +780,7 @@ defineExpose({
 }
 
 .location-item-address {
-  font-size: 0.7rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;

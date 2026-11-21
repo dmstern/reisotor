@@ -579,7 +579,7 @@
   corner-shape: round;
   font-size: var(--font-size-xs);
   font-weight: 600;
-  line-height: 1;
+  line-height: var(--line-height-none);
   flex-shrink: 0;
   user-select: none;
   box-shadow: none;

@@ -157,7 +157,7 @@ const previewTodos = computed(() => {
   display: flex;
   align-items: center;
   gap: 3px;
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .todo-box {

@@ -493,7 +493,7 @@ watch(
   margin: 0;
   width: 100%;
   max-width: 350px;
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
 }
 
 .pending-sync-btn {

@@ -183,8 +183,8 @@ function isRevealed(hIdx: number): boolean {
 }
 
 .step-desc {
-  font-size: 1.05rem;
-  line-height: 1.6;
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-relaxed);
   color: var(--color-text-muted);
   margin-bottom: var(--space-4);
 }
@@ -202,7 +202,7 @@ function isRevealed(hIdx: number): boolean {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: 0.95rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   font-weight: 500;
   border-radius: var(--radius-md);

@@ -47,7 +47,7 @@ defineProps<{ station: ExcursionStation }>();
 }
 
 .placeholder {
-  font-size: 1.4rem;
+  font-size: var(--font-size-xl);
 }
 
 .body {
@@ -61,16 +61,16 @@ defineProps<{ station: ExcursionStation }>();
 }
 
 .title {
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
-  line-height: 1.2;
+  line-height: var(--line-height-tight);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .category {
-  font-size: 0.68rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   white-space: nowrap;
   overflow: hidden;

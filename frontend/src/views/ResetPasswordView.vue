@@ -183,7 +183,7 @@ async function onSubmit() {
 }
 
 .reset-card h2 {
-  font-size: 1.15rem;
+  font-size: var(--font-size-lg);
   margin: 0;
 }
 
@@ -200,7 +200,7 @@ async function onSubmit() {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   margin: 0;
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
 }
 
 .field {
@@ -210,7 +210,7 @@ async function onSubmit() {
   gap: var(--space-1);
   text-align: left;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 button {
@@ -219,13 +219,13 @@ button {
 
 .back-btn,
 .action-btn {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .error {
   color: var(--color-danger);
   margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .error-text {
@@ -247,7 +247,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
   width: 100%;
 }
 </style>

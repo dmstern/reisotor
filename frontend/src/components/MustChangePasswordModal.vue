@@ -153,7 +153,7 @@ async function onSubmit() {
 
 .modal-head-custom h2 {
   margin: 0 0 var(--space-3) 0;
-  font-size: 1.15rem;
+  font-size: var(--font-size-lg);
   color: var(--color-primary-dark);
   display: flex;
   align-items: center;
@@ -164,9 +164,9 @@ async function onSubmit() {
 .intro {
   margin-top: 0;
   margin-bottom: var(--space-4);
-  font-size: 0.95rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
-  line-height: 1.45;
+  line-height: var(--line-height-normal);
 }
 
 .password-form {
@@ -185,14 +185,14 @@ async function onSubmit() {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text-heading);
 }
 
 .error-msg {
   color: var(--color-danger, #d93838);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   margin: 0;
 }
 

@@ -297,7 +297,7 @@ const hasPhoto = computed(() => {
 }
 
 .placeholder-icon {
-  font-size: 1.85rem;
+  font-size: var(--font-size-2xl);
 }
 
 /* 3. Titel- & Meta-Block */
@@ -307,10 +307,10 @@ const hasPhoto = computed(() => {
 
 .detail-title {
   margin: 0 0 6px;
-  font-size: 1.25rem;
+  font-size: var(--font-size-xl);
   font-weight: 700;
   color: var(--color-text);
-  line-height: 1.3;
+  line-height: var(--line-height-snug);
   word-break: break-word;
 }
 

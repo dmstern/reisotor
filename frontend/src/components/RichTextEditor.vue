@@ -328,7 +328,7 @@ defineExpose({
   }
 
   .richtext-editor:not(.compact) :deep(.richtext-content) {
-    font-size: 1.05rem;
+    font-size: var(--font-size-md);
   }
 }
 
@@ -388,7 +388,7 @@ defineExpose({
   color: var(--color-text);
   font-size: var(--font-size-sm);
   cursor: pointer;
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .toolbar-btn:hover {
@@ -418,13 +418,13 @@ defineExpose({
   margin: 0;
   color: var(--color-text-muted);
   pointer-events: none;
-  font-size: 0.95rem;
-  line-height: 1.5;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
 }
 
 @media (min-width: 800px) {
   .richtext-editor:not(.compact) .editor-placeholder {
-    font-size: 1.05rem;
+    font-size: var(--font-size-md);
   }
 }
 
@@ -477,26 +477,26 @@ defineExpose({
 .richtext-editor :deep(.richtext-content h6) {
   margin: var(--space-2) 0 4px;
   font-weight: 600;
-  line-height: 1.25;
+  line-height: var(--line-height-tight);
   color: var(--color-text);
 }
 
 .richtext-editor :deep(.richtext-content h1) {
-  font-size: 1.3rem;
+  font-size: var(--font-size-xl);
 }
 
 .richtext-editor :deep(.richtext-content h2) {
-  font-size: 1.15rem;
+  font-size: var(--font-size-lg);
 }
 
 .richtext-editor :deep(.richtext-content h3) {
-  font-size: 1.05rem;
+  font-size: var(--font-size-md);
 }
 
 .richtext-editor :deep(.richtext-content h4),
 .richtext-editor :deep(.richtext-content h5),
 .richtext-editor :deep(.richtext-content h6) {
-  font-size: 0.95rem;
+  font-size: var(--font-size-sm);
 }
 
 .richtext-editor :deep(.richtext-content blockquote) {

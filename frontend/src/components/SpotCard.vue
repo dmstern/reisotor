@@ -575,7 +575,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   margin: 0;
   font-size: var(--font-size-md);
   font-weight: 600;
-  line-height: 1.3;
+  line-height: var(--line-height-snug);
   color: var(--color-text);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -599,7 +599,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   overflow-wrap: anywhere;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
 }
 
 .note.is-clamped {
@@ -876,7 +876,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
     -webkit-line-clamp: 1;
     line-clamp: 1;
     font-size: var(--font-size-sm);
-    line-height: 1.4;
+    line-height: var(--line-height-snug);
   }
 }
 

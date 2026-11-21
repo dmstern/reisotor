@@ -23,7 +23,7 @@ withDefaults(
 <style scoped>
 .detail-row {
   margin: 0 0 var(--space-2);
-  font-size: 0.92rem;
+  font-size: var(--font-size-sm);
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -33,7 +33,7 @@ withDefaults(
 }
 
 .detail-row__label {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
   text-transform: uppercase;

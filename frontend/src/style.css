@@ -541,12 +541,18 @@
   --font-sans:
     'Fira Sans', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
   --font-diary: 'Architects Daughter', cursive, sans-serif;
-  --font-size-xs: 0.8125rem;
-  --font-size-sm: 0.9375rem;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
   --font-size-md: 1rem;
-  --font-size-lg: 1.2rem;
-  --font-size-xl: 1.4rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.375rem;
   --font-size-2xl: 1.75rem;
+
+  --line-height-none: 1;
+  --line-height-tight: 1.2;
+  --line-height-snug: 1.35;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
 
   --input-default-height: 46px;
   --input-height: 46px;
@@ -618,15 +624,6 @@
     --control-radius-sm-squircle: calc(var(--control-radius-sm) * 1.75);
     --control-radius-md-squircle: calc(var(--control-radius-md) * 1.75);
     --control-radius-lg-squircle: calc(var(--control-radius-lg) * 1.75);
-  }
-}
-
-@media (min-width: 1024px) {
-  :root {
-    --font-size-md: 1.0625rem;
-    --font-size-lg: 1.25rem;
-    --font-size-xl: 1.5rem;
-    --font-size-2xl: 1.875rem;
   }
 }
 
@@ -1221,6 +1218,7 @@ body.map-view-active {
 body {
   font-family: var(--font-sans);
   font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
   font-size-adjust: from-font;
   background: var(--color-bg);
   color: var(--color-text);
@@ -1241,15 +1239,31 @@ h1,
 h2,
 h3 {
   font-weight: 600;
-  line-height: 1.2;
+  line-height: var(--line-height-tight);
   margin: 0 0 var(--space-3);
 }
 
 /* Etwas kräftiger und enger getrackt als h2/h3 – große, fette Überschriften mit leicht negativem
    letter-spacing sind ein sehr prägendes Merkmal von Apples Typografie (SF Pro Display). */
 h1 {
+  font-size: var(--font-size-2xl);
   font-weight: 700;
   letter-spacing: -0.01em;
+}
+
+h2 {
+  font-size: var(--font-size-xl);
+}
+
+h3 {
+  font-size: var(--font-size-lg);
+}
+
+h4 {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  line-height: var(--line-height-snug);
+  margin: var(--space-2) 0 var(--space-1);
 }
 
 p {
@@ -1631,7 +1645,7 @@ p + .btn {
     -1px 1px 0 var(--color-surface),
     1px 1px 0 var(--color-surface),
     0 0 4px var(--color-surface) !important;
-  font-size: 0.7rem;
+  font-size: var(--font-size-xs);
   opacity: 0.7;
   transition: opacity 0.2s ease;
 }

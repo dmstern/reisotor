@@ -138,7 +138,7 @@ function resetColor() {
 }
 
 .color-name {
-  font-size: 0.82rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text);
   overflow: hidden;
@@ -165,7 +165,7 @@ function resetColor() {
 }
 
 .picker-title {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text);
 }
@@ -183,7 +183,7 @@ function resetColor() {
 
 .hex-code {
   font-family: monospace;
-  font-size: 0.82rem;
+  font-size: var(--font-size-sm);
   font-weight: 700;
   color: var(--color-text-muted);
 }
@@ -205,7 +205,7 @@ function resetColor() {
 }
 
 .preview-title {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 700;
   color: var(--color-text);
   flex: 1;

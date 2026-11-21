@@ -304,7 +304,7 @@ function isTripEnd(date: string) {
 .day-head {
   display: flex;
   flex-direction: column;
-  line-height: 1.1;
+  line-height: var(--line-height-tight);
 }
 
 .weekday.sr-only {
@@ -360,7 +360,7 @@ function isTripEnd(date: string) {
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text);
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .day.today .num {
@@ -380,11 +380,11 @@ function isTripEnd(date: string) {
   display: inline-flex;
   align-items: center;
   gap: 1px;
-  font-size: 0.62rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
   white-space: nowrap;
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .acc-bar {
@@ -393,7 +393,7 @@ function isTripEnd(date: string) {
   gap: 2px;
   background: var(--color-accent-secondary-bg);
   color: var(--color-accent-secondary);
-  font-size: 0.58rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   border-radius: var(--radius-xs-squircle);
   corner-shape: squircle;
@@ -401,7 +401,7 @@ function isTripEnd(date: string) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.25;
+  line-height: var(--line-height-tight);
 }
 
 .acc-bar :deep(.app-icon) {
@@ -425,7 +425,7 @@ function isTripEnd(date: string) {
   display: flex;
   align-items: center;
   gap: 2px;
-  font-size: 0.62rem;
+  font-size: var(--font-size-xs);
   background: var(--color-hover);
   border-radius: var(--radius-xs-squircle);
   corner-shape: squircle;
@@ -434,7 +434,7 @@ function isTripEnd(date: string) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.25;
+  line-height: var(--line-height-tight);
 }
 
 .item-line :deep(.app-icon) {
@@ -493,7 +493,7 @@ function isTripEnd(date: string) {
 }
 
 .more {
-  font-size: 0.58rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
   padding: 0 3px;
@@ -506,11 +506,6 @@ function isTripEnd(date: string) {
     min-height: 84px;
     padding: 7px 6px;
     gap: var(--space-1);
-  }
-
-  .item-line,
-  .acc-bar {
-    font-size: 0.68rem;
   }
 }
 

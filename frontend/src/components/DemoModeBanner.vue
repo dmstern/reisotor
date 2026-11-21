@@ -42,7 +42,7 @@ function reset() {
   padding: var(--space-1) var(--space-3);
   background: var(--color-primary-tint);
   color: var(--color-primary-dark);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   text-align: center;
   border-bottom: 1px solid var(--color-primary);
 }
@@ -54,7 +54,7 @@ function reset() {
 }
 
 .demo-banner-actions button {
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
   padding: 0.25rem 0.6rem;
 }
 

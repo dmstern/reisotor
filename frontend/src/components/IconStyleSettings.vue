@@ -224,7 +224,7 @@ const isDefault = computed(() => {
 }
 
 .icon-style-preview-label {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text-muted);
 }
@@ -259,7 +259,7 @@ const isDefault = computed(() => {
 }
 
 .group-override-label {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text);
 }
 
@@ -280,7 +280,7 @@ const isDefault = computed(() => {
 }
 
 .group-color-label {
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   transition: opacity 0.15s ease;
 }

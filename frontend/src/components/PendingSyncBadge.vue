@@ -46,9 +46,9 @@ function onClick(event: MouseEvent) {
   align-items: center;
   gap: var(--space-1);
   font-family: inherit;
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
-  line-height: 1.2;
+  line-height: var(--line-height-tight);
   white-space: nowrap;
   padding: 2px var(--space-2);
   border-radius: var(--radius-pill);

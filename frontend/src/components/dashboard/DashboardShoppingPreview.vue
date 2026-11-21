@@ -187,7 +187,7 @@ const percent = computed(() => {
   font-size: 0.32rem;
   color: #94a3b8;
   display: block;
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .receipt-items {
@@ -206,7 +206,7 @@ const percent = computed(() => {
 .receipt-check {
   font-size: 0.42rem;
   color: #94a3b8;
-  line-height: 1;
+  line-height: var(--line-height-none);
   width: 6px;
 }
 
@@ -305,7 +305,7 @@ const percent = computed(() => {
 }
 
 .bag-badge-icon {
-  font-size: 0.7rem;
+  font-size: var(--font-size-xs);
 }
 
 /* Hover-Interaktion über Elternelement */

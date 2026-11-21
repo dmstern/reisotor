@@ -633,7 +633,7 @@ function handleClick(e: Event) {
   font-size: 0.44rem;
   font-weight: 700;
   color: #1e293b;
-  line-height: 1;
+  line-height: var(--line-height-none);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -665,7 +665,7 @@ function handleClick(e: Event) {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 :root[data-theme='dark'] .polaroid-caption {

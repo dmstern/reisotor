@@ -50,26 +50,26 @@ const html = computed(() => {
 .richtext :deep(h6) {
   margin: var(--space-2) 0 4px;
   font-weight: 600;
-  line-height: 1.25;
+  line-height: var(--line-height-tight);
   color: var(--color-text);
 }
 
 .richtext :deep(h1) {
-  font-size: 1.3rem;
+  font-size: var(--font-size-xl);
 }
 
 .richtext :deep(h2) {
-  font-size: 1.15rem;
+  font-size: var(--font-size-lg);
 }
 
 .richtext :deep(h3) {
-  font-size: 1.05rem;
+  font-size: var(--font-size-md);
 }
 
 .richtext :deep(h4),
 .richtext :deep(h5),
 .richtext :deep(h6) {
-  font-size: 0.95rem;
+  font-size: var(--font-size-sm);
 }
 
 .richtext :deep(blockquote) {

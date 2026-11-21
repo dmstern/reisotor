@@ -237,6 +237,7 @@ provide(
   font-size: var(--font-size-md);
   font-family: inherit;
   font-weight: 600;
+  line-height: var(--line-height-tight);
   border-radius: var(--control-radius-md-squircle, 10px);
   corner-shape: squircle;
   /* Verlauf bis unter den (transparenten) Rand ziehen, sonst kachelt er dort und zeigt unten einen hellen Streifen */
@@ -454,7 +455,7 @@ a.btn.is-loading {
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
-  line-height: 1.3;
+  line-height: var(--line-height-snug);
 }
 
 @include can-hover {
@@ -670,7 +671,7 @@ a.btn.is-loading {
   height: var(--control-height-md, 46px);
   min-width: var(--control-height-md, 46px);
   min-height: var(--control-height-md, 46px);
-  font-size: 1.3rem;
+  font-size: var(--font-size-xl);
 }
 
 .btn--icon-only.btn--xs,
@@ -680,7 +681,7 @@ a.btn.is-loading {
   height: var(--control-height-xs, 30px);
   min-width: var(--control-height-xs, 30px);
   min-height: var(--control-height-xs, 30px);
-  font-size: 0.95rem;
+  font-size: var(--font-size-md);
 }
 
 .btn--icon-only.btn--sm,
@@ -690,7 +691,7 @@ a.btn.is-loading {
   height: var(--control-height-sm, 36px);
   min-width: var(--control-height-sm, 36px);
   min-height: var(--control-height-sm, 36px);
-  font-size: 1.1rem;
+  font-size: var(--font-size-lg);
 }
 
 .btn--icon-only.btn--lg,
@@ -700,7 +701,7 @@ a.btn.is-loading {
   height: var(--control-height-lg, 52px);
   min-width: var(--control-height-lg, 52px);
   min-height: var(--control-height-lg, 52px);
-  font-size: 1.5rem;
+  font-size: var(--font-size-2xl);
 }
 
 /* Linked-Entity Pill: harmonisiert auf sm-Grundlinie (36px) & Progressive 3D (#810) */
@@ -722,7 +723,7 @@ a.btn.is-loading {
   color: var(--color-text);
   font-size: var(--font-size-sm);
   font-weight: 500;
-  line-height: 1.3;
+  line-height: var(--line-height-snug);
   text-decoration: none;
 }
 

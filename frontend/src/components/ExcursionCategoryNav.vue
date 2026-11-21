@@ -230,8 +230,8 @@ const emit = defineEmits<{
 }
 
 .category-nav-icon {
-  font-size: 1.05rem;
-  line-height: 1;
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-none);
 }
 
 .category-nav-label {

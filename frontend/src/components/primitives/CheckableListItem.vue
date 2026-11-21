@@ -139,7 +139,7 @@ withDefaults(
 :deep(.item-title),
 :deep(.title) {
   font-size: var(--font-size-md);
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
 }
 
 :deep(.checkable-list-item__meta),

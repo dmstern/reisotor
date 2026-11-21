@@ -208,7 +208,7 @@ onUnmounted(() => {
   position: relative;
   display: inline-flex;
   align-items: center;
-  line-height: 1;
+  line-height: var(--line-height-none);
   max-width: 100%;
 }
 
@@ -230,7 +230,7 @@ onUnmounted(() => {
 }
 
 .popup-title {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
   text-transform: uppercase;
@@ -248,7 +248,7 @@ onUnmounted(() => {
 .empty {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 0.82rem;
+  font-size: var(--font-size-sm);
   padding: 6px 4px;
   cursor: default;
 }

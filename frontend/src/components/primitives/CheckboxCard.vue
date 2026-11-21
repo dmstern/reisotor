@@ -267,7 +267,7 @@ function onChange(event: Event) {
 .checkbox-card__label {
   font-size: var(--font-size-sm);
   font-weight: 600;
-  line-height: 1.35;
+  line-height: var(--line-height-snug);
   color: var(--color-text);
   transition: color 0.15s ease;
 }
@@ -276,7 +276,7 @@ function onChange(event: Event) {
   margin: 2px 0 0;
   font-size: var(--font-size-xs);
   font-weight: normal;
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
   color: var(--color-text-muted);
 }
 

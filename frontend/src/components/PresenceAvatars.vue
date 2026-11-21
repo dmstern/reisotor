@@ -119,8 +119,8 @@ const overflowCount = computed(() => Math.max(0, otherMembers.value.length - MAX
   height: 32px;
   border-radius: var(--radius-pill);
   background: var(--color-primary-tint);
-  font-size: 1.05rem;
-  line-height: 1;
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-none);
   border: 2px solid var(--color-surface);
   /* Leicht überlappend wie bei Google Docs, statt einzeln nebeneinander zu stehen. */
   margin-left: -10px;
@@ -143,7 +143,7 @@ const overflowCount = computed(() => Math.max(0, otherMembers.value.length - MAX
 }
 
 .presence-avatar.overflow {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   color: var(--color-text-muted);
 }

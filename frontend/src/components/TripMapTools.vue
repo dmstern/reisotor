@@ -311,8 +311,8 @@ const {
   align-items: center;
   justify-content: center;
   width: 20px;
-  font-size: 1.1rem;
-  line-height: 1;
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-none);
   flex-shrink: 0;
 }
 

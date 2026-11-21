@@ -576,7 +576,7 @@ async function remove(id: number) {
   flex: 1;
   min-width: 0;
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--font-size-md);
   color: var(--color-primary-dark);
   overflow-wrap: break-word;
 }
@@ -600,7 +600,7 @@ async function remove(id: number) {
 
 .syntax-hint {
   margin: -4px 0 0;
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
@@ -609,7 +609,7 @@ async function remove(id: number) {
   border-radius: var(--radius-xs-squircle);
   corner-shape: squircle;
   padding: 1px 5px;
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
 }
 
 .content {
@@ -620,7 +620,7 @@ async function remove(id: number) {
 
 .meta {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   min-width: 0;
   overflow-wrap: break-word;

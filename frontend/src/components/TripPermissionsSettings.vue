@@ -265,7 +265,7 @@ async function removeMember(user: User) {
 }
 
 .section-title {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text-muted);
   text-transform: uppercase;
@@ -277,7 +277,7 @@ async function removeMember(user: User) {
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) 0;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -334,7 +334,7 @@ async function removeMember(user: User) {
   display: flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
+  line-height: var(--line-height-none);
   user-select: none;
   background-color: var(--color-surface);
   background-image: var(--gradient-surface-3d);
@@ -345,7 +345,7 @@ async function removeMember(user: User) {
 .member-avatar-circle {
   width: 72px;
   height: 72px;
-  font-size: 2.25rem;
+  font-size: var(--font-size-2xl);
   transition:
     transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
     border-color 0.2s ease,
@@ -371,7 +371,7 @@ async function removeMember(user: User) {
 .member-list .empty {
   background: none;
   padding: var(--space-1) 0;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   justify-content: flex-start;
 }
@@ -416,7 +416,7 @@ async function removeMember(user: User) {
   width: 40px;
   height: 40px;
   flex-shrink: 0;
-  font-size: 1.35rem;
+  font-size: var(--font-size-xl);
 }
 
 .member-user {
@@ -427,7 +427,7 @@ async function removeMember(user: User) {
   white-space: nowrap;
   font-weight: 500;
   color: var(--color-text);
-  font-size: 0.95rem;
+  font-size: var(--font-size-sm);
 }
 
 .invite-section {
@@ -439,7 +439,7 @@ async function removeMember(user: User) {
 .hint {
   color: var(--color-text-muted);
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .warning-hint {
@@ -482,7 +482,7 @@ async function removeMember(user: User) {
 .error {
   color: var(--color-danger);
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
 }
 
@@ -491,7 +491,7 @@ async function removeMember(user: User) {
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-1) 0;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 </style>

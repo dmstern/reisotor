@@ -162,7 +162,7 @@ const displayDate = computed(() => {
   font-weight: 800;
   color: #ffffff;
   letter-spacing: 0.8px;
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .sheet-body {
@@ -176,10 +176,10 @@ const displayDate = computed(() => {
 }
 
 .day-number {
-  font-size: 1.25rem;
+  font-size: var(--font-size-xl);
   font-weight: 900;
   color: #0f172a;
-  line-height: 1;
+  line-height: var(--line-height-none);
   letter-spacing: -0.5px;
 }
 
@@ -197,7 +197,7 @@ const displayDate = computed(() => {
   font-size: 0.42rem;
   font-weight: 700;
   color: #64748b;
-  line-height: 1;
+  line-height: var(--line-height-none);
   margin-top: 1px;
 }
 

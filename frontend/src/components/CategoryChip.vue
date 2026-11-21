@@ -63,7 +63,7 @@ const meta = computed(() => {
   --chip-text: color-mix(in srgb, var(--category-color) 78%, #0f172a);
   --chip-border: color-mix(in srgb, var(--category-color) 30%, transparent);
 
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   max-width: 120px;
   font-weight: 600;
   background: var(--chip-bg);

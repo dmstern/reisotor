@@ -478,7 +478,7 @@ function onDropdownScroll(e: Event) {
   display: flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .input-spinner {
@@ -589,7 +589,7 @@ function onDropdownScroll(e: Event) {
 .location-empty-content .empty-desc {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
 }
 
 .location-load-more {

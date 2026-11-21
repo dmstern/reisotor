@@ -120,7 +120,7 @@ const emit = defineEmits<{
   word-break: break-word;
   overflow-wrap: break-word;
   font-size: var(--font-size-md);
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
   color: var(--color-text);
 }
 

@@ -267,20 +267,20 @@ const previewDate = computed(() => {
 
 .stamp-star {
   font-size: 0.38rem;
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .stamp-text {
   font-size: 0.34rem;
   font-weight: 800;
   letter-spacing: 0.5px;
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .stamp-date {
   font-size: 0.32rem;
   font-weight: 700;
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .page-lines {
@@ -324,7 +324,7 @@ const previewDate = computed(() => {
   font-size: 0.52rem;
   font-weight: 700;
   color: #1e293b;
-  line-height: 1.15;
+  line-height: var(--line-height-tight);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;

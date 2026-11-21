@@ -130,20 +130,20 @@ const statusLabel = computed(() => {
 }
 
 .upload-status-text {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text);
-  line-height: 1.25;
+  line-height: var(--line-height-tight);
 }
 
 .upload-filename {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 220px;
-  line-height: 1.25;
+  line-height: var(--line-height-tight);
 }
 
 .progress-track {
@@ -168,7 +168,7 @@ const statusLabel = computed(() => {
 }
 
 .upload-error {
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
   color: var(--color-danger);
   margin: 0;
 }

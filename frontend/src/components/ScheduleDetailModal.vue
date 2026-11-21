@@ -161,7 +161,7 @@ const emit = defineEmits<{
   border-radius: var(--radius-pill);
   font-size: var(--font-size-xs);
   font-weight: 600;
-  line-height: 1.2;
+  line-height: var(--line-height-tight);
   white-space: nowrap;
   background: var(--color-hover);
   color: var(--color-text-muted);

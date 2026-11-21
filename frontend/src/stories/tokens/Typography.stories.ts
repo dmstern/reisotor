@@ -18,35 +18,65 @@ export const TypographySystem: Story = {
         {
           var: '--font-size-xs',
           val: '0.75rem (12px)',
-          usage: 'Pre-Heading Kicker, Badges, Formular-Meta & Labels',
+          usage:
+            'Pre-Heading Kicker, Badges, Captions, Timestamps, Formular-Meta, kompakte Kalender-/Nav-Labels',
         },
         {
           var: '--font-size-sm',
-          val: '0.85rem (13.6px)',
-          usage: 'Sekundärtexte, Card-Actions (.btn--tonal), Hinweise',
+          val: '0.875rem (14px)',
+          usage:
+            'Sekundärtexte, .hint, kompakte Listen/Tabellen, size="sm" Controls, FormField-Labels',
         },
         {
           var: '--font-size-md',
           val: '1rem (16px)',
-          usage: 'Standard Fließtext, Text-Inputs, Haupt-Buttons',
+          usage: 'Standard-Fließtext (body, p), Standard-Inputs & Buttons (size="md"), h4',
         },
         {
           var: '--font-size-lg',
-          val: '1.15rem (18.4px)',
-          usage: 'H3 Überschriften, Subheadings, Dialog-Titel',
+          val: '1.125rem (18px)',
+          usage: 'h3 Gruppen-Titel, Card-Titel, Dialog-Titel',
         },
         {
           var: '--font-size-xl',
-          val: '1.3rem (20.8px)',
-          usage: 'H2 Sektions-Überschriften, Kachel-Titel',
+          val: '1.375rem (22px)',
+          usage: 'h2 Sektions-Überschriften',
         },
         {
           var: '--font-size-2xl',
-          val: '1.6rem (25.6px)',
-          usage: 'H1 Haupt-Seitentitel (700 Bold, -0.01em Tracking)',
+          val: '1.75rem (28px)',
+          usage: 'h1 Haupt-Seitentitel (700 Bold, -0.01em Tracking)',
         },
       ];
-      return { fontSizes };
+      const lineHeights = [
+        {
+          var: '--line-height-none',
+          val: '1',
+          usage: 'Einzeilige Badges, Icons, Zähler, kompakte Pillen',
+        },
+        {
+          var: '--line-height-tight',
+          val: '1.2',
+          usage: 'Überschriften (h1–h3), Kennzahlen, einzeilige Controls',
+        },
+        {
+          var: '--line-height-snug',
+          val: '1.35',
+          usage:
+            'Kompakte mehrzeilige UI-Texte (h4, Card-Titel/Subtitles, Listeneinträge, Alerts, Popovers, Toasts)',
+        },
+        {
+          var: '--line-height-normal',
+          val: '1.5',
+          usage: 'Standard-Fließtext (body, p, Formular-Hinweise, Modal-Beschreibungen)',
+        },
+        {
+          var: '--line-height-relaxed',
+          val: '1.625',
+          usage: 'Längerer Lesetext (Tagebuch-Einträge, Rich-Text-Notizen, Rechtliches)',
+        },
+      ];
+      return { fontSizes, lineHeights };
     },
     template: `
       <div style="padding: 16px; font-family: var(--font-sans); max-width: 750px;">
@@ -78,7 +108,7 @@ export const TypographySystem: Story = {
           <div style="margin-top: 20px; display: flex; gap: 24px; flex-wrap: wrap;">
             <div>
               <Kicker style="display: block; margin-bottom: 4px;">Button-Label Typografie</Kicker>
-              <button style="padding: 8px 16px; background: var(--color-primary); color: white; border: none; border-radius: var(--radius-sm-squircle); font-weight: 600; font-family: inherit; font-size: 0.9rem;">Haupt-Button Text (600)</button>
+              <button style="padding: 8px 16px; background: var(--color-primary); color: white; border: none; border-radius: var(--radius-sm-squircle); font-weight: 600; font-family: inherit; font-size: var(--font-size-sm);">Haupt-Button Text (600)</button>
             </div>
             <div>
               <Kicker style="display: block; margin-bottom: 4px;">Badge-Label Typografie</Kicker>
@@ -96,13 +126,40 @@ export const TypographySystem: Story = {
             style="padding: 12px 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-surface); box-shadow: var(--shadow-sm);"
           >
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-              <code style="font-size: 0.85rem; font-weight: bold; color: var(--color-primary-dark);">{{ fs.var }}</code>
-              <span style="font-size: 0.8rem; color: var(--color-text-muted);">{{ fs.val }}</span>
+              <code style="font-size: var(--font-size-sm); font-weight: bold; color: var(--color-primary-dark);">{{ fs.var }}</code>
+              <span style="font-size: var(--font-size-sm); color: var(--color-text-muted);">{{ fs.val }}</span>
             </div>
             <div :style="{ fontSize: 'var(' + fs.var + ')', fontWeight: 600, margin: '6px 0' }">
               Reisotor Reiseplanung & Ausflüge
             </div>
-            <span style="font-size: 0.78rem; color: var(--color-text-muted);">{{ fs.usage }}</span>
+            <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">{{ fs.usage }}</span>
+          </div>
+        </div>
+
+        <!-- Zeilenhöhen-Skala -->
+        <h3 style="margin-bottom: 16px; border-bottom: 1px solid var(--color-border); padding-bottom: 4px;">Zeilenhöhen-Skala (--line-height-*)</h3>
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px;">
+          <div
+            v-for="lh in lineHeights"
+            :key="lh.var"
+            style="padding: 12px 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-surface); box-shadow: var(--shadow-sm);"
+          >
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <code style="font-size: var(--font-size-sm); font-weight: bold; color: var(--color-primary-dark);">{{ lh.var }}</code>
+              <span style="font-size: var(--font-size-sm); color: var(--color-text-muted);">{{ lh.val }}</span>
+            </div>
+            <p
+              :style="{
+                lineHeight: 'var(' + lh.var + ')',
+                fontSize: 'var(--font-size-md)',
+                color: 'var(--color-text)',
+                margin: '8px 0',
+                maxWidth: '52ch',
+              }"
+            >
+              Gemeinsame Reiseplanung mit Etappen, Ausflügen, Packlisten und Budget-Übersicht – so bleibt jeder Urlaubstag entspannt strukturiert.
+            </p>
+            <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">{{ lh.usage }}</span>
           </div>
         </div>
 

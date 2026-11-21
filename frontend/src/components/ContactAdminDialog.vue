@@ -160,7 +160,7 @@ async function onSubmit() {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  font-size: var(--font-size-sm, 0.85rem);
+  font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text);
 }
@@ -176,7 +176,7 @@ async function onSubmit() {
 
 .success-title {
   margin: 0;
-  font-size: var(--font-size-lg, 1.1rem);
+  font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--color-success, #22c55e);
 }
@@ -188,7 +188,7 @@ async function onSubmit() {
   border: 1px solid var(--color-danger, #ef4444);
   color: var(--color-danger, #ef4444);
   border-radius: var(--radius-sm-squircle, 6px);
-  font-size: var(--font-size-sm, 0.85rem);
+  font-size: var(--font-size-sm);
 }
 
 .actions {

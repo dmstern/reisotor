@@ -304,20 +304,20 @@ const stackTooltip = computed(() => {
 }
 
 .fan-pill-count {
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text);
-  line-height: 1.2;
+  line-height: var(--line-height-tight);
 }
 
 .fan-pill-action {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   font-weight: 500;
   color: var(--color-primary);
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 /* ==========================================================================
@@ -338,7 +338,7 @@ const stackTooltip = computed(() => {
 }
 
 .fanned-header-count {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
   text-transform: uppercase;
@@ -351,7 +351,7 @@ const stackTooltip = computed(() => {
   align-items: center;
   gap: var(--space-1);
   padding: 3px 10px;
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   font-weight: 500;
   color: var(--color-primary);
   background: var(--color-primary-tint, rgba(59, 130, 246, 0.1));

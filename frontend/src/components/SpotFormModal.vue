@@ -797,7 +797,7 @@ function handleOpenScheduledDate(date: string) {
   margin: 0;
   font-size: var(--font-size-xs);
   font-weight: normal;
-  line-height: 1.35;
+  line-height: var(--line-height-snug);
   color: var(--color-text-muted);
 }
 
@@ -848,7 +848,7 @@ function handleOpenScheduledDate(date: string) {
   gap: var(--space-2);
   margin-top: var(--space-2);
   font-size: var(--font-size-xs);
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
   color: var(--color-warning-dark, #92400e);
 }
 
@@ -916,7 +916,7 @@ function handleOpenScheduledDate(date: string) {
   font-size: var(--font-size-sm);
   font-weight: 500;
   border: 1.5px solid;
-  line-height: 1.2;
+  line-height: var(--line-height-tight);
 }
 
 .assign-chip--tour {
@@ -959,7 +959,7 @@ function handleOpenScheduledDate(date: string) {
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-full);
-  line-height: 1;
+  line-height: var(--line-height-none);
   opacity: 0.85;
   transition:
     transform 0.15s ease,

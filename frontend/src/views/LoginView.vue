@@ -466,7 +466,7 @@ label,
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   font-size: var(--font-size-xs);
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
   text-align: left;
   width: 100%;
 }

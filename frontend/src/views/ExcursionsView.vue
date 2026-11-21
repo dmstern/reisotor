@@ -2913,7 +2913,7 @@ onUnmounted(() => {
     position: absolute;
     top: -4px;
     right: -4px;
-    font-size: 10px;
+    font-size: var(--font-size-xs);
     padding: 0 4px;
     min-width: 16px;
     height: 16px;

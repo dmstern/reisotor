@@ -635,7 +635,7 @@ defineExpose({
 }
 
 .track-playback-author-avatar {
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .track-playback-author-name {
@@ -667,7 +667,7 @@ defineExpose({
   font-size: var(--font-size-xs);
   font-weight: 600;
   white-space: nowrap;
-  line-height: 1.25;
+  line-height: var(--line-height-tight);
 }
 
 .track-playback-scrubber {
@@ -882,7 +882,7 @@ defineExpose({
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   cursor: pointer;
-  line-height: 1;
+  line-height: var(--line-height-none);
   transition:
     background-color 0.15s ease,
     color 0.15s ease,

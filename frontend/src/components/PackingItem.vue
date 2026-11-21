@@ -312,7 +312,7 @@ function handleMainClick(e: MouseEvent) {
   flex: 1;
   min-width: 0;
   font-size: var(--font-size-md);
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
   color: var(--color-text);
   overflow-wrap: break-word;
   word-break: break-word;
@@ -353,7 +353,7 @@ function handleMainClick(e: MouseEvent) {
   color: var(--color-text);
   font-family: inherit;
   font-size: var(--font-size-xs);
-  line-height: 1;
+  line-height: var(--line-height-none);
   cursor: pointer;
   box-shadow: var(--shadow-sm);
   transition:
@@ -463,7 +463,7 @@ function handleMainClick(e: MouseEvent) {
   font-weight: 600;
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .tally-pill.laidOut .tally-count {
@@ -478,21 +478,21 @@ function handleMainClick(e: MouseEvent) {
   font-weight: 700;
   font-size: var(--font-size-xs);
   color: var(--color-primary-contrast, #ffffff);
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .tally-ready-icon {
   font-weight: 700;
   font-size: var(--font-size-xs);
   color: var(--color-primary);
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .tally-plus {
   font-weight: 700;
   font-size: var(--font-size-sm);
   color: var(--color-primary);
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .tally-minus {
@@ -514,7 +514,7 @@ function handleMainClick(e: MouseEvent) {
   font-family: inherit;
   font-weight: 700;
   font-size: var(--font-size-md);
-  line-height: 1;
+  line-height: var(--line-height-none);
   cursor: pointer;
   box-shadow: var(--shadow-sm);
   display: inline-flex;

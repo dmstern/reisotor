@@ -652,12 +652,15 @@ function clearFilters() {
   position: absolute;
   top: -3px;
   right: -3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 18px;
   height: 18px;
   padding: 0 4px;
   font-size: var(--font-size-xs);
   font-weight: 700;
-  line-height: 18px;
+  line-height: var(--line-height-none);
   text-align: center;
 }
 
@@ -718,7 +721,7 @@ function clearFilters() {
 }
 
 .popover-section-hint {
-  font-size: 0.7rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   text-transform: none;
   letter-spacing: normal;
@@ -735,12 +738,15 @@ function clearFilters() {
 }
 
 .section-active-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  font-size: 0.7rem;
+  font-size: var(--font-size-xs);
   font-weight: 700;
-  line-height: 18px;
+  line-height: var(--line-height-none);
   text-align: center;
   flex-shrink: 0;
 }

@@ -342,9 +342,9 @@ function onLinkClick(event: MouseEvent) {
 }
 
 .navbar.embedded .label {
-  font-size: 0.65rem;
+  font-size: var(--font-size-xs);
   font-weight: 500;
-  line-height: 1.1;
+  line-height: var(--line-height-tight);
   letter-spacing: 0.01em;
 }
 
@@ -438,7 +438,7 @@ function onLinkClick(event: MouseEvent) {
   corner-shape: round;
   color: var(--color-text-muted);
   text-decoration: none;
-  font-size: 0.7rem;
+  font-size: var(--font-size-xs);
   white-space: nowrap;
   min-width: 44px;
   min-height: 44px;
@@ -471,6 +471,6 @@ function onLinkClick(event: MouseEvent) {
 }
 
 .icon {
-  font-size: 1.2rem;
+  font-size: var(--font-size-lg);
 }
 </style>

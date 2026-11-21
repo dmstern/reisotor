@@ -282,7 +282,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text);
   overflow: hidden;
@@ -296,7 +296,7 @@ onMounted(() => {
 }
 
 .track-row-meta {
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   display: flex;
   align-items: center;
@@ -316,7 +316,7 @@ onMounted(() => {
 
 .track-meta-avatar {
   flex-shrink: 0;
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .track-meta-name {
