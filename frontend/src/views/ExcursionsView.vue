@@ -2115,7 +2115,6 @@ onUnmounted(() => {
   border-radius: inherit;
   corner-shape: inherit;
   background: var(--color-surface);
-  box-shadow: inset 0 1px 0 var(--shadow-control-highlight);
   backdrop-filter: none;
   transform: translateZ(0);
   transition: background-color 0.3s cubic-bezier(0.32, 0.72, 0, 1);
@@ -2184,6 +2183,10 @@ onUnmounted(() => {
   corner-shape: squircle;
   height: min(100vh, var(--sheet-max-height));
   height: min(100dvh, var(--sheet-max-height));
+
+  &::before {
+    box-shadow: inset 0 1px 0 var(--shadow-control-highlight);
+  }
 
   .spots-col-body {
     padding-bottom: var(--navbar-bottom-offset, 0px);

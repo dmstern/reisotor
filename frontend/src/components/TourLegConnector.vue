@@ -182,7 +182,22 @@ const emit = defineEmits<{
   max-width: 100%;
 }
 
-/* Layout-Anpassungen für die Button-Primitive in TourLegConnector */
+/* Layout-Anpassungen für die Button-Primitive in TourLegConnector (opaker Hintergrund deckt den SVG-Pfad ab) */
+.btn.tour-leg-pill,
+.btn.tour-leg-add-btn {
+  background-color: var(--color-surface);
+
+  @include can-hover {
+    &:hover:not(:disabled):not(.is-disabled) {
+      background-color: var(--color-hover);
+    }
+  }
+
+  &:active:not(:disabled):not(.is-disabled) {
+    background-color: var(--color-hover);
+  }
+}
+
 .tour-leg-pill.is-horizontal-leg,
 .tour-leg-add-btn.is-horizontal-leg {
   flex-direction: column;
