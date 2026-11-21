@@ -176,7 +176,7 @@ function discardDraft() {
 <style lang="scss" scoped>
 .add-form {
   margin-bottom: var(--space-xl);
-  padding: var(--space-lg) var(--space-xl);
+  padding: var(--space-lg);
 }
 
 .quick-input-row {
