@@ -15,6 +15,7 @@ import { useLocationDetails } from '../composables/useLocationDetails';
 import { useLocationSuggestions } from '../composables/useLocationSuggestions';
 import { useLocationPickerMap, OWN_LOCATION_ICON } from '../composables/useLocationPickerMap';
 import {
+  DEFAULT_ACCOMMODATION_PLACEHOLDER_PHRASES,
   DEFAULT_SPOT_PLACEHOLDER_PHRASES,
   DEFAULT_TRIP_PLACEHOLDER_PHRASES,
 } from '../composables/useAnimatedPlaceholder';
@@ -311,6 +312,12 @@ const computedPlaceholder = computed(() => {
     return 'Reiseziel, Stadt oder Maps-Link eingeben...';
   }
 
+  if (props.category === 'Unterkunft') {
+    return details.hasLocation.value
+      ? 'Anderen Booking-Link, Unterkunft oder Adresse suchen...'
+      : 'Booking.com-, Airbnb-Link oder Unterkunft suchen...';
+  }
+
   return details.hasLocation.value
     ? 'Anderen Ort oder Adresse suchen...'
     : 'Ort, Café, Sehenswürdigkeit, Adresse oder Maps-Link suchen...';
@@ -326,11 +333,23 @@ const computedPlaceholderPhrases = computed(() => {
   }
 
   if (details.hasLocation.value) {
+    if (props.category === 'Unterkunft') {
+      return [
+        'Anderen Booking- oder Airbnb-Link einfügen...',
+        'Andere Unterkunft oder Adresse suchen...',
+        'Anderen Maps-Link einfügen...',
+      ];
+    }
+
     return [
       'Anderen Ort oder Adresse suchen...',
       'Anderen Maps-Link einfügen...',
       'Anderen Booking- oder Airbnb-Link einfügen...',
     ];
+  }
+
+  if (props.category === 'Unterkunft') {
+    return DEFAULT_ACCOMMODATION_PLACEHOLDER_PHRASES;
   }
 
   return DEFAULT_SPOT_PLACEHOLDER_PHRASES;

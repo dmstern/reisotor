@@ -9,6 +9,15 @@ export const DEFAULT_SPOT_PLACEHOLDER_PHRASES = [
   'Trivago-Link einfügen...',
 ];
 
+export const DEFAULT_ACCOMMODATION_PLACEHOLDER_PHRASES = [
+  'Booking.com-Link einfügen...',
+  'Airbnb-Link einfügen...',
+  'Trivago-Link einfügen...',
+  'Unterkunft oder Hotel suchen...',
+  'Adresse eingeben...',
+  'Google Maps- oder Apple Maps-Link einfügen...',
+];
+
 export const DEFAULT_TRIP_PLACEHOLDER_PHRASES = [
   'Reiseziel oder Stadt suchen...',
   'Google Maps- oder Apple Maps-Link einfügen...',
@@ -172,8 +181,16 @@ export function useAnimatedPlaceholder(
   };
 
   watch(
-    () => [isDisabled(), getPhrases(), getFallback()],
-    ([disabled]) => {
+    () => [isDisabled(), getPhrases(), getFallback()] as const,
+    ([disabled, newPhrases], prev) => {
+      const oldPhrases = prev?.[1];
+
+      if (oldPhrases && JSON.stringify(newPhrases) !== JSON.stringify(oldPhrases)) {
+        phraseIndex = 0;
+        charIndex = 0;
+        isDeleting = false;
+      }
+
       if (disabled) {
         clearActiveTimer();
         currentPlaceholder.value = getFallback();
