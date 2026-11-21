@@ -348,11 +348,7 @@ async function deleteEditingTrack() {
       </div>
 
       <div v-show="activeTrackEditTab === 'permissions'" class="tab-content permissions-tab">
-        <ItemVisibilitySettings
-          v-model="editTrackVisibility"
-          item-label="Aufzeichnung"
-          :modified="isEditTrackVisibilityModified"
-        />
+        <ItemVisibilitySettings v-model="editTrackVisibility" item-label="Aufzeichnung" />
       </div>
 
       <div class="actions-row">

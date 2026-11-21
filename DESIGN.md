@@ -782,7 +782,7 @@ unerwünschte Vererbungen in Spezialfällen (z. B. ungerahmte Inputs in `QuickAd
     - Card-Edit / Toolbar / Like & Comment → `<IconButton variant="ghost" size="sm" />` bzw. `<Button variant="ghost" size="sm" />`
     - Listen-Zeile (ToDo, Einkauf, Packliste: Edit & Assignee) → `<IconButton variant="ghost" size="sm" />`
     - Foto-/Banner-Overlay (mit Text / nur Icon) → `<Button variant="overlay" shape="pill" size="sm" />` bzw. `<IconButton variant="overlay" shape="circle" size="sm" />`
-    - Bewusste Spezial-Controls (nicht in `Button.vue` pressen): `TabBar`, `ExcursionCategoryNav`, `SegmentedToggle`, `Drawer`-Anfasser, `RichTextEditor`-Toolbar, Farbfelder/Icon-Grids, Radio-Karten.
+    - Bewusste Spezial-Controls (nicht in `Button.vue` pressen): `TabBar`, `ExcursionCategoryNav`, `SegmentedToggle`, `Drawer`-Anfasser, `RichTextEditor`-Toolbar, Farbfelder/Icon-Grids.
   - **Disabled-Zustand** (`disabled` prop / `:disabled` Pseudo-Klasse): ausgegraut (`opacity: 0.5`), `cursor: not-allowed`, `pointer-events: none`, keine Schatten oder Transforms.
 - **`IconButton.vue`**: Spezielles Primitive für reine Icon- und Emoji-Schaltflächen (Avatar-Auswahl, Verschiebe-Aktionen, Card-Edit, Close-/Toggle-Buttons). Default ist **`variant="ghost"`** (`squircle`), unterstützt `xs` (30px), `sm` (36px), `md` (46px) und `lg` (52px) mit automatischer Touch-Target-Expansion für `xs`/`sm`.
 - **`ButtonGroup.vue` & Dialog-Footer (`.actions-row`)**: Standardisierte Aktionsleiste für Modals und
@@ -812,6 +812,8 @@ unerwünschte Vererbungen in Spezialfällen (z. B. ungerahmte Inputs in `QuickAd
   mit Squircle-Radius, Hover-Lift, zarter Akzent-Einfärbung im aktiven Zustand sowie zuverlässigen vertikalen Abständen,
   die Ankleben an Nachbarelemente verhindern) oder eine flache Zeile (`variant="row"` für kompakte Dialoge). Die gesamte
   Kachelfläche ist als `<label>` interaktiv anklickbar.
+- **`Radio.vue`**: Radio-Primitive (`frontend/src/components/primitives/Radio.vue`) für Einzelauswahlen mit animiertem inneren Punkt, drei Größen (`sm`, `md`, `lg`), `v-model`/`checked`-Bindung und optionalem `visualOnly`-Modus für bereits interaktive Custom-Buttons.
+- **`RadioCard.vue`**: Zugängliches Einzelauswahl-Kachel-Primitive (`frontend/src/components/primitives/RadioCard.vue`, Pendant zu `CheckboxCard.vue`). Kapselt `<Radio>` in einer `<label>`-Kachel mit Varianten (`card`, `muted`, `row`), optionaler Squircle-Icon-Box, `#badge`/`#extra`-Slots und wahlweiser Radio-Position (`left` oder `right`).
 - **`Card.vue`**: Basis-Fläche für Spots, Touren, Budget-Töpfe, Notizen und Fokus-Panels. Unterstützt
   `variant` (`default`, `muted` für hinterlegte Flächen, `flat` ohne Schatten, `elevated` mit verstärktem Schatten `var(--shadow-md)`,
   `tile` für Dashboard-Kacheln, `polaroid` für authentische Polaroid-Fotokarten mit breitem Rahmen, tiefem Schatten & Vintage-Haptik).

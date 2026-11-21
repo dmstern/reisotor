@@ -25,13 +25,11 @@ const props = withDefaults(
     itemLabel?: string;
     disabled?: boolean;
     showHint?: boolean;
-    modified?: boolean;
   }>(),
   {
     itemLabel: 'Aufzeichnung',
     disabled: false,
     showHint: true,
-    modified: false,
   }
 );
 
