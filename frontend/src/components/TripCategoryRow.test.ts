@@ -5,11 +5,7 @@ import { renderToString } from 'vue/server-renderer';
 import TripCategoryRow, { type DisplayCategory } from './TripCategoryRow.vue';
 
 describe('TripCategoryRow', () => {
-  function render(
-    category: DisplayCategory,
-    activeType: 'expense' | 'spot',
-    reserveResetSlot = false
-  ) {
+  function render(category: DisplayCategory, activeType: 'expense' | 'spot') {
     const pinia = createPinia();
     setActivePinia(pinia);
     const app = createApp({
@@ -17,7 +13,6 @@ describe('TripCategoryRow', () => {
         h(TripCategoryRow, {
           category,
           activeType,
-          reserveResetSlot,
         }),
     });
     app.use(pinia);
@@ -44,7 +39,6 @@ describe('TripCategoryRow', () => {
     // Kein Ausblenden-Button bei Urlaub/Custom, aber Platzhalter für Spaltenausrichtung
     expect(html).not.toContain('Ausblenden');
     expect(html).toContain('hide-btn-placeholder');
-    expect(html).not.toContain('reset-btn-placeholder');
   });
 
   it('rendert eine Standardkategorie mit Standard-Badge und Ausblenden-Button', async () => {
@@ -132,18 +126,6 @@ describe('TripCategoryRow', () => {
     expect(html).toContain('Standard (angepasst)');
     expect(html).toContain('Zurücksetzen');
     expect(html).toContain('2 Spots');
-  });
-
-  it('reserviert bei reserveResetSlot=true Platz für den Zurücksetzen-Button bei nicht angepassten Kategorien', async () => {
-    const standardCat: DisplayCategory = {
-      name: 'Hafen',
-      isCustom: false,
-      isAdapted: false,
-      isHidden: false,
-      usageCount: 0,
-    };
-    const html = await render(standardCat, 'spot', true);
-    expect(html).toContain('reset-btn-placeholder');
-    expect(html).not.toContain('Zurücksetzen');
+    expect(html.indexOf('Zurücksetzen')).toBeLessThan(html.indexOf('Standard (angepasst)'));
   });
 });

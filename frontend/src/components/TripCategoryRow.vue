@@ -22,7 +22,6 @@ export interface DisplayCategory {
 const props = defineProps<{
   category: DisplayCategory;
   activeType: 'expense' | 'spot';
-  reserveResetSlot?: boolean;
 }>();
 
 defineEmits<{
@@ -51,6 +50,21 @@ const usageLabel = computed(() => {
       <CategoryChip :category="category.name" :type="activeType" />
 
       <div class="category-meta">
+        <!-- Standardkategorie auf Standard zurücksetzen -->
+        <Button
+          v-if="category.isAdapted"
+          type="button"
+          variant="ghost"
+          size="sm"
+          class="reset-btn"
+          :icon="ACTION_ICONS.restore"
+          title="Auf Standard zurücksetzen"
+          aria-label="Auf Standard zurücksetzen"
+          @click="$emit('reset', category)"
+        >
+          Zurücksetzen
+        </Button>
+
         <Badge v-if="category.isCustom" variant="primary">Urlaub</Badge>
         <Badge v-else-if="category.isAdapted" variant="accent">Standard (angepasst)</Badge>
         <Badge v-else variant="default">Standard</Badge>
@@ -62,22 +76,6 @@ const usageLabel = computed(() => {
     </div>
 
     <div class="row-actions">
-      <!-- Standardkategorie auf Standard zurücksetzen -->
-      <Button
-        v-if="category.isAdapted"
-        type="button"
-        variant="ghost"
-        size="sm"
-        class="reset-btn"
-        :icon="ACTION_ICONS.restore"
-        title="Auf Standard zurücksetzen"
-        aria-label="Auf Standard zurücksetzen"
-        @click="$emit('reset', category)"
-      >
-        Zurücksetzen
-      </Button>
-      <span v-else-if="reserveResetSlot" class="reset-btn-placeholder" aria-hidden="true" />
-
       <!-- Bearbeiten (Pencil) -->
       <EditButton
         small
@@ -164,19 +162,12 @@ const usageLabel = computed(() => {
   white-space: nowrap;
 }
 
-.reset-btn,
-.reset-btn-placeholder {
-  width: 116px;
-  flex-shrink: 0;
-}
-
 .hide-btn,
 .hide-btn-placeholder {
   width: 112px;
   flex-shrink: 0;
 }
 
-.reset-btn-placeholder,
 .hide-btn-placeholder {
   display: inline-block;
   height: 1px;
@@ -199,12 +190,10 @@ const usageLabel = computed(() => {
     padding-top: var(--space-1);
   }
 
-  .reset-btn,
   .hide-btn {
     width: auto;
   }
 
-  .reset-btn-placeholder,
   .hide-btn-placeholder {
     display: none;
   }

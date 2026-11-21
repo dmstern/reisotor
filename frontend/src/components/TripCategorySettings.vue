@@ -206,7 +206,6 @@ watch([() => filteredCategories.value.length, activeType], () => {
           :key="cat.name"
           :category="cat"
           :active-type="activeType"
-          :reserve-reset-slot="hasAdaptedCategory"
           @edit="startEdit"
           @reset="promptReset"
           @toggle-hide="toggleHideStandard"
