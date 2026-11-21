@@ -142,7 +142,7 @@ const hasInfoBadges = computed(() =>
       </div>
     </header>
 
-    <Accordion :expanded="showComments">
+    <Accordion v-if="showComments" :expanded="showComments">
       <Comments
         :comments="comments"
         @submit="(content) => emit('submit-comment', content)"
@@ -199,8 +199,8 @@ const hasInfoBadges = computed(() =>
 
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-3) 0 var(--space-4);
+  gap: var(--space-md);
+  padding: var(--space-md) 0 var(--space-xl);
   min-width: 0;
 }
 
@@ -215,8 +215,8 @@ const hasInfoBadges = computed(() =>
 .tour-detail-header {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding-bottom: var(--space-2);
+  gap: var(--space-sm);
+  padding-bottom: var(--space-md);
   @include divider-engraved('bottom');
 }
 
@@ -224,7 +224,7 @@ const hasInfoBadges = computed(() =>
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   min-width: 0;
 }
 
@@ -243,7 +243,7 @@ const hasInfoBadges = computed(() =>
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
 }
 
 .tour-edit-btn {
@@ -254,14 +254,14 @@ const hasInfoBadges = computed(() =>
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   min-width: 0;
 }
 
 .tour-detail-info-badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -280,8 +280,7 @@ const hasInfoBadges = computed(() =>
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  padding-top: var(--space-1);
+  gap: var(--space-sm);
 }
 
 .tour-detail-header-controls > :deep(.social-row) {
@@ -292,12 +291,12 @@ const hasInfoBadges = computed(() =>
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   min-width: 0;
 }
 
 .tour-detail-note-wrap {
-  margin-top: var(--space-1);
+  min-width: 0;
 }
 
 .tour-detail-note {
@@ -308,15 +307,14 @@ const hasInfoBadges = computed(() =>
 }
 
 .tour-detail-attachments {
-  margin-top: var(--space-1);
+  margin-top: 0;
 }
 
 .tour-detail-links-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-1);
+  gap: var(--space-sm);
   min-width: 0;
 }
 
@@ -325,7 +323,6 @@ const hasInfoBadges = computed(() =>
 }
 
 .tour-detail-stations {
-  margin-top: var(--space-2);
   min-width: 0;
 }
 

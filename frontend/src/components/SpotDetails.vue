@@ -213,10 +213,16 @@ const checkinCheckoutText = computed(() => {
 }
 
 .spot-accordion-inner {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
   overflow: hidden;
   padding: 3px;
   margin: -3px;
+}
+
+.spot-accordion-inner :deep(.detail-row) {
+  margin: 0;
 }
 
 .spot-accordion.is-expanded .spot-accordion-inner {

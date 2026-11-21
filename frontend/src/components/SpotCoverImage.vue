@@ -162,7 +162,7 @@ function formatAccommodationDate(dateStr: string | null) {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding: var(--space-3);
+  padding: var(--space-md);
   background:
     var(--gradient-control-3d),
     linear-gradient(

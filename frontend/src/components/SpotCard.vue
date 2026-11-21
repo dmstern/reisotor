@@ -358,7 +358,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
         </div>
       </div>
 
-      <Accordion :expanded="expanded && showComments">
+      <Accordion v-if="expanded && showComments" :expanded="expanded && showComments">
         <Comments
           :comments="comments"
           @click.stop
@@ -375,12 +375,12 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 <style scoped lang="scss">
 .spot-card {
   --spot-cover-height: 120px;
-  --spot-card-pad: var(--space-2);
+  --spot-card-pad: var(--space-md);
   container: spot-card / inline-size;
   position: relative;
   z-index: var(--z-card);
   isolation: isolate;
-  padding: var(--spot-card-pad) var(--spot-card-pad) 14px var(--spot-card-pad);
+  padding: var(--spot-card-pad);
   display: flex;
   flex-direction: column;
   cursor: pointer;
@@ -463,7 +463,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 .body {
   display: flex;
   flex-direction: column;
-  padding: var(--spot-card-pad) var(--space-2) 0 var(--space-2);
+  padding: var(--spot-card-pad) 0 0 0;
   gap: var(--space-2);
   min-width: 0;
   transition: padding 0.3s cubic-bezier(0.32, 0.72, 0, 1);
@@ -561,8 +561,8 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 }
 
 .spot-card.expanded .body {
-  padding-top: var(--space-3);
-  gap: var(--space-3);
+  padding-top: var(--spot-card-pad);
+  gap: var(--space-md);
 }
 
 .card-title-block {
@@ -823,8 +823,8 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 @container spots-col (max-width: 480px) {
   .spot-card {
     --spot-cover-height: 100px;
-    --spot-card-pad: var(--space-1-5);
-    padding: var(--spot-card-pad) var(--spot-card-pad) 10px var(--spot-card-pad);
+    --spot-card-pad: var(--space-sm);
+    padding: var(--spot-card-pad);
   }
 
   .spot-card:not(.expanded) {
@@ -833,7 +833,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   }
 
   .body {
-    padding: var(--spot-card-pad) var(--space-2) var(--space-1) var(--space-2);
+    padding: var(--spot-card-pad) 0 0 0;
   }
 
   .spot-card:not(.expanded) .body {
