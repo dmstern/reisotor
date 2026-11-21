@@ -132,7 +132,7 @@ onMounted(async () => {
 }
 
 .verify-card h2 {
-  font-size: 1.15rem;
+  font-size: var(--font-size-lg);
   margin: 0;
 }
 
@@ -148,7 +148,7 @@ onMounted(async () => {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   margin: 0;
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
 }
 
 button {
@@ -156,7 +156,7 @@ button {
 }
 
 .action-btn {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .error-text {
@@ -178,7 +178,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
   width: 100%;
 }
 </style>

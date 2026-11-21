@@ -207,10 +207,10 @@ const secondPreviewText = computed(() => {
 }
 
 .note-text {
-  font-size: 0.65rem;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   color: #713f12;
-  line-height: 1.15;
+  line-height: var(--line-height-tight);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;

@@ -988,7 +988,7 @@ const isFeedbackActive = computed(() =>
 <style scoped>
 .legal-content {
   color: var(--color-text);
-  line-height: 1.65;
+  line-height: var(--line-height-relaxed);
   overflow-wrap: break-word;
   word-break: break-word;
   min-width: 0;
@@ -1038,7 +1038,7 @@ const isFeedbackActive = computed(() =>
   background: transparent;
   border: none;
   box-shadow: none;
-  font-size: var(--font-size-md, 1rem);
+  font-size: var(--font-size-md);
   font-weight: 600;
   color: var(--color-text-muted);
   padding: var(--space-2) var(--space-3);
@@ -1098,7 +1098,7 @@ const isFeedbackActive = computed(() =>
 
   .legal-tab-btn {
     padding: var(--space-2);
-    font-size: 0.95rem;
+    font-size: var(--font-size-sm);
   }
 
   .legal-tab-btn.active::after {
@@ -1119,7 +1119,7 @@ const isFeedbackActive = computed(() =>
 .legal-header h1 {
   margin: 0 0 var(--space-2) 0;
   font-size: clamp(1.5rem, 1.1rem + 2vw, 2rem);
-  line-height: 1.2;
+  line-height: var(--line-height-tight);
   letter-spacing: -0.015em;
   color: var(--color-primary-dark);
   text-wrap: balance;
@@ -1128,8 +1128,8 @@ const isFeedbackActive = computed(() =>
 .legal-subtitle {
   color: var(--color-text-muted);
   margin: 0;
-  font-size: 0.95rem;
-  line-height: 1.5;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
   text-wrap: pretty;
 }
 
@@ -1145,9 +1145,9 @@ const isFeedbackActive = computed(() =>
 }
 
 .legal-section h2 {
-  font-size: var(--font-size-lg, 1.15rem);
+  font-size: var(--font-size-lg);
   font-weight: 600;
-  line-height: 1.35;
+  line-height: var(--line-height-snug);
   margin: 0;
   color: var(--color-text);
   text-wrap: balance;
@@ -1174,9 +1174,9 @@ const isFeedbackActive = computed(() =>
 
 .legal-section h3,
 .legal-subsection h3 {
-  font-size: 1.02rem;
+  font-size: var(--font-size-md);
   font-weight: 600;
-  line-height: 1.35;
+  line-height: var(--line-height-snug);
   margin: 0;
   color: var(--color-primary-dark);
   text-wrap: balance;
@@ -1206,7 +1206,7 @@ const isFeedbackActive = computed(() =>
 
 .legal-section li,
 .legal-subsection li {
-  line-height: 1.6;
+  line-height: var(--line-height-relaxed);
   color: color-mix(in srgb, var(--color-text) 88%, var(--color-text-muted));
   text-wrap: pretty;
 }
@@ -1226,7 +1226,7 @@ const isFeedbackActive = computed(() =>
 .legal-muted,
 .legal-section p.legal-muted,
 .legal-card-info p.legal-muted {
-  font-size: var(--font-size-sm, 0.85rem);
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -1237,7 +1237,7 @@ const isFeedbackActive = computed(() =>
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  font-size: 0.95rem;
+  font-size: var(--font-size-sm);
 }
 
 @media (max-width: 600px) {
@@ -1303,7 +1303,7 @@ const isFeedbackActive = computed(() =>
   margin-top: var(--space-2);
   padding-top: var(--space-4);
   border-top: 1px dashed var(--color-border-divider);
-  font-size: var(--font-size-sm, 0.85rem);
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 

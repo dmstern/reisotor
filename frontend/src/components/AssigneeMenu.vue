@@ -99,6 +99,6 @@ function select(userId: number | null) {
 <style scoped>
 .assignee-avatar {
   font-size: var(--font-size-sm);
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 </style>

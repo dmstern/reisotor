@@ -273,7 +273,7 @@ function handleSelect(opt: CategoryIconOption) {
   font-size: var(--font-size-xs);
   text-align: center;
   color: var(--color-text);
-  line-height: 1.2;
+  line-height: var(--line-height-tight);
   word-break: break-word;
   overflow: hidden;
   display: -webkit-box;

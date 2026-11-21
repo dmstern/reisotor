@@ -529,23 +529,39 @@ automatisch bei der nächsten Gelegenheit an einem Button/einer Card mitgezogen 
 
 ### Schriftgrößen-Skala & CSS-Tokens
 
-| Variable          | Wert               | Typischer Einsatz                                     |
-| ----------------- | ------------------ | ----------------------------------------------------- |
-| `--font-size-xs`  | `0.75rem` (12px)   | Pre-Heading Kicker, Badges, Formular-Meta & Labels    |
-| `--font-size-sm`  | `0.85rem` (13.6px) | Sekundärtexte, Card-Actions (`.btn--tonal`), Hinweise |
-| `--font-size-md`  | `1rem` (16px)      | Standard Fließtext, Text-Inputs, Haupt-Buttons        |
-| `--font-size-lg`  | `1.15rem` (18.4px) | H3 Überschriften, Subheadings, Dialog-Titel           |
-| `--font-size-xl`  | `1.3rem` (20.8px)  | H2 Sektions-Überschriften, Kachel-Titel               |
-| `--font-size-2xl` | `1.6rem` (25.6px)  | H1 Haupt-Seitentitel (700 Bold, `-0.01em` Tracking)   |
+Die Schriftgrößen-Skala ist statisch (identisch auf Mobile & Desktop), beginnt bei `12px` (`--font-size-xs`) und verzichtet bewusst auf eine `2xs`-Stufe.
+
+| Variable          | Wert              | Typischer Einsatz                                                                              |
+| ----------------- | ----------------- | ---------------------------------------------------------------------------------------------- |
+| `--font-size-xs`  | `0.75rem` (12px)  | Pre-Heading Kicker, Badges, Captions, Timestamps, Formular-Meta, kompakte Kalender-/Nav-Labels |
+| `--font-size-sm`  | `0.875rem` (14px) | Sekundärtexte, `.hint`, kompakte Listen/Tabellen, `size="sm"` Controls, FormField-Labels       |
+| `--font-size-md`  | `1rem` (16px)     | Standard-Fließtext (`body`, `p`), Standard-Inputs & Buttons (`size="md"`), `h4`                |
+| `--font-size-lg`  | `1.125rem` (18px) | `h3` Gruppen-Titel, Card-Titel, Dialog-Titel                                                   |
+| `--font-size-xl`  | `1.375rem` (22px) | `h2` Sektions-Überschriften                                                                    |
+| `--font-size-2xl` | `1.75rem` (28px)  | `h1` Haupt-Seitentitel (700 Bold, `-0.01em` Tracking)                                          |
+
+_Ausnahme:_ Rein dekorative Miniatur-Illustrationen (`< 0.6rem`, z. B. `Dashboard*Preview`, `PolaroidStack`, `ExcursionCoverStack`, `AttachmentThumbnails`) skalieren die Schriftgröße proportional zur Miniatur-Grafik und werden nicht auf `--font-size-xs` hochgezogen.
+
+### Zeilenhöhen-Skala (`--line-height-*`)
+
+Standard-Zeilenhöhe auf `body` ist `var(--line-height-normal)`.
+
+| Variable                | Wert    | Typischer Einsatz                                                                                    |
+| ----------------------- | ------- | ---------------------------------------------------------------------------------------------------- |
+| `--line-height-none`    | `1`     | Einzeilige Badges, Icons, Zähler, kompakte Pillen                                                    |
+| `--line-height-tight`   | `1.2`   | Überschriften (`h1`–`h3`), Kennzahlen, einzeilige Controls                                           |
+| `--line-height-snug`    | `1.35`  | Kompakte mehrzeilige UI-Texte (`h4`, Card-Titel/Subtitles, Listeneinträge, Alerts, Popovers, Toasts) |
+| `--line-height-normal`  | `1.5`   | Standard-Fließtext (`body`-Default, `p`, Formular-Hinweise, Modal-Beschreibungen)                    |
+| `--line-height-relaxed` | `1.625` | Längerer Lesetext (Tagebuch-Einträge, Rich-Text-Notizen, Rechtliches)                                |
 
 ### Semantische Textbausteine
 
 1. **Pre-Heading / Kicker (`.kicker`)**: Sehr kleines Ober-Label (`font-size: var(--font-size-xs)`, `font-weight: 700`, `text-transform: uppercase`, `letter-spacing: 0.04em`, `color: var(--color-text-muted)`).
-2. **Haupt-Seitentitel (`h1`)**: `font-size: var(--font-size-2xl)`, `font-weight: 700`, `letter-spacing: -0.01em`, `margin: 0 0 var(--space-3)`.
-3. **Sektions-Überschrift (`h2`)**: `font-size: var(--font-size-xl)`, `font-weight: 600`, `margin: 0 0 var(--space-2)`.
-4. **Kompakter Gruppen-Titel (`h3`)**: `font-size: var(--font-size-lg)`, `font-weight: 600`, `margin: 0 0 var(--space-1)`.
-5. **Unterüberschrift / Subheading (`h4`)**: `font-size: 1.05rem`, `font-weight: 600`, `margin: var(--space-2) 0 4px`.
-6. **Fließtext / Absatz (`p`)**: Standard-Fließtext in gedämpfter Schriftfarbe (`var(--color-text-muted)`), `margin: 0 0 var(--space-3)`.
+2. **Haupt-Seitentitel (`h1`)**: `font-size: var(--font-size-2xl)`, `font-weight: 700`, `line-height: var(--line-height-tight)`, `letter-spacing: -0.01em`, `margin: 0 0 var(--space-3)`.
+3. **Sektions-Überschrift (`h2`)**: `font-size: var(--font-size-xl)`, `font-weight: 600`, `line-height: var(--line-height-tight)`, `margin: 0 0 var(--space-2)`.
+4. **Kompakter Gruppen-Titel (`h3`)**: `font-size: var(--font-size-lg)`, `font-weight: 600`, `line-height: var(--line-height-tight)`, `margin: 0 0 var(--space-1)`.
+5. **Unterüberschrift / Subheading (`h4`)**: `font-size: var(--font-size-md)`, `font-weight: 600`, `line-height: var(--line-height-snug)`, `margin: var(--space-2) 0 var(--space-1)`.
+6. **Fließtext / Absatz (`p`)**: Standard-Fließtext in gedämpfter Schriftfarbe (`var(--color-text-muted)`), `line-height: var(--line-height-normal)` (via `body`-Default), `margin: 0 0 var(--space-3)`.
 7. **Erklärtext / Hinweise (`.hint` / `.muted`)**: Dezente Erklärungen vor Listen oder unter Eingabefeldern.
 8. **Code & Monospace (`code`)**: Formatiertes Code-Element in `var(--color-bg)` mit 4px Radius.
 9. **Button- & Badge-Labels**: Text in Buttons (`font-weight: 600`) und Badges (`font-weight: 600`, `font-size: var(--font-size-xs)`).

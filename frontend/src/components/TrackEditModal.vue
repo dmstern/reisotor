@@ -436,7 +436,7 @@ async function deleteEditingTrack() {
   margin: 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  line-height: 1.35;
+  line-height: var(--line-height-snug);
 }
 
 .recording-pulse-dot {

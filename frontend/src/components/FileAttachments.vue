@@ -387,7 +387,7 @@ function handleUploadClick() {
 }
 
 .heading {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   margin-bottom: var(--space-2);
 }
@@ -402,7 +402,7 @@ function handleUploadClick() {
 
 .hint {
   color: var(--color-text-muted);
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
   margin: 0;
 }
 

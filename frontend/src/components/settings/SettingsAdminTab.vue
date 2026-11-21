@@ -1500,7 +1500,7 @@ async function handleGenerateVapid() {
   margin: 0 0 var(--space-3);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
 }
 
 .hint.error {
@@ -1564,7 +1564,7 @@ async function handleGenerateVapid() {
 .mode-desc {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
 }
 
 .reg-email-alert {
@@ -1618,7 +1618,7 @@ async function handleGenerateVapid() {
 .field-hint {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
 }
 
 .secret-input-row {
@@ -1708,7 +1708,7 @@ async function handleGenerateVapid() {
   flex-direction: column;
   gap: var(--space-2);
   font-size: var(--font-size-xs);
-  line-height: 1.6;
+  line-height: var(--line-height-relaxed);
   color: var(--color-text-secondary);
 }
 
@@ -1766,7 +1766,7 @@ async function handleGenerateVapid() {
   flex-direction: column;
   gap: var(--space-2);
   font-size: var(--font-size-xs);
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
   color: var(--color-text-secondary);
 }
 
@@ -1790,7 +1790,7 @@ async function handleGenerateVapid() {
 
 .guide-note {
   display: inline-block;
-  font-size: 0.9em;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 </style>

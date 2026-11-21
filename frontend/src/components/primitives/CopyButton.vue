@@ -152,7 +152,7 @@ async function handleCopy(event: MouseEvent) {
   box-sizing: border-box;
   flex-shrink: 0;
   vertical-align: middle;
-  line-height: 1;
+  line-height: var(--line-height-none);
   transition:
     opacity 0.18s ease,
     color 0.15s ease,

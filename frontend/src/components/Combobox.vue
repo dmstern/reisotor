@@ -677,7 +677,7 @@ defineOptions({
   justify-content: center;
   pointer-events: none;
   z-index: 2;
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .combobox--sm .combobox-leading-icon {

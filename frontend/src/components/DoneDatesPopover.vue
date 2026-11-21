@@ -115,7 +115,7 @@ const emit = defineEmits<{
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   margin: 0;
-  line-height: 1.3;
+  line-height: var(--line-height-snug);
 }
 
 .popover-buttons {

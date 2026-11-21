@@ -310,7 +310,7 @@ const {
 
 .factory-reset-hint {
   margin: 0;
-  line-height: 1.45;
+  line-height: var(--line-height-normal);
 }
 
 .factory-reset-action {

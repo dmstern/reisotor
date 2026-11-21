@@ -144,18 +144,18 @@ const resolvedIcon = computed<IconDef | null>(() => {
     background-color 0.15s ease,
     border-color 0.15s ease,
     color 0.15s ease;
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
   border: 1px solid var(--color-border-divider);
 }
 
 .alert--sm {
   padding: 6px 10px;
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
 }
 
 .alert--md {
   padding: 10px 14px;
-  font-size: 0.8125rem;
+  font-size: var(--font-size-sm);
 }
 
 .alert__main {
@@ -193,7 +193,7 @@ const resolvedIcon = computed<IconDef | null>(() => {
 
 .alert__desc {
   color: inherit;
-  line-height: 1.45;
+  line-height: var(--line-height-normal);
   overflow-wrap: anywhere;
   word-break: break-word;
   text-wrap: pretty;

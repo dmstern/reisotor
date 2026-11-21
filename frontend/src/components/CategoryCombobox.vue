@@ -145,7 +145,7 @@ defineOptions({
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   padding: 6px 10px;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text-muted);
   cursor: pointer;

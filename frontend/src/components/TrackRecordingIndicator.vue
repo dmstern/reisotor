@@ -127,13 +127,13 @@ const elapsedLabel = computed(() => {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: #fff;
   background: var(--color-danger);
   padding: 4px;
   border-radius: var(--radius-pill);
-  line-height: 1;
+  line-height: var(--line-height-none);
   white-space: nowrap;
   flex-shrink: 0;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
@@ -152,7 +152,7 @@ const elapsedLabel = computed(() => {
   gap: 5px;
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
-  line-height: 1;
+  line-height: var(--line-height-none);
   padding: 0 3px;
 }
 
@@ -160,14 +160,14 @@ const elapsedLabel = computed(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .recording-time,
 .recording-status-text {
   display: inline-flex;
   align-items: center;
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .recording-pill-btn {

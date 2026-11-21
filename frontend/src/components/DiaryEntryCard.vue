@@ -266,7 +266,7 @@ function excursionTooltip(ex: Excursion): string {
 
 .avatar {
   font-size: var(--font-size-2xl);
-  line-height: 1;
+  line-height: var(--line-height-none);
   flex-shrink: 0;
 }
 
@@ -290,7 +290,7 @@ function excursionTooltip(ex: Excursion): string {
 }
 
 .edited-by-avatar {
-  font-size: 0.9em;
+  font-size: var(--font-size-xs);
   margin-right: 2px;
 }
 
@@ -313,8 +313,8 @@ function excursionTooltip(ex: Excursion): string {
   margin: 0 0 var(--space-2);
   font-family: var(--font-diary);
   font-size-adjust: from-font;
-  font-size: 1.05rem;
-  line-height: 1.5;
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
   overflow-wrap: anywhere;
   max-width: 75ch;
 }

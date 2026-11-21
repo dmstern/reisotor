@@ -159,8 +159,8 @@ async function handleActionClick(toast: ToastItem) {
     0 4px 6px -1px rgba(0, 0, 0, 0.1),
     0 2px 4px -1px rgba(0, 0, 0, 0.06)
   );
-  font-size: var(--font-size-sm, 0.85rem);
-  line-height: 1.4;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-snug);
 }
 
 .toast-item.toast-info {

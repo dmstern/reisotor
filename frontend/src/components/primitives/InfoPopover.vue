@@ -143,7 +143,7 @@ defineExpose({
 .info-popover-wrap {
   display: inline-flex;
   align-items: center;
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .info-popover-btn.btn:where(:not(.is-active):not(:hover):not(:focus-visible)) {
@@ -165,7 +165,7 @@ defineExpose({
 :global(.info-popover-content p) {
   margin: 0;
   font-size: var(--font-size-xs);
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
   color: var(--color-text-muted);
 }
 

@@ -86,15 +86,15 @@ function handleConfirm() {
 
 .track-share-warning-intro {
   margin: 0;
-  font-size: 0.95rem;
-  line-height: 1.45;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
   color: var(--color-text);
 }
 
 .track-share-warning-desc {
   margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.5;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
   color: var(--color-text-secondary);
 }
 </style>

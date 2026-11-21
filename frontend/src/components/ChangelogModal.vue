@@ -119,7 +119,7 @@ function goToSettings() {
 }
 
 .loading-text {
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   margin: 0;
 }
@@ -131,7 +131,7 @@ function goToSettings() {
 }
 
 .changelog-intro {
-  font-size: 0.95rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   margin: 0;
 }
@@ -162,11 +162,11 @@ function goToSettings() {
 }
 
 .settings-hint {
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   margin: var(--space-1) 0 0;
   text-align: center;
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
 }
 
 .settings-link {

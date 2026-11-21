@@ -442,7 +442,7 @@ function dismissPwaInstall() {
   min-width: 15px;
   height: 15px;
   padding: 0 3px;
-  font-size: 0.62rem;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   border: 1.5px solid var(--color-surface);
   /* #195: line-height-basiertes Zentrieren (line-height == height) setzt die Ziffer optisch auf die
@@ -502,12 +502,12 @@ function dismissPwaInstall() {
 
 .dropdown-title {
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .mark-all-btn {
   color: var(--color-primary-dark);
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
 }
 
@@ -558,8 +558,8 @@ function dismissPwaInstall() {
 }
 
 .row-emoji {
-  font-size: 1.1rem;
-  line-height: 1.3;
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-snug);
   flex-shrink: 0;
 }
 
@@ -572,7 +572,7 @@ function dismissPwaInstall() {
 }
 
 .row-text {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text);
 }
 
@@ -581,7 +581,7 @@ function dismissPwaInstall() {
 }
 
 .row-time {
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
@@ -595,7 +595,7 @@ function dismissPwaInstall() {
 }
 
 .empty {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   padding: var(--space-3);
   text-align: center;
@@ -677,16 +677,16 @@ function dismissPwaInstall() {
 }
 
 .notice-title {
-  font-size: 0.82rem;
+  font-size: var(--font-size-sm);
   font-weight: 700;
   color: var(--color-text);
-  line-height: 1.25;
+  line-height: var(--line-height-tight);
 }
 
 .notice-desc {
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  line-height: 1.25;
+  line-height: var(--line-height-tight);
 }
 
 .notice-actions {

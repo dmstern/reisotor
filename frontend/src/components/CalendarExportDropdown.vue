@@ -141,7 +141,7 @@ function downloadIcs() {
   padding: var(--space-1) var(--space-2);
   font-size: var(--font-size-xs);
   font-weight: 500;
-  line-height: 1.2;
+  line-height: var(--line-height-tight);
   gap: var(--space-1);
   white-space: nowrap;
 }

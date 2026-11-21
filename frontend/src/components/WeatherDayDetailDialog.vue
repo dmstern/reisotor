@@ -693,7 +693,7 @@ function formatDate(dateStr: string) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   font-weight: 500;
 }
@@ -721,7 +721,7 @@ function formatDate(dateStr: string) {
 
 .label {
   font-weight: 600;
-  font-size: 1.05rem;
+  font-size: var(--font-size-md);
 }
 
 .temps {
@@ -731,17 +731,17 @@ function formatDate(dateStr: string) {
 }
 
 .temp-max {
-  font-size: 1.4rem;
+  font-size: var(--font-size-xl);
   font-weight: 700;
 }
 
 .temp-min {
-  font-size: 1rem;
+  font-size: var(--font-size-md);
   color: var(--color-text-muted);
 }
 
 .temp-unavailable {
-  font-size: 1.4rem;
+  font-size: var(--font-size-xl);
   font-weight: 600;
   color: var(--color-text-muted);
 }
@@ -750,14 +750,14 @@ function formatDate(dateStr: string) {
   margin: var(--space-1) 0 0;
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
 }
 
 .rain-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   padding-top: var(--space-1);
   border-top: 1px solid var(--color-border-divider);
 }
@@ -788,7 +788,7 @@ function formatDate(dateStr: string) {
 }
 
 .hourly-header h3 {
-  font-size: 0.95rem;
+  font-size: var(--font-size-sm);
   margin-bottom: 0;
 }
 
@@ -952,20 +952,20 @@ function formatDate(dateStr: string) {
 }
 
 .time {
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
 .temp {
   font-weight: 600;
-  font-size: 0.88rem;
+  font-size: var(--font-size-sm);
 }
 
 .rain {
-  font-size: 0.7rem;
+  font-size: var(--font-size-xs);
   color: #3b82f6;
   min-height: 14px;
-  line-height: 14px;
+  line-height: var(--line-height-none);
   white-space: nowrap;
 }
 
@@ -975,7 +975,7 @@ function formatDate(dateStr: string) {
 }
 
 .hourly-empty {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   text-align: center;
   padding: var(--space-3);
@@ -1009,12 +1009,12 @@ function formatDate(dateStr: string) {
 
 .model-title {
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-primary-dark);
 }
 
 .model-sub {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 

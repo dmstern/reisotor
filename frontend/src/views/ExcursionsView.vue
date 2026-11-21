@@ -2913,7 +2913,9 @@ onUnmounted(() => {
     position: absolute;
     top: -4px;
     right: -4px;
-    font-size: 10px;
+    justify-content: center;
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-none);
     padding: 0 4px;
     min-width: 16px;
     height: 16px;

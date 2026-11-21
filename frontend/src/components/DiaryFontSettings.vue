@@ -147,9 +147,9 @@ const currentFont = computed(() => {
 }
 
 .font-sample {
-  font-size: 1.05rem;
+  font-size: var(--font-size-md);
   color: var(--color-primary-dark);
-  line-height: 1.3;
+  line-height: var(--line-height-snug);
   margin-top: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -179,8 +179,8 @@ const currentFont = computed(() => {
 }
 
 .preview-avatar {
-  font-size: 1.5rem;
-  line-height: 1;
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-none);
 }
 
 .preview-meta {
@@ -189,9 +189,9 @@ const currentFont = computed(() => {
 }
 
 .preview-title {
-  font-size: 1.1rem;
+  font-size: var(--font-size-lg);
   color: var(--color-primary-dark);
-  line-height: 1.25;
+  line-height: var(--line-height-tight);
 }
 
 .preview-date {
@@ -202,8 +202,8 @@ const currentFont = computed(() => {
 
 .preview-body {
   margin: 0;
-  font-size: 1rem;
-  line-height: 1.45;
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
   color: var(--color-text);
 }
 </style>

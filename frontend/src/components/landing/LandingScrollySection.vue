@@ -144,7 +144,7 @@ function onSelectHighlight(stepIdx: number, hIdx: number) {
 .section-subtitle {
   font-size: clamp(1.05rem, 1.8vw, 1.25rem);
   color: var(--color-text-muted);
-  line-height: 1.6;
+  line-height: var(--line-height-relaxed);
   margin: 0 auto;
 }
 

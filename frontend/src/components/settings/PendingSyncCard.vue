@@ -577,7 +577,7 @@ function handleMigrateData() {
 .header-desc {
   margin: var(--space-2) 0 var(--space-3);
   font-size: var(--font-size-sm);
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
 }
 
 .card-actions-bar {
@@ -642,7 +642,7 @@ function handleMigrateData() {
 }
 
 .item-title {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-md);
   font-weight: 600;
   color: var(--color-text);
   word-break: break-word;
@@ -714,8 +714,8 @@ function handleMigrateData() {
   overflow-x: auto;
   max-height: 200px;
   font-family: monospace;
-  font-size: 0.75rem;
-  line-height: 1.3;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
 }
 
 .edit-form {

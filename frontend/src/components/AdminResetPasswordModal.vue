@@ -227,7 +227,7 @@ async function copyToClipboard(text?: string | null, type?: 'password' | 'link')
 .description {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
   margin: 0;
 }
 
@@ -334,7 +334,7 @@ async function copyToClipboard(text?: string | null, type?: 'password' | 'link')
 .email-hint {
   font-size: var(--font-size-xs);
   margin: 0;
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
   color: var(--color-text-muted);
 }
 

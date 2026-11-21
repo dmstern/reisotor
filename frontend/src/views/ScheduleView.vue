@@ -347,7 +347,7 @@ onMounted(async () => {
   letter-spacing: 0.04em;
   color: var(--color-text-muted);
   padding: calc(var(--space-1) / 2) 0;
-  line-height: 1.2;
+  line-height: var(--line-height-tight);
 }
 
 .calendar-weeks-viewport {

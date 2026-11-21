@@ -83,7 +83,7 @@ const emit = defineEmits<{
   font-family: inherit;
   font-weight: 600;
   border-radius: var(--radius-pill);
-  line-height: 1.2;
+  line-height: var(--line-height-tight);
   white-space: nowrap;
   background: var(--color-hover);
   color: var(--color-text-muted);
@@ -224,7 +224,7 @@ const emit = defineEmits<{
   color: inherit;
   cursor: pointer;
   padding: 0;
-  line-height: 1;
+  line-height: var(--line-height-none);
   opacity: 0.8;
   margin-left: 2px;
   flex-shrink: 0;

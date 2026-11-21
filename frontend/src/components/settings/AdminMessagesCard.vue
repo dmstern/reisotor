@@ -338,7 +338,7 @@ onMounted(() => {
   align-items: center;
   gap: var(--space-2);
   flex-wrap: wrap;
-  font-size: var(--font-size-sm, 0.85rem);
+  font-size: var(--font-size-sm);
 }
 
 .sender-name {
@@ -353,15 +353,15 @@ onMounted(() => {
 
 .message-date {
   color: var(--color-text-muted);
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-xs);
 }
 
 .message-body {
   margin: 0;
   white-space: pre-wrap;
-  font-size: var(--font-size-sm, 0.9rem);
+  font-size: var(--font-size-sm);
   color: var(--color-text);
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
 }
 
 .matched-user-box {
@@ -371,7 +371,7 @@ onMounted(() => {
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   @include surface-sunken-box(var(--radius-sm-squircle));
-  font-size: var(--font-size-xs, 0.8rem);
+  font-size: var(--font-size-xs);
   flex-wrap: wrap;
 }
 
@@ -384,7 +384,7 @@ onMounted(() => {
 .unmatched-user-box {
   padding: var(--space-2) var(--space-3);
   @include surface-sunken-box(var(--radius-sm-squircle), dashed);
-  font-size: var(--font-size-xs, 0.8rem);
+  font-size: var(--font-size-xs);
 }
 
 .unmatched-hint {
@@ -404,6 +404,6 @@ onMounted(() => {
   border: 1px solid var(--color-danger, #ef4444);
   color: var(--color-danger, #ef4444);
   border-radius: var(--radius-sm-squircle, 6px);
-  font-size: var(--font-size-sm, 0.85rem);
+  font-size: var(--font-size-sm);
 }
 </style>

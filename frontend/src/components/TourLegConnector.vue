@@ -218,9 +218,9 @@ const emit = defineEmits<{
 }
 
 .leg-add-text {
-  font-size: 0.65rem;
+  font-size: var(--font-size-xs);
   font-weight: 500;
-  line-height: 1.1;
+  line-height: var(--line-height-tight);
   white-space: nowrap;
 }
 
@@ -233,7 +233,7 @@ const emit = defineEmits<{
   align-items: center;
   justify-content: center;
   font-size: var(--font-size-lg);
-  line-height: 1;
+  line-height: var(--line-height-none);
   color: var(--tour-theme-color, var(--color-primary));
 }
 
@@ -241,7 +241,7 @@ const emit = defineEmits<{
   font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text);
-  line-height: 1.15;
+  line-height: var(--line-height-tight);
   white-space: nowrap;
 }
 
@@ -255,7 +255,7 @@ const emit = defineEmits<{
   font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
-  line-height: 1.15;
+  line-height: var(--line-height-tight);
   text-align: center;
 }
 
@@ -267,7 +267,7 @@ const emit = defineEmits<{
   font-size: var(--font-size-xs);
   font-weight: 700;
   color: var(--tour-theme-color, var(--color-primary));
-  line-height: 1.1;
+  line-height: var(--line-height-tight);
   white-space: nowrap;
 }
 </style>

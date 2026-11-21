@@ -326,7 +326,7 @@ function onCardKeydown(event: KeyboardEvent) {
   margin: 0;
   font-size: var(--font-size-md);
   font-weight: 700;
-  line-height: 1.3;
+  line-height: var(--line-height-snug);
   color: var(--color-text);
   min-width: 0;
   overflow: hidden;
@@ -403,10 +403,6 @@ function onCardKeydown(event: KeyboardEvent) {
   .tour-card-main {
     padding: var(--space-2) var(--space-3);
     gap: var(--space-2);
-  }
-
-  .card-title {
-    font-size: var(--font-size-md);
   }
 }
 

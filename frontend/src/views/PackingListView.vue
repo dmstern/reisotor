@@ -174,14 +174,14 @@ async function handleEditDelete(id: number) {
 .list-header h2 {
   flex: 1;
   min-width: 0;
-  font-size: 1.05rem;
+  font-size: var(--font-size-md);
   color: var(--color-primary-dark);
   margin: 0;
   overflow-wrap: break-word;
 }
 
 .progress {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   white-space: nowrap;
   flex-shrink: 0;
@@ -193,14 +193,14 @@ async function handleEditDelete(id: number) {
 }
 
 .group h3 {
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   margin: 0 0 var(--space-2);
   overflow-wrap: break-word;
 }
 
 .subcategory {
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
   text-transform: uppercase;

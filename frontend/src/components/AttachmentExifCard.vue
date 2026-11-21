@@ -217,7 +217,7 @@ const { currentMetadata, hasExifMetadata, formatExifDateTime, onShowLocationOnMa
 .exif-text {
   display: flex;
   flex-direction: column;
-  line-height: 1.25;
+  line-height: var(--line-height-tight);
   min-width: 0;
 }
 

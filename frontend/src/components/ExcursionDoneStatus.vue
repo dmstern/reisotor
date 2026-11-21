@@ -202,7 +202,7 @@ function openCalendarAtDate(date: string) {
   align-items: center;
   gap: 4px;
   font-size: var(--font-size-xs);
-  line-height: 1.35;
+  line-height: var(--line-height-snug);
   color: var(--color-text-muted);
   min-width: 0;
   max-width: 100%;

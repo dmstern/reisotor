@@ -179,7 +179,7 @@ function entryLabel(entry: DiaryEntry): string {
   max-width: 100%;
   font-size: var(--font-size-sm);
   color: var(--color-text);
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
   min-height: 24px;
 }
 

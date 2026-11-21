@@ -241,7 +241,7 @@ function goToSettings() {
 
 .stage-sparkle {
   position: absolute;
-  line-height: 1;
+  line-height: var(--line-height-none);
   pointer-events: none;
   animation: stage-float-sparkle 2.6s cubic-bezier(0.25, 1, 0.5, 1) infinite;
   opacity: 0;
@@ -251,7 +251,7 @@ function goToSettings() {
   left: 12%;
   bottom: 22%;
   color: var(--color-accent, #ff9800);
-  font-size: 1.1rem;
+  font-size: var(--font-size-lg);
   animation-delay: 0s;
 }
 
@@ -259,7 +259,7 @@ function goToSettings() {
   left: 20%;
   top: 15%;
   color: #f2367d;
-  font-size: 0.95rem;
+  font-size: var(--font-size-sm);
   animation-delay: 0.8s;
 }
 
@@ -267,7 +267,7 @@ function goToSettings() {
   right: 14%;
   bottom: 26%;
   color: #00e5ff;
-  font-size: 1rem;
+  font-size: var(--font-size-md);
   animation-delay: 1.4s;
 }
 
@@ -275,7 +275,7 @@ function goToSettings() {
   right: 18%;
   top: 12%;
   color: #ffb703;
-  font-size: 1.05rem;
+  font-size: var(--font-size-md);
   animation-delay: 0.4s;
 }
 
@@ -283,7 +283,7 @@ function goToSettings() {
   left: 6%;
   top: 42%;
   color: #5cb37e;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   animation-delay: 1.9s;
 }
 
@@ -291,7 +291,7 @@ function goToSettings() {
   right: 8%;
   top: 46%;
   color: #e91e63;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   animation-delay: 1.1s;
 }
 
@@ -325,7 +325,7 @@ function goToSettings() {
   background: color-mix(in srgb, var(--color-primary-tint) 65%, var(--color-surface));
   border: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
   color: var(--color-primary-dark);
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   letter-spacing: 0.02em;
   box-shadow: 0 1px 4px color-mix(in srgb, var(--color-primary) 15%, transparent);
@@ -369,28 +369,28 @@ function goToSettings() {
 }
 
 .badge-icon {
-  font-size: 0.82rem;
-  line-height: 1;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-none);
 }
 
 .badge-text {
-  line-height: 1.2;
+  line-height: var(--line-height-tight);
 }
 
 /* Eigene Zeile unterhalb des Labels, damit die Pille auch bei langen Versionsnummern schmal bleibt. */
 .badge-versions {
   flex-basis: 100%;
   text-align: center;
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  line-height: 1.2;
+  line-height: var(--line-height-tight);
   opacity: 0.85;
 }
 
 .update-desc {
-  font-size: 0.95rem;
-  line-height: 1.5;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
   color: var(--color-text-muted);
   margin: 0;
   max-width: 380px;
@@ -452,10 +452,10 @@ function goToSettings() {
 }
 
 .settings-hint {
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   margin: var(--space-2) 0 0;
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
 }
 
 .settings-link {

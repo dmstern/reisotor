@@ -45,7 +45,7 @@ const OPTIONS = [
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text-muted);
   flex-shrink: 0;

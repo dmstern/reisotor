@@ -131,16 +131,16 @@ function onSelect(val: unknown) {
 }
 
 .visibility-intro-title {
-  font-size: 0.92rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text);
 }
 
 .visibility-intro-desc {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
 }
 
 .visibility-cards {

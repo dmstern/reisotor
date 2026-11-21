@@ -324,7 +324,7 @@ function selectAndClose(id: number) {
 }
 
 .empty {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   padding: 6px 8px;
 }
 
@@ -335,7 +335,7 @@ function selectAndClose(id: number) {
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   padding: 6px 8px;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-primary-dark);
   display: flex;
   align-items: center;
@@ -360,7 +360,7 @@ function selectAndClose(id: number) {
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   padding: 6px 8px;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   text-decoration: none;
   cursor: pointer;

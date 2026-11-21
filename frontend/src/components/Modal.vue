@@ -722,7 +722,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 
 .modal-head h2 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: var(--font-size-lg);
   color: var(--color-primary-dark);
   min-width: 0;
 }
@@ -747,7 +747,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 .confirm-close-message {
   margin: 0;
   font-size: var(--font-size-sm);
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
   color: var(--color-text-secondary);
 }
 

@@ -801,7 +801,7 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
 }
 
 .excursion-track-pill-avatar {
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .excursion-track-pill-label {
@@ -1029,7 +1029,7 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   white-space: nowrap;
   font-size: var(--font-size-xs);
   font-weight: 600;
-  line-height: 1.3;
+  line-height: var(--line-height-snug);
   padding: 1px var(--space-1);
   border-radius: var(--radius-pill);
   background: rgba(20, 20, 25, 0.88);

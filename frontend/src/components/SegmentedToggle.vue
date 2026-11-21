@@ -260,7 +260,7 @@ watch(
   border-radius: var(--radius-pill);
   font-size: var(--font-size-sm);
   font-weight: 600;
-  line-height: 1;
+  line-height: var(--line-height-none);
   color: var(--color-text-muted);
   white-space: nowrap;
   cursor: pointer;
@@ -277,7 +277,7 @@ watch(
 .segmented-option-label {
   display: inline-flex;
   align-items: center;
-  line-height: 1;
+  line-height: var(--line-height-none);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -165,7 +165,7 @@ function toggle() {
 }
 
 .picker-count {
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
   font-weight: 400;
   color: var(--color-text-muted);
 }

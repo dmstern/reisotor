@@ -71,7 +71,7 @@ const { exporting, exportError, exportBackup } = useBackupExport();
   margin: 0 0 var(--space-3);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
 }
 
 .hint:last-child {

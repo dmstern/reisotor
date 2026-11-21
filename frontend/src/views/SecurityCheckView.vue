@@ -208,7 +208,7 @@ function startCheck() {
 }
 
 .scan-log li {
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -222,14 +222,14 @@ function startCheck() {
 
 .score {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: var(--font-size-lg);
   font-weight: 700;
   color: var(--color-success);
 }
 
 .result-intro {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .result-list {
@@ -254,7 +254,7 @@ function startCheck() {
 }
 
 .result-icon {
-  font-size: 1.1rem;
+  font-size: var(--font-size-lg);
 }
 
 .result-label {
@@ -263,7 +263,7 @@ function startCheck() {
      Schrumpfen/Umbrechen und lange Kategorienamen ragen auf schmalen Breiten über die Box hinaus. */
   min-width: 0;
   font-weight: 600;
-  font-size: 0.88rem;
+  font-size: var(--font-size-sm);
 }
 
 .result-verdict {
@@ -272,7 +272,7 @@ function startCheck() {
      derselben Zeile bleibt. */
   flex-basis: 100%;
   padding-left: calc(1.1rem + var(--space-2));
-  font-size: 0.82rem;
+  font-size: var(--font-size-sm);
   color: var(--color-success);
 }
 
@@ -280,12 +280,12 @@ function startCheck() {
   margin: var(--space-2) 0 0;
   font-style: italic;
   color: var(--color-text-muted);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 .disclaimer {
   margin-top: var(--space-3);
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
   text-align: center;
 }
 </style>

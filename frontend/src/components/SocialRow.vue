@@ -122,7 +122,7 @@ const hasVisibleReadonlyItems = computed(
   align-items: center;
   gap: 2px;
   font-size: var(--font-size-xs);
-  line-height: 1;
+  line-height: var(--line-height-none);
   padding: 2px var(--space-1);
   user-select: none;
 }
@@ -145,7 +145,7 @@ const hasVisibleReadonlyItems = computed(
 }
 
 .social-count {
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   margin-left: 2px;
 }

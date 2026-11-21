@@ -77,7 +77,7 @@ function onInput(event: Event) {
   color: var(--color-text);
   font-family: inherit;
   font-size: var(--font-size-md);
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
   box-sizing: border-box;
   min-width: 0;
   max-width: 100%;

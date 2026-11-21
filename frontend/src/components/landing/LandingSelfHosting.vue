@@ -45,7 +45,7 @@ defineProps<{
 .self-hosting p {
   margin: 0;
   color: var(--color-text-muted);
-  line-height: 1.6;
+  line-height: var(--line-height-relaxed);
 }
 
 .self-hosting a {

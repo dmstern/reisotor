@@ -207,7 +207,7 @@ const hasObjectJump = computed(() => jumpLabel.value !== undefined);
   padding: 1px var(--space-1);
   border-radius: var(--radius-xs-squircle);
   corner-shape: squircle;
-  line-height: 1.25;
+  line-height: var(--line-height-tight);
   white-space: nowrap;
 }
 
@@ -215,7 +215,7 @@ const hasObjectJump = computed(() => jumpLabel.value !== undefined);
   font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
-  line-height: 1.25;
+  line-height: var(--line-height-tight);
   white-space: nowrap;
 }
 
@@ -223,7 +223,7 @@ const hasObjectJump = computed(() => jumpLabel.value !== undefined);
   font-weight: 600;
   font-size: var(--font-size-md);
   color: var(--color-text);
-  line-height: 1.3;
+  line-height: var(--line-height-snug);
 }
 
 .item .title.todo-done {

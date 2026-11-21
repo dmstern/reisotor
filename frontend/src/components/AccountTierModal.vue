@@ -313,7 +313,7 @@ function close() {
   margin: 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
 }
 
 .status-header {
@@ -419,7 +419,7 @@ function close() {
 
 .upgrade-info-card p {
   margin: 0 0 var(--space-2);
-  line-height: 1.45;
+  line-height: var(--line-height-normal);
 }
 
 .upgrade-info-card p:last-child {

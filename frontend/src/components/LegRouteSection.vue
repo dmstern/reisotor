@@ -329,7 +329,7 @@ const routeHeadingIconDef: IconDef = {
   border-radius: var(--radius-pill);
   background: var(--color-primary-tint);
   color: var(--color-primary);
-  line-height: 1.2;
+  line-height: var(--line-height-tight);
 }
 
 .route-calc-badge--loading {

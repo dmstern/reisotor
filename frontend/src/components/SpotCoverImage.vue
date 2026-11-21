@@ -142,7 +142,7 @@ function formatAccommodationDate(dateStr: string | null) {
 }
 
 .placeholder {
-  font-size: 2.2rem;
+  font-size: var(--font-size-2xl);
   transition:
     opacity 0.3s ease,
     transform 0.3s ease;
@@ -234,7 +234,7 @@ function formatAccommodationDate(dateStr: string | null) {
   margin: 0;
   font-size: var(--font-size-lg);
   font-weight: 700;
-  line-height: 1.25;
+  line-height: var(--line-height-tight);
   color: #ffffff;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
   display: -webkit-box;
@@ -265,7 +265,7 @@ function formatAccommodationDate(dateStr: string | null) {
 .note.is-banner {
   overflow-wrap: anywhere;
   font-size: var(--font-size-sm);
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
   color: rgba(255, 255, 255, 0.92);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
   display: -webkit-box;
@@ -332,12 +332,11 @@ function formatAccommodationDate(dateStr: string | null) {
 
   .overlay-bottom-content .card-title {
     font-size: var(--font-size-md);
-    line-height: 1.2;
   }
 
   .note.is-banner {
     font-size: var(--font-size-xs);
-    line-height: 1.25;
+    line-height: var(--line-height-tight);
     -webkit-line-clamp: 1;
     line-clamp: 1;
   }

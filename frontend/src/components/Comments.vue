@@ -177,8 +177,8 @@ function formatCommentDate(dateStr?: string): string {
 }
 
 .avatar-sm {
-  font-size: 1.1rem;
-  line-height: 1.2;
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-tight);
 }
 
 .comment-body {

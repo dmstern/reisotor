@@ -313,12 +313,13 @@ function resetDefaults() {
   position: absolute;
   top: -3px;
   right: -3px;
+  justify-content: center;
   min-width: 16px;
   height: 16px;
   padding: 0 var(--space-1);
-  font-size: 0.7rem;
+  font-size: var(--font-size-xs);
   font-weight: 700;
-  line-height: 16px;
+  line-height: var(--line-height-none);
   text-align: center;
 }
 
@@ -336,7 +337,7 @@ function resetDefaults() {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;

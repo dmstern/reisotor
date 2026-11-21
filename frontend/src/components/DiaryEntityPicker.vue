@@ -297,7 +297,7 @@ const hasDateMismatch = computed(() => {
   max-width: 100%;
   font-size: var(--font-size-sm);
   color: var(--color-text);
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
   min-height: 24px;
 }
 
@@ -392,7 +392,7 @@ const hasDateMismatch = computed(() => {
 }
 
 .mismatch-opt-in-text {
-  line-height: 1.3;
+  line-height: var(--line-height-snug);
 }
 
 @media (prefers-reduced-motion: reduce) {

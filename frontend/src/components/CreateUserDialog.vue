@@ -250,13 +250,13 @@ async function submit() {
 
 .field label,
 .field .pseudo-label {
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text-heading);
 }
 
 .hint {
-  font-size: 0.78rem;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   margin: 0;
 }
@@ -269,7 +269,7 @@ async function submit() {
 
 .error-msg {
   color: var(--color-danger);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   margin: 0;
 }
 </style>

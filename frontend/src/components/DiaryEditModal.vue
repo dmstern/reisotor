@@ -316,7 +316,7 @@ function handleUploadClick() {
 .diary-editor :deep(.richtext-content) {
   font-family: var(--font-diary);
   font-size-adjust: from-font;
-  font-size: 1.05rem;
-  line-height: 1.5;
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
 }
 </style>

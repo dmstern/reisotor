@@ -530,8 +530,8 @@ const profileTitle = computed(() => {
 .wordmark {
   font-weight: 700;
   color: var(--color-primary-dark);
-  font-size: 1.1rem;
-  line-height: 1;
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-none);
 }
 
 @media (max-width: 1200px) {
@@ -758,7 +758,7 @@ const profileTitle = computed(() => {
 }
 
 .avatar {
-  font-size: 1.15rem;
-  line-height: 1;
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-none);
 }
 </style>

@@ -224,7 +224,7 @@ button.upload-label {
   align-items: center;
   gap: var(--space-2);
   align-self: flex-start;
-  font-size: 0.88rem;
+  font-size: var(--font-size-sm);
   color: var(--color-primary);
   cursor: pointer;
   padding: 4px 8px;

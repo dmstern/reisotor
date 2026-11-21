@@ -431,7 +431,7 @@ watch(
   min-height: 30px;
   height: 30px;
   padding: 0 10px;
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-xs);
   flex-shrink: 0;
 }
 

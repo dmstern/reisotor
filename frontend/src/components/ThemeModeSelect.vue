@@ -132,8 +132,8 @@ function selectMode(val: ThemeMode) {
 }
 
 .theme-mode-select.icon .icon-face {
-  font-size: 1.1rem;
-  line-height: 1;
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-none);
   pointer-events: none;
 }
 
@@ -160,7 +160,7 @@ function selectMode(val: ThemeMode) {
 
 .theme-mode-select.block .block-label {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   color: var(--color-text);
   letter-spacing: -0.01em;
 }

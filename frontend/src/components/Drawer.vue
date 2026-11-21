@@ -390,8 +390,8 @@ onBeforeUnmount(() => {
 }
 
 .tab-icon {
-  font-size: 1.1rem;
-  line-height: 1;
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-none);
 }
 
 .tab-label {

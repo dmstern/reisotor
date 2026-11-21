@@ -134,7 +134,7 @@ defineProps<{
   font-size: 0.44rem;
   font-weight: 800;
   color: #854d0e;
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 /* Geldbörsen-Körper */

@@ -38,9 +38,9 @@ const resolvedRepoUrl = computed(() => (props.repoUrl ?? __REPO_URL__).replace(/
 .app-footer-legal-links {
   margin: 0;
   text-align: center;
-  font-size: var(--font-size-sm, 0.85rem);
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
 }
 
 .app-footer-legal-links,

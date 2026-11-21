@@ -210,7 +210,7 @@ const previewStyle = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
 }
 
@@ -265,7 +265,7 @@ const previewStyle = computed(() => {
   align-items: center;
   gap: var(--space-2);
   width: 100%;
-  font-size: 0.82rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text);
   text-align: center;
@@ -280,23 +280,23 @@ const previewStyle = computed(() => {
   justify-content: center;
   gap: var(--space-2);
   flex-wrap: wrap;
-  line-height: 1.4;
+  line-height: var(--line-height-snug);
 }
 
 .text-row {
   color: var(--color-text);
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
 }
 
 .underlay-row {
   font-weight: 600;
   color: var(--color-primary-dark);
-  font-size: 0.88rem;
+  font-size: var(--font-size-sm);
   margin-top: 2px;
 }
 
 .underlay-sub {
-  font-size: 0.8rem;
+  font-size: var(--font-size-sm);
 }
 
 .preview-tag {
@@ -305,7 +305,7 @@ const previewStyle = computed(() => {
   gap: 4px;
   padding: 2px 8px;
   border-radius: 999px;
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   font-weight: 700;
 }
 
@@ -324,7 +324,7 @@ const previewStyle = computed(() => {
   color: #075985;
   padding: 2px 8px;
   border-radius: 999px;
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs);
   font-weight: 700;
 }
 
@@ -367,7 +367,7 @@ const previewStyle = computed(() => {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: 0.88rem;
+  font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text-muted);
 }

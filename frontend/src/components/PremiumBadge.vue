@@ -91,7 +91,7 @@ function handleClick(ev: MouseEvent) {
 
 .premium-label {
   text-transform: uppercase;
-  font-size: 0.72em;
+  font-size: var(--font-size-xs);
   letter-spacing: 0.04em;
 }
 </style>

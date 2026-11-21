@@ -71,7 +71,7 @@ const component = computed(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
+  line-height: var(--line-height-none);
   flex-shrink: 0;
 }
 </style>

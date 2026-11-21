@@ -100,14 +100,14 @@ const id = computed(() => props.id || autoId);
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text);
-  line-height: 1.3;
+  line-height: var(--line-height-snug);
   min-width: 0;
   word-break: break-word;
 }
 
 .form-field-icon {
   font-size: var(--font-size-sm);
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .required-indicator {

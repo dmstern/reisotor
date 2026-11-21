@@ -171,7 +171,7 @@ function onEditClick(closePopover?: () => void) {
   font-family: inherit;
   font-size: var(--font-size-xs);
   font-weight: 650;
-  line-height: 1.25;
+  line-height: var(--line-height-tight);
   white-space: nowrap;
   border-radius: var(--radius-pill);
   background: var(--color-warning-tint);
@@ -203,7 +203,7 @@ function onEditClick(closePopover?: () => void) {
   color: inherit;
   font: inherit;
   cursor: pointer;
-  line-height: 1.25;
+  line-height: var(--line-height-tight);
   border-radius: var(--radius-pill) 0 0 var(--radius-pill);
   transition: opacity 0.15s ease;
 }
@@ -223,7 +223,7 @@ function onEditClick(closePopover?: () => void) {
   gap: var(--space-1);
   min-height: 20px;
   padding: 0 3px 0 6px;
-  line-height: 1.25;
+  line-height: var(--line-height-tight);
 }
 
 .spot-location-warning-icon {
