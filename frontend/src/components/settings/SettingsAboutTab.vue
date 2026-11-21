@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import Card from '../primitives/Card.vue';
 import Button from '../primitives/Button.vue';
+import Divider from '../primitives/Divider.vue';
 import AppIcon from '../AppIcon.vue';
 import ChangelogContent from '../ChangelogContent.vue';
 import AppFooterLinks from '../AppFooterLinks.vue';
@@ -195,12 +196,11 @@ const showPwaInstallDialog = ref(false);
           >
         </dd>
       </dl>
-      <div class="about-footer">
-        <AppFooterLinks
-          :repo-url="backendBuildInfo?.repoUrl"
-          :hosting-location="backendBuildInfo?.hostingLocation"
-        />
-      </div>
+      <Divider spacing="lg" />
+      <AppFooterLinks
+        :repo-url="backendBuildInfo?.repoUrl"
+        :hosting-location="backendBuildInfo?.hostingLocation"
+      />
     </Card>
 
     <FeedbackDialog v-model="showFeedbackDialog" />
@@ -287,12 +287,6 @@ h3 {
   .build-info-list dt:first-child {
     margin-top: 0;
   }
-}
-
-.about-footer {
-  margin-top: var(--space-xl);
-  padding-top: var(--space-lg);
-  border-top: 1px solid var(--color-border-divider);
 }
 
 .service-note {
