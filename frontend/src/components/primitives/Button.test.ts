@@ -255,4 +255,13 @@ describe('Button primitive', () => {
     const html = await renderToString(app);
     expect(html).not.toContain('spinner--inverted');
   });
+
+  it('renders btn--opaque when surface="opaque" is passed', async () => {
+    const app = createApp({
+      render: () => h(Button, { variant: 'secondary', surface: 'opaque' }, () => 'Toggle'),
+    });
+    const html = await renderToString(app);
+    expect(html).toContain('btn--secondary');
+    expect(html).toContain('btn--opaque');
+  });
 });

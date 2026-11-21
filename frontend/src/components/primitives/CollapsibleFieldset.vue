@@ -79,6 +79,7 @@ function toggle() {
       <Button
         type="button"
         variant="secondary"
+        surface="opaque"
         shape="pill"
         size="sm"
         class="collapsible-toggle"

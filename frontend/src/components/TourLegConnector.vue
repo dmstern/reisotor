@@ -31,6 +31,7 @@ const emit = defineEmits<{
     <Button
       v-if="leg"
       variant="secondary"
+      surface="opaque"
       size="sm"
       shape="squircle"
       class="tour-leg-pill is-horizontal-leg"
@@ -61,6 +62,7 @@ const emit = defineEmits<{
     <Button
       v-else
       variant="secondary"
+      surface="opaque"
       dashed
       size="sm"
       shape="squircle"
@@ -85,6 +87,7 @@ const emit = defineEmits<{
         v-if="leg"
         :key="`leg-${fromSpot.id}-${toSpot.id}`"
         variant="secondary"
+        surface="opaque"
         size="sm"
         shape="pill"
         class="tour-leg-pill is-row-break"
@@ -118,6 +121,7 @@ const emit = defineEmits<{
       <div v-else class="tour-leg-add-wrap">
         <Button
           variant="secondary"
+          surface="opaque"
           dashed
           size="sm"
           shape="pill"
@@ -180,22 +184,6 @@ const emit = defineEmits<{
 .tour-row-break.single-col .tour-row-break-inner {
   width: 100%;
   max-width: 100%;
-}
-
-/* Layout-Anpassungen für die Button-Primitive in TourLegConnector (opaker Hintergrund deckt den SVG-Pfad ab) */
-.btn.tour-leg-pill,
-.btn.tour-leg-add-btn {
-  background-color: var(--color-surface);
-
-  @include can-hover {
-    &:hover:not(:disabled):not(.is-disabled) {
-      background-color: var(--color-hover);
-    }
-  }
-
-  &:active:not(:disabled):not(.is-disabled) {
-    background-color: var(--color-hover);
-  }
 }
 
 .tour-leg-pill.is-horizontal-leg,

@@ -47,6 +47,8 @@ const _props = withDefaults(
     icon?: IconDef;
     /** Form-Variante: 'squircle' (Standard), 'circle' (kreisrund) oder 'pill' (Pille/Stadium). */
     shape?: 'squircle' | 'circle' | 'pill';
+    /** Oberflächen-Modus für gerahmte Buttons (z. B. 'opaque' auf Rahmen-/Verbindungslinien). */
+    surface?: 'transparent' | 'opaque';
     /** Ob der Button als aktiv/ausgewählt markiert ist (z. B. ausgewählter Avatar). */
     active?: boolean;
     /** Gestrichelte Umrandung für leere/optionale Hinzufügen-Slots (z. B. Tour-Weg-Verbinder). */
@@ -75,6 +77,7 @@ const _props = withDefaults(
     secondary: false,
     size: 'md',
     shape: 'squircle',
+    surface: 'transparent',
     active: false,
     dashed: false,
     type: 'button',
@@ -96,6 +99,7 @@ const btnClasses = computed(() => [
   _props.secondary && _props.variant !== 'secondary' ? 'btn--secondary' : undefined,
   _props.size !== 'md' ? `btn--${_props.size}` : undefined,
   _props.shape !== 'squircle' ? `btn--${_props.shape}` : undefined,
+  _props.surface === 'opaque' ? 'btn--opaque' : undefined,
   {
     'is-disabled': _props.disabled,
     'is-loading': _props.loading,
@@ -359,6 +363,21 @@ a.btn.is-loading {
 
 .btn--secondary:active:not(:disabled):not(.is-disabled) {
   background-color: var(--color-control-active-bg);
+}
+
+/* Opake Oberfläche für gerahmte Buttons auf Rahmen- oder Verbindungslinien (z. B. CollapsibleFieldset, TourLegConnector) */
+.btn--secondary.btn--opaque {
+  background-color: var(--color-surface);
+}
+
+@include can-hover {
+  .btn--secondary.btn--opaque:hover:not(:disabled):not(.is-disabled) {
+    background-color: var(--color-hover);
+  }
+}
+
+.btn--secondary.btn--opaque:active:not(:disabled):not(.is-disabled) {
+  background-color: var(--color-hover);
 }
 
 /* Gestrichelte Sekundär-/Hinzufügen-Variante für leere/optionale Slots (#810) */
