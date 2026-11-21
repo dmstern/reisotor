@@ -1365,10 +1365,9 @@ onUnmounted(() => {
             </template>
           </div>
           <div class="sheet-handle-actions">
-            <Button
+            <IconButton
               v-if="sheetState !== 'collapsed' && sheetState !== 'full' && canShowSearch"
-              variant="secondary"
-              shape="circle"
+              variant="ghost"
               size="sm"
               :active="activeSearchAndFilterCount > 0"
               :icon="ACTION_ICONS.search"
@@ -1388,7 +1387,7 @@ onUnmounted(() => {
               <Badge v-if="activeSearchAndFilterCount > 0" variant="primary" class="active-badge">
                 {{ activeSearchAndFilterCount }}
               </Badge>
-            </Button>
+            </IconButton>
             <Button
               v-if="sheetState !== 'collapsed'"
               size="sm"
@@ -1409,8 +1408,7 @@ onUnmounted(() => {
             </Button>
             <div class="sheet-stepper">
               <IconButton
-                variant="secondary"
-                shape="circle"
+                variant="ghost"
                 size="sm"
                 class="sheet-step-btn"
                 :disabled="!canCollapseSheet"
@@ -1420,8 +1418,7 @@ onUnmounted(() => {
                 @click="stepSheet(-1)"
               />
               <IconButton
-                variant="secondary"
-                shape="circle"
+                variant="ghost"
                 size="sm"
                 class="sheet-step-btn"
                 :disabled="!canExpandSheet"
@@ -2556,7 +2553,9 @@ onUnmounted(() => {
       border-radius: var(--radius-md-squircle);
       corner-shape: squircle;
       border: 1px solid var(--color-border);
-      box-shadow: var(--shadow-md);
+      box-shadow:
+        inset 0 1px 0 var(--shadow-control-highlight),
+        var(--shadow-md);
       width: var(--spots-col-width);
       /* Hält mindestens 380px Freiraum am rechten Rand von .app-main frei,
          damit nicht nur die Floating- und Zoom-Buttons Platz haben, sondern auch der

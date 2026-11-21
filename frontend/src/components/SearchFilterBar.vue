@@ -284,10 +284,9 @@ function clearFilters() {
 
     <!-- Kombinierter Filter- & Sortieren-Button + Popover (#684) -->
     <div class="dropdown filter-dropdown">
-      <Button
+      <IconButton
         ref="filterBtnRef"
-        variant="secondary"
-        shape="circle"
+        variant="ghost"
         :active="totalActiveCount > 0"
         :icon="ACTION_ICONS.filterSettings"
         :title="
@@ -306,7 +305,7 @@ function clearFilters() {
         <Badge v-if="totalActiveCount > 0" variant="primary" class="active-badge">{{
           totalActiveCount
         }}</Badge>
-      </Button>
+      </IconButton>
 
       <Teleport to="body">
         <template v-if="filterMenuOpen">

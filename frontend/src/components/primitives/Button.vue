@@ -340,7 +340,7 @@ a.btn.is-loading {
 /* Secondary: initial ruhig & flach mit Rahmen, Progressive 3D erst bei Hover/Active (#810) */
 .btn--secondary {
   @include control-physics-progressive;
-  background-color: var(--color-surface);
+  background-color: transparent;
   color: var(--color-primary);
   border: 1.5px solid var(--color-border-strong);
 }
@@ -352,7 +352,7 @@ a.btn.is-loading {
 
 @include can-hover {
   .btn--secondary:hover:not(:disabled):not(.is-disabled) {
-    background-color: var(--color-hover);
+    background-color: var(--color-control-hover-bg);
     border-color: var(--color-primary);
   }
 }

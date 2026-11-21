@@ -428,7 +428,9 @@ onBeforeUnmount(() => {
   --scroll-fade-bg: var(--color-surface);
   --tab-bar-fade-bg: var(--color-surface);
   border: var(--border-width) solid var(--color-border);
-  box-shadow: var(--shadow-md);
+  box-shadow:
+    inset 0 1px 0 var(--shadow-control-highlight),
+    var(--shadow-md);
   corner-shape: squircle;
   z-index: 12;
   overflow-y: auto;
@@ -619,7 +621,9 @@ onBeforeUnmount(() => {
         2
     );
     transform: none;
-    box-shadow: var(--shadow-md);
+    box-shadow:
+      inset 0 1px 0 var(--shadow-control-highlight),
+      var(--shadow-md);
     border-radius: var(--radius-md-squircle);
     corner-shape: squircle;
     border: var(--border-width) solid var(--color-border);
