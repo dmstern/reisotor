@@ -326,10 +326,6 @@ defineExpose({
   .richtext-editor:not(.compact) {
     max-height: min(75vh, 860px);
   }
-
-  .richtext-editor:not(.compact) :deep(.richtext-content) {
-    font-size: var(--font-size-md);
-  }
 }
 
 .toolbar-wrapper {
@@ -418,14 +414,8 @@ defineExpose({
   margin: 0;
   color: var(--color-text-muted);
   pointer-events: none;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-md);
   line-height: var(--line-height-normal);
-}
-
-@media (min-width: 800px) {
-  .richtext-editor:not(.compact) .editor-placeholder {
-    font-size: var(--font-size-md);
-  }
 }
 
 /* <editor-content> rendert einen eigenen, ungestylten Wrapper-Div um den tatsächlichen

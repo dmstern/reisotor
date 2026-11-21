@@ -404,10 +404,6 @@ function onCardKeydown(event: KeyboardEvent) {
     padding: var(--space-2) var(--space-3);
     gap: var(--space-2);
   }
-
-  .card-title {
-    font-size: var(--font-size-md);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

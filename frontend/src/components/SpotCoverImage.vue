@@ -332,7 +332,6 @@ function formatAccommodationDate(dateStr: string | null) {
 
   .overlay-bottom-content .card-title {
     font-size: var(--font-size-md);
-    line-height: var(--line-height-tight);
   }
 
   .note.is-banner {

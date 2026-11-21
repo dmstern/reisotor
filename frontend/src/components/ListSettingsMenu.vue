@@ -313,6 +313,7 @@ function resetDefaults() {
   position: absolute;
   top: -3px;
   right: -3px;
+  justify-content: center;
   min-width: 16px;
   height: 16px;
   padding: 0 var(--space-1);
