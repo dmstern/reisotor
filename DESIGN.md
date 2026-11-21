@@ -249,6 +249,26 @@ Einleitungszeile im gerenderten Ergebnis prüfen, ob der Abstand tatsächlich an
 - **Card-Gutters**: In Grids und Listen beträgt der Abstand zwischen Cards `--space-3` (mobil) bzw. `--space-3` bis `--space-4` (Desktop).
 - **Leerzustände (`.empty`)**: Dezent `--color-text-muted` mit mindestens `--space-3` bis `--space-4` vertikalem Innenabstand, um Leere klar als ruhigen Zustand zu vermitteln.
 
+### Praxis-Checkliste für harmonische Abstände (Audit-Learnings)
+
+Typische Abstandsfehler, die im Code unauffällig wirken, aber das visuelle Gleichgewicht stören – bei jedem Spacing-/Typografie-Audit aktiv prüfen:
+
+1. **Keine doppelten Abstände (`gap` + `margin`/`padding`) & versteckte Primitive-Gaps:**
+   - In Flex-/Grid-Containern mit `gap` niemals zusätzlich `margin-top` oder vertikales `padding` auf Kindelementen stapeln (z. B. kein `padding-block` auf Listen-Items, wenn die Liste schon `gap` hat, und kein `margin-top` auf Footer-/Collapsible-Kindern).
+   - Bringt eine Primitive bereits ein eigenes `gap` mit (z. B. `PickerMenu` mit `gap: var(--space-2xs)`), erzeugt ein zusätzliches `margin-top` auf Sektions-Trennern asymmetrische Abstände (oben enger als unten). Im spezialisierten Container `gap: 0` setzen oder den Container-`gap` rechnerisch ausgleichen.
+2. **Zugeklappte CSS-Grid-Akkordions (`grid-template-rows: 0fr`):**
+   - Ein `.accordion-inner` mit eigenem vertikalem `padding` behält im `0fr`-Track sein Padding als unsichtbare Resthöhe, was darüberliegende Sektions-Headings optisch nach oben verschiebt. Vertikales Padding im Akkordion-Inhalt darf erst im geöffneten Zustand (`.accordion.is-expanded > ...`) greifen.
+3. **Kein Margin-Collapsing zwischen Block-`<p>` und `inline-flex`-`.btn`:**
+   - Vertikale Margins zwischen einem Block-Element (`<p>`) und einem `inline-flex`-Button (`.btn`, `<button>`) kollabieren in CSS **nicht**, sondern addieren sich. Die globale Regel `p + button, p + .btn { margin-top: var(--space-3); }` in `style.css` verdoppelt den Abstand auf `32px`, sobald das `<p>` ebenfalls `margin-bottom: var(--space-3)` hat. Bei kontrollierten Intro-Absätzen vor Buttons explizit `margin-top: 0` auf dem Button setzen (oder über Container-`gap` steuern).
+4. **Spezifitäts-Falle bei Primitives mit Zustands-Klassen (z. B. `CollapsibleFieldset.is-closed`):**
+   - Zustands-Selektoren wie `.collapsible-fieldset.is-closed` (`0,2,0`) überschreiben einfache Wrapper-Klassen (`0,1,0`) wie `.push-details-collapsible { margin-top: var(--space-3); }`. Außenabstände für solche Primitives über Container-`gap` oder mit entsprechender Spezifität setzen – und im geschlossenen Zustand auf bündige linke Fluchtlinie achten (`padding-inline: 0`, solange kein Rahmen sichtbar ist).
+5. **Gestalt-Gesetz der Nähe (Hierarchie-Verhältnisse & Fluchtlinien):**
+   - **Überschrift → Intro → Inhalt:** Überschrift enger an den eigenen Intro-Text (`--space-md`, `12px`) als Intro-Text an das nachfolgende Control/die Tabelle (`--space-lg` bis `--space-3-5`, `16–20px`); semantisch zusammengehörige Controls enger (`--space-lg`, `16px`) als getrennte Themenblöcke (`--space-xl`, `24px`).
+   - **Listen-Hierarchie:** Abstand zwischen einzelnen Punkten (`--space-sm`, `8px`) deutlich enger als zwischen Kategorien (`--space-3-5` bis `--space-xl`, `20–24px`, Faktor ≥ 2).
+   - **Symmetrie um Trennlinien:** Ober- und unterhalb von `<Divider />` / `@include divider-engraved` stets symmetrische Abstände halten (nie `16px` oben / `8px` unten) und keine flachen `1px solid/dashed var(--color-border-divider)`-Linien mehr verwenden.
+   - **Vertikale Textachse bei Emoji-/Icon-Bullets:** Bullets/Icons vor Listen-Labels mit fester Breite (`width: 1.25em`–`1.4em; text-align: center;`) versehen, damit alle Textanfänge exakt untereinander fluchten.
+   - **Saubere Container-Enden:** Karten-Stapel (z. B. Settings-Tabs) über `display: flex; flex-direction: column; gap: var(--space-xl)` statt `margin-bottom` auf `:deep(.card)` trennen; letzte Hinweise/Fehlermeldungen in Cards ohne überhängendes `margin-bottom` (`:last-child { margin-bottom: 0; }`).
+
 ## Eckenrundung: Squircle-Prinzip
 
 **Grundsatz: nirgends ganz eckige (90°-)Ecken.** Jede eigenständig abgegrenzte Fläche – Card,
