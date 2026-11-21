@@ -1826,9 +1826,9 @@ onUnmounted(() => {
 
           <template v-if="groupMode !== 'tracks'">
             <Transition
-              :name="tourViewTransitionName"
+              :name="tourViewTransitionName || undefined"
               :css="Boolean(tourViewTransitionName)"
-              mode="out-in"
+              :mode="tourViewTransitionName ? 'out-in' : undefined"
               @enter="onTourViewEnter"
               @after-enter="onTourViewAfterEnter"
             >
