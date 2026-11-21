@@ -2103,6 +2103,7 @@ onUnmounted(() => {
   corner-shape: inherit;
   background: var(--color-surface);
   backdrop-filter: none;
+  box-shadow: inset 0 1px 0 var(--shadow-control-highlight);
   transform: translateZ(0);
   transition: background-color 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
@@ -2112,6 +2113,8 @@ onUnmounted(() => {
    undurchsichtig. */
 .spots-col.collapsed,
 .spots-col.partial {
+  --color-divider-groove: var(--color-divider-groove-glass);
+  --color-divider-highlight: var(--color-divider-highlight-glass);
   border-color: var(--color-surface-glass-border);
   box-shadow: var(--shadow-floating-island);
 }
@@ -2131,7 +2134,7 @@ onUnmounted(() => {
   --category-nav-bg: transparent;
   background: var(--category-nav-bg);
   backdrop-filter: none;
-  border-bottom-color: var(--color-surface-glass-border);
+  border-bottom-color: var(--color-divider-groove);
 }
 
 .spots-col.partial :deep(.category-nav-wrap.is-stuck) {
@@ -2170,10 +2173,6 @@ onUnmounted(() => {
   corner-shape: squircle;
   height: min(100vh, var(--sheet-max-height));
   height: min(100dvh, var(--sheet-max-height));
-
-  &::before {
-    box-shadow: inset 0 1px 0 var(--shadow-control-highlight);
-  }
 
   .spots-col-body {
     padding-bottom: var(--navbar-bottom-offset, 0px);
@@ -2544,9 +2543,9 @@ onUnmounted(() => {
       border-radius: var(--radius-md-squircle);
       corner-shape: squircle;
       border: 1px solid var(--color-border);
-      box-shadow:
-        inset 0 1px 0 var(--shadow-control-highlight),
-        var(--shadow-md);
+      box-shadow: var(--shadow-md);
+      --color-divider-groove: var(--color-divider-groove-surface);
+      --color-divider-highlight: var(--color-divider-highlight-surface);
       width: var(--spots-col-width);
       /* Hält mindestens 380px Freiraum am rechten Rand von .app-main frei,
          damit nicht nur die Floating- und Zoom-Buttons Platz haben, sondern auch der
@@ -2581,7 +2580,7 @@ onUnmounted(() => {
       --category-nav-bg: var(--color-surface);
       background: var(--category-nav-bg);
       backdrop-filter: none;
-      border-bottom-color: var(--color-border-divider);
+      border-bottom-color: var(--color-divider-groove);
     }
 
     .sheet-handle-row {
@@ -2765,7 +2764,7 @@ onUnmounted(() => {
   margin-left: calc(var(--space-3) * -1);
   margin-right: calc(var(--space-3) * -1);
   margin-bottom: 0;
-  border-bottom: 1px solid var(--color-border-divider);
+  @include divider-engraved('bottom');
   transition:
     background 0.25s ease,
     box-shadow 0.25s ease,
@@ -2773,7 +2772,7 @@ onUnmounted(() => {
 }
 
 .category-group.is-tour-group:first-of-type {
-  border-top: 1px solid var(--color-border-divider);
+  @include divider-engraved('both');
 }
 
 .tour-empty-group {
@@ -2813,7 +2812,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   padding: var(--space-1) 0 var(--space-2);
-  border-bottom: 1px solid var(--color-border-divider);
+  @include divider-engraved('bottom');
 }
 
 .tour-detail-back-btn {

@@ -205,7 +205,7 @@ const hasMeta = computed(() =>
   flex-direction: column;
   gap: var(--space-1);
   padding-bottom: var(--space-2);
-  border-bottom: 1px solid var(--color-border-divider);
+  @include divider-engraved('bottom');
 }
 
 .tour-detail-header-top {

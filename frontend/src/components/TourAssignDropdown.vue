@@ -203,7 +203,7 @@ onUnmounted(() => {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .tour-assign-dropdown {
   position: relative;
   display: inline-flex;
@@ -226,7 +226,7 @@ onUnmounted(() => {
 
 .popup-head {
   padding: 2px 6px 6px;
-  border-bottom: 1px solid var(--color-border-divider);
+  @include divider-engraved('bottom');
 }
 
 .popup-title {
@@ -259,7 +259,7 @@ onUnmounted(() => {
   gap: var(--space-1);
   margin-top: var(--space-1);
   padding-top: var(--space-1);
-  border-top: 1px solid var(--color-border-divider);
+  @include divider-engraved('top');
 }
 
 .create-tour-input {
