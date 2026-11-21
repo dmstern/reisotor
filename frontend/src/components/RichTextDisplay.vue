@@ -48,7 +48,7 @@ const html = computed(() => {
 .richtext :deep(h4),
 .richtext :deep(h5),
 .richtext :deep(h6) {
-  margin: var(--space-2) 0 var(--space-xs);
+  margin: var(--space-sm) 0 var(--space-xs);
   font-weight: 600;
   line-height: var(--line-height-tight);
   color: var(--color-text);
@@ -80,7 +80,7 @@ const html = computed(() => {
 }
 
 .richtext :deep(hr) {
-  margin: var(--space-2) 0;
+  margin: var(--space-sm) 0;
   border: none;
   @include divider-engraved('bottom');
 }

@@ -92,7 +92,7 @@ const emit = defineEmits<{
   flex-wrap: wrap;
   gap: var(--space-sm);
   margin: 0;
-  padding: var(--space-1-5) 0 0;
+  padding: 0;
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   /* In Flex-Row-Formularen (z. B. ShoppingListView.vue's .add-form) soll dieser Text nie eine

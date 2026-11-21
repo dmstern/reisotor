@@ -322,7 +322,7 @@ defineExpose({
    deswegen wieder geöffnet) - nochmal deutlich höher, zusammen mit dem breiteren Modal (Modal.vue).
    :not(.compact), weil dieselbe Vergrößerung inzwischen zu konsequent auch auf nebensächliche
    Notiz-Felder (Spots, Touren, ...) durchschlug (#194) - compact-Instanzen bleiben beim mobilen Limit. */
-@media (min-width: 800px) {
+@include media-up('desktop-sm') {
   .richtext-editor:not(.compact) {
     max-height: min(75vh, 860px);
   }
@@ -409,8 +409,8 @@ defineExpose({
 
 .editor-placeholder {
   position: absolute;
-  left: var(--space-3);
-  top: var(--space-2);
+  left: var(--space-lg);
+  top: var(--space-md);
   margin: 0;
   color: var(--color-text-muted);
   pointer-events: none;
@@ -432,7 +432,7 @@ defineExpose({
 }
 
 .richtext-editor :deep(.richtext-content) {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-md) var(--space-lg);
   min-height: 6em;
   outline: none;
 }
@@ -443,7 +443,7 @@ defineExpose({
    tatsächlich von Anfang an groß erscheint statt erst beim Volltippen zu wachsen. Muss nach der
    6em-Basisregel oben stehen, sonst gewinnt bei gleicher Spezifität die spätere Basisregel.
    :not(.compact) siehe Kommentar oben (#194) - compact-Instanzen bleiben bei der 6em-Basisregel. */
-@media (min-width: 800px) {
+@include media-up('desktop-sm') {
   .richtext-editor:not(.compact) :deep(.richtext-content) {
     min-height: 24em;
   }
@@ -451,6 +451,10 @@ defineExpose({
 
 .richtext-editor :deep(.richtext-content > :first-child) {
   margin-top: 0;
+}
+
+.richtext-editor :deep(.richtext-content > :last-child) {
+  margin-bottom: 0;
 }
 
 .richtext-editor :deep(.richtext-content ul),
@@ -465,7 +469,7 @@ defineExpose({
 .richtext-editor :deep(.richtext-content h4),
 .richtext-editor :deep(.richtext-content h5),
 .richtext-editor :deep(.richtext-content h6) {
-  margin: var(--space-2) 0 var(--space-xs);
+  margin: var(--space-sm) 0 var(--space-xs);
   font-weight: 600;
   line-height: var(--line-height-tight);
   color: var(--color-text);
@@ -497,9 +501,9 @@ defineExpose({
 }
 
 .richtext-editor :deep(.richtext-content hr) {
-  margin: var(--space-2) 0;
+  margin: var(--space-sm) 0;
   border: none;
-  border-top: 1px solid var(--color-border-divider);
+  @include divider-engraved('bottom');
 }
 
 .richtext-editor :deep(.richtext-content code) {
@@ -516,8 +520,8 @@ defineExpose({
 .collapsed-trigger {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
   min-height: var(--input-height, 46px);
   width: 100%;
   border: 1.5px solid var(--input-border-color);
