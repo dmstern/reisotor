@@ -764,10 +764,7 @@ function handleOpenScheduledDate(date: string) {
   margin-top: var(--space-1);
   margin-bottom: var(--space-3);
   padding: var(--space-2) var(--space-3);
-  background: var(--color-hover);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
+  @include surface-sunken-box;
 }
 
 .spot-region-row {

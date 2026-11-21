@@ -555,7 +555,7 @@ function handleMigrateData() {
   </Card>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .pending-sync-card {
   margin-top: var(--space-4);
 }
@@ -596,17 +596,15 @@ function handleMigrateData() {
 .outbox-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 0;
 }
 
 .outbox-item {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-3);
-  background: var(--color-surface-elevated, var(--color-surface));
-  border: 1px solid var(--color-border-divider);
-  border-radius: var(--radius-md);
+  padding: var(--space-3) 0;
+  @include divider-engraved-row;
 }
 
 .item-summary-row {
@@ -689,9 +687,7 @@ function handleMigrateData() {
 .item-details-box {
   margin-top: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  background: var(--color-background);
-  border: 1px solid var(--color-border-divider);
-  border-radius: var(--radius-sm);
+  @include surface-sunken-box(var(--radius-sm-squircle));
   font-size: var(--font-size-xs);
   display: flex;
   flex-direction: column;

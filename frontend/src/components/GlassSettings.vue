@@ -186,7 +186,7 @@ const previewStyle = computed(() => {
   </Card>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .preset-toggle-wrap {
   margin-top: var(--space-3);
 }
@@ -197,10 +197,7 @@ const previewStyle = computed(() => {
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-3);
-  background: var(--color-hover);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  border: var(--border-width) solid var(--color-border-divider);
+  @include surface-sunken-box;
 }
 
 .slider-row {

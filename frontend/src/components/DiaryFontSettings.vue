@@ -94,7 +94,7 @@ const currentFont = computed(() => {
   </Card>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .font-options-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
@@ -160,9 +160,7 @@ const currentFont = computed(() => {
 .preview-stage {
   margin-top: var(--space-4);
   padding: var(--space-3);
-  background: var(--color-bg);
-  border-radius: var(--radius-md-squircle);
-  border: var(--border-width) solid var(--color-border-divider);
+  @include surface-sunken-box;
 }
 
 .diary-preview-card {

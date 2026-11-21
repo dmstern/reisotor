@@ -71,17 +71,13 @@ const emit = defineEmits<{
   </li>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 li {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--color-border-divider);
-}
-
-li:last-child {
-  border-bottom: none;
+  @include divider-engraved-row;
 }
 
 .nav-config-icon {

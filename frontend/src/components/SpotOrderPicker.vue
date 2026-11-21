@@ -549,9 +549,7 @@ function onDeleteLeg() {
 
 .planned-box,
 .spot-picker {
-  border: 1px solid var(--color-border-divider);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  @include surface-sunken-box;
   padding: var(--space-2) var(--space-3);
   display: flex;
   flex-direction: column;

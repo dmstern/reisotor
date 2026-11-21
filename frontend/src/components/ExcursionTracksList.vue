@@ -2,6 +2,7 @@
 import { nextTick, onMounted, watch } from 'vue';
 import type { Excursion, LocationTrack, User } from '../api/types';
 import AppIcon from './AppIcon.vue';
+import Card from './primitives/Card.vue';
 import EmptyState from './primitives/EmptyState.vue';
 import IconButton from './primitives/IconButton.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -64,8 +65,10 @@ function getTourForTrack(track: LocationTrack): Excursion | undefined {
 const rowRefs = new Map<number, HTMLElement>();
 
 function setRowRef(trackId: number, el: unknown) {
-  if (el instanceof HTMLElement) {
-    rowRefs.set(trackId, el);
+  const element = el instanceof HTMLElement ? el : (el as { $el?: unknown } | null)?.$el;
+
+  if (element instanceof HTMLElement) {
+    rowRefs.set(trackId, element);
   } else {
     rowRefs.delete(trackId);
   }
@@ -97,6 +100,20 @@ function scrollToActiveTrack() {
   }
 }
 
+function onCardClick(event: MouseEvent, trackId: number) {
+  const target = event.target as HTMLElement | null;
+
+  if (
+    target &&
+    target !== event.currentTarget &&
+    target.closest('button, a, input, textarea, select, [role="button"]')
+  ) {
+    return;
+  }
+
+  emit('showOnMap', trackId);
+}
+
 watch(
   [() => props.activeTrackId, () => props.tracks],
   () => {
@@ -121,12 +138,16 @@ onMounted(() => {
 
     <div v-else class="tracks-view">
       <ul class="tracks-list">
-        <li
+        <Card
           v-for="track in tracks"
           :key="track.id"
           :ref="(el) => setRowRef(track.id, el)"
+          tag="li"
+          interactive
+          :map-focused="Number(activeTrackId) === Number(track.id)"
           class="track-row"
           :class="{ active: Number(activeTrackId) === Number(track.id) }"
+          @click="onCardClick($event, track.id)"
         >
           <button type="button" class="track-row-main" @click="emit('showOnMap', track.id)">
             <span class="track-row-title">
@@ -209,7 +230,7 @@ onMounted(() => {
               @click="emit('editTrack', track)"
             />
           </div>
-        </li>
+        </Card>
       </ul>
     </div>
   </div>
@@ -225,7 +246,7 @@ onMounted(() => {
   flex-direction: column;
   gap: var(--space-2);
   margin: 0;
-  padding: 0;
+  padding: 4px 2px;
   list-style: none;
 }
 
@@ -233,24 +254,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  box-shadow: var(--shadow-sm);
   padding: var(--space-2) var(--space-3);
-  transition:
-    box-shadow 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.track-row:hover {
-  border-color: var(--color-border-strong);
-}
-
-.track-row.active {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary);
 }
 
 .track-row:has(.track-row-main:focus-visible) {
@@ -426,9 +430,6 @@ onMounted(() => {
 @media (prefers-reduced-motion: reduce) {
   .recording-pulse-dot {
     animation: none;
-  }
-  .track-row {
-    transition: none;
   }
 }
 </style>

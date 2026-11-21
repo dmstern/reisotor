@@ -93,7 +93,7 @@ function resetColor() {
   </Card>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .color-presets-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
@@ -191,10 +191,7 @@ function resetColor() {
 .color-preview-stage {
   margin-top: var(--space-4);
   padding: var(--space-3);
-  border: var(--border-width) solid var(--color-border-divider);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  background: var(--color-hover);
+  @include surface-sunken-box;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);

@@ -144,7 +144,7 @@ function formatAmount(amount: number): string {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .affected-items-block {
   display: flex;
   flex-direction: column;
@@ -216,7 +216,7 @@ function formatAmount(amount: number): string {
 .affected-items-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 0;
   max-height: 180px;
   overflow-y: auto;
   padding-right: 2px;
@@ -227,10 +227,8 @@ function formatAmount(amount: number): string {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-divider);
+  padding: var(--space-2) var(--space-1);
+  @include divider-engraved-row;
   font-size: var(--font-size-sm);
 }
 

@@ -436,7 +436,7 @@ watch([() => filteredCategories.value.length, activeType], () => {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .trip-category-settings {
   display: flex;
   flex-direction: column;
@@ -493,7 +493,7 @@ watch([() => filteredCategories.value.length, activeType], () => {
 .category-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 0;
   max-height: min(52vh, 460px);
   overflow-y: auto;
   padding: 6px;
@@ -523,14 +523,8 @@ watch([() => filteredCategories.value.length, activeType], () => {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  background: var(--color-bg-subtle, rgba(0, 0, 0, 0.03));
-  border: 1px solid var(--color-border-divider);
-  border-radius: var(--radius-md);
+  @include surface-sunken-box;
   padding: var(--space-3);
-}
-
-:root[data-theme='dark'] .edit-preview-section {
-  background: rgba(255, 255, 255, 0.03);
 }
 
 .preview-header {

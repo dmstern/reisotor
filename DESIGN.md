@@ -364,6 +364,8 @@ Um CSS-Duplikate, Drift und doppelte Fokusrahmen im Error-/Modified-Zustand zu v
    - Spezial-Container, die technisch kein `<input>`-Tag sein können (`QuickAddRow.vue`s `.input-container`, `RichTextEditor.vue`s `.richtext-editor`), binden ausschließlich `@include control-field-inset($focus-within: true);` aus `src/styles/_controls.scss` ein.
    - Spezial-Pills und taktile Kacheln (`SpotCard.vue`s `.spot-expand-pill`, `DoneDatesPopover.vue`s `.date-check-item`, `Drawer.vue`s `.drawer-tab`) nutzen `@include control-3d-raised;`.
    - Schwebende Menü-/Popover-Oberflächen (`PickerMenu.vue`, `Combobox.vue`, `NotificationInbox.vue`) nutzen `@include control-menu-surface;`.
+   - **Eingefräste Trennlinien & vertikale Listen (`@mixin divider-engraved`, `@mixin divider-engraved-row`)**: `divider-engraved($edge)` erzeugt eine feine Rille mit Glanzkante (`--color-divider-groove` / `--color-divider-highlight`); `divider-engraved-row` wendet sie für einzelne Listenzeilen unten an und entfernt die Linie automatisch beim letzten Element (`:last-child`).
+   - **Versenkte Innenflächen & Inset-Boxen (`@mixin surface-sunken-box($radius, $border-style)`)**: Vereinheitlicht ruhige Fieldsets, Vorschau-Bereiche und Sub-Boxen (`--color-surface-sunken`, `--color-border-divider`, Squircle-Ecken) und setzt `--color-input-bg: var(--color-input-bg-sunken)` für guten Kontrast darin liegender Eingabefelder in Light & Dark Mode.
    - Alle Mixins sind über `_breakpoints.scss` in jeder `<style lang="scss" scoped>`-Komponente automatisch verfügbar.
 
 ## Animationen

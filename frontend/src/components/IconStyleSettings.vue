@@ -200,7 +200,7 @@ const isDefault = computed(() => {
   </Card>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .icon-style-preview-row {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -213,10 +213,7 @@ const isDefault = computed(() => {
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-3);
-  border: var(--border-width) solid var(--color-border-divider);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  background: var(--color-surface);
+  @include surface-sunken-box;
 }
 
 .icon-style-preview-icons {
