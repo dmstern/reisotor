@@ -294,7 +294,7 @@ function creatorLabel(userId: number | null | undefined): string | null {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: 0 0 var(--space-4) 0;
+  padding: 0;
   width: 100%;
   box-sizing: border-box;
   max-width: 100%;

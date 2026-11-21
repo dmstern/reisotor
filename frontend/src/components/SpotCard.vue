@@ -573,8 +573,12 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   margin-top: calc(-1 * var(--space-md));
 }
 
+.comments-accordion.is-expanded {
+  margin-top: 0;
+}
+
 .comments-accordion :deep(.comments) {
-  margin-top: var(--space-md);
+  margin-top: 0;
   padding-top: var(--space-md);
 }
 

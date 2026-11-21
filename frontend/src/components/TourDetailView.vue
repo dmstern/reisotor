@@ -200,7 +200,7 @@ const hasInfoBadges = computed(() =>
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
-  padding: var(--space-md) 0 var(--space-xl);
+  padding: var(--space-md) 0 0;
   min-width: 0;
 }
 
@@ -299,8 +299,12 @@ const hasInfoBadges = computed(() =>
   margin-top: calc(-1 * var(--space-md));
 }
 
+.tour-detail-comments-accordion.is-expanded {
+  margin-top: 0;
+}
+
 .tour-detail-comments-accordion :deep(.comments) {
-  margin-top: var(--space-md);
+  margin-top: 0;
   padding-top: 0;
   padding-bottom: var(--space-md);
   border-top: none;

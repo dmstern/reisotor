@@ -247,9 +247,11 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
       };
     }
 
+    const serpentineEl = wrapEl.querySelector<HTMLElement>('.tour-serpentine-wrap') ?? wrapEl;
+
     tourLines.set(excursionId, {
-      width: wrapEl.scrollWidth,
-      height: wrapEl.scrollHeight,
+      width: serpentineEl.offsetWidth || wrapEl.clientWidth,
+      height: serpentineEl.offsetHeight || wrapEl.clientHeight,
       path: combineSegments(segments),
       dots,
     });
