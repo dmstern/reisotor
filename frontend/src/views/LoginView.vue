@@ -358,9 +358,24 @@ async function onSubmit() {
   align-items: center;
   gap: var(--space-3);
   text-align: center;
+  /* Hero-Karte: kräftigerer Verlauf als Standard-Cards (dort in Dark Mode kaum sichtbar) plus
+     dezenter Primärfarben-Schein oben, damit Licht von oben zu kommen scheint. */
+  --surface-grad-top: var(--gradient-surface-hover-top);
+  --surface-grad-bottom: var(--gradient-surface-hover-bottom);
   background-color: var(--color-surface);
-  background-image: var(--gradient-surface-3d);
+  background-image:
+    radial-gradient(
+      120% 60% at 50% 0%,
+      color-mix(in srgb, var(--color-primary) 14%, transparent),
+      transparent 70%
+    ),
+    var(--gradient-surface-3d);
   border: 1px solid var(--color-border);
+  border-top-color: color-mix(
+    in srgb,
+    var(--color-border) 40%,
+    var(--shadow-control-highlight-strong)
+  );
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-card-elevated);
