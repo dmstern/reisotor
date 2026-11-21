@@ -5,7 +5,6 @@ import { parseContact } from '../utils/contact';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { linkLabel } from '../utils/linkLabel';
-import { travelTypeIconDef } from '../utils/travelTypeIcon';
 import { formatTravelDuration } from '../utils/travelDuration';
 import {
   formatSpotDistance,
@@ -164,10 +163,8 @@ const checkinCheckoutText = computed(() => {
       <DetailRow
         v-if="!isAccommodation && accommodationDistance"
         label="Entfernung"
-        :icon="
-          travelTypeIconDef(accommodationDistance.profile === 'foot-walking' ? 'zu Fuß' : 'Auto')
-        "
-        icon-group="categories"
+        :icon="ACTION_ICONS.distance"
+        icon-group="actions"
       >
         <span>
           {{

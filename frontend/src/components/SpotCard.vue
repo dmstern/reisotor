@@ -24,7 +24,6 @@ import SpotDoneStatus from './SpotDoneStatus.vue';
 import LinkedDiaryPills from './LinkedDiaryPills.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
-import { travelTypeIconDef } from '../utils/travelTypeIcon';
 import { formatTravelDuration } from '../utils/travelDuration';
 import {
   formatSpotDistance,
@@ -325,15 +324,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
                 : `Entfernung zu ${accommodationDistance.accommodationTitle}: ${formatSpotDistance(accommodationDistance.distanceMeters, accommodationDistance.isFallback)}`
             "
           >
-            <AppIcon
-              :icon="
-                travelTypeIconDef(
-                  accommodationDistance.profile === 'foot-walking' ? 'zu Fuß' : 'Auto'
-                )
-              "
-              :size="12"
-              group="categories"
-            />
+            <AppIcon :icon="ACTION_ICONS.distance" :size="12" group="actions" />
             <span class="spot-distance-text">
               {{
                 formatSpotDistance(
