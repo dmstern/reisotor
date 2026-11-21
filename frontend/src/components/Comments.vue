@@ -164,7 +164,7 @@ function formatCommentDate(dateStr?: string): string {
 .comments {
   margin-top: var(--space-3);
   padding-top: var(--space-3);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);

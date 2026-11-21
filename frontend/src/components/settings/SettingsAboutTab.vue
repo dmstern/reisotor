@@ -273,7 +273,7 @@ h3 {
   color: var(--color-primary);
   font-size: var(--font-size-sm);
   font-weight: 700;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-divider);
   padding-bottom: var(--space-1);
 }
 

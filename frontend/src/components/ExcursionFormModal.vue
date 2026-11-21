@@ -487,7 +487,7 @@ defineExpose({
 }
 
 .excursion-track-item {
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
@@ -555,7 +555,7 @@ defineExpose({
 
 .privacy-pill--private {
   background: var(--color-surface-sunken);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   color: var(--color-text-muted);
 }
 

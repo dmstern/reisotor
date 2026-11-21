@@ -249,7 +249,7 @@ function close() {
 
 .roles-table-wrapper {
   overflow-x: auto;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
@@ -265,14 +265,14 @@ function close() {
 .roles-table th {
   padding: var(--space-3);
   text-align: left;
-  border-bottom: 2px solid var(--color-border);
+  border-bottom: 2px solid var(--color-border-divider);
   background: var(--color-hover);
   vertical-align: top;
 }
 
 .roles-table td {
   padding: var(--space-3);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-divider);
   vertical-align: top;
 }
 
@@ -357,7 +357,7 @@ function close() {
 
 .role-card {
   padding: var(--space-3);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);

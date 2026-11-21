@@ -722,7 +722,7 @@ function handleModalClose(visible: boolean) {
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background-color: var(--color-surface-hover);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   padding: var(--space-2);
 }
 
@@ -846,7 +846,7 @@ function handleModalClose(visible: boolean) {
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   overflow: hidden;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   background: var(--color-surface-hover);
 }
 
@@ -871,7 +871,7 @@ function handleModalClose(visible: boolean) {
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   background: var(--color-surface-hover);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
 }

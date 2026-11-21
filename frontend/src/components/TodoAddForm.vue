@@ -280,6 +280,6 @@ function discardDraft() {
   gap: var(--space-3);
   padding-top: var(--space-3);
   margin-top: var(--space-2);
-  border-top: 1px dashed var(--color-border);
+  border-top: 1px dashed var(--color-border-divider);
 }
 </style>

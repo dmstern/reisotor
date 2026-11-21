@@ -586,7 +586,7 @@ function handleMigrateData() {
   gap: var(--space-2);
   margin-bottom: var(--space-4);
   padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-divider);
 }
 
 .discard-all-btn {
@@ -605,7 +605,7 @@ function handleMigrateData() {
   gap: var(--space-2);
   padding: var(--space-3);
   background: var(--color-surface-elevated, var(--color-surface));
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-md);
 }
 
@@ -690,7 +690,7 @@ function handleMigrateData() {
   margin-top: var(--space-2);
   padding: var(--space-2) var(--space-3);
   background: var(--color-background);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-xs);
   display: flex;
@@ -713,7 +713,7 @@ function handleMigrateData() {
   margin: 0;
   padding: var(--space-2);
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-sm);
   overflow-x: auto;
   max-height: 200px;

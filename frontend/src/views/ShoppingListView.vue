@@ -213,7 +213,7 @@ async function quickAddToGroup(group: Group, label: string) {
 .group-quick-add,
 .group-quick-add.expanded {
   padding: var(--space-3) 0 0 0;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
   margin-top: var(--space-2);
   border-radius: 0;
   box-shadow: none;

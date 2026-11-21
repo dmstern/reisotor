@@ -761,7 +761,7 @@ defineExpose({
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   overflow: hidden;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   transition:
     height 0.28s cubic-bezier(0.16, 1, 0.3, 1),
     min-height 0.28s cubic-bezier(0.16, 1, 0.3, 1);
@@ -843,7 +843,7 @@ defineExpose({
   gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-pill);
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);

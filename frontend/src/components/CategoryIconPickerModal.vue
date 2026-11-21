@@ -230,7 +230,7 @@ function handleSelect(opt: CategoryIconOption) {
   justify-content: center;
   gap: var(--space-1);
   padding: var(--space-2);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   background: var(--color-surface);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
@@ -301,7 +301,7 @@ function handleSelect(opt: CategoryIconOption) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
   padding-top: var(--space-2);
   margin-top: var(--space-1);
 }

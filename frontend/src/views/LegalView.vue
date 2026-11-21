@@ -133,14 +133,14 @@ function goBack() {
   gap: var(--space-2);
   font-weight: 600;
   background: var(--color-surface);
-  border-color: var(--color-border);
+  border-color: var(--color-border-strong);
   box-shadow: var(--shadow-sm);
   max-width: calc(100% - 48px);
 }
 
 .theme-toggle.icon {
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-sm);

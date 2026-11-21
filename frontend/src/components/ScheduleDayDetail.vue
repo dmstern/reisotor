@@ -167,7 +167,7 @@ defineEmits<{
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-pill);
   font-size: var(--font-size-xs);
-  border: var(--border-width) solid var(--color-border);
+  border: var(--border-width) solid var(--color-border-divider);
   background: var(--color-hover);
   color: var(--color-text);
   max-width: 100%;

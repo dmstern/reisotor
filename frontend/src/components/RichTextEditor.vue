@@ -367,7 +367,7 @@ defineExpose({
   /* Fixer Flex-Sibling außerhalb von .content-scroll (siehe unten) statt Teil des scrollenden
      Bereichs - bleibt dadurch beim Scrollen langer Texte immer sichtbar, ganz ohne position:sticky. */
   flex-shrink: 0;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-divider);
   background: var(--color-hover);
   transform: translateY(-4px);
   transition: transform 0.18s ease;
@@ -502,14 +502,14 @@ defineExpose({
 .richtext-editor :deep(.richtext-content blockquote) {
   margin: 4px 0;
   padding: 2px 0 2px 10px;
-  border-left: 3px solid var(--color-border);
+  border-left: 3px solid var(--color-border-divider);
   color: var(--color-text-muted);
 }
 
 .richtext-editor :deep(.richtext-content hr) {
   margin: var(--space-2) 0;
   border: none;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
 }
 
 .richtext-editor :deep(.richtext-content code) {

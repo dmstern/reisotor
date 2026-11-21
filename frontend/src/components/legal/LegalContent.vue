@@ -163,8 +163,7 @@ const isFeedbackActive = computed(() =>
             Diese Instanz von Reisotor wird eigenverantwortlich durch den oben genannten Betreiber
             betrieben.
             <template v-if="config.hostingLocation">
-              Hosting-Standort des Servers: <strong>{{ config.hostingLocation }}</strong
-              >.
+              Hosting-Standort des Servers: <strong>{{ config.hostingLocation }}</strong>.
             </template>
           </p>
           <p v-if="hasHostingProvider" class="legal-address">
@@ -352,8 +351,7 @@ const isFeedbackActive = computed(() =>
             <strong>Name:</strong> {{ operator.name }}<br />
             <template v-if="operator.address">
               <strong>Anschrift:</strong><br />
-              <span class="multiline-text">{{ operator.address }}</span
-              ><br />
+              <span class="multiline-text">{{ operator.address }}</span><br />
             </template>
             <strong>E-Mail:</strong>{{ ' '
             }}<a :href="`mailto:${operator.email}`">{{ operator.email }}</a>
@@ -410,8 +408,7 @@ const isFeedbackActive = computed(() =>
             bereitgestellt:
           </p>
           <p class="legal-address">
-            <strong>{{ hostingProvider?.name }}</strong
-            ><br />
+            <strong>{{ hostingProvider?.name }}</strong><br />
             <span v-if="hostingProvider?.address" class="multiline-text">{{
               hostingProvider.address
             }}</span>
@@ -432,8 +429,7 @@ const isFeedbackActive = computed(() =>
             dass der Dienstleister die personenbezogenen Daten unserer Nutzer:innen streng
             weisungsgebunden und unter Einhaltung des europäischen Datenschutzniveaus verarbeitet.
             <template v-if="config.hostingLocation">
-              Hosting-Standort des Servers: <strong>{{ config.hostingLocation }}</strong
-              >.
+              Hosting-Standort des Servers: <strong>{{ config.hostingLocation }}</strong>.
             </template>
           </p>
         </div>
@@ -1005,7 +1001,7 @@ const isFeedbackActive = computed(() =>
   gap: var(--space-2);
   padding: var(--space-2) var(--space-6) 0;
   background: color-mix(in srgb, var(--color-primary-tint) 45%, var(--color-surface));
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-divider);
   min-width: 0;
   max-width: 100%;
 }
@@ -1113,7 +1109,7 @@ const isFeedbackActive = computed(() =>
 
 .legal-header {
   padding-bottom: var(--space-4);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-divider);
 }
 
 .legal-header h1 {
@@ -1141,7 +1137,7 @@ const isFeedbackActive = computed(() =>
 
 .legal-section + .legal-section {
   padding-top: var(--space-4);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
 }
 
 .legal-section h2 {
@@ -1156,7 +1152,7 @@ const isFeedbackActive = computed(() =>
 .legal-subsection,
 .legal-card-info {
   background: var(--color-surface-sunken, var(--color-bg));
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   padding: var(--space-3) var(--space-4);
@@ -1302,7 +1298,7 @@ const isFeedbackActive = computed(() =>
 .legal-disclaimer-note {
   margin-top: var(--space-2);
   padding-top: var(--space-4);
-  border-top: 1px dashed var(--color-border-strong, var(--color-border));
+  border-top: 1px dashed var(--color-border-divider);
   font-size: var(--font-size-sm, 0.85rem);
   color: var(--color-text-muted);
 }

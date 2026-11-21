@@ -404,7 +404,7 @@ function close() {
 .upgrade-info-card {
   padding: var(--space-3);
   background: var(--color-surface-sunken);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   font-size: var(--font-size-sm);

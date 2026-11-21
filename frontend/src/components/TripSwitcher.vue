@@ -331,7 +331,7 @@ function selectAndClose(id: number) {
 .new-trip-btn {
   margin-top: var(--space-1);
   text-align: left;
-  border: 1px dashed var(--color-border);
+  border: 1px dashed var(--color-border-divider);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   padding: 6px 8px;

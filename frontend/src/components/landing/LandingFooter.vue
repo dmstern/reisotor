@@ -33,7 +33,7 @@ const emit = defineEmits<{
 .landing-footer {
   text-align: center;
   padding: var(--space-5) 0 var(--space-4) 0;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
   margin-top: auto;
 }
 

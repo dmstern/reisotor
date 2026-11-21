@@ -678,7 +678,7 @@ function clearFilters() {
 }
 
 .popover-section + .popover-section {
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
   margin-top: 2px;
   padding-top: 2px;
 }
@@ -775,7 +775,7 @@ function clearFilters() {
   margin: var(--space-1) calc(-1 * var(--space-2)) calc(-1 * var(--space-2));
   padding: var(--space-1) var(--space-2) var(--space-2);
   background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
   z-index: 2;
 }
 

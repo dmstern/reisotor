@@ -165,7 +165,7 @@ const emit = defineEmits<{
   white-space: nowrap;
   background: var(--color-hover);
   color: var(--color-text-muted);
-  border: var(--border-width) solid var(--color-border);
+  border: var(--border-width) solid var(--color-border-divider);
 }
 
 .detail-badge.weather-badge {
@@ -191,6 +191,6 @@ const emit = defineEmits<{
   gap: var(--space-2);
   margin-top: var(--space-3);
   padding-top: var(--space-2);
-  border-top: var(--border-width) solid var(--color-border);
+  border-top: var(--border-width) solid var(--color-border-divider);
 }
 </style>

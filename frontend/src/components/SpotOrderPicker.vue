@@ -549,7 +549,7 @@ function onDeleteLeg() {
 
 .planned-box,
 .spot-picker {
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   padding: var(--space-2) var(--space-3);
@@ -697,7 +697,7 @@ function onDeleteLeg() {
 .spot-picker-create-row {
   margin-top: var(--space-1);
   padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
   display: flex;
   justify-content: flex-start;
 }

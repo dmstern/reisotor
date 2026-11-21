@@ -75,14 +75,14 @@ const html = computed(() => {
 .richtext :deep(blockquote) {
   margin: 4px 0;
   padding: 2px 0 2px 10px;
-  border-left: 3px solid var(--color-border);
+  border-left: 3px solid var(--color-border-divider);
   color: var(--color-text-muted);
 }
 
 .richtext :deep(hr) {
   margin: var(--space-2) 0;
   border: none;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
 }
 
 .richtext :deep(code) {

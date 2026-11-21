@@ -2594,7 +2594,7 @@ onUnmounted(() => {
       --category-nav-bg: var(--color-surface);
       background: var(--category-nav-bg);
       backdrop-filter: none;
-      border-bottom-color: var(--color-border);
+      border-bottom-color: var(--color-border-divider);
     }
 
     .sheet-handle-row {
@@ -2778,7 +2778,7 @@ onUnmounted(() => {
   margin-left: calc(var(--space-3) * -1);
   margin-right: calc(var(--space-3) * -1);
   margin-bottom: 0;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-divider);
   transition:
     background 0.25s ease,
     box-shadow 0.25s ease,
@@ -2786,7 +2786,7 @@ onUnmounted(() => {
 }
 
 .category-group.is-tour-group:first-of-type {
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
 }
 
 .category-group.is-tour-group.is-expanded {

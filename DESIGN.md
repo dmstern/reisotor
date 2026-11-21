@@ -119,27 +119,28 @@ anlegen, nicht als lokaler Wert in der Komponente.
 
 ### Zentrale Farb-Tokens
 
-| Variable                   | Bedeutung / Einsatz                          | Light Mode | Dark Mode |
-| -------------------------- | -------------------------------------------- | ---------- | --------- |
-| `--color-bg`               | Haupt-App-Hintergrund                        | `#faf8f5`  | `#181715` |
-| `--color-surface`          | Karten, Panels, Modal-Flächen                | `#ffffff`  | `#232220` |
-| `--color-border`           | Standard Trennlinien & dezente Ränder        | `#e8e2d9`  | `#38352f` |
-| `--color-border-strong`    | Eingabefelder, Selects, Secondary-Buttons    | `#d5cabc`  | `#4a453c` |
-| `--color-text`             | Primäre Textfarbe                            | `#2b2a28`  | `#f2efe9` |
-| `--color-text-muted`       | Gedämpfter Fließtext & Untertitel            | `#66625b`  | `#a8a29a` |
-| `--color-primary`          | Marken-Farbe (Haupt-Buttons & Fokus)         | `#9141ac`  | `#cf77dd` |
-| `--color-primary-dark`     | Hover-Status für Marken-Farbe                | `#7b3793`  | `#d68ee3` |
-| `--color-primary-tint`     | Leichter Akzentton für Steuerungen & Badges  | `#f4ecf7`  | `#352538` |
-| `--color-hover`            | Hover-Hintergrund & Muted-Surface            | `#f4f1ec`  | `#2a2823` |
-| `--color-accent`           | Echtzeit-Updates / Aufmerksamkeits-Akzent    | `#e08e45`  | `#f0a05a` |
-| `--color-danger`           | Gefahr / Löschen / Warnungen                 | `#c1503f`  | `#e0685a` |
-| `--color-success`          | Erfolg / Fertig-Status                       | `#3f8f5c`  | `#5cb37e` |
-| `--color-scheduled`        | Geplant (Kalender & Streifen)                | `#1e96d1`  | `#52b8ea` |
-| `--color-scheduled-dark`   | Geplant (Text & Kontrast für Chips/Preise)   | `#0f70a0`  | `#7acaf2` |
-| `--color-tour`             | Touren / Ausflüge (Kacheln, Kalender, Spots) | `#eb6834`  | `#f08254` |
-| `--color-travel`           | Reisen / Etappen (Kacheln, Kalender, Chips)  | `#1baf7a`  | `#2ecb91` |
-| `--color-highlight`        | Highlight-Fläche für Notizen                 | `#fff4e8`  | `#332a1c` |
-| `--color-accent-secondary` | Sekundärer Akzent (Indigo)                   | `#485acf`  | `#8b98f0` |
+| Variable                   | Bedeutung / Einsatz                                                                 | Light Mode | Dark Mode |
+| -------------------------- | ----------------------------------------------------------------------------------- | ---------- | --------- |
+| `--color-bg`               | Haupt-App-Hintergrund                                                               | `#faf8f5`  | `#181715` |
+| `--color-surface`          | Karten, Panels, Modal-Flächen                                                       | `#ffffff`  | `#232220` |
+| `--color-border`           | Dekorativer Rahmen (Cards, Drawers, Modals, Popovers, Dropdowns)                    | `#e8e2d9`  | `#0d0d0c` |
+| `--color-border-divider`   | Semantischer Trenner (Listen, `<hr>`, Tabellen, Sektions-Trenner, Sub-Boxen)        | `#e8e2d9`  | `#2e2c28` |
+| `--color-border-strong`    | Interaktive Controls (Inputs, Selects, Comboboxes, `btn--secondary`, Pill-Outlines) | `#d5cabc`  | `#4a453c` |
+| `--color-text`             | Primäre Textfarbe                                                                   | `#2b2a28`  | `#f2efe9` |
+| `--color-text-muted`       | Gedämpfter Fließtext & Untertitel                                                   | `#66625b`  | `#a8a29a` |
+| `--color-primary`          | Marken-Farbe (Haupt-Buttons & Fokus)                                                | `#9141ac`  | `#cf77dd` |
+| `--color-primary-dark`     | Hover-Status für Marken-Farbe                                                       | `#7b3793`  | `#d68ee3` |
+| `--color-primary-tint`     | Leichter Akzentton für Steuerungen & Badges                                         | `#f4ecf7`  | `#352538` |
+| `--color-hover`            | Hover-Hintergrund & Muted-Surface                                                   | `#f4f1ec`  | `#2a2823` |
+| `--color-accent`           | Echtzeit-Updates / Aufmerksamkeits-Akzent                                           | `#e08e45`  | `#f0a05a` |
+| `--color-danger`           | Gefahr / Löschen / Warnungen                                                        | `#c1503f`  | `#e0685a` |
+| `--color-success`          | Erfolg / Fertig-Status                                                              | `#3f8f5c`  | `#5cb37e` |
+| `--color-scheduled`        | Geplant (Kalender & Streifen)                                                       | `#1e96d1`  | `#52b8ea` |
+| `--color-scheduled-dark`   | Geplant (Text & Kontrast für Chips/Preise)                                          | `#0f70a0`  | `#7acaf2` |
+| `--color-tour`             | Touren / Ausflüge (Kacheln, Kalender, Spots)                                        | `#eb6834`  | `#f08254` |
+| `--color-travel`           | Reisen / Etappen (Kacheln, Kalender, Chips)                                         | `#1baf7a`  | `#2ecb91` |
+| `--color-highlight`        | Highlight-Fläche für Notizen                                                        | `#fff4e8`  | `#332a1c` |
+| `--color-accent-secondary` | Sekundärer Akzent (Indigo)                                                          | `#485acf`  | `#8b98f0` |
 
 Semantische statt beschreibende Namen (`--color-danger`, nicht `--color-red`) – Töne können sich
 ändern, die Bedeutung bleibt.
@@ -158,6 +159,16 @@ nicht mehr unterscheidbar. Dafür gibt es jetzt `--color-scheduled` (sattes Hell
 Ton. Bei einer neuen Farb-Kodierung deshalb immer zuerst prüfen, ob die gewünschte Bedeutung nicht
 zufällig schon eine der bestehenden `--color-*`-Variablen besetzt, und im Zweifel lieber eine neue,
 klar benannte Variable anlegen statt eine bestehende zweitzuverwenden.
+
+### Dreistufige Border-Token-Regel (Neutrale Ränder & Trennlinien)
+
+Für alle neutralen Ränder und Trennlinien gilt verbindlich eine dreistufige Hierarchie (hartcodierte neutrale Farben wie `#e2e8f0`, `rgba(0,0,0,0.08)` oder `rgba(255,255,255,0.12)` sind nicht zulässig):
+
+1. **`--color-border` (Dekorativer Rahmen):** Für erhobene/schattierte Container (`Card`, `Drawer`, `Modal`, `Popover`, `PickerMenu`/Dropdowns). Im Dark Mode bewusst dunkel (`#0d0d0c`), da sich die Fläche bereits über Hintergrundton und Schatten abhebt.
+2. **`--color-border-divider` (Semantischer Trenner):** Für Trennlinien zwischen Bereichen gleicher oder ähnlicher Hintergrundfarbe — Listen-Trenner (`border-top`/`border-bottom`), `<hr>`, Tabellenzeilen, Sektions-Trenner in Cards/Modals/Menüs sowie verschachtelte Sub-Boxen auf gleicher Hintergrundfarbe. Im Light Mode identisch zu `--color-border` (`#e8e2d9`), im Dark Mode ein dezentes Warmgrau (`#2e2c28`) zwischen Surface und `--color-border-strong`.
+3. **`--color-border-strong` (Interaktive Controls):** Für Eingabefelder (`--input-border-color`), Selects, Comboboxes, `btn--secondary`, Pill-/Control-Outlines und Toggle-Controls.
+
+_Ausnahmen (nicht Teil dieser Regel):_ Liquid-Glass-Borders (`--color-surface-glass-border`, `--color-glass-field-inset-border`) sowie farbige Akzent-, Domänen- und Status-Borders (`--color-primary`, `--color-danger`, `--color-tour-border`, `--color-travel-border`, `--color-like-border`, etc.).
 
 **Steuerungselement vs. Dateninhalt**: Flächen, die ein Werkzeug/eine Steuerung sind (Gruppieren-/
 Sortieren-/Filtern-Leiste, Kategorie-/Touren-Navigationsleiste – der Nutzer interagiert mit der

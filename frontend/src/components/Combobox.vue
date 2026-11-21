@@ -876,7 +876,7 @@ defineOptions({
 }
 
 .combobox-footer {
-  border-top: var(--border-width) solid var(--color-border);
+  border-top: var(--border-width) solid var(--color-border-divider);
   padding: var(--space-1);
   background: var(--color-surface);
   flex-shrink: 0;

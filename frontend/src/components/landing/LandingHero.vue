@@ -140,7 +140,7 @@ const { robotPhase, onPackingDone } = useLandingRobot();
 .island-divider {
   width: 1px;
   height: var(--space-4);
-  background: var(--color-border);
+  background: var(--color-border-divider);
   margin: 0 var(--space-2);
 }
 

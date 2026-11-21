@@ -759,7 +759,7 @@ function formatDate(dateStr: string) {
   align-items: center;
   font-size: 0.85rem;
   padding-top: var(--space-1);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
 }
 
 .rain-val {
@@ -828,7 +828,7 @@ function formatDate(dateStr: string) {
   align-items: center;
   gap: 4px;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-md);
   padding: 8px 4px;
   min-height: 76px;
@@ -846,7 +846,7 @@ function formatDate(dateStr: string) {
 .hourly-item.loaded-item:hover {
   transform: translateY(-2px) scale(1.02);
   box-shadow: var(--shadow-sm);
-  border-color: var(--color-primary-light, var(--color-border));
+  border-color: var(--color-primary-light, var(--color-border-divider));
 }
 
 @keyframes hourly-snake-in {
@@ -872,7 +872,7 @@ function formatDate(dateStr: string) {
   overflow: hidden;
   border-style: dashed;
   background: var(--color-surface);
-  border-color: var(--color-border);
+  border-color: var(--color-border-divider);
 }
 
 .skeleton-shimmer {

@@ -119,7 +119,7 @@ function toggle() {
 
 <style scoped>
 .collapsible-fieldset {
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   padding: var(--space-2) var(--space-3) var(--space-3);
@@ -164,7 +164,7 @@ function toggle() {
   font-weight: 500;
   color: var(--color-text);
   border-width: var(--border-width);
-  border-color: var(--color-border);
+  border-color: var(--color-border-strong);
 }
 
 .collapsible-fieldset.is-disabled legend {

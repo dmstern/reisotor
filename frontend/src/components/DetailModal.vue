@@ -216,7 +216,7 @@ const hasPhoto = computed(() => {
   position: relative;
   width: 100%;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   padding: 6px;
@@ -279,7 +279,7 @@ const hasPhoto = computed(() => {
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.06),
     0 1px 2px rgba(0, 0, 0, 0.04);
@@ -333,7 +333,7 @@ const hasPhoto = computed(() => {
   box-shadow:
     0 4px 16px rgba(0, 0, 0, 0.35),
     0 1px 4px rgba(0, 0, 0, 0.2);
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--color-border-divider);
 }
 
 :root[data-theme='dark'] .detail-polaroid-frame.is-placeholder .detail-polaroid-inner {
@@ -346,7 +346,7 @@ const hasPhoto = computed(() => {
 
 :root[data-theme='dark'] .detail-placeholder-icon-tile {
   background: #2a2825;
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--color-border-divider);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 
@@ -360,7 +360,7 @@ const hasPhoto = computed(() => {
     box-shadow:
       0 4px 16px rgba(0, 0, 0, 0.35),
       0 1px 4px rgba(0, 0, 0, 0.2);
-    border-color: rgba(255, 255, 255, 0.12);
+    border-color: var(--color-border-divider);
   }
 
   :root:not([data-theme='light']) .detail-polaroid-frame.is-placeholder .detail-polaroid-inner {
@@ -373,7 +373,7 @@ const hasPhoto = computed(() => {
 
   :root:not([data-theme='light']) .detail-placeholder-icon-tile {
     background: #2a2825;
-    border-color: rgba(255, 255, 255, 0.12);
+    border-color: var(--color-border-divider);
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
   }
 

@@ -133,8 +133,8 @@ function excursionTooltip(ex: Excursion): string {
           <span v-if="coEditors.length" class="edited-by">
             · bearbeitet von
             <span v-for="(u, i) in coEditors" :key="u.id" class="edited-by-user">
-              <span class="edited-by-avatar">{{ u.avatar }}</span
-              >{{ u.username }}<template v-if="i < coEditors.length - 1">, </template>
+              <span class="edited-by-avatar">{{ u.avatar }}</span>{{ u.username
+              }}<template v-if="i < coEditors.length - 1">, </template>
             </span>
           </span>
           <span v-else-if="entry.updated_at"> (bearbeitet)</span>
@@ -330,7 +330,7 @@ function excursionTooltip(ex: Excursion): string {
   gap: var(--space-2);
   margin-top: var(--space-2);
   padding-top: var(--space-2);
-  border-top: var(--border-width) solid var(--color-border);
+  border-top: var(--border-width) solid var(--color-border-divider);
 }
 
 .diary-map-actions {

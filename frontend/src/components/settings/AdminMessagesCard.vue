@@ -314,7 +314,7 @@ onMounted(() => {
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-sm-squircle, 8px);
   background: var(--color-surface);
   transition: border-color var(--transition-fast, 0.15s ease);
@@ -371,7 +371,7 @@ onMounted(() => {
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   background: var(--color-bg);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-sm-squircle, 6px);
   font-size: var(--font-size-xs, 0.8rem);
   flex-wrap: wrap;
@@ -386,7 +386,7 @@ onMounted(() => {
 .unmatched-user-box {
   padding: var(--space-2) var(--space-3);
   background: var(--color-bg);
-  border: 1px dashed var(--color-border);
+  border: 1px dashed var(--color-border-divider);
   border-radius: var(--radius-sm-squircle, 6px);
   font-size: var(--font-size-xs, 0.8rem);
 }

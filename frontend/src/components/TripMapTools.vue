@@ -301,7 +301,7 @@ const {
 
 .picker-divider {
   border: none;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
   margin: var(--space-1) 0;
 }
 

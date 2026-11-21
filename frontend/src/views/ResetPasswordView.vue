@@ -154,7 +154,7 @@ async function onSubmit() {
   top: max(var(--space-4), env(safe-area-inset-top, var(--space-4)));
   right: max(var(--space-4), env(safe-area-inset-right, var(--space-4)));
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-sm);

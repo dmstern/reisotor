@@ -620,7 +620,7 @@ defineExpose({
   padding: 2px 7px;
   border-radius: var(--radius-pill);
   background: var(--color-hover);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   color: var(--color-text-muted);
   font-size: 0.75rem;
   font-weight: 600;
@@ -699,7 +699,7 @@ defineExpose({
   padding: 2px;
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
 }
 
 .speed-btn {

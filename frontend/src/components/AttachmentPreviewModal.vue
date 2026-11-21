@@ -384,7 +384,7 @@ function onRemoveCurrent() {
   padding: var(--space-6) var(--space-4);
   text-align: center;
   background: var(--color-surface-sunken);
-  border: 1px dashed var(--color-border);
+  border: 1px dashed var(--color-border-divider);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   width: 100%;
@@ -431,7 +431,7 @@ function onRemoveCurrent() {
   gap: var(--space-2);
   margin-top: var(--space-4);
   padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-divider);
 }
 
 .preview-actions-right {

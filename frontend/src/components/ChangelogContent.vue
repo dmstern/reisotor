@@ -287,7 +287,7 @@ const changelogGithubUrl = computed(() => {
 
 .changelog-group--highlights {
   background: var(--color-primary-tint);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-left: 3px solid var(--color-primary);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
@@ -304,7 +304,7 @@ const changelogGithubUrl = computed(() => {
   align-items: center;
   gap: var(--space-2);
   padding-bottom: var(--space-1);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-divider);
 }
 
 .changelog-group--highlights .changelog-group-title {
@@ -361,7 +361,7 @@ const changelogGithubUrl = computed(() => {
 .changelog-footer {
   margin-top: var(--space-2);
   padding-top: var(--space-2);
-  border-top: 1px dashed var(--color-border);
+  border-top: 1px dashed var(--color-border-divider);
   display: flex;
   align-items: center;
 }

@@ -235,7 +235,7 @@ function openBugReport() {
   gap: var(--space-2);
   padding: var(--space-3);
   background: var(--color-bg);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   font-size: 0.85rem;
@@ -268,7 +268,7 @@ function openBugReport() {
   margin: 0;
   padding: var(--space-2) var(--space-3);
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
