@@ -294,6 +294,10 @@ Typische Abstandsfehler, die im Code unauffällig wirken, aber das visuelle Glei
     - Ein negatives `margin-top` zum Heranrücken eines Elements (z. B. `-4px` gegen `8px` Gap) darf bei engeren Breakpoints niemals auf einen kleineren Container-`gap` (z. B. `2px`) treffen, sonst entstehen negative Netto-Abstände bzw. Textüberlappungen.
 14. **Full-Bleed-Trennlinien & Sticky-Leisten bei responsivem Drawer-Padding über lokale CSS-Variable:**
     - Wechselt ein Drawer- oder Karten-Container sein Padding responsiv (z. B. `--spots-col-pad`: `16px` mobil → `24px` Desktop), beziehen alle Full-Bleed-Kinder (negative Seitenmargins, innere Fluchtlinien wie `ExcursionCard` und Sticky-Abdeckschatten wie `ExcursionCategoryNav`) denselben Token mit identischem Fallback.
+15. **Zugeklappte `<Accordion>`-Elemente in `flex-direction: column`-Containern mit `gap` (Phantom-Gap):**
+    - Ein geschlossenes `<Accordion :expanded="false">` hat zwar `0px` Höhe (`grid-template-rows: 0fr`), bleibt aber als Flex-Item im DOM. In einer Flex-Column-Karte mit `gap` (z. B. `.note-card`) fügt Flexbox trotzdem vollen `gap` vor dem unsichtbaren Element ein – das erzeugt am unteren Kartenrand unsichtbaren Extra-Leerraum und verdoppelt im aufgeklappten Zustand den `margin-top` von `<Comments>`. Den Karteninhalt oberhalb von `<Accordion>` in einen eigenen Flex-Container (`.note-body`) kapseln, damit `<Accordion>` außerhalb des `gap`-Flusses sitzt.
+16. **Interne Top-Paddings in Statusleisten (`DraftStatusBar`) innerhalb von `gap`-Formularen:**
+    - Statusleisten wie `DraftStatusBar` (mit `padding-top: var(--space-1-5)`) erzeugen in Flex-Column-Formularen mit `gap` asymmetrische Abstände (oben `gap + padding-top`, unten nur `gap` zur `.actions-row`-Trennlinie). Statusleisten ohne eigenes vertikales Padding (`padding: 0`) halten und den Abstand allein über den Formular-`gap` steuern.
 
 ## Eckenrundung: Squircle-Prinzip
 
