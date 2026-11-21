@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createApp, h } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { renderToString } from 'vue/server-renderer';
@@ -110,5 +110,53 @@ describe('TourSerpentineWrap', () => {
     expect(html).toContain('is-map-focused');
     expect(html).not.toContain('new-highlight');
     expect(html).not.toContain('card-sparkle-badge');
+  });
+
+  it('calls setTourWrapRef with excursion id and element on mount, and null on unmount', () => {
+    const setTourWrapRef = vi.fn();
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    const app = createApp({
+      render: () =>
+        h(TourSerpentineWrap, {
+          excursion: dummyExcursion,
+          items: [{ spot: dummySpot1 }],
+          cols: 1,
+          rows: [
+            {
+              rowIndex: 0,
+              isRtl: false,
+              cells: [{ key: 'spot-1', type: 'spot', spot: dummySpot1, globalIndex: 0 }],
+            },
+          ],
+          expandedSpotId: null,
+          highlightedIds: new Set<number>(),
+          dayFocusHighlightedIds: new Set<number>(),
+          spotScheduledDates: new Map<number, string>(),
+          users: [],
+          spotCommentItemsFor: () => [],
+          getTourLayover: () => null,
+          setTourWrapRef,
+        }),
+    });
+    app.use(createPinia());
+
+    app.mount(container);
+
+    try {
+      expect(setTourWrapRef).toHaveBeenCalledTimes(1);
+      expect(setTourWrapRef.mock.calls[0][0]).toBe(dummyExcursion.id);
+      expect(setTourWrapRef.mock.calls[0][1]).toBeInstanceOf(HTMLElement);
+      expect(
+        (setTourWrapRef.mock.calls[0][1] as HTMLElement).classList.contains('tour-station-wrap')
+      ).toBe(true);
+    } finally {
+      app.unmount();
+      container.remove();
+    }
+
+    expect(setTourWrapRef).toHaveBeenCalledTimes(2);
+    expect(setTourWrapRef).toHaveBeenNthCalledWith(2, dummyExcursion.id, null);
   });
 });

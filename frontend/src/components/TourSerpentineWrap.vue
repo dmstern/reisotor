@@ -33,7 +33,7 @@ const props = defineProps<{
     el: Element | ComponentPublicInstance | null,
     excursionId?: number | null
   ) => void;
-  setTourWrapRef?: (el: Element | ComponentPublicInstance | null) => void;
+  setTourWrapRef?: (excursionId: number, el: Element | ComponentPublicInstance | null) => void;
   spotAccommodationDistances?: Map<number, SpotAccommodationDistanceInfo>;
 }>();
 
@@ -70,6 +70,10 @@ const lastSpotCol = computed(() => {
   return Math.max(0, spotCountInRow - 1);
 });
 
+function handleTourWrapRef(el: Element | ComponentPublicInstance | null) {
+  props.setTourWrapRef?.(props.excursion.id, el);
+}
+
 function creatorLabel(userId: number | null | undefined): string | null {
   if (userId == null) {
     return null;
@@ -91,7 +95,7 @@ function creatorLabel(userId: number | null | undefined): string | null {
         ? 'var(--color-travel-border)'
         : 'var(--color-tour-border)',
     }"
-    :ref="setTourWrapRef"
+    :ref="handleTourWrapRef"
   >
     <svg
       v-if="tourLine"
