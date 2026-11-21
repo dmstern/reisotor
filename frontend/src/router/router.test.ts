@@ -138,7 +138,22 @@ describe('Router Deeplinks & Navigation Guards', () => {
     await router.push('/trip/42/excursions');
     expect(router.currentRoute.value.name).toBe('excursions');
     expect(router.currentRoute.value.params.tripId).toBe('42');
+    expect(router.currentRoute.value.params.excursionId).toBeFalsy();
     expect(tripStore.currentTripId).toBe(42);
+
+    await router.push('/trip/42/excursions/7');
+    expect(router.currentRoute.value.name).toBe('excursions');
+    expect(router.currentRoute.value.params.tripId).toBe('42');
+    expect(router.currentRoute.value.params.excursionId).toBe('7');
+
+    await router.push('/excursions/19');
+    expect(router.currentRoute.value.name).toBe('excursions');
+    expect(router.currentRoute.value.path).toBe('/trip/42/excursions/19');
+    expect(router.currentRoute.value.params.excursionId).toBe('19');
+
+    await router.push({ name: 'excursions', params: { tripId: '42', excursionId: '' } });
+    expect(router.currentRoute.value.path).toBe('/trip/42/excursions');
+    expect(router.currentRoute.value.params.excursionId).toBeFalsy();
   });
 
   it('leitet zu /trips um, wenn Trip-ID nicht existiert', async () => {

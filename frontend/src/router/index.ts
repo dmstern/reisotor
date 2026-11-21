@@ -125,7 +125,7 @@ const router = createRouter({
       }),
     },
     {
-      path: '/trip/:tripId/excursions',
+      path: '/trip/:tripId/excursions/:excursionId(\\d+)?',
       name: 'excursions',
       component: () => import('../views/ExcursionsView.vue'),
     },
@@ -185,7 +185,7 @@ const router = createRouter({
     { path: '/shopping', redirect: '/listen?tab=shopping' },
     { path: '/todo', redirect: '/listen?tab=todo' },
     {
-      path: '/excursions',
+      path: '/excursions/:excursionId(\\d+)?',
       name: 'legacy-excursions',
       component: () => import('../views/ExcursionsView.vue'),
     },
