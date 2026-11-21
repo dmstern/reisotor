@@ -249,7 +249,7 @@ const addressChunks = computed(() => {
 .spot-accordion-inner {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  column-gap: var(--space-sm);
+  column-gap: var(--space-md);
   row-gap: var(--space-1-5);
   align-items: baseline;
   overflow: hidden;

@@ -48,7 +48,7 @@ function handleConfirm() {
         <template v-if="tourTitle"> der Tour „{{ tourTitle }}“</template>
         zuordnest, wird sie <strong>für alle Mitreisenden sichtbar</strong>.
       </p>
-      <ButtonGroup>
+      <ButtonGroup no-margin class="actions-row">
         <Button type="button" variant="secondary" class="btn-cancel" @click="close">
           Abbrechen
         </Button>
@@ -62,15 +62,15 @@ function handleConfirm() {
 .track-share-warning-modal {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-lg);
   text-align: center;
-  padding: var(--space-2) 0;
+  padding: 0;
 }
 
 .track-share-warning-icon-wrap {
   display: flex;
   justify-content: center;
-  margin-bottom: var(--space-1);
+  margin-bottom: 0;
 }
 
 .icon-bubble {

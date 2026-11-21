@@ -451,14 +451,14 @@ defineExpose({
 .edit-form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-lg);
 }
 
 .tour-date-status-row {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: var(--space-3);
+  gap: var(--space-lg);
 }
 
 .tour-date-field,
@@ -523,24 +523,13 @@ defineExpose({
   color: var(--color-text);
 }
 
-.actions-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-}
-
-.spacer {
-  flex: 1;
-}
-
 .hint.info {
   color: var(--color-text-muted);
   font-size: var(--font-size-xs);
   display: flex;
   align-items: center;
   gap: var(--space-1-5);
-  margin-top: var(--space-1);
+  margin: 0;
 }
 
 .excursion-tracks-picker {
@@ -582,8 +571,8 @@ defineExpose({
 .excursion-track-label {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
   cursor: pointer;
   width: 100%;
   min-width: 0;
@@ -635,6 +624,7 @@ defineExpose({
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   display: block;
+  margin: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

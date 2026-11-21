@@ -273,7 +273,7 @@ function onCardKeydown(event: KeyboardEvent) {
   flex-direction: row;
   align-items: stretch;
   position: relative;
-  padding: var(--space-md) var(--space-3);
+  padding: var(--space-lg) var(--spots-col-pad, var(--space-lg));
   gap: var(--space-md);
 }
 
@@ -284,7 +284,7 @@ function onCardKeydown(event: KeyboardEvent) {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-1-5);
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -401,8 +401,8 @@ function onCardKeydown(event: KeyboardEvent) {
 
 @include container-down('spots-col', 'mobile-compact') {
   .tour-card-main {
-    padding: var(--space-2) var(--space-3);
-    gap: var(--space-2);
+    padding: var(--space-md) var(--spots-col-pad, var(--space-lg));
+    gap: var(--space-sm);
   }
 }
 

@@ -748,7 +748,7 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   z-index: auto;
   width: 100%;
   max-width: 100%;
-  margin-bottom: var(--space-3);
+  margin-bottom: 0;
 }
 
 .excursion-track-switcher {

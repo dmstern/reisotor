@@ -550,7 +550,7 @@ function onDeleteLeg() {
 .planned-box,
 .spot-picker {
   @include surface-sunken-box;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-md) var(--space-lg);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -693,9 +693,9 @@ function onDeleteLeg() {
 }
 
 .spot-picker-create-row {
-  margin-top: var(--space-1);
-  padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border-divider);
+  margin-top: var(--space-xs);
+  padding-top: var(--space-sm);
+  @include divider-engraved('top');
   display: flex;
   justify-content: flex-start;
 }

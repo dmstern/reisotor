@@ -199,8 +199,8 @@ const hasInfoBadges = computed(() =>
 
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
-  padding: var(--space-md) 0 0;
+  gap: var(--space-lg);
+  padding: var(--space-lg) 0 0;
   min-width: 0;
 }
 
@@ -215,8 +215,8 @@ const hasInfoBadges = computed(() =>
 .tour-detail-header {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
-  padding-bottom: var(--space-md);
+  gap: var(--space-md);
+  padding-bottom: var(--space-lg);
   @include divider-engraved('bottom');
 }
 
@@ -296,7 +296,7 @@ const hasInfoBadges = computed(() =>
 }
 
 .tour-detail-comments-accordion {
-  margin-top: calc(-1 * var(--space-md));
+  margin-top: calc(-1 * var(--space-lg));
 }
 
 .tour-detail-comments-accordion.is-expanded {
@@ -306,7 +306,7 @@ const hasInfoBadges = computed(() =>
 .tour-detail-comments-accordion :deep(.comments) {
   margin-top: 0;
   padding-top: 0;
-  padding-bottom: var(--space-md);
+  padding-bottom: var(--space-lg);
   border-top: none;
   box-shadow: none;
   @include divider-engraved('bottom');
@@ -323,20 +323,12 @@ const hasInfoBadges = computed(() =>
   color: var(--color-text);
 }
 
-.tour-detail-attachments {
-  margin-top: 0;
-}
-
 .tour-detail-links-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-sm);
   min-width: 0;
-}
-
-.tour-detail-links-row :deep(.links) {
-  margin-top: 0;
 }
 
 .tour-detail-stations {

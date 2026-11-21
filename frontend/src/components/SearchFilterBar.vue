@@ -553,7 +553,7 @@ function clearFilters() {
   gap: var(--space-2);
   padding-top: var(--space-1-5);
   margin-top: calc(-1 * var(--space-1-5));
-  margin-bottom: var(--space-2);
+  margin-bottom: 0;
   width: 100%;
 }
 

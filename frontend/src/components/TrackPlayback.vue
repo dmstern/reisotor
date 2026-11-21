@@ -575,8 +575,8 @@ defineExpose({
 .track-playback {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-3);
+  gap: var(--space-md);
+  padding: var(--space-lg);
   container: track-playback / inline-size;
   background: var(--color-surface-glass-dense, var(--color-surface-glass, var(--color-surface)));
   backdrop-filter: var(--backdrop-blur-md);
@@ -652,7 +652,7 @@ defineExpose({
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-1-5);
 }
 
 .metric-chip {
@@ -673,7 +673,7 @@ defineExpose({
 .track-playback-scrubber {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xs);
+  gap: 0;
   min-width: 0;
 }
 
@@ -920,8 +920,8 @@ defineExpose({
 
 @include container-down('track-playback', 'mobile-sm') {
   .track-playback {
-    padding: var(--space-2);
-    gap: var(--space-1);
+    padding: var(--space-md);
+    gap: var(--space-sm);
   }
 
   .speed-inline-group {

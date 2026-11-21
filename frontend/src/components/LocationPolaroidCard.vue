@@ -487,7 +487,7 @@ defineExpose({
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  padding: 10px var(--space-md);
+  padding: var(--space-md);
   gap: var(--space-sm);
   transition:
     border-color 0.2s ease,

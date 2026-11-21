@@ -293,7 +293,7 @@ function creatorLabel(userId: number | null | undefined): string | null {
 .tour-serpentine-wrap {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-lg);
   padding: 0;
   width: 100%;
   box-sizing: border-box;
@@ -304,7 +304,7 @@ function creatorLabel(userId: number | null | undefined): string | null {
 .tour-serpentine-row-wrap {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-lg);
   width: 100%;
   box-sizing: border-box;
   min-width: 0;
@@ -366,7 +366,7 @@ function creatorLabel(userId: number | null | undefined): string | null {
   box-sizing: border-box;
   position: relative;
   z-index: 2;
-  margin-top: var(--space-2);
+  margin-top: 0;
 }
 
 .tour-add-spot-row-inner {

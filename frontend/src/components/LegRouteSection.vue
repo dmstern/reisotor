@@ -267,11 +267,11 @@ const routeHeadingIconDef: IconDef = {
   padding: 0;
   border-color: transparent;
   background: transparent;
-  margin: 14px 0 var(--space-2) 0;
+  margin: 14px 0 0;
 }
 
 .route-calc-fieldset--has-route.is-closed {
-  margin: var(--space-1) 0;
+  margin: 0;
 }
 
 .route-calc-fieldset--has-route:not(.is-closed) :deep(legend) {

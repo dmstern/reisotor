@@ -121,13 +121,13 @@ function onSelect(val: unknown) {
 .visibility-settings {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-lg);
 }
 
 .visibility-intro {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xs);
+  gap: var(--space-xs);
 }
 
 .visibility-intro-title {
@@ -146,10 +146,10 @@ function onSelect(val: unknown) {
 .visibility-cards {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-md);
 }
 
 .visibility-hint-alert {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-lg);
 }
 </style>

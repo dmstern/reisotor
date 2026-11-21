@@ -158,7 +158,7 @@ const emit = defineEmits<{
   width: 100%;
   position: relative;
   z-index: 2;
-  margin: var(--space-2) 0;
+  margin: 0;
 }
 
 .tour-row-break.align-right {

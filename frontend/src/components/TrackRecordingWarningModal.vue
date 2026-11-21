@@ -62,8 +62,9 @@ function handleConfirm() {
         v-model="trackWarningDismissed"
         label="Diesen Hinweis nicht mehr anzeigen"
         variant="card"
+        class="track-warning-dismiss"
       />
-      <ButtonGroup>
+      <ButtonGroup no-margin class="actions-row">
         <Button type="button" variant="secondary" class="btn-cancel" @click="close">
           Abbrechen
         </Button>
@@ -73,9 +74,15 @@ function handleConfirm() {
   </Modal>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
+.track-warning-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
 .track-warning-modal .track-warning-intro {
-  margin-bottom: var(--space-3);
+  margin: 0;
   font-size: var(--font-size-sm);
   line-height: var(--line-height-normal);
   color: var(--color-text);
@@ -84,8 +91,13 @@ function handleConfirm() {
 .track-warning-modal .track-warning-points {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  margin-bottom: var(--space-3);
+  gap: var(--space-md);
+  margin: 0;
+}
+
+.track-warning-dismiss.checkbox-card--card {
+  margin: 0;
+  padding: var(--space-lg);
 }
 
 .track-warning-modal .track-warning-point h4 {

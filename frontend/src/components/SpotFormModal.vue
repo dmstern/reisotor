@@ -714,14 +714,14 @@ function handleOpenScheduledDate(date: string) {
 .edit-form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-lg);
   min-width: 0;
 }
 
 .edit-form .row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-lg);
 }
 
 .edit-form .row > * {
@@ -738,10 +738,6 @@ function handleOpenScheduledDate(date: string) {
     flex: 1 1 auto;
     width: 100%;
   }
-}
-
-.spacer {
-  flex: 1;
 }
 
 .spot-location-section {
@@ -761,9 +757,9 @@ function handleOpenScheduledDate(date: string) {
 .spot-region-field {
   display: flex;
   flex-direction: column;
-  margin-top: var(--space-1);
-  margin-bottom: var(--space-3);
-  padding: var(--space-2) var(--space-3);
+  gap: var(--space-sm);
+  margin: 0;
+  padding: var(--space-md) var(--space-lg);
   @include surface-sunken-box;
 }
 
@@ -813,8 +809,7 @@ function handleOpenScheduledDate(date: string) {
 .spot-region-override-row {
   display: flex;
   justify-content: flex-start;
-  margin-top: var(--space-2);
-  margin-bottom: var(--space-2);
+  margin: calc(-1 * var(--space-sm)) 0 0;
 }
 
 .spot-region-override-btn {
@@ -846,7 +841,7 @@ function handleOpenScheduledDate(date: string) {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin-top: var(--space-2);
+  margin: 0;
   font-size: var(--font-size-xs);
   line-height: var(--line-height-snug);
   color: var(--color-warning-dark, #92400e);
@@ -904,7 +899,7 @@ function handleOpenScheduledDate(date: string) {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-  margin-top: var(--space-2);
+  margin-top: 0;
   min-width: 0;
   max-width: 100%;
 }
@@ -1014,20 +1009,13 @@ button.assign-chip-action:focus-visible {
   box-shadow: var(--focus-ring-halo);
 }
 
-.actions-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-}
-
 .hint.error {
   color: var(--color-danger);
   font-size: var(--font-size-xs);
   display: flex;
   align-items: center;
   gap: var(--space-1-5);
-  margin-top: var(--space-1);
+  margin: 0;
 }
 
 .modified-dot {

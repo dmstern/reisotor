@@ -172,7 +172,7 @@ function onArrivalChange(event: Event) {
 .time-section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-md);
 }
 
 .time-row {
@@ -316,10 +316,6 @@ function onArrivalChange(event: Event) {
   color: var(--color-primary-dark, var(--color-primary));
   background: var(--color-primary-tint);
   border-color: transparent;
-}
-
-.time-sync-bar {
-  margin-top: calc(-1 * var(--space-1));
 }
 
 .time-sync-message {

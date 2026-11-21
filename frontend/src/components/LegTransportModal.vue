@@ -382,7 +382,7 @@ function onDelete() {
 .leg-form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-lg);
   container-type: inline-size;
   container-name: leg-modal;
 }
@@ -392,9 +392,5 @@ function onDelete() {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   font-style: italic;
-}
-
-.spacer {
-  flex: 1;
 }
 </style>

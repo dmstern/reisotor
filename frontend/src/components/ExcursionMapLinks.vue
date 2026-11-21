@@ -36,7 +36,7 @@ const emit = defineEmits<{
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  margin-top: var(--space-1);
+  margin-top: 0;
 }
 
 .show-on-map-btn .btn-label {

@@ -109,7 +109,7 @@ const props = defineProps<{
 .row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-2);
+  gap: var(--space-lg);
 }
 
 .hint {

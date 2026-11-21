@@ -279,8 +279,8 @@ onUnmounted(() => {
 }
 
 .create-spot-footer {
-  margin-top: var(--space-1);
-  padding-top: var(--space-1);
+  margin-top: var(--space-xs);
+  padding-top: var(--space-1-5);
   @include divider-engraved('top');
 }
 

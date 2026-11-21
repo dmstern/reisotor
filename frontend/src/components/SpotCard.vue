@@ -848,7 +848,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 @container spots-col (max-width: 480px) {
   .spot-card {
     --spot-cover-height: 100px;
-    --spot-card-pad: var(--space-sm);
+    --spot-card-pad: var(--space-md);
     padding: var(--spot-card-pad);
   }
 
@@ -863,12 +863,8 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 
   .spot-card:not(.expanded) .body {
     min-height: 64px;
-    gap: var(--space-2xs);
+    gap: var(--space-sm);
     overflow: hidden;
-  }
-
-  .spot-card:not(.expanded) .comments-accordion {
-    margin-top: calc(-1 * var(--space-2xs));
   }
 
   .spot-card:not(.expanded) .card-title-block {
