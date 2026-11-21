@@ -97,7 +97,8 @@ describe('SpotCard', () => {
     expect(html).toContain('disclosure-pill--overlay');
     expect(html).toContain('Einklappen');
     expect(html).toContain('Von Daniel');
-    expect(html).toContain('Maulbeerallee, 14469 Potsdam');
+    expect(html).toContain('>Maulbeerallee,</span>');
+    expect(html).toContain('>14469 Potsdam</span>');
     expect(html).toContain('spot-accordion');
     expect(html).toContain('card-actions');
     expect(html).toContain('category-chip');
