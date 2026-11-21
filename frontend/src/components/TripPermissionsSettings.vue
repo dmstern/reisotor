@@ -244,7 +244,12 @@ async function removeMember(user: User) {
 
     <TransitionGroup v-else-if="results.length" tag="ul" name="list" class="search-results">
       <li v-for="u in results" :key="u.id">
-        <span class="member-user">{{ u.avatar }} {{ u.username }}</span>
+        <div class="search-result-user">
+          <div class="search-avatar-circle" aria-hidden="true">
+            <span>{{ u.avatar }}</span>
+          </div>
+          <span class="member-user" :title="u.username">{{ u.username }}</span>
+        </div>
         <Button variant="primary" size="sm" :disabled="loading" @click="invite(u)">
           <AppIcon :icon="ACTION_ICONS.userPlus" :size="14" group="actions" /> Einladen
         </Button>
@@ -387,7 +392,7 @@ async function removeMember(user: User) {
 }
 
 .search-results {
-  @include uniform-height-list(var(--space-2));
+  @include uniform-height-list(0);
   list-style: none;
   margin: 0;
   padding: 0;
@@ -398,12 +403,34 @@ async function removeMember(user: User) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  background: var(--color-primary-tint);
-  transition: all 0.25s ease;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-1);
+  @include divider-engraved-row;
+}
+
+.search-result-user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5, 10px);
+  flex: 1;
+  min-width: 0;
+}
+
+.search-avatar-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1.35rem;
+  line-height: 1;
+  user-select: none;
+  background-color: var(--color-surface);
+  background-image: var(--gradient-surface-3d);
+  border: var(--border-width) solid var(--color-border);
+  box-shadow: var(--shadow-card-interactive);
 }
 
 .member-user {
