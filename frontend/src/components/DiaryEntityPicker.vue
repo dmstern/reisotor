@@ -239,6 +239,8 @@ const hasDateMismatch = computed(() => {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .diary-picker-option {
@@ -250,6 +252,7 @@ const hasDateMismatch = computed(() => {
   corner-shape: squircle;
   cursor: pointer;
   width: 100%;
+  min-width: 0;
   box-sizing: border-box;
   user-select: none;
   font-size: var(--font-size-sm);

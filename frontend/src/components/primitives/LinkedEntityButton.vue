@@ -99,6 +99,7 @@ const resolvedImageUrl = computed(() => {
 }
 
 .linked-entity-label {
+  flex: 0 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

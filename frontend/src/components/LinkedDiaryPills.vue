@@ -70,5 +70,7 @@ function trackTooltip(track: LocationTrack): string {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1);
+  min-width: 0;
+  max-width: 100%;
 }
 </style>
