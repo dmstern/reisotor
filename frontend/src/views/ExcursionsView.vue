@@ -2139,8 +2139,9 @@ onUnmounted(() => {
 
 /* Kategorie-TabNav auf dem Liquid-Glass-Sheet: im ungescrollten Zustand transparent (ohne eigenen
    Blur-Block), damit keine doppelte Blur-Kante auf dem Glas entsteht; sobald gescrollter Inhalt
-   darunter liegt (auch beim Zurückstufen von full -> partial mit erhaltenem scrollTop), trennt
-   eine dichtere Frosted-Glass-Fläche + verstärkter backdrop-filter die Leiste sauber vom Content. */
+   darunter liegt (auch beim Zurückstufen von full -> partial mit erhaltenem scrollTop), bleibt
+   der Hintergrund transparent und ein verstärkter backdrop-filter: blur(...) verhindert das
+   Durchscheinen des Contents, ohne eine opake Fläche auf das Glas zu legen. */
 .spots-col.collapsed :deep(.category-nav-wrap),
 .spots-col.partial :deep(.category-nav-wrap) {
   --category-nav-bg: transparent;
@@ -2150,7 +2151,7 @@ onUnmounted(() => {
 }
 
 .spots-col.partial :deep(.category-nav-wrap.is-stuck) {
-  --category-nav-bg: var(--color-surface-glass-dense);
+  --category-nav-bg: transparent;
   background: var(--category-nav-bg);
   backdrop-filter: blur(max(16px, calc(var(--glass-blur, 6px) * 2))) saturate(180%);
 }
