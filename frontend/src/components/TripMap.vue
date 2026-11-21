@@ -758,7 +758,7 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   overflow-x: auto;
   scrollbar-width: none;
   margin-bottom: var(--space-2);
-  padding: 2px;
+  padding: 6px 2px;
 }
 
 .excursion-track-switcher::-webkit-scrollbar {

@@ -286,13 +286,6 @@ function formatTimeDisplay(ms: number, forceHours = false): string {
   return `${pad(minutes)}:${pad(seconds)}`;
 }
 
-const hasHours = computed(() => duration.value >= MS_PER_HOUR);
-const currentElapsedMs = computed(() => (props.progress ?? 0) * duration.value);
-const currentElapsedLabel = computed(() =>
-  formatTimeDisplay(currentElapsedMs.value, hasHours.value)
-);
-const totalDurationLabel = computed(() => formatTimeDisplay(duration.value, hasHours.value));
-
 const clampedProgress = computed(() => {
   const raw = props.progress ?? 0;
 
@@ -305,6 +298,13 @@ const clampedProgress = computed(() => {
 const progressPercent = computed(
   () => `${(clampedProgress.value * PERCENT_MULTIPLIER).toFixed(2)}%`
 );
+
+const hasHours = computed(() => duration.value >= MS_PER_HOUR);
+const currentElapsedMs = computed(() => clampedProgress.value * duration.value);
+const currentElapsedLabel = computed(() =>
+  formatTimeDisplay(currentElapsedMs.value, hasHours.value)
+);
+const totalDurationLabel = computed(() => formatTimeDisplay(duration.value, hasHours.value));
 
 // --- Uhrzeiten der Aufzeichnung (Start/Aktuell/Ende) ---
 const timeOfDayFormatter = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' });
@@ -811,6 +811,7 @@ defineExpose({
 
 .track-playback-transport {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
   min-width: 0;

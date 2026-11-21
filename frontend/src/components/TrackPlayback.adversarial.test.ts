@@ -623,6 +623,10 @@ describe('TrackPlayback & Geometry Adversarial Stress Tests', () => {
       const overSlider = overContainer.querySelector<HTMLInputElement>('.playback-slider')!;
       expect(overSlider.style.getPropertyValue('--progress-pct')).toBe('100.00%');
       expect(overSlider.getAttribute('aria-valuenow')).toBe('100');
+      expect(overSlider.getAttribute('aria-valuetext')).toBe('30:00 von 30:00');
+      expect(overContainer.querySelector('.playback-time')?.textContent?.trim()).toBe(
+        '30:00 / 30:00'
+      );
       cleanOver();
     });
   });
