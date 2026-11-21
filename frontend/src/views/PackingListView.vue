@@ -144,13 +144,13 @@ async function handleEditDelete(id: number) {
 
 <style lang="scss" scoped>
 :deep(.quick-add-row) {
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-lg);
 }
 
 .lists-grid {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-2xl);
 }
 
 .list-section {
@@ -167,8 +167,8 @@ async function handleEditDelete(id: number) {
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
-  gap: var(--space-1) var(--space-2);
-  margin-bottom: var(--space-2);
+  gap: var(--space-xs) var(--space-sm);
+  margin-bottom: var(--space-sm);
 }
 
 .list-header h2 {
@@ -188,14 +188,14 @@ async function handleEditDelete(id: number) {
 }
 
 .group {
-  margin-bottom: var(--space-3);
-  padding: var(--space-3);
+  margin-bottom: var(--space-lg);
+  padding: var(--space-lg);
 }
 
 .group h3 {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
-  margin: 0 0 var(--space-2);
+  margin: 0 0 var(--space-sm);
   overflow-wrap: break-word;
 }
 
@@ -205,7 +205,7 @@ async function handleEditDelete(id: number) {
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  margin: var(--space-2) 0 var(--space-1);
+  margin: var(--space-sm) 0 var(--space-xs);
   overflow-wrap: break-word;
 }
 
@@ -216,7 +216,7 @@ async function handleEditDelete(id: number) {
 }
 
 .empty-card {
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-lg);
 }
 
 /* Desktop: Listen nebeneinander statt untereinander, um den vorhandenen Platz besser zu nutzen
@@ -227,7 +227,7 @@ async function handleEditDelete(id: number) {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
     align-items: start;
-    gap: var(--space-4);
+    gap: var(--space-xl);
   }
 }
 </style>

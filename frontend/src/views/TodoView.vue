@@ -196,7 +196,7 @@ async function quickAddToGroup(group: { key: string }, label: string) {
 .groups-grid {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-2xl);
 }
 
 .group-section {
@@ -211,21 +211,21 @@ async function quickAddToGroup(group: { key: string }, label: string) {
 .group-section h2 {
   font-size: var(--font-size-sm);
   color: var(--color-primary-dark);
-  margin-bottom: var(--space-2);
+  margin: 0 0 var(--space-sm);
   overflow-wrap: break-word;
 }
 
 .group-card {
-  padding: var(--space-3);
+  padding: var(--space-lg);
   display: flex;
   flex-direction: column;
 }
 
 .group-quick-add,
 .group-quick-add.expanded {
-  padding: var(--space-3) 0 0 0;
-  border-top: 1px solid var(--color-border-divider);
-  margin-top: var(--space-2);
+  padding: var(--space-md) 0 0 0;
+  @include divider-engraved('top');
+  margin-top: var(--space-md);
   border-radius: 0;
   box-shadow: none;
 }
@@ -246,7 +246,7 @@ async function quickAddToGroup(group: { key: string }, label: string) {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
     align-items: start;
-    gap: var(--space-4);
+    gap: var(--space-xl);
   }
 }
 </style>

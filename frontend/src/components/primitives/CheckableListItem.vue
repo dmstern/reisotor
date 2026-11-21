@@ -62,7 +62,7 @@ withDefaults(
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   padding: var(--space-sm) var(--space-md);
   @include divider-engraved('bottom');
   min-width: 0;

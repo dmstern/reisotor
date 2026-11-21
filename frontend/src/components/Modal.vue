@@ -673,10 +673,10 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-4);
-  padding-top: var(--space-3);
-  padding-bottom: var(--space-3);
+  gap: var(--space-sm);
+  margin-top: 0;
+  padding-top: var(--space-lg);
+  padding-bottom: 0;
   @include divider-engraved('top');
 }
 

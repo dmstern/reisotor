@@ -208,22 +208,7 @@ function handleDelete() {
 .edit-form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4) 0;
-}
-
-.actions-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-4);
-  padding-top: var(--space-3);
-  padding-bottom: var(--space-3);
-  border-top: 1px solid var(--color-border-divider);
-}
-
-.spacer {
-  flex: 1;
+  gap: var(--space-lg);
+  padding: 0;
 }
 </style>
