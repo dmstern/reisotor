@@ -256,13 +256,9 @@ onMounted(() => {
   color: var(--color-danger);
 }
 
-.push-details-collapsible.collapsible-fieldset {
-  margin: var(--space-lg) 0 0;
-}
-
+.push-details-collapsible.collapsible-fieldset,
 .push-details-collapsible.collapsible-fieldset.is-closed {
   margin: var(--space-lg) 0 0;
-  padding-inline: 0;
 }
 
 .push-scope-section {

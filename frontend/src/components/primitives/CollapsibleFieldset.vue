@@ -136,8 +136,7 @@ function toggle() {
 .collapsible-fieldset.is-closed {
   border-color: transparent;
   background: transparent;
-  padding-top: 0;
-  padding-bottom: 0;
+  padding: 0;
   margin: var(--space-1) 0;
 }
 
