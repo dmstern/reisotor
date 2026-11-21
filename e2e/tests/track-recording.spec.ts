@@ -101,7 +101,7 @@ test.describe('Standort-Aufzeichnung', () => {
     });
     await expect(sharedCard).toBeVisible();
     await sharedCard.click();
-    await expect(sharedCard).toHaveClass(/is-active/);
+    await expect(sharedCard).toHaveClass(/is-checked/);
 
     // Zurück zu Allgemein und Name vergeben
     await trackModal.locator('.tab', { hasText: 'Allgemein' }).click();

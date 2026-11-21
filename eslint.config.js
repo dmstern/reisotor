@@ -215,6 +215,7 @@ export default tseslint.config(
         {
           controlComponents: [
             'Checkbox',
+            'Radio',
             'Input',
             'Select',
             'Textarea',

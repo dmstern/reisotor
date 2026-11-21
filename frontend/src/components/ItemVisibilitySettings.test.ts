@@ -43,57 +43,58 @@ describe('ItemVisibilitySettings', () => {
     };
   }
 
-  it('renders radio group with private and shared cards', () => {
+  it('renders radio group with private and shared RadioCard items', () => {
     const { container, cleanUp } = mountComponent('private');
     const radiogroup = container.querySelector('[role="radiogroup"]');
     expect(radiogroup).toBeTruthy();
 
     const cards = container.querySelectorAll('.visibility-card');
+    const inputs = container.querySelectorAll<HTMLInputElement>('input[type="radio"]');
     expect(cards.length).toBe(2);
+    expect(inputs.length).toBe(2);
 
     expect(cards[0].textContent).toContain('Nur für mich sichtbar');
     expect(cards[0].textContent).toContain('Privat');
-    expect(cards[0].classList.contains('is-active')).toBe(true);
-    expect(cards[0].getAttribute('aria-checked')).toBe('true');
+    expect(cards[0].classList.contains('is-checked')).toBe(true);
+    expect(inputs[0].checked).toBe(true);
 
     expect(cards[1].textContent).toContain('Für alle Mitreisenden sichtbar');
     expect(cards[1].textContent).toContain('Geteilt');
-    expect(cards[1].classList.contains('is-active')).toBe(false);
-    expect(cards[1].getAttribute('aria-checked')).toBe('false');
+    expect(cards[1].classList.contains('is-checked')).toBe(false);
+    expect(inputs[1].checked).toBe(false);
 
     cleanUp();
   });
 
-  it('emits update:modelValue and switches active card on click', async () => {
+  it('emits update:modelValue and switches active card on radio change', async () => {
     const { container, selected, cleanUp } = mountComponent('private');
     const cards = container.querySelectorAll<HTMLElement>('.visibility-card');
+    const inputs = container.querySelectorAll<HTMLInputElement>('input[type="radio"]');
 
-    cards[1].click();
+    inputs[1].checked = true;
+    inputs[1].dispatchEvent(new Event('change'));
     await nextTick();
 
     expect(selected.value).toBe('shared');
-    expect(cards[1].classList.contains('is-active')).toBe(true);
-    expect(cards[1].getAttribute('aria-checked')).toBe('true');
-    expect(cards[0].classList.contains('is-active')).toBe(false);
+    expect(cards[1].classList.contains('is-checked')).toBe(true);
+    expect(inputs[1].checked).toBe(true);
+    expect(cards[0].classList.contains('is-checked')).toBe(false);
 
     cleanUp();
   });
 
-  it('navigates with keyboard arrow keys', async () => {
-    const { container, selected, cleanUp } = mountComponent('private');
-    const cards = container.querySelectorAll<HTMLElement>('.visibility-card');
+  it('renders info Alert primitive for hint by default and hides it when showHint=false', () => {
+    const { container: withHint, cleanUp: cleanWithHint } = mountComponent('private');
+    const alert = withHint.querySelector('.alert.alert--info');
+    expect(alert).toBeTruthy();
+    expect(alert?.textContent).toContain('Private Aufzeichnungen können jederzeit');
+    cleanWithHint();
 
-    cards[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-    await nextTick();
-
-    expect(selected.value).toBe('shared');
-
-    cards[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
-    await nextTick();
-
-    expect(selected.value).toBe('private');
-
-    cleanUp();
+    const { container: withoutHint, cleanUp: cleanWithoutHint } = mountComponent('private', {
+      showHint: false,
+    });
+    expect(withoutHint.querySelector('.alert')).toBeNull();
+    cleanWithoutHint();
   });
 
   it('supports custom itemLabel prop', () => {
