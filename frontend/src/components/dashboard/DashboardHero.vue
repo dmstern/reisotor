@@ -26,7 +26,11 @@ const heroStyle = computed(() => {
   }
 
   return {
-    backgroundImage: `linear-gradient(135deg, rgba(0,0,0,.35), rgba(0,0,0,.15)), url(${imageDisplayUrl(props.trip.image_url)})`,
+    backgroundImage: [
+      'linear-gradient(95deg, rgba(0, 0, 0, 0.56) 0%, rgba(0, 0, 0, 0.42) 55%, rgba(0, 0, 0, 0.18) 100%)',
+      'linear-gradient(180deg, rgba(0, 0, 0, 0.28) 0%, rgba(0, 0, 0, 0.12) 55%, rgba(0, 0, 0, 0.32) 100%)',
+      `url(${imageDisplayUrl(props.trip.image_url)})`,
+    ].join(', '),
   };
 });
 </script>
@@ -111,6 +115,11 @@ const heroStyle = computed(() => {
      Spezifität des Vorfahren). Ort- und Datumszeile (reine <p> ohne eigene Klasse) waren deshalb
      bei hinterlegtem Bild weiterhin kontrastarm grau statt weiß. */
   color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
+}
+
+.hero.has-image p :deep(svg) {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.65));
 }
 
 .hero-header {
