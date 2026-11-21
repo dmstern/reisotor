@@ -481,6 +481,8 @@
   --color-glass-field-inset-border: rgba(43, 42, 40, 0.1);
   --shadow-glass-field-inset:
     inset 0 1px 2px rgba(43, 42, 40, 0.08), 0 1px 0 rgba(255, 255, 255, 0.45);
+  --shadow-search-field-inset:
+    inset 0 1.5px 2.5px rgba(43, 42, 40, 0.1), 0 1px 0 rgba(255, 255, 255, 0.85);
   --transition-control:
     border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease,
     outline-color 0.15s ease, --control-grad-top 0.15s ease, --control-grad-bottom 0.15s ease,
@@ -756,6 +758,8 @@
     --color-glass-field-inset-border: rgba(255, 255, 255, 0.14);
     --shadow-glass-field-inset:
       inset 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.1);
+    --shadow-search-field-inset:
+      inset 0 1.5px 2.5px rgba(0, 0, 0, 0.42), 0 1px 0 rgba(255, 255, 255, 0.09);
     --shadow-control-highlight: rgba(255, 255, 255, 0.12);
     --shadow-control-highlight-strong: rgba(255, 255, 255, 0.2);
     --shadow-control:
@@ -935,6 +939,8 @@
   --color-glass-field-inset-hover-bg: rgba(255, 255, 255, 0.16);
   --color-glass-field-inset-border: rgba(255, 255, 255, 0.14);
   --shadow-glass-field-inset: inset 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.1);
+  --shadow-search-field-inset:
+    inset 0 1.5px 2.5px rgba(0, 0, 0, 0.42), 0 1px 0 rgba(255, 255, 255, 0.09);
   --shadow-control-highlight: rgba(255, 255, 255, 0.12);
   --shadow-control-highlight-strong: rgba(255, 255, 255, 0.2);
   --shadow-control:
@@ -1135,6 +1141,8 @@
   --color-glass-field-inset-border: rgba(43, 42, 40, 0.1);
   --shadow-glass-field-inset:
     inset 0 1px 2px rgba(43, 42, 40, 0.08), 0 1px 0 rgba(255, 255, 255, 0.45);
+  --shadow-search-field-inset:
+    inset 0 1.5px 2.5px rgba(43, 42, 40, 0.1), 0 1px 0 rgba(255, 255, 255, 0.85);
   --shadow-control-highlight: rgba(255, 255, 255, 0.65);
   --shadow-control-highlight-strong: rgba(255, 255, 255, 0.85);
   --shadow-control:

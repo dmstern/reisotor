@@ -17,7 +17,7 @@
 ///
 /// @param {Boolean} $focus-within [false] - Ob :focus-within und .is-focused statt :focus verwendet werden sollen (für Container)
 @mixin control-field-inset($focus-within: false) {
-  box-shadow: none;
+  box-shadow: var(--control-field-rest-shadow, none);
   background: var(--color-input-bg);
   border: 1.5px solid var(--input-border-color);
   border-radius: var(--radius-sm-squircle);
