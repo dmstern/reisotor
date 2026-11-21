@@ -200,7 +200,7 @@ function resetDefaults() {
   <div class="dropdown list-settings-dropdown">
     <Button
       ref="btnRef"
-      variant="secondary"
+      variant="ghost"
       shape="circle"
       :active="activeCount > 0"
       :icon="icon"
