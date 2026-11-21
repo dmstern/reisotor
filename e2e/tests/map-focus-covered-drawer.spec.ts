@@ -112,8 +112,9 @@ for (const [viewportName, viewport] of Object.entries({
       const card = page.locator('.excursion-card', { hasText: excursion.title });
       await expect(card).toBeVisible();
       await card.locator('.card-title').click();
-      await expect(card).toHaveClass(/expanded/);
-      await card.getByRole('button', { name: 'Auf Karte anzeigen' }).click();
+      const detail = page.locator('.tour-detail-view', { hasText: excursion.title });
+      await expect(detail).toBeVisible();
+      await detail.getByRole('button', { name: 'Auf Karte anzeigen' }).click();
       await page.waitForTimeout(400);
 
       // Nur geometrischer Überlapp mit der Schublade (nicht expectNotCoveredBy) - die immer
@@ -201,24 +202,25 @@ for (const [viewportName, viewport] of Object.entries({
       const targetCard = cards.nth(Math.min(2, count - 1));
       await targetCard.scrollIntoViewIfNeeded();
       await targetCard.locator('.card-title').click();
-      await expect(targetCard).toHaveClass(/expanded/);
+      const detailView = page.locator('.tour-detail-view');
+      await expect(detailView).toBeVisible();
 
-      const showBtn = targetCard.getByRole('button', { name: 'Auf Karte anzeigen' });
+      const showBtn = detailView.getByRole('button', { name: 'Auf Karte anzeigen' });
       await expect(showBtn).toBeVisible();
 
       // "Auf Karte anzeigen" anklicken
       await showBtn.click();
 
-      // Schublade schrumpft auf "partial" und Kachel wird sichtbar ans obere Ende gescrollt
+      // Schublade schrumpft auf "partial" und Tour-Detailansicht ist sichtbar am oberen Ende
       await expect(sheet).toHaveClass(/partial/);
       await page.waitForTimeout(600);
 
       const sheetBox = await sheet.boundingBox();
-      const cardBox = await targetCard.boundingBox();
+      const titleBox = await detailView.locator('.tour-detail-title').boundingBox();
       expect(sheetBox).not.toBeNull();
-      expect(cardBox).not.toBeNull();
-      expect(cardBox!.y).toBeGreaterThanOrEqual(sheetBox!.y);
-      expect(cardBox!.y).toBeLessThan(sheetBox!.y + sheetBox!.height);
+      expect(titleBox).not.toBeNull();
+      expect(titleBox!.y).toBeGreaterThanOrEqual(sheetBox!.y);
+      expect(titleBox!.y).toBeLessThan(sheetBox!.y + sheetBox!.height);
     });
 
     test('beim Klick auf "Auf Karte anzeigen" bei einem Spot wird die Spot-Kachel im geschrumpften Drawer ans obere Ende gescrollt', async ({
@@ -281,9 +283,10 @@ for (const [viewportName, viewport] of Object.entries({
       const tour1 = page.locator('.excursion-card', { hasText: 'Sightseeing-Tag Belém' });
       await expect(tour1).toBeVisible();
       await tour1.locator('.card-title').click();
-      await expect(tour1).toHaveClass(/expanded/);
+      const detail1 = page.locator('.tour-detail-view', { hasText: 'Sightseeing-Tag Belém' });
+      await expect(detail1).toBeVisible();
 
-      const showBtn1 = tour1.getByRole('button', { name: 'Auf Karte anzeigen' });
+      const showBtn1 = detail1.getByRole('button', { name: 'Auf Karte anzeigen' });
       await showBtn1.click();
       await expect(sheet).toHaveClass(/partial/);
       await page.waitForTimeout(400);
@@ -320,16 +323,20 @@ for (const [viewportName, viewport] of Object.entries({
       expect(recenteredBox!.y).toBeCloseTo(initialBox!.y, 0);
       expect(recenteredBox!.x).toBeCloseTo(initialBox!.x, 0);
 
-      // Schublade erneut vergrößern und direkt andere Tour fokussieren (ohne vorherigen Fokus zu entfernen)
+      // Zurück zur Tour-Liste und zweite Tour fokussieren
+      await page.locator('.tour-detail-back-btn').click();
       await stepUpBtn.click();
       await expect(sheet).toHaveClass(/full/);
 
       const tour2 = page.locator('.excursion-card', { hasText: 'Panoramatour Alfama & Belém' });
       await expect(tour2).toBeVisible();
       await tour2.locator('.card-title').click();
-      await expect(tour2).toHaveClass(/expanded/);
+      const detail2 = page.locator('.tour-detail-view', {
+        hasText: 'Panoramatour Alfama & Belém',
+      });
+      await expect(detail2).toBeVisible();
 
-      const showBtn2 = tour2.getByRole('button', { name: 'Auf Karte anzeigen' });
+      const showBtn2 = detail2.getByRole('button', { name: 'Auf Karte anzeigen' });
       await expect(showBtn2).toBeVisible();
       await showBtn2.click();
 
