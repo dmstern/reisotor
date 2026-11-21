@@ -341,11 +341,12 @@ async function onSubmit() {
   position: absolute;
   top: max(var(--space-4), env(safe-area-inset-top, var(--space-4)));
   right: max(var(--space-4), env(safe-area-inset-right, var(--space-4)));
-  background: var(--color-surface);
+  background-color: var(--color-surface);
+  background-image: var(--gradient-control-3d);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-control);
   z-index: var(--z-sticky, 10);
 }
 
@@ -357,11 +358,12 @@ async function onSubmit() {
   align-items: center;
   gap: var(--space-3);
   text-align: center;
-  background: var(--color-surface);
+  background-color: var(--color-surface);
+  background-image: var(--gradient-surface-3d);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-card-elevated);
   padding: var(--space-4);
 }
 
