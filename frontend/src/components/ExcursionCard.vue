@@ -54,6 +54,25 @@ const {
   stations: () => props.stations,
   travelItems: () => props.travelItems,
 });
+
+function onCardKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Enter' && event.key !== ' ') {
+    return;
+  }
+
+  const target = event.target as HTMLElement | null;
+
+  if (
+    target &&
+    target !== event.currentTarget &&
+    target.closest('button, a, input, textarea, select, [role="button"]')
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+  emit('open', props.excursion);
+}
 </script>
 
 <template>
@@ -64,10 +83,12 @@ const {
       'has-role': !!excursion.role,
       'is-travel': !!excursion.role,
     }"
+    interactive
     :highlight="highlighted"
     :map-focused="isMapFocused"
     :focused="focused"
     @click="emit('open', excursion)"
+    @keydown="onCardKeydown"
   >
     <div class="tour-card-main">
       <!-- Linke visuelle Spalte: Polaroid-Stapel (Stationen) -->
@@ -191,6 +212,7 @@ const {
 }
 
 @include can-hover {
+  .card.card--interactive.excursion-card:hover,
   .excursion-card:hover {
     transform: none;
     background: var(--color-hover) !important;
@@ -211,6 +233,7 @@ const {
     transform: translateX(2px);
   }
 
+  .card.card--interactive.excursion-card:active,
   .excursion-card:active {
     transform: none;
     background: color-mix(in srgb, var(--color-hover) 80%, var(--color-border)) !important;
@@ -338,7 +361,7 @@ const {
   flex: 0 1 auto;
 }
 
-@container excursion-card (max-width: 360px) {
+@include container-down('excursion-card', 'mobile-compact') {
   .card-badge-group :deep(.category-chip-label) {
     position: absolute;
     width: 1px;
@@ -358,7 +381,7 @@ const {
   }
 }
 
-@container spots-col (max-width: 360px) {
+@include container-down('spots-col', 'mobile-compact') {
   .tour-card-main {
     padding: var(--space-2) var(--space-3);
     gap: var(--space-2);

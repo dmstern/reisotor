@@ -213,7 +213,7 @@ test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in
     await expect(page.locator('.focus-banner', { hasText: tourTitle })).toBeVisible();
 
     // Bearbeiten-Button ist in der Detailansicht erreichbar.
-    await detailView.getByRole('button', { name: 'Bearbeiten' }).click();
+    await detailView.locator('.tour-edit-btn').click();
     const editModal = page.locator('.modal', { hasText: 'Tour bearbeiten' });
     await editModal.locator('.collapsible-toggle', { hasText: 'Stationen & Route' }).click();
     await expect(editModal.locator('.planned-row .spot-title')).toHaveText([

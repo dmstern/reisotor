@@ -129,9 +129,12 @@ const hasMeta = computed(() =>
       />
     </div>
 
-    <div class="tour-detail-attachments">
-      <FileAttachments domain="ideas" :entity-id="excursion.id" :editable="false" />
-    </div>
+    <FileAttachments
+      class="tour-detail-attachments"
+      domain="ideas"
+      :entity-id="excursion.id"
+      :editable="false"
+    />
 
     <LinkedDiaryPills
       v-if="linkedTracks.length || linkedDiaryEntries.length"
@@ -185,7 +188,7 @@ const hasMeta = computed(() =>
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-3) var(--space-4);
+  padding: var(--space-3) 0 var(--space-4);
   min-width: 0;
 }
 
@@ -293,7 +296,7 @@ const hasMeta = computed(() =>
   min-width: 0;
 }
 
-@container spots-col (max-width: 360px) {
+@include container-down('spots-col', 'mobile-compact') {
   .tour-detail-badges :deep(.category-chip-label) {
     position: absolute;
     width: 1px;

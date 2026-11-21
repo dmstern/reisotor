@@ -178,9 +178,22 @@ const SEARCH_PLACEHOLDER_BY_MODE = {
 } as const;
 const searchPlaceholder = computed(() => SEARCH_PLACEHOLDER_BY_MODE[groupMode.value]);
 
+const selectedExcursionId = ref<number | null>(null);
+
+const selectedExcursion = computed(() =>
+  selectedExcursionId.value != null
+    ? (excursionsStore.excursions.find((e) => e.id === selectedExcursionId.value) ?? null)
+    : null
+);
+
+const isTourDetailOpen = computed(
+  () => groupMode.value === 'tours' && selectedExcursion.value != null
+);
+
 const canShowSearch = computed(
   () =>
     groupMode.value !== 'tracks' &&
+    !isTourDetailOpen.value &&
     (filterCategoryOptions.value.length > 0 || excursionsStore.excursions.length > 0)
 );
 
@@ -252,7 +265,6 @@ const {
   setPageTitleRef,
   isCategoryNavStuck,
   setCategoryNavSentinelRef,
-  excursionRefs,
   spotsColBodyEl,
   setCategoryRef,
   setTourCardRef,
@@ -665,18 +677,7 @@ function onAddButtonClick() {
 
 // Card Expansion & Map Cross-Focus Orchestration
 const expandedSpotId = ref<number | null>(null);
-const selectedExcursionId = ref<number | null>(null);
 let savedTourListScrollTop = 0;
-
-const selectedExcursion = computed(() =>
-  selectedExcursionId.value != null
-    ? (excursionsStore.excursions.find((e) => e.id === selectedExcursionId.value) ?? null)
-    : null
-);
-
-const isTourDetailOpen = computed(
-  () => groupMode.value === 'tours' && selectedExcursion.value != null
-);
 
 const selectedExcursionStationItems = computed(() => {
   const excursion = selectedExcursion.value;
@@ -700,16 +701,47 @@ const selectedExcursionStationItems = computed(() => {
 });
 
 let spotOpenSequenceToken = 0;
+const TOUR_LINE_SETTLE_DELAY_MS = 320;
+const TOUR_LINE_FINAL_DELAY_MS = 420;
+let tourLineTimeouts: ReturnType<typeof setTimeout>[] = [];
+
+function clearTourLineTimeouts() {
+  for (const timer of tourLineTimeouts) {
+    clearTimeout(timer);
+  }
+
+  tourLineTimeouts = [];
+}
 
 watch(selectedExcursionId, (newId) => {
+  clearTourLineTimeouts();
+
   if (newId == null) {
     return;
   }
 
   nextTick(() => recomputeTourLine(newId));
-  setTimeout(() => recomputeTourLine(newId), 320);
-  setTimeout(() => recomputeTourLine(newId), 420);
+  tourLineTimeouts.push(
+    setTimeout(() => recomputeTourLine(newId), TOUR_LINE_SETTLE_DELAY_MS),
+    setTimeout(() => recomputeTourLine(newId), TOUR_LINE_FINAL_DELAY_MS)
+  );
 });
+
+watch(
+  () => [selectedExcursionId.value, selectedExcursion.value, loading.value] as const,
+  ([id, excursion, isLoading]) => {
+    if (id == null || excursion != null || isLoading) {
+      return;
+    }
+
+    selectedExcursionId.value = null;
+    expandedSpotId.value = null;
+
+    if (drawers.mapFocusExcursionId === id) {
+      drawers.mapFocusExcursionId = null;
+    }
+  }
+);
 
 watch(selectedExcursionStationItems, () => {
   if (selectedExcursionId.value != null) {
@@ -1214,6 +1246,7 @@ onMounted(async () => {
 onUnmounted(() => {
   window.removeEventListener('keydown', onTourDetailKeydown);
   clearExpandSearchTimeout();
+  clearTourLineTimeouts();
 
   drawers.mapFocusKey = null;
   drawers.mapFocusExcursionId = null;
@@ -1688,6 +1721,7 @@ onUnmounted(() => {
           <template v-if="groupMode !== 'tracks'">
             <TourDetailView
               v-if="isTourDetailOpen && selectedExcursion"
+              :key="selectedExcursion.id"
               :excursion="selectedExcursion"
               :creator-label="creatorLabel(selectedExcursion.created_by)"
               :like-count="excursionLikesFor(selectedExcursion.id).length"
@@ -1772,21 +1806,6 @@ onUnmounted(() => {
                 :class="{
                   'is-tour-group': !!grp.excursion,
                 }"
-                :style="
-                  grp.excursion
-                    ? {
-                        '--tour-theme-color': grp.excursion.role
-                          ? 'var(--color-travel)'
-                          : 'var(--color-tour)',
-                        '--tour-theme-tint': grp.excursion.role
-                          ? 'var(--color-travel-tint)'
-                          : 'var(--color-tour-tint)',
-                        '--tour-theme-border': grp.excursion.role
-                          ? 'var(--color-travel-border)'
-                          : 'var(--color-tour-border)',
-                      }
-                    : undefined
-                "
                 v-for="grp in spotGroups"
                 :key="grp.category"
               >
@@ -2757,17 +2776,6 @@ onUnmounted(() => {
   border-top: 1px solid var(--color-border-divider);
 }
 
-.category-group.is-tour-group.is-expanded {
-  background: var(--tour-theme-tint);
-  border-bottom-color: var(--tour-theme-border);
-  box-shadow: inset 4px 0 0 var(--tour-theme-color);
-}
-
-.category-group.is-tour-group .empty {
-  padding: var(--space-2) var(--space-3) var(--space-4);
-  margin: 0;
-}
-
 .tour-empty-group {
   display: flex;
   flex-direction: column;
@@ -2804,7 +2812,7 @@ onUnmounted(() => {
 .tour-detail-back-bar {
   display: flex;
   align-items: center;
-  padding: var(--space-1) var(--space-3) var(--space-2);
+  padding: var(--space-1) 0 var(--space-2);
   border-bottom: 1px solid var(--color-border-divider);
 }
 
@@ -2970,34 +2978,6 @@ onUnmounted(() => {
 .tour-group-card {
   scroll-margin-top: calc(var(--space-2) + var(--category-nav-clearance));
   margin-bottom: 0;
-}
-
-.tour-partial-filter-hint {
-  margin: var(--space-3) auto var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  max-width: 540px;
-}
-
-.filter-reset-link {
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  color: var(--color-primary);
-  text-decoration: underline;
-  cursor: pointer;
-  display: inline;
-}
-
-@include can-hover {
-  .filter-reset-link:hover {
-    color: var(--color-primary-dark);
-  }
-}
-
-.filter-reset-link:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
-  outline-offset: var(--focus-ring-offset, 2px);
 }
 </style>
 

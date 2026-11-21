@@ -81,6 +81,8 @@ describe('ExcursionCard', () => {
     expect(html).toContain('tour-status-meta');
     expect(html).toContain('is-readonly');
     expect(html).toContain('tour-detail-chevron');
+    expect(html).toContain('role="button"');
+    expect(html).toContain('tabindex="0"');
     expect(html).not.toContain('tour-edit-btn');
     expect(html).not.toContain('Festes Schuhwerk erforderlich');
     expect(html).not.toContain('disclosure-pill');

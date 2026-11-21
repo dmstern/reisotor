@@ -202,24 +202,25 @@ for (const [viewportName, viewport] of Object.entries({
       const targetCard = cards.nth(Math.min(2, count - 1));
       await targetCard.scrollIntoViewIfNeeded();
       await targetCard.locator('.card-title').click();
-      await expect(targetCard).toHaveClass(/expanded/);
+      const detailView = page.locator('.tour-detail-view');
+      await expect(detailView).toBeVisible();
 
-      const showBtn = targetCard.getByRole('button', { name: 'Auf Karte anzeigen' });
+      const showBtn = detailView.getByRole('button', { name: 'Auf Karte anzeigen' });
       await expect(showBtn).toBeVisible();
 
       // "Auf Karte anzeigen" anklicken
       await showBtn.click();
 
-      // Schublade schrumpft auf "partial" und Kachel wird sichtbar ans obere Ende gescrollt
+      // Schublade schrumpft auf "partial" und Tour-Detailansicht ist sichtbar am oberen Ende
       await expect(sheet).toHaveClass(/partial/);
       await page.waitForTimeout(600);
 
       const sheetBox = await sheet.boundingBox();
-      const cardBox = await targetCard.boundingBox();
+      const titleBox = await detailView.locator('.tour-detail-title').boundingBox();
       expect(sheetBox).not.toBeNull();
-      expect(cardBox).not.toBeNull();
-      expect(cardBox!.y).toBeGreaterThanOrEqual(sheetBox!.y);
-      expect(cardBox!.y).toBeLessThan(sheetBox!.y + sheetBox!.height);
+      expect(titleBox).not.toBeNull();
+      expect(titleBox!.y).toBeGreaterThanOrEqual(sheetBox!.y);
+      expect(titleBox!.y).toBeLessThan(sheetBox!.y + sheetBox!.height);
     });
 
     test('beim Klick auf "Auf Karte anzeigen" bei einem Spot wird die Spot-Kachel im geschrumpften Drawer ans obere Ende gescrollt', async ({
