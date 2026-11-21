@@ -1,11 +1,31 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createApp, h } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { renderToString } from 'vue/server-renderer';
 import TourDetailView from './TourDetailView.vue';
 import type { Excursion, Spot, TravelItem } from '../api/types';
 import type { CommentItem } from './Comments.vue';
+
+const { mockWeatherSummary } = vi.hoisted(() => ({
+  mockWeatherSummary: {
+    weatherCode: 1,
+    tempLabel: '22 °C',
+    tempMin: 16,
+    tempMax: 22,
+  },
+}));
+
+vi.mock('../composables/useExcursionWeather', async () => {
+  const { ref } = await import('vue');
+  return {
+    useExcursionWeather: () => ({
+      mappedStations: ref([]),
+      weatherSummary: ref(mockWeatherSummary),
+      statusDateLabel: ref('15.07.'),
+    }),
+  };
+});
 
 describe('TourDetailView', () => {
   beforeEach(() => {
@@ -21,7 +41,7 @@ describe('TourDetailView', () => {
     spot_ids: [10, 11],
     note: 'Festes Schuhwerk erforderlich',
     note_format: 'text',
-    legs: [],
+    legs: [{ duration_seconds: 5400 }],
     created_by: 1,
   } as unknown as Excursion;
 
@@ -65,7 +85,7 @@ describe('TourDetailView', () => {
     return renderToString(app);
   }
 
-  it('rendert das flache Detail-Layout mit Metadaten, Notiz, Aktionen und Stationen-Slot', async () => {
+  it('rendert Header mit Info-Badges, Wetter-Badge, DoneStatus und ohne Stations-Meta im Header', async () => {
     const html = await mountComponent({
       excursion: mockExcursion,
       creatorLabel: 'Daniel',
@@ -78,12 +98,19 @@ describe('TourDetailView', () => {
 
     expect(html).toContain('tour-detail-view');
     expect(html).toContain('Wanderung zum Wasserfall');
+    expect(html).toContain('tour-detail-info-badges');
+    expect(html).toContain('tour-detail-info-badge');
     expect(html).toContain('Von Daniel');
-    expect(html).toContain('2 Stationen');
-    expect(html).toContain('Auf Karte anzeigen');
-    expect(html).toContain('Festes Schuhwerk erforderlich');
+    expect(html).toContain('1\u00A0Std. 30\u00A0Min.');
+    expect(html).toContain('22 °C');
+    expect(html).not.toContain('2 Stationen');
+    expect(html).not.toContain('Parkplatz → Wasserfall');
+    expect(html).toContain('tour-detail-header-controls');
     expect(html).toContain('done-toggle');
     expect(html).toContain('like-btn');
+    expect(html).toContain('tour-detail-links-row');
+    expect(html).toContain('Auf Karte anzeigen');
+    expect(html).toContain('Festes Schuhwerk erforderlich');
     expect(html).toContain('tour-edit-btn');
     expect(html).toContain('is-translucent');
     expect(html).toContain('test-stations-slot');

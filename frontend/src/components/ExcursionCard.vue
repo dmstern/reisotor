@@ -119,7 +119,13 @@ function onCardKeydown(event: KeyboardEvent) {
 
         <!-- Strecken- und Zeit-Info -->
         <ExcursionRouteMeta
-          v-if="routeLabel || stationsSummaryText || effectiveDepartureTime || effectiveArrivalTime"
+          v-if="
+            routeLabel ||
+            stationsSummaryText ||
+            effectiveDepartureTime ||
+            effectiveArrivalTime ||
+            travelDuration
+          "
           :route-label="routeLabel"
           :stations-summary-text="stationsSummaryText"
           :effective-departure-time="effectiveDepartureTime"
@@ -132,11 +138,7 @@ function onCardKeydown(event: KeyboardEvent) {
           class="card-actions-wrapper"
         >
           <div class="card-actions">
-            <ExcursionDoneStatus
-              :excursion="excursion"
-              :expanded="false"
-              :resolved-stations="resolvedStations"
-            />
+            <ExcursionDoneStatus :excursion="excursion" :expanded="false" />
           </div>
 
           <SocialRow

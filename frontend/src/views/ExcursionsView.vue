@@ -713,8 +713,14 @@ function clearTourLineTimeouts() {
   tourLineTimeouts = [];
 }
 
-watch(selectedExcursionId, (newId) => {
+const tourViewTransitionName = ref<'tour-drill-forward' | 'tour-drill-back' | ''>('');
+
+watch(selectedExcursionId, (newId, oldId) => {
   clearTourLineTimeouts();
+
+  if (newId != null && oldId == null && groupMode.value === 'tours') {
+    tourViewTransitionName.value = 'tour-drill-forward';
+  }
 
   if (newId == null) {
     return;
@@ -751,11 +757,32 @@ watch(selectedExcursionStationItems, () => {
 });
 
 watch(groupMode, (newMode) => {
+  tourViewTransitionName.value = '';
+
   if (newMode !== 'tours' && selectedExcursionId.value != null) {
     selectedExcursionId.value = null;
     expandedSpotId.value = null;
   }
 });
+
+function onTourViewEnter() {
+  if (!spotsColBodyEl.value) {
+    return;
+  }
+
+  if (isTourDetailOpen.value && selectedExcursionId.value != null) {
+    spotsColBodyEl.value.scrollTop = 0;
+    return;
+  }
+
+  spotsColBodyEl.value.scrollTop = savedTourListScrollTop;
+}
+
+function onTourViewAfterEnter() {
+  if (isTourDetailOpen.value && selectedExcursionId.value != null) {
+    recomputeTourLine(selectedExcursionId.value);
+  }
+}
 
 async function openTourDetail(excursionId: number) {
   if (drawers.mapFocusExcursionId && drawers.mapFocusExcursionId !== excursionId) {
@@ -770,20 +797,17 @@ async function openTourDetail(excursionId: number) {
     savedTourListScrollTop = spotsColBodyEl.value.scrollTop;
   }
 
+  tourViewTransitionName.value = 'tour-drill-forward';
   selectedExcursionId.value = excursionId;
   expandedSpotId.value = null;
 
   await nextTick();
-
-  if (spotsColBodyEl.value) {
-    spotsColBodyEl.value.scrollTop = 0;
-  }
-
   recomputeTourLine(excursionId);
 }
 
 async function closeTourDetail() {
   const closingId = selectedExcursionId.value;
+  tourViewTransitionName.value = 'tour-drill-back';
   selectedExcursionId.value = null;
   expandedSpotId.value = null;
 
@@ -792,10 +816,6 @@ async function closeTourDetail() {
   }
 
   await nextTick();
-
-  if (spotsColBodyEl.value) {
-    spotsColBodyEl.value.scrollTop = savedTourListScrollTop;
-  }
 }
 
 let lastActiveSpotEl: HTMLElement | null = null;
@@ -1719,209 +1739,252 @@ onUnmounted(() => {
           />
 
           <template v-if="groupMode !== 'tracks'">
-            <TourDetailView
-              v-if="isTourDetailOpen && selectedExcursion"
-              :key="selectedExcursion.id"
-              :excursion="selectedExcursion"
-              :creator-label="creatorLabel(selectedExcursion.created_by)"
-              :like-count="excursionLikesFor(selectedExcursion.id).length"
-              :liked="excursionLikedByMe(selectedExcursion.id)"
-              :comments="excursionCommentItemsFor(selectedExcursion.id)"
-              :stations="spotsStore.spots"
-              :travel-items="travelItems"
-              @edit="startEditExcursion"
-              @toggle-like="toggleExcursionLike(selectedExcursion.id)"
-              @submit-comment="(content) => submitExcursionComment(selectedExcursion!.id, content)"
-              @remove-comment="removeExcursionComment"
-              @update-comment="updateExcursionComment"
-              @toggle-comment-like="toggleExcursionCommentLike"
-              @show-on-map="onExcursionShowOnMap(selectedExcursion.id)"
+            <Transition
+              :name="tourViewTransitionName"
+              :css="Boolean(tourViewTransitionName)"
+              mode="out-in"
+              @enter="onTourViewEnter"
+              @after-enter="onTourViewAfterEnter"
             >
-              <template #stations>
-                <TourSerpentineWrap
-                  v-if="selectedExcursionStationItems.length"
-                  :excursion="selectedExcursion"
-                  :items="selectedExcursionStationItems"
-                  :tour-line="tourLines.get(selectedExcursion.id)"
-                  :cols="getTourCols(selectedExcursion.id)"
-                  :rows="getTourRows(selectedExcursion, selectedExcursionStationItems)"
-                  :expanded-spot-id="expandedSpotId"
-                  :highlighted-ids="highlightedSpotIds"
-                  :day-focus-highlighted-ids="dayFocusSpotIds"
-                  :spot-scheduled-dates="spotScheduledDates"
-                  :users="users"
-                  :spot-comment-items-for="spotCommentItemsFor"
-                  :get-tour-layover="getTourLayover"
-                  :set-spot-ref="setSpotRef"
-                  :set-tour-wrap-ref="setTourWrapRef"
-                  :spot-accommodation-distances="spotAccommodationDistances"
-                  @open-leg-modal="
-                    (fromSpot, toSpot) => openCardLegModal(selectedExcursion!, fromSpot, toSpot)
-                  "
-                  @edit-spot="(spot) => startEditSpot(spot.id)"
-                  @toggle-spot-like="toggleSpotLike"
-                  @submit-spot-comment="({ spotId, content }) => submitSpotComment(spotId, content)"
-                  @remove-spot-comment="removeSpotComment"
-                  @update-spot-comment="
-                    ({ commentId, content }) => updateSpotComment(commentId, content)
-                  "
-                  @toggle-spot-comment-like="toggleSpotCommentLike"
-                  @open-spot="onSpotCardOpen"
-                  @close-spot="onSpotCardClose"
-                  @show-spot-on-map="onSpotShowOnMap"
-                  @add-spot-to-tour="
-                    (spotId) => onAddExistingSpotToTour(selectedExcursion!, spotId)
-                  "
-                  @create-spot-for-tour="onCreateSpotForTourCard(selectedExcursion!)"
-                />
-                <div v-else class="empty tour-empty-group">
-                  <p class="tour-empty-text">
-                    Noch keine Spots zugeordnet – füge Stationen hinzu oder bearbeite die
-                    Tour-Details.
-                  </p>
-                  <div class="tour-empty-actions">
-                    <TourSpotAssignDropdown
-                      :spots="spotsStore.spots"
-                      :like-count="spotsStore.likeCountFor"
-                      @select-spot="(spotId) => onAddExistingSpotToTour(selectedExcursion!, spotId)"
-                      @create-spot="onCreateSpotForTourCard(selectedExcursion!)"
-                    />
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      class="tour-empty-action-btn"
-                      @click="startEditExcursion(selectedExcursion)"
-                    >
-                      <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
-                      <span>Tour bearbeiten</span>
-                    </Button>
-                  </div>
-                </div>
-              </template>
-            </TourDetailView>
-
-            <template v-else>
-              <section
-                class="group category-group"
-                :class="{
-                  'is-tour-group': !!grp.excursion,
-                }"
-                v-for="grp in spotGroups"
-                :key="grp.category"
+              <div
+                v-if="isTourDetailOpen && selectedExcursion"
+                key="tour-detail"
+                class="tour-detail-screen"
               >
-                <ExcursionCard
-                  v-if="grp.excursion"
-                  :ref="(el) => setTourCardRef(grp.category, grp.excursion!.id, el)"
-                  class="tour-group-card"
-                  :excursion="grp.excursion"
-                  :highlighted="highlightedExcursionIds.has(grp.excursion.id)"
-                  :focused="dayFocusExcursionIds.has(grp.excursion.id)"
-                  :like-count="excursionLikesFor(grp.excursion.id).length"
-                  :liked="excursionLikedByMe(grp.excursion.id)"
-                  :comments="excursionCommentItemsFor(grp.excursion.id)"
+                <div class="tour-detail-back-bar">
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    shape="squircle"
+                    :icon="ACTION_ICONS.arrowLeft"
+                    class="tour-detail-back-btn"
+                    @click="closeTourDetail"
+                  >
+                    Alle Touren
+                  </Button>
+                </div>
+
+                <TourDetailView
+                  :key="selectedExcursion.id"
+                  :excursion="selectedExcursion"
+                  :creator-label="creatorLabel(selectedExcursion.created_by)"
+                  :like-count="excursionLikesFor(selectedExcursion.id).length"
+                  :liked="excursionLikedByMe(selectedExcursion.id)"
+                  :comments="excursionCommentItemsFor(selectedExcursion.id)"
                   :stations="spotsStore.spots"
                   :travel-items="travelItems"
-                  @open="onExcursionCardOpen(grp.excursion)"
-                />
-                <template v-else>
-                  <h3 class="category-heading" :ref="(el) => setCategoryRef(grp.category, el)">
-                    <AppIcon :icon="grp.iconDef" group="categories" :color="groupIconColor(grp)" />
-                    {{ grp.category }}
-                  </h3>
-                  <!-- Nicht-Touren (Kategorie-Modus): Standard-Grid -->
-                  <TransitionGroup tag="div" name="list" class="grid cards">
-                    <template v-for="(item, index) in grp.items" :key="`spot-${item.spot.id}`">
-                      <SpotCard
-                        :ref="(el) => setSpotRef(item.spot.id, el, null)"
-                        class="staggered-spot"
-                        :style="[{ '--stagger-idx': index, '--stagger-total': grp.items.length }]"
-                        :spot="item.spot"
-                        :highlighted="highlightedSpotIds.has(item.spot.id)"
-                        :focused="dayFocusSpotIds.has(item.spot.id)"
-                        :expanded="expandedSpotId === item.spot.id"
-                        :scheduled-date="spotScheduledDates.get(item.spot.id) ?? null"
-                        :creator-label="creatorLabel(item.spot.created_by)"
-                        :payer-label="creatorLabel(item.spot.paid_by_user_id)"
-                        :like-count="spotsStore.likeCountFor(item.spot.id)"
-                        :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
-                        :comments="spotCommentItemsFor(item.spot.id)"
-                        :has-multiple-members="users.length > 1"
-                        :accommodation-distance="
-                          spotAccommodationDistances.get(item.spot.id) ?? null
-                        "
-                        @edit="startEditSpot"
-                        @toggle-like="toggleSpotLike(item.spot.id)"
-                        @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
-                        @remove-comment="removeSpotComment"
-                        @update-comment="updateSpotComment"
-                        @toggle-comment-like="toggleSpotCommentLike"
-                        @open="(spot, el) => onSpotCardOpen(spot, el)"
-                        @close="onSpotCardClose"
-                        @show-on-map="onSpotShowOnMap(item.spot)"
+                  @edit="startEditExcursion"
+                  @toggle-like="toggleExcursionLike(selectedExcursion.id)"
+                  @submit-comment="
+                    (content) => submitExcursionComment(selectedExcursion!.id, content)
+                  "
+                  @remove-comment="removeExcursionComment"
+                  @update-comment="updateExcursionComment"
+                  @toggle-comment-like="toggleExcursionCommentLike"
+                  @show-on-map="onExcursionShowOnMap(selectedExcursion.id)"
+                >
+                  <template #stations>
+                    <TourSerpentineWrap
+                      v-if="selectedExcursionStationItems.length"
+                      :excursion="selectedExcursion"
+                      :items="selectedExcursionStationItems"
+                      :tour-line="tourLines.get(selectedExcursion.id)"
+                      :cols="getTourCols(selectedExcursion.id)"
+                      :rows="getTourRows(selectedExcursion, selectedExcursionStationItems)"
+                      :expanded-spot-id="expandedSpotId"
+                      :highlighted-ids="highlightedSpotIds"
+                      :day-focus-highlighted-ids="dayFocusSpotIds"
+                      :spot-scheduled-dates="spotScheduledDates"
+                      :users="users"
+                      :spot-comment-items-for="spotCommentItemsFor"
+                      :get-tour-layover="getTourLayover"
+                      :set-spot-ref="setSpotRef"
+                      :set-tour-wrap-ref="setTourWrapRef"
+                      :spot-accommodation-distances="spotAccommodationDistances"
+                      @open-leg-modal="
+                        (fromSpot, toSpot) => openCardLegModal(selectedExcursion!, fromSpot, toSpot)
+                      "
+                      @edit-spot="(spot) => startEditSpot(spot.id)"
+                      @toggle-spot-like="toggleSpotLike"
+                      @submit-spot-comment="
+                        ({ spotId, content }) => submitSpotComment(spotId, content)
+                      "
+                      @remove-spot-comment="removeSpotComment"
+                      @update-spot-comment="
+                        ({ commentId, content }) => updateSpotComment(commentId, content)
+                      "
+                      @toggle-spot-comment-like="toggleSpotCommentLike"
+                      @open-spot="onSpotCardOpen"
+                      @close-spot="onSpotCardClose"
+                      @show-spot-on-map="onSpotShowOnMap"
+                      @add-spot-to-tour="
+                        (spotId) => onAddExistingSpotToTour(selectedExcursion!, spotId)
+                      "
+                      @create-spot-for-tour="onCreateSpotForTourCard(selectedExcursion!)"
+                    />
+                    <div v-else class="empty tour-empty-group">
+                      <p class="tour-empty-text">
+                        Noch keine Spots zugeordnet – füge Stationen hinzu oder bearbeite die
+                        Tour-Details.
+                      </p>
+                      <div class="tour-empty-actions">
+                        <TourSpotAssignDropdown
+                          :spots="spotsStore.spots"
+                          :like-count="spotsStore.likeCountFor"
+                          @select-spot="
+                            (spotId) => onAddExistingSpotToTour(selectedExcursion!, spotId)
+                          "
+                          @create-spot="onCreateSpotForTourCard(selectedExcursion!)"
+                        />
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          class="tour-empty-action-btn"
+                          @click="startEditExcursion(selectedExcursion)"
+                        >
+                          <AppIcon :icon="ACTION_ICONS.edit" :size="13" group="actions" />
+                          <span>Tour bearbeiten</span>
+                        </Button>
+                      </div>
+                    </div>
+                  </template>
+                </TourDetailView>
+              </div>
+
+              <div v-else key="list-view" class="tour-list-screen">
+                <section
+                  class="group category-group"
+                  :class="{
+                    'is-tour-group': !!grp.excursion,
+                  }"
+                  v-for="grp in spotGroups"
+                  :key="grp.category"
+                >
+                  <ExcursionCard
+                    v-if="grp.excursion"
+                    :ref="(el) => setTourCardRef(grp.category, grp.excursion!.id, el)"
+                    class="tour-group-card"
+                    :excursion="grp.excursion"
+                    :highlighted="highlightedExcursionIds.has(grp.excursion.id)"
+                    :focused="dayFocusExcursionIds.has(grp.excursion.id)"
+                    :like-count="excursionLikesFor(grp.excursion.id).length"
+                    :liked="excursionLikedByMe(grp.excursion.id)"
+                    :comments="excursionCommentItemsFor(grp.excursion.id)"
+                    :stations="spotsStore.spots"
+                    :travel-items="travelItems"
+                    @open="onExcursionCardOpen(grp.excursion)"
+                  />
+                  <template v-else>
+                    <h3 class="category-heading" :ref="(el) => setCategoryRef(grp.category, el)">
+                      <AppIcon
+                        :icon="grp.iconDef"
+                        group="categories"
+                        :color="groupIconColor(grp)"
                       />
+                      {{ grp.category }}
+                    </h3>
+                    <!-- Nicht-Touren (Kategorie-Modus): Standard-Grid -->
+                    <TransitionGroup tag="div" name="list" class="grid cards">
+                      <template v-for="(item, index) in grp.items" :key="`spot-${item.spot.id}`">
+                        <SpotCard
+                          :ref="(el) => setSpotRef(item.spot.id, el, null)"
+                          class="staggered-spot"
+                          :style="[{ '--stagger-idx': index, '--stagger-total': grp.items.length }]"
+                          :spot="item.spot"
+                          :highlighted="highlightedSpotIds.has(item.spot.id)"
+                          :focused="dayFocusSpotIds.has(item.spot.id)"
+                          :expanded="expandedSpotId === item.spot.id"
+                          :scheduled-date="spotScheduledDates.get(item.spot.id) ?? null"
+                          :creator-label="creatorLabel(item.spot.created_by)"
+                          :payer-label="creatorLabel(item.spot.paid_by_user_id)"
+                          :like-count="spotsStore.likeCountFor(item.spot.id)"
+                          :liked="spotsStore.likedByMe(item.spot.id, auth.user?.id)"
+                          :comments="spotCommentItemsFor(item.spot.id)"
+                          :has-multiple-members="users.length > 1"
+                          :accommodation-distance="
+                            spotAccommodationDistances.get(item.spot.id) ?? null
+                          "
+                          @edit="startEditSpot"
+                          @toggle-like="toggleSpotLike(item.spot.id)"
+                          @submit-comment="(content) => submitSpotComment(item.spot.id, content)"
+                          @remove-comment="removeSpotComment"
+                          @update-comment="updateSpotComment"
+                          @toggle-comment-like="toggleSpotCommentLike"
+                          @open="(spot, el) => onSpotCardOpen(spot, el)"
+                          @close="onSpotCardClose"
+                          @show-on-map="onSpotShowOnMap(item.spot)"
+                        />
+                      </template>
+                    </TransitionGroup>
+                  </template>
+                </section>
+                <div v-if="!spotGroups.length" class="empty-state-wrap">
+                  <EmptyState
+                    v-if="
+                      isAccommodationFilterActive && !searchQuery.trim() && !statusFilter.length
+                    "
+                  >
+                    Noch keine Unterkunft eingetragen. Trage hier dein Hotel, deine Ferienwohnung
+                    oder deinen Campingplatz ein.
+                  </EmptyState>
+                  <EmptyState
+                    v-else-if="isTravelFilterActive && !searchQuery.trim() && !statusFilter.length"
+                  >
+                    Noch keine Reise eingetragen. Hinterlege deine Anreise, Flüge oder
+                    Zugverbindungen.
+                  </EmptyState>
+                  <EmptyState v-else>
+                    <template v-if="hasActiveFilters">
+                      Keine {{ groupMode === 'tours' ? 'Touren' : 'Spots' }} für die aktuellen
+                      Filter oder Suchbegriffe gefunden.
                     </template>
-                  </TransitionGroup>
-                </template>
-              </section>
-            </template>
-            <div v-if="!isTourDetailOpen && !spotGroups.length" class="empty-state-wrap">
-              <EmptyState
-                v-if="isAccommodationFilterActive && !searchQuery.trim() && !statusFilter.length"
-              >
-                Noch keine Unterkunft eingetragen. Trage hier dein Hotel, deine Ferienwohnung oder
-                deinen Campingplatz ein.
-              </EmptyState>
-              <EmptyState
-                v-else-if="isTravelFilterActive && !searchQuery.trim() && !statusFilter.length"
-              >
-                Noch keine Reise eingetragen. Hinterlege deine Anreise, Flüge oder Zugverbindungen.
-              </EmptyState>
-              <EmptyState v-else>
-                <template v-if="hasActiveFilters">
-                  Keine {{ groupMode === 'tours' ? 'Touren' : 'Spots' }} für die aktuellen Filter
-                  oder Suchbegriffe gefunden.
-                </template>
-                <template v-else-if="groupMode === 'tours'"> Noch keine Touren angelegt. </template>
-                <template v-else> Noch keine Spots angelegt. </template>
-              </EmptyState>
+                    <template v-else-if="groupMode === 'tours'">
+                      Noch keine Touren angelegt.
+                    </template>
+                    <template v-else> Noch keine Spots angelegt. </template>
+                  </EmptyState>
 
-              <Button
-                v-if="isAccommodationFilterActive && !searchQuery.trim() && !statusFilter.length"
-                variant="primary"
-                size="sm"
-                class="empty-cta-btn"
-                @click="openSpotForm('Unterkunft')"
-              >
-                <AppIcon
-                  :icon="spotCategoryMeta('Unterkunft').tabler"
-                  :size="15"
-                  group="categories"
-                />
-                <span>Unterkunft eintragen</span>
-              </Button>
+                  <Button
+                    v-if="
+                      isAccommodationFilterActive && !searchQuery.trim() && !statusFilter.length
+                    "
+                    variant="primary"
+                    size="sm"
+                    class="empty-cta-btn"
+                    @click="openSpotForm('Unterkunft')"
+                  >
+                    <AppIcon
+                      :icon="spotCategoryMeta('Unterkunft').tabler"
+                      :size="15"
+                      group="categories"
+                    />
+                    <span>Unterkunft eintragen</span>
+                  </Button>
 
-              <Button
-                v-else-if="isTravelFilterActive && !searchQuery.trim() && !statusFilter.length"
-                variant="primary"
-                size="sm"
-                class="empty-cta-btn"
-                @click="openExcursionForm(defaultTravelRole, defaultTravelTitle)"
-              >
-                <AppIcon :icon="SECTION_ICON_DEFS.travel" :size="15" group="actions" />
-                <span>{{ emptyTravelCtaLabel }}</span>
-              </Button>
+                  <Button
+                    v-else-if="isTravelFilterActive && !searchQuery.trim() && !statusFilter.length"
+                    variant="primary"
+                    size="sm"
+                    class="empty-cta-btn"
+                    @click="openExcursionForm(defaultTravelRole, defaultTravelTitle)"
+                  >
+                    <AppIcon :icon="SECTION_ICON_DEFS.travel" :size="15" group="actions" />
+                    <span>{{ emptyTravelCtaLabel }}</span>
+                  </Button>
 
-              <Button
-                v-if="hasActiveFilters"
-                variant="secondary"
-                size="sm"
-                class="clear-filters-btn"
-                @click="clearAllFilters"
-              >
-                <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
-                <span>Filter zurücksetzen</span>
-              </Button>
-            </div>
+                  <Button
+                    v-if="hasActiveFilters"
+                    variant="secondary"
+                    size="sm"
+                    class="clear-filters-btn"
+                    @click="clearAllFilters"
+                  >
+                    <AppIcon :icon="ACTION_ICONS.close" :size="13" group="actions" />
+                    <span>Filter zurücksetzen</span>
+                  </Button>
+                </div>
+              </div>
+            </Transition>
           </template>
 
           <ExcursionTracksList
@@ -2809,6 +2872,11 @@ onUnmounted(() => {
   align-items: start;
 }
 
+.tour-detail-screen,
+.tour-list-screen {
+  min-width: 0;
+}
+
 .tour-detail-back-bar {
   display: flex;
   align-items: center;
@@ -2817,34 +2885,37 @@ onUnmounted(() => {
 }
 
 .tour-detail-back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-1) var(--space-2);
   margin-left: calc(var(--space-2) * -1);
-  border: none;
-  border-radius: var(--radius-sm-squircle);
-  background: transparent;
   color: var(--color-text-muted);
-  font: inherit;
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  cursor: pointer;
+}
+
+.tour-drill-forward-enter-active,
+.tour-drill-forward-leave-active,
+.tour-drill-back-enter-active,
+.tour-drill-back-leave-active {
   transition:
-    color 0.15s ease,
-    background-color 0.15s ease;
+    opacity 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@include can-hover {
-  .tour-detail-back-btn:hover {
-    color: var(--color-primary-dark);
-    background: var(--color-hover);
-  }
+.tour-drill-forward-enter-from {
+  opacity: 0;
+  transform: translateX(16px);
 }
 
-.tour-detail-back-btn:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
-  outline-offset: var(--focus-ring-offset, 2px);
+.tour-drill-forward-leave-to {
+  opacity: 0;
+  transform: translateX(-16px);
+}
+
+.tour-drill-back-enter-from {
+  opacity: 0;
+  transform: translateX(-16px);
+}
+
+.tour-drill-back-leave-to {
+  opacity: 0;
+  transform: translateX(16px);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2860,6 +2931,19 @@ onUnmounted(() => {
   }
   .drawer-search-accordion {
     transition: none;
+  }
+  .tour-drill-forward-enter-active,
+  .tour-drill-forward-leave-active,
+  .tour-drill-back-enter-active,
+  .tour-drill-back-leave-active {
+    transform: none !important;
+    transition: opacity 0.12s ease !important;
+  }
+  .tour-drill-forward-enter-from,
+  .tour-drill-forward-leave-to,
+  .tour-drill-back-enter-from,
+  .tour-drill-back-leave-to {
+    transform: none !important;
   }
 }
 
