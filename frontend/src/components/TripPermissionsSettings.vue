@@ -294,7 +294,6 @@ async function removeMember(user: User) {
 
 .member-avatar-item {
   position: relative;
-  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -303,7 +302,7 @@ async function removeMember(user: User) {
   transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 
   &:not(:first-child) {
-    margin-left: -14px;
+    margin-left: -10px;
   }
 
   &:focus-within {
@@ -317,13 +316,9 @@ async function removeMember(user: User) {
   }
 
   .member-avatar-item:hover .member-avatar-circle {
-    transform: translateY(-3px) scale(1.05);
-    box-shadow:
-      inset 0 1.5px 0 var(--shadow-control-highlight-strong),
-      inset 0 -2px 4px rgba(0, 0, 0, 0.14),
-      0 0 0 1px color-mix(in srgb, var(--color-primary) 36%, var(--color-border-strong)),
-      0 12px 24px -4px rgba(0, 0, 0, 0.34),
-      0 4px 10px rgba(0, 0, 0, 0.2);
+    transform: translateY(-3px) scale(1.04);
+    border-color: var(--color-border-strong);
+    box-shadow: var(--shadow-card-hover);
   }
 }
 
@@ -347,28 +342,18 @@ async function removeMember(user: User) {
   line-height: 1;
   user-select: none;
   background-color: var(--color-surface);
-  background-image:
-    radial-gradient(
-      circle at 32% 24%,
-      color-mix(in srgb, var(--color-primary-tint) 65%, transparent) 0%,
-      transparent 68%
-    ),
-    var(--gradient-surface-3d);
-  border: 2px solid var(--color-surface);
-  box-shadow:
-    inset 0 1.5px 0 var(--shadow-control-highlight-strong),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.12),
-    0 0 0 1px color-mix(in srgb, var(--color-primary) 28%, var(--color-border-strong)),
-    0 8px 18px -4px rgba(0, 0, 0, 0.28),
-    0 2px 6px rgba(0, 0, 0, 0.16);
+  background-image: var(--gradient-surface-3d);
+  border: var(--border-width) solid var(--color-border);
+  box-shadow: var(--shadow-card-interactive);
   transition:
     transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s ease,
     box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .member-remove-btn {
-  --corner-remove-top: -2px;
-  --corner-remove-right: -2px;
+  --corner-remove-top: -1px;
+  --corner-remove-right: -1px;
 }
 
 .member-avatar-name {
