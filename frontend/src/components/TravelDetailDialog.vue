@@ -71,35 +71,45 @@ function travelDuration(item: TravelItem) {
         {{ travelDuration(item) }}
       </Badge>
     </template>
-    <DetailRow v-if="item.from_location || item.to_location" label="Strecke">
-      {{ item.from_location || '?' }} → {{ item.to_location || '?' }}
-    </DetailRow>
-    <DetailRow v-if="item.date || item.departure_time" label="Zeit">
-      <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
-      {{ item.date || '' }}
-      <span v-if="item.departure_time" class="nobr">
-        · {{ item.departure_time
-        }}<template v-if="item.arrival_time">&ndash;{{ item.arrival_time }}</template
-        >&nbsp;Uhr
-      </span>
-      <span v-if="travelDuration(item)" class="nobr"> ({{ travelDuration(item) }})</span>
-    </DetailRow>
-    <DetailRow v-if="item.checkin_info" label="Vorher da sein">
-      <AppIcon :icon="ACTION_ICONS.duration" :size="14" group="actions" /> {{ item.checkin_info }}
-    </DetailRow>
-    <DetailRow v-if="item.luggage" label="Gepäck">
-      <AppIcon :icon="ACTION_ICONS.luggage" :size="14" group="actions" /> {{ item.luggage }}
-    </DetailRow>
-    <DetailRow v-if="item.seat" label="Sitzplatz">
-      <AppIcon :icon="ACTION_ICONS.seat" :size="14" group="actions" /> {{ item.seat }}
-    </DetailRow>
-    <DetailRow v-if="item.amount != null" label="Kosten">
-      <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" />
-      <span class="nobr">{{ item.amount.toFixed(2) }}&nbsp;€</span>
-      <span v-if="hasMultipleMembers !== false && item.paid_by_user_id">
-        · bezahlt von {{ payerLabel }}</span
+    <dl class="detail-list">
+      <DetailRow v-if="item.from_location || item.to_location" label="Strecke" icon="location">
+        {{ item.from_location || '?' }} → {{ item.to_location || '?' }}
+      </DetailRow>
+      <DetailRow v-if="item.date || item.departure_time" label="Zeit" icon="period">
+        {{ item.date || '' }}
+        <span v-if="item.departure_time" class="nobr">
+          · {{ item.departure_time
+          }}<template v-if="item.arrival_time">&ndash;{{ item.arrival_time }}</template
+          >&nbsp;Uhr
+        </span>
+        <span v-if="travelDuration(item)" class="nobr"> ({{ travelDuration(item) }})</span>
+      </DetailRow>
+      <DetailRow
+        v-if="item.checkin_info"
+        label="Vorher da sein"
+        :icon="ACTION_ICONS.duration"
+        icon-group="actions"
       >
-    </DetailRow>
+        {{ item.checkin_info }}
+      </DetailRow>
+      <DetailRow
+        v-if="item.luggage"
+        label="Gepäck"
+        :icon="ACTION_ICONS.luggage"
+        icon-group="actions"
+      >
+        {{ item.luggage }}
+      </DetailRow>
+      <DetailRow v-if="item.seat" label="Sitzplatz" :icon="ACTION_ICONS.seat" icon-group="actions">
+        {{ item.seat }}
+      </DetailRow>
+      <DetailRow v-if="item.amount != null" label="Kosten" icon="amount">
+        <span class="nobr">{{ item.amount.toFixed(2) }}&nbsp;€</span>
+        <span v-if="hasMultipleMembers !== false && item.paid_by_user_id">
+          · bezahlt von {{ payerLabel }}</span
+        >
+      </DetailRow>
+    </dl>
     <RichTextDisplay
       v-if="item.note"
       class="detail-row note"
@@ -155,6 +165,17 @@ function travelDuration(item: TravelItem) {
 </template>
 
 <style scoped>
+.detail-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+}
+
+.detail-list :deep(.detail-row) {
+  margin: 0;
+}
+
 .note {
   overflow-wrap: anywhere;
 }

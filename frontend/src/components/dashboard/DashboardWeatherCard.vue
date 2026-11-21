@@ -272,12 +272,21 @@ onMounted(() => {
         error-context="Regionsinfos laden"
       />
       <template v-else-if="regionInfo">
-        <div class="region-details">
-          <DetailRow v-if="regionInfo.languages.length" label="Sprache">
+        <dl class="region-details">
+          <DetailRow
+            v-if="regionInfo.languages.length"
+            label="Sprache"
+            :icon="ACTION_ICONS.region"
+            icon-group="actions"
+          >
             {{ regionInfo.languages.join(', ') }}
           </DetailRow>
-          <DetailRow v-if="regionInfo.currency" label="Währung">
-            <AppIcon :icon="ACTION_ICONS.currency" :size="14" group="actions" />
+          <DetailRow
+            v-if="regionInfo.currency"
+            label="Währung"
+            :icon="ACTION_ICONS.currency"
+            icon-group="actions"
+          >
             {{ regionInfo.currency.name }} ({{ regionInfo.currency.code }})
             <span v-if="regionInfo.exchangeRate != null">
               · <span class="nobr">1&nbsp;{{ regionInfo.currency.code }}</span> ≈
@@ -286,20 +295,20 @@ onMounted(() => {
               >
             </span>
           </DetailRow>
-          <DetailRow v-if="regionInfo.advisory" label="Sicherheit">
-            <AppIcon
-              :icon="
-                regionInfo.advisory.score > 2.0 ? ACTION_ICONS.warning : ACTION_ICONS.shieldCheck
-              "
-              :size="14"
-              group="actions"
-            />
+          <DetailRow
+            v-if="regionInfo.advisory"
+            label="Sicherheit"
+            :icon="
+              regionInfo.advisory.score > 2.0 ? ACTION_ICONS.warning : ACTION_ICONS.shieldCheck
+            "
+            icon-group="actions"
+          >
             {{ regionInfo.advisory.message }}
             <span class="region-advisory-score"
               >({{ regionInfo.advisory.score.toFixed(1) }}/5)</span
             >
           </DetailRow>
-        </div>
+        </dl>
         <router-link
           v-if="regionShowsExchange"
           to="/settings?tab=trip#home-currency-settings"
@@ -386,6 +395,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: var(--space-1-5);
+  margin: 0;
 }
 
 .region-details :deep(.detail-row) {

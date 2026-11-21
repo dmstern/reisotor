@@ -71,49 +71,52 @@ const emit = defineEmits<{
       </span>
     </template>
 
-    <DetailRow v-if="detail.viewingItem.value?.time" label="Zeit">
-      <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" />
-      {{ detail.viewingItem.value.time
-      }}<template v-if="detail.viewingItem.value.end_time">
-        – {{ detail.viewingItem.value.end_time }}</template
+    <dl class="detail-list">
+      <DetailRow v-if="detail.viewingItem.value?.time" label="Zeit" icon="time">
+        {{ detail.viewingItem.value.time
+        }}<template v-if="detail.viewingItem.value.end_time">
+          – {{ detail.viewingItem.value.end_time }}</template
+        >
+      </DetailRow>
+
+      <DetailRow
+        v-if="
+          detail.viewingItem.value?.end_date &&
+          detail.viewingItem.value.end_date !== detail.viewingItem.value.date
+        "
+        label="Zeitraum"
+        icon="period"
       >
-    </DetailRow>
+        {{ formatDate(detail.viewingItem.value.date) }} –
+        {{ formatDate(detail.viewingItem.value.end_date) }}
+      </DetailRow>
 
-    <DetailRow
-      v-if="
-        detail.viewingItem.value?.end_date &&
-        detail.viewingItem.value.end_date !== detail.viewingItem.value.date
-      "
-      label="Zeitraum"
-    >
-      <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
-      {{ formatDate(detail.viewingItem.value.date) }} –
-      {{ formatDate(detail.viewingItem.value.end_date) }}
-    </DetailRow>
+      <DetailRow
+        v-if="
+          !detail.linkedTitleFor(detail.viewingEntry.value) && detail.viewingItem.value?.location
+        "
+        label="Ort"
+        icon="location"
+      >
+        {{ detail.viewingItem.value.location }}
+      </DetailRow>
 
-    <DetailRow
-      v-if="!detail.linkedTitleFor(detail.viewingEntry.value) && detail.viewingItem.value?.location"
-      label="Ort"
-    >
-      <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" />
-      {{ detail.viewingItem.value.location }}
-    </DetailRow>
-
-    <DetailRow
-      v-if="detail.linkedTitleFor(detail.viewingEntry.value)"
-      label="Verknüpfter Ort"
-      tag="div"
-      class="linked-entity-row"
-    >
-      <LinkedEntityButton
-        :label="detail.linkedTitleFor(detail.viewingEntry.value)!"
-        :image-url="detail.viewingLinkedEntityImageUrl.value"
-        :icon="detail.viewingEntry.value?.iconDef ?? FORM_FIELD_ICONS.location"
-        :icon-group="detail.viewingLinkedEntityIconGroup.value"
-        class="linked-entity-btn"
-        @click="detail.navigateToLinkedEntity"
-      />
-    </DetailRow>
+      <DetailRow
+        v-if="detail.linkedTitleFor(detail.viewingEntry.value)"
+        label="Verknüpfter Ort"
+        icon="location"
+        class="linked-entity-row"
+      >
+        <LinkedEntityButton
+          :label="detail.linkedTitleFor(detail.viewingEntry.value)!"
+          :image-url="detail.viewingLinkedEntityImageUrl.value"
+          :icon="detail.viewingEntry.value?.iconDef ?? FORM_FIELD_ICONS.location"
+          :icon-group="detail.viewingLinkedEntityIconGroup.value"
+          class="linked-entity-btn"
+          @click="detail.navigateToLinkedEntity"
+        />
+      </DetailRow>
+    </dl>
 
     <RichTextDisplay
       v-if="detail.viewingItem.value?.note && !isEmptyRichText(detail.viewingItem.value.note)"
@@ -172,6 +175,17 @@ const emit = defineEmits<{
   background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
   border-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
   color: var(--color-text);
+}
+
+.detail-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+}
+
+.detail-list :deep(.detail-row) {
+  margin: 0;
 }
 
 .linked-entity-row {

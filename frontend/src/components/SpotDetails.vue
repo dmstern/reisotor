@@ -3,7 +3,6 @@ import { computed } from 'vue';
 import type { Spot } from '../api/types';
 import { parseContact } from '../utils/contact';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
-import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { linkLabel } from '../utils/linkLabel';
 import { travelTypeIconDef } from '../utils/travelTypeIcon';
@@ -64,9 +63,12 @@ const checkinCheckoutText = computed(() => {
 
 <template>
   <div v-if="hasDetails" class="spot-accordion" :class="{ 'is-expanded': expanded }">
-    <div class="spot-accordion-inner accordion-stagger">
-      <DetailRow v-if="isAccommodation && (spot.start_date || spot.end_date)" label="Zeitraum">
-        <AppIcon :icon="FORM_FIELD_ICONS.period" :size="14" group="formFields" />
+    <dl class="spot-accordion-inner accordion-stagger">
+      <DetailRow
+        v-if="isAccommodation && (spot.start_date || spot.end_date)"
+        label="Zeitraum"
+        icon="period"
+      >
         {{ formatAccommodationDate(spot.start_date) || '?' }} –
         {{ formatAccommodationDate(spot.end_date) || '?' }}
         <CopyButton
@@ -76,7 +78,7 @@ const checkinCheckoutText = computed(() => {
           toast-message="Zeitraum in die Zwischenablage kopiert."
         />
       </DetailRow>
-      <DetailRow v-if="spot.address" label="Adresse">
+      <DetailRow v-if="spot.address" label="Adresse" icon="location">
         <span>{{ spot.address }}</span>
         <CopyButton
           :text="spot.address"
@@ -85,7 +87,7 @@ const checkinCheckoutText = computed(() => {
         />
       </DetailRow>
       <template v-if="isAccommodation">
-        <DetailRow v-if="spot.checkin || spot.checkout" label="Check-in/-out">
+        <DetailRow v-if="spot.checkin || spot.checkout" label="Check-in/-out" icon="time">
           {{ spot.checkin || '–' }} · {{ spot.checkout || '–' }}
           <CopyButton
             v-if="checkinCheckoutText"
@@ -97,8 +99,8 @@ const checkinCheckoutText = computed(() => {
         <DetailRow
           v-if="spot.contact && parseContact(spot.contact).kind === 'phone'"
           label="Kontakt"
+          icon="contact"
         >
-          <AppIcon :icon="FORM_FIELD_ICONS.contact" :size="14" group="formFields" />
           <a :href="parseContact(spot.contact).href" @click.stop>{{ spot.contact }}</a>
           <CopyButton
             :text="spot.contact"
@@ -109,8 +111,8 @@ const checkinCheckoutText = computed(() => {
         <DetailRow
           v-else-if="spot.contact && parseContact(spot.contact).kind === 'email'"
           label="Kontakt"
+          icon="email"
         >
-          <AppIcon :icon="FORM_FIELD_ICONS.email" :size="14" group="formFields" />
           <a :href="parseContact(spot.contact).href" @click.stop>{{ spot.contact }}</a>
           <CopyButton
             :text="spot.contact"
@@ -118,7 +120,7 @@ const checkinCheckoutText = computed(() => {
             toast-message="E-Mail-Adresse in die Zwischenablage kopiert."
           />
         </DetailRow>
-        <DetailRow v-else-if="spot.contact" label="Kontakt">
+        <DetailRow v-else-if="spot.contact" label="Kontakt" icon="contact">
           <RichTextDisplay class="contact-text" :content="spot.contact" />
           <CopyButton
             :text="spot.contact"
@@ -126,8 +128,7 @@ const checkinCheckoutText = computed(() => {
             toast-message="Kontakt in die Zwischenablage kopiert."
           />
         </DetailRow>
-        <DetailRow v-if="spot.amount != null" label="Kosten">
-          <AppIcon :icon="FORM_FIELD_ICONS.amount" :size="14" group="formFields" />
+        <DetailRow v-if="spot.amount != null" label="Kosten" icon="amount">
           <span class="nobr">{{ spot.amount.toFixed(2) }}&nbsp;€</span>
           <span v-if="hasMultipleMembers !== false && spot.paid_by_user_id">
             · bezahlt von {{ payerLabel }}</span
@@ -139,8 +140,7 @@ const checkinCheckoutText = computed(() => {
           />
         </DetailRow>
       </template>
-      <DetailRow v-if="spot.link" :label="isAccommodation ? 'Buchung' : 'Website'">
-        <AppIcon :icon="FORM_FIELD_ICONS.link" :size="14" group="formFields" />
+      <DetailRow v-if="spot.link" :label="isAccommodation ? 'Buchung' : 'Website'" icon="link">
         <a
           :href="spot.link"
           target="_blank"
@@ -161,14 +161,14 @@ const checkinCheckoutText = computed(() => {
           "
         />
       </DetailRow>
-      <DetailRow v-if="!isAccommodation && accommodationDistance" label="Entfernung">
-        <AppIcon
-          :icon="
-            travelTypeIconDef(accommodationDistance.profile === 'foot-walking' ? 'zu Fuß' : 'Auto')
-          "
-          :size="14"
-          group="categories"
-        />
+      <DetailRow
+        v-if="!isAccommodation && accommodationDistance"
+        label="Entfernung"
+        :icon="
+          travelTypeIconDef(accommodationDistance.profile === 'foot-walking' ? 'zu Fuß' : 'Auto')
+        "
+        icon-group="categories"
+      >
         <span>
           {{
             formatSpotDistance(
@@ -190,7 +190,7 @@ const checkinCheckoutText = computed(() => {
           </span>
         </span>
       </DetailRow>
-    </div>
+    </dl>
   </div>
 </template>
 
