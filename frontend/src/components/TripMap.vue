@@ -736,6 +736,8 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   right: var(--space-2);
   bottom: calc(var(--navbar-bottom-offset, 0px) + var(--space-2));
   z-index: 1000;
+  max-width: calc(100% - var(--space-3));
+  box-sizing: border-box;
 }
 
 #map-focus-dock .map-track-playback-container {
@@ -744,17 +746,19 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   right: auto;
   bottom: auto;
   z-index: auto;
+  width: 100%;
+  max-width: 100%;
   margin-bottom: var(--space-3);
 }
 
 .excursion-track-switcher {
   display: flex;
   flex-wrap: nowrap;
-  gap: var(--space-1);
+  gap: var(--space-2);
   overflow-x: auto;
   scrollbar-width: none;
   margin-bottom: var(--space-2);
-  padding: 4px;
+  padding: 6px 2px;
 }
 
 .excursion-track-switcher::-webkit-scrollbar {
@@ -762,22 +766,21 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
 }
 
 .excursion-track-pill {
-  @include touch-target($expand: true);
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
   flex: 0 0 auto;
-  max-width: 200px;
-  min-height: 32px;
-  padding: var(--space-1) var(--space-3);
+  max-width: 220px;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-pill);
   border: 1px solid var(--color-surface-glass-border);
-  background: var(--color-surface-glass);
+  background: var(--color-surface-glass-dense, var(--color-surface-glass));
   backdrop-filter: var(--backdrop-blur-md);
   box-shadow: var(--shadow-control);
   color: var(--color-text);
   font-size: var(--font-size-xs);
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition:
     background-color 0.15s ease,
@@ -812,11 +815,19 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
 .karte.sheet-overlay-mode .map-track-playback-container {
   left: calc(
     var(--calendar-margin, var(--drawer-tab-width, 32px)) + var(--calendar-offset, 0px) +
-      var(--space-4)
+      var(--space-3)
   );
-  right: var(--space-4);
+  right: var(--space-3);
   margin: 0 auto;
-  width: min(520px, calc(100% - var(--space-6)));
+  width: min(
+    520px,
+    calc(
+      100% - var(--calendar-margin, var(--drawer-tab-width, 32px)) - var(
+          --calendar-offset,
+          0px
+        ) - var(--space-5)
+    )
+  );
 }
 
 /* Die OpenStreetMap-Kacheln selbst kennen keinen Dark Mode – ein Farb-Invert nur auf der
@@ -938,9 +949,10 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
 
   .map-track-playback-container {
     left: var(--spots-col-right-px, 400px);
-    right: 0;
+    right: var(--space-3);
     margin: 0 auto;
     width: min(520px, calc(100% - var(--spots-col-right-px, 400px) - var(--space-6)));
+    max-width: calc(100% - var(--spots-col-right-px, 400px) - var(--space-4));
     bottom: calc(var(--navbar-bottom-offset, 0px) + var(--space-4));
   }
 }
