@@ -473,7 +473,7 @@ defineExpose({
   justify-content: space-between;
   gap: var(--space-2);
   min-height: var(--input-height, 46px);
-  padding: 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
   background: var(--color-hover);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
@@ -493,8 +493,21 @@ defineExpose({
   min-width: 0;
 }
 
+.tour-done-field.is-modified {
+  border-color: var(--color-accent);
+}
+
 .tour-done-field.is-modified .tour-done-label {
   color: var(--color-accent-dark, var(--color-accent));
+}
+
+.modified-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-dark, var(--color-accent));
+  flex-shrink: 0;
 }
 
 .tour-done-control {
