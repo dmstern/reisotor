@@ -112,6 +112,10 @@ const afterCategoryMeta = computed(() => {
   };
 });
 
+const hasAdaptedCategory = computed(() =>
+  filteredCategories.value.some((cat) => Boolean(cat.isAdapted))
+);
+
 const categoryListRef = ref<HTMLElement | null>(null);
 const { canScrollUp, canScrollDown, updateScrollFade } = useScrollFade(categoryListRef);
 
@@ -202,6 +206,7 @@ watch([() => filteredCategories.value.length, activeType], () => {
           :key="cat.name"
           :category="cat"
           :active-type="activeType"
+          :reserve-reset-slot="hasAdaptedCategory"
           @edit="startEdit"
           @reset="promptReset"
           @toggle-hide="toggleHideStandard"

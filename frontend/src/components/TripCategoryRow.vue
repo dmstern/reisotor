@@ -22,6 +22,7 @@ export interface DisplayCategory {
 const props = defineProps<{
   category: DisplayCategory;
   activeType: 'expense' | 'spot';
+  reserveResetSlot?: boolean;
 }>();
 
 defineEmits<{
@@ -75,6 +76,7 @@ const usageLabel = computed(() => {
       >
         Zurücksetzen
       </Button>
+      <span v-else-if="reserveResetSlot" class="reset-btn-placeholder" aria-hidden="true" />
 
       <!-- Bearbeiten (Pencil) -->
       <EditButton
@@ -96,6 +98,7 @@ const usageLabel = computed(() => {
       >
         {{ category.isHidden ? 'Einblenden' : 'Ausblenden' }}
       </Button>
+      <span v-else class="hide-btn-placeholder" aria-hidden="true" />
     </div>
   </div>
 </template>
@@ -136,7 +139,7 @@ const usageLabel = computed(() => {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   white-space: nowrap;
-  min-width: 72px;
+  min-width: 80px;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
@@ -157,6 +160,27 @@ const usageLabel = computed(() => {
 .hide-btn {
   font-size: var(--font-size-xs);
   padding: var(--space-1) var(--space-2);
+  justify-content: flex-start;
+  white-space: nowrap;
+}
+
+.reset-btn,
+.reset-btn-placeholder {
+  width: 116px;
+  flex-shrink: 0;
+}
+
+.hide-btn,
+.hide-btn-placeholder {
+  width: 112px;
+  flex-shrink: 0;
+}
+
+.reset-btn-placeholder,
+.hide-btn-placeholder {
+  display: inline-block;
+  height: 1px;
+  pointer-events: none;
 }
 
 @include container-down('tablet-sm') {
@@ -173,6 +197,16 @@ const usageLabel = computed(() => {
     justify-content: flex-end;
     flex-wrap: wrap;
     padding-top: var(--space-1);
+  }
+
+  .reset-btn,
+  .hide-btn {
+    width: auto;
+  }
+
+  .reset-btn-placeholder,
+  .hide-btn-placeholder {
+    display: none;
   }
 }
 </style>

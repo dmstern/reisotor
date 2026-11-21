@@ -5,7 +5,11 @@ import { renderToString } from 'vue/server-renderer';
 import TripCategoryRow, { type DisplayCategory } from './TripCategoryRow.vue';
 
 describe('TripCategoryRow', () => {
-  function render(category: DisplayCategory, activeType: 'expense' | 'spot') {
+  function render(
+    category: DisplayCategory,
+    activeType: 'expense' | 'spot',
+    reserveResetSlot = false
+  ) {
     const pinia = createPinia();
     setActivePinia(pinia);
     const app = createApp({
@@ -13,13 +17,14 @@ describe('TripCategoryRow', () => {
         h(TripCategoryRow, {
           category,
           activeType,
+          reserveResetSlot,
         }),
     });
     app.use(pinia);
     return renderToString(app);
   }
 
-  it('rendert eine Custom-Kategorie mit Urlaub-Badge und Ausgaben-Zähler', async () => {
+  it('rendert eine Custom-Kategorie mit Urlaub-Badge, Ausgaben-Zähler und Platzhalter für Ausblenden-Button', async () => {
     const cat: DisplayCategory = {
       id: 42,
       name: 'Tauchen',
@@ -36,8 +41,10 @@ describe('TripCategoryRow', () => {
     expect(html).toContain('Urlaub');
     expect(html).toContain('5 Ausgaben');
     expect(html).toContain('title="Kategorie bearbeiten"');
-    // Kein Ausblenden-Button bei Urlaub/Custom
+    // Kein Ausblenden-Button bei Urlaub/Custom, aber Platzhalter für Spaltenausrichtung
     expect(html).not.toContain('Ausblenden');
+    expect(html).toContain('hide-btn-placeholder');
+    expect(html).not.toContain('reset-btn-placeholder');
   });
 
   it('rendert eine Standardkategorie mit Standard-Badge und Ausblenden-Button', async () => {
@@ -125,5 +132,18 @@ describe('TripCategoryRow', () => {
     expect(html).toContain('Standard (angepasst)');
     expect(html).toContain('Zurücksetzen');
     expect(html).toContain('2 Spots');
+  });
+
+  it('reserviert bei reserveResetSlot=true Platz für den Zurücksetzen-Button bei nicht angepassten Kategorien', async () => {
+    const standardCat: DisplayCategory = {
+      name: 'Hafen',
+      isCustom: false,
+      isAdapted: false,
+      isHidden: false,
+      usageCount: 0,
+    };
+    const html = await render(standardCat, 'spot', true);
+    expect(html).toContain('reset-btn-placeholder');
+    expect(html).not.toContain('Zurücksetzen');
   });
 });
