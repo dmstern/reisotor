@@ -88,6 +88,13 @@ describe('useTourSerpentine', () => {
     expect(tooltip).toContain('10:00–11:30');
     expect(tooltip).toContain('24,50\u00A0€');
     expect(tooltip).toContain('Von: Startbahnhof → Nach: Zwischenstopp');
+
+    const legWithDistance: ExcursionLeg = {
+      ...leg1,
+      distance_meters: 15400,
+    };
+    const tooltipWithDist = getLegTooltip(legWithDistance, mockSpot1, mockSpot2);
+    expect(tooltipWithDist).toContain('15\u00A0km');
   });
 
   it('berechnet Umstiegs-/Layover-Zeiten zwischen Legs', () => {

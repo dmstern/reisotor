@@ -31,6 +31,8 @@ const props = withDefaults(
     categoryLabel?: string;
     /** Optionales Icon für das Kategorie-Label */
     categoryIcon?: IconDef;
+    categoryIconGroup?: 'categories' | 'actions';
+    categoryIconForceStyle?: 'icons' | 'emoji';
     /** Steuert, ob der Bearbeiten-Button angezeigt wird (Standard: true) */
     editable?: boolean;
     /** Theme-Farbe für Akzente und Hero-Glow (z. B. var(--color-tour)) */
@@ -44,6 +46,8 @@ const props = withDefaults(
     editable: true,
     categoryLabel: undefined,
     categoryIcon: undefined,
+    categoryIconGroup: 'categories',
+    categoryIconForceStyle: undefined,
     themeColor: undefined,
     themeTint: undefined,
   }
@@ -89,7 +93,13 @@ const hasPhoto = computed(() => {
                   );
                 "
               >
-                <AppIcon v-if="categoryIcon" :icon="categoryIcon" :size="13" group="categories" />
+                <AppIcon
+                  v-if="categoryIcon"
+                  :icon="categoryIcon"
+                  :size="13"
+                  :group="categoryIconGroup"
+                  :force-style="categoryIconForceStyle"
+                />
                 {{ categoryLabel }}
               </Badge>
             </slot>
@@ -147,7 +157,8 @@ const hasPhoto = computed(() => {
                   class="placeholder-icon"
                   :size="30"
                   :icon="placeholderIcon"
-                  group="categories"
+                  :group="categoryIconGroup"
+                  :force-style="categoryIconForceStyle"
                 />
               </div>
             </div>

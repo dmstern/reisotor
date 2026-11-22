@@ -18,6 +18,8 @@ import LinkedDiaryPills from './LinkedDiaryPills.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import AppIcon from './AppIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
+import { summarizeTourLegsByTransport } from '../utils/travelDuration';
+import { travelTypeIconDef } from '../utils/travelTypeIcon';
 import { weatherCodeMeta } from '../utils/weather';
 
 const props = withDefaults(
@@ -96,6 +98,8 @@ const hasMeta = computed(() =>
 const weatherLabel = computed(() =>
   weatherSummary.value ? weatherCodeMeta(weatherSummary.value.weatherCode).label : ''
 );
+
+const transportSummary = computed(() => summarizeTourLegsByTransport(props.excursion.legs));
 </script>
 
 <template>
@@ -173,6 +177,29 @@ const weatherLabel = computed(() =>
             <WeatherIcon :code="weatherSummary.weatherCode" :size="22" aria-hidden="true" />
             <span class="tour-detail-weather-temp">{{ weatherSummary.tempLabel }}</span>
           </div>
+        </div>
+
+        <div
+          v-if="transportSummary.length > 0"
+          class="tour-detail-transport-summary"
+          aria-label="Übersicht Verkehrsmittel"
+        >
+          <span
+            v-for="item in transportSummary"
+            :key="item.type"
+            class="tour-detail-transport-item"
+            :title="item.tooltip"
+            :aria-label="item.ariaLabel"
+          >
+            <AppIcon
+              :icon="travelTypeIconDef(item.type)"
+              :size="15"
+              group="actions"
+              force-style="icons"
+              aria-hidden="true"
+            />
+            <span class="tour-detail-transport-text">{{ item.formattedPrimary }}</span>
+          </span>
         </div>
       </div>
 
@@ -368,6 +395,30 @@ const weatherLabel = computed(() =>
   font-size: var(--font-size-sm);
   font-weight: 600;
   line-height: var(--line-height-none);
+  text-box: trim-both cap alphabetic;
+}
+
+.tour-detail-transport-summary {
+  display: flex;
+  align-items: safe center;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-md);
+  min-width: 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-muted);
+}
+
+.tour-detail-transport-item {
+  display: inline-flex;
+  align-items: safe center;
+  gap: var(--space-xs);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tour-detail-transport-text {
+  font-weight: 500;
   text-box: trim-both cap alphabetic;
 }
 

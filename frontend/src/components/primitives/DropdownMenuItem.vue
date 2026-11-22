@@ -18,6 +18,8 @@ const props = withDefaults(
     icon?: IconDef;
     /** Icon-Gruppe für AppIcon (Standard: 'actions') */
     iconGroup?: IconGroup;
+    /** Optionales Erzwingen des Icon-Stils ('icons' oder 'emoji') */
+    iconForceStyle?: 'icons' | 'emoji';
     /** Icon-Größe in Pixeln (Standard: 14) */
     iconSize?: number;
     /** Ob der Menüeintrag als aktiv/ausgewählt markiert ist */
@@ -95,6 +97,7 @@ function handleClick(event: MouseEvent) {
       v-if="icon"
       :icon="icon"
       :group="iconGroup"
+      :force-style="iconForceStyle"
       :size="iconSize"
       :active="active"
       class="dropdown-item-icon"
@@ -117,6 +120,7 @@ function handleClick(event: MouseEvent) {
       v-if="icon"
       :icon="icon"
       :group="iconGroup"
+      :force-style="iconForceStyle"
       :size="iconSize"
       :active="active"
       class="dropdown-item-icon"
@@ -148,6 +152,7 @@ function handleClick(event: MouseEvent) {
       v-if="icon"
       :icon="icon"
       :group="iconGroup"
+      :force-style="iconForceStyle"
       :size="iconSize"
       :active="active"
       class="dropdown-item-icon"

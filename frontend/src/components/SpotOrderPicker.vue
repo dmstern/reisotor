@@ -328,7 +328,8 @@ function onDeleteLeg() {
                       )
                     "
                     :size="13"
-                    group="categories"
+                    group="actions"
+                    force-style="icons"
                   />
                   <span class="leg-type">
                     {{

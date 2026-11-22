@@ -1977,7 +1977,6 @@ onUnmounted(() => {
                       :get-tour-layover="getTourLayover"
                       :set-spot-ref="setSpotRef"
                       :set-tour-wrap-ref="setTourWrapRef"
-                      :spot-accommodation-distances="spotAccommodationDistances"
                       @open-leg-modal="
                         (fromSpot, toSpot) => openCardLegModal(selectedExcursion!, fromSpot, toSpot)
                       "

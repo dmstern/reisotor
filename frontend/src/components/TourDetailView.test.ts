@@ -146,4 +146,43 @@ describe('TourDetailView', () => {
     expect(html).toContain('09:30\u201315:40\u00A0Uhr');
     expect(html).toContain('6\u00A0Std. 10\u00A0Min.');
   });
+
+  it('rendert kompakte Teilstrecken-Zusammenfassung nach Verkehrsmittel', async () => {
+    const html = await mountComponent({
+      excursion: {
+        ...mockExcursion,
+        legs: [
+          {
+            transport_type: 'zu Fuß',
+            distance_meters: 1400,
+            duration_seconds: 1200,
+          },
+          {
+            transport_type: 'Auto',
+            distance_meters: 46000,
+            departure_time: '11:00',
+            arrival_time: '11:55',
+          },
+          {
+            transport_type: 'Straßenbahn',
+            departure_time: '14:00',
+            arrival_time: '14:40',
+          },
+        ],
+      } as unknown as Excursion,
+      creatorLabel: 'Daniel',
+      likeCount: 0,
+      liked: false,
+      comments: [],
+      stations: mockStations,
+      travelItems: [],
+    });
+
+    expect(html).toContain('tour-detail-transport-summary');
+    expect(html).toContain('1,4\u00A0km');
+    expect(html).toContain('46\u00A0km');
+    expect(html).toContain('40\u00A0Min.');
+    expect(html).toContain('Auto: 46\u00A0km (55\u00A0Min.)');
+    expect(html).toContain('Straßenbahn: 40\u00A0Min.');
+  });
 });

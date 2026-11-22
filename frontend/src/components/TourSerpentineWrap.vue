@@ -3,7 +3,6 @@ import { computed, type ComponentPublicInstance } from 'vue';
 import type { Excursion, Spot, User } from '../api/types';
 import type { TourLineData } from '../composables/useTourSerpentine';
 import type { TourSerpentineRow } from '../utils/tourSerpentine';
-import type { SpotAccommodationDistanceInfo } from '../utils/spotAccommodationDistance';
 import SpotCard from './SpotCard.vue';
 import type { CommentItem } from './Comments.vue';
 import TourLegConnector from './TourLegConnector.vue';
@@ -34,7 +33,6 @@ const props = defineProps<{
     excursionId?: number | null
   ) => void;
   setTourWrapRef?: (excursionId: number, el: Element | ComponentPublicInstance | null) => void;
-  spotAccommodationDistances?: Map<number, SpotAccommodationDistanceInfo>;
 }>();
 
 const emit = defineEmits<{
@@ -189,7 +187,6 @@ function creatorLabel(userId: number | null | undefined): string | null {
                 :liked="spotsStore.likedByMe(cell.spot.id, auth.user?.id)"
                 :comments="spotCommentItemsFor(cell.spot.id)"
                 :has-multiple-members="users.length > 1"
-                :accommodation-distance="spotAccommodationDistances?.get(cell.spot.id) ?? null"
                 :layover-minutes="
                   cell.globalIndex > 0 && cell.globalIndex < items.length - 1
                     ? getTourLayover(excursion, items, cell.globalIndex)

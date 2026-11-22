@@ -11,6 +11,7 @@ import {
 } from 'vue';
 import type { Excursion, ExcursionLeg, Spot } from '../api/types';
 import {
+  formatLegDistance,
   formatTravelDuration,
   formatTravelDurationParts,
   travelDurationMinutes,
@@ -431,6 +432,7 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
     getTourLeg,
     getLegDuration,
     getLegDurationParts,
+    formatLegDistance,
     getLegTooltip,
     getTourLayover,
     recomputeTourLine,
@@ -480,6 +482,12 @@ export function getLegTooltip(leg: ExcursionLeg, fromSpot: Spot, toSpot: Spot): 
     parts.push(`(${dur})`);
   }
 
+  const dist = formatLegDistance(leg.distance_meters);
+
+  if (dist) {
+    parts.push(`· ${dist}`);
+  }
+
   if (leg.amount != null) {
     parts.push(`${leg.amount.toFixed(2).replace('.', ',')}\u00A0€`);
   }
@@ -488,3 +496,5 @@ export function getLegTooltip(leg: ExcursionLeg, fromSpot: Spot, toSpot: Spot): 
   parts.push('• Klicken zum Bearbeiten');
   return parts.join(' ');
 }
+
+export { formatLegDistance };

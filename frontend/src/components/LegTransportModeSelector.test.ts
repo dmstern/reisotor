@@ -110,4 +110,40 @@ describe('LegTransportModeSelector', () => {
 
     cleanUp();
   });
+
+  it('renders custom dropdown trigger with Tabler SVG icon and selects option on click', async () => {
+    let selectedTransit = '';
+    const { cleanUp } = mountTestApp(LegTransportModeSelector, {
+      category: 'ÖPNV',
+      transitType: 'Zug',
+      transitOptions: DEFAULT_TRANSIT_OPTIONS,
+      onSelectTransit: (type: string) => {
+        selectedTransit = type;
+      },
+    });
+    await nextTick();
+
+    const trigger = document.querySelector('.transit-trigger') as HTMLButtonElement;
+    expect(trigger).not.toBeNull();
+    expect(trigger.querySelector('svg')).not.toBeNull();
+    expect(trigger.textContent).toContain('Zug');
+
+    trigger.click();
+    await nextTick();
+
+    const menu = document.querySelector('.transit-menu');
+    expect(menu).not.toBeNull();
+
+    const items = Array.from(document.querySelectorAll('.transit-menu .dropdown-item'));
+    const busItem = items.find((el) => el.textContent?.includes('Bus')) as HTMLElement;
+    expect(busItem).toBeDefined();
+    expect(busItem.querySelector('svg')).not.toBeNull();
+
+    busItem.click();
+    await nextTick();
+
+    expect(selectedTransit).toBe('Bus');
+
+    cleanUp();
+  });
 });

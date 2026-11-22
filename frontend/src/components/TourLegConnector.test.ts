@@ -36,6 +36,7 @@ describe('TourLegConnector', () => {
     departure_time: '10:00',
     arrival_time: '11:15',
     amount: 14.5,
+    distance_meters: 15400,
   };
 
   function render(props: any) {
@@ -46,7 +47,7 @@ describe('TourLegConnector', () => {
     return renderToString(app);
   }
 
-  it('renders horizontal connector with existing leg details', async () => {
+  it('renders horizontal connector with existing leg details and distance', async () => {
     const html = await render({
       variant: 'horizontal',
       fromSpot: dummyFromSpot,
@@ -59,6 +60,10 @@ describe('TourLegConnector', () => {
     expect(html).toContain('is-horizontal-leg');
     expect(html).toContain('10:00–11:15');
     expect(html).toContain('14,50');
+    expect(html).toContain('15\u00A0km');
+    expect(html).toContain('leg-pill-distance');
+    expect(html).toContain('<svg');
+    expect(html).not.toContain('🚆');
   });
 
   it('renders horizontal add button when leg does not exist', async () => {
@@ -88,6 +93,10 @@ describe('TourLegConnector', () => {
     expect(html).toContain('is-row-break');
     expect(html).toContain('Zug');
     expect(html).toContain('14,50');
+    expect(html).toContain('15\u00A0km');
+    expect(html).toContain('leg-pill-distance');
+    expect(html).toContain('<svg');
+    expect(html).not.toContain('🚆');
   });
 
   it('renders row-break add button when leg does not exist', async () => {

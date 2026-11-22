@@ -341,7 +341,8 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
                     )
                   "
                   :size="12"
-                  group="categories"
+                  group="actions"
+                  force-style="icons"
                 />
                 {{
                   formatTravelDuration(

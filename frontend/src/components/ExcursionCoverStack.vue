@@ -33,7 +33,8 @@ defineProps<{
             ? travelTypeIconDef(excursion.transport_type)
             : SECTION_ICON_DEFS.excursions
         "
-        group="categories"
+        :group="excursion.role ? 'actions' : 'categories'"
+        :force-style="excursion.role ? 'icons' : undefined"
       />
     </div>
 
