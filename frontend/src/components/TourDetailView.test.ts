@@ -196,7 +196,7 @@ describe('TourDetailView', () => {
       travelItems: [],
     });
 
-    expect(html).toContain('class="btn btn--ghost btn--xs"');
+    expect(html).toContain('class="btn btn--ghost btn--sm"');
     expect(html).toContain('title="Überwiegend klar (22 °C) – Tagesverlauf anzeigen"');
   });
 });
