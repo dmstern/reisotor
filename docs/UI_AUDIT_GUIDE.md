@@ -213,6 +213,7 @@ Jeder Prüfdurchlauf analysiert systematisch folgende fünf Kriterien:
    - Öffnen sich alle Dropdowns, Kontext-Menüs, Popovers und Filter-Sheets vollständig?
    - Werden Menüs durch `overflow: hidden` auf umliegenden Containern abgeschnitten?
    - Stimmen Z-Indizes gegenüber Sticky-Headern und Kartenelementen?
+   - Bleiben Modal-Footer-Buttons (`.actions-row`) auf Desktop horizontal (`row`) angeordnet, statt durch verschachtelte `container-type: inline-size`-Wrapper in den mobilen Stapelmodus zu kippen?
 3. **Interaktionen, Hover- & Focus-States:**
    - Besitzen interaktive Kacheln, Buttons und Zeilen sichtbare, ruhige `:hover`- und `:focus-visible`-Zustände?
    - Werden Touch-Targets von mindestens 44x44px auf Mobile eingehalten (`expectMinTouchTarget`)?
