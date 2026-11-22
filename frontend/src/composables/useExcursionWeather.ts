@@ -23,10 +23,19 @@ export interface UseExcursionWeatherOptions {
   resolvedStations: MaybeRefOrGetter<ExcursionStation[]>;
 }
 
+export interface ExcursionWeatherLocation {
+  lat: number;
+  lng: number;
+  label: string;
+}
+
 export interface UseExcursionWeatherReturn {
   mappedStations: ComputedRef<ExcursionStation[]>;
   weatherSummary: Ref<WeatherRangeSummary | null>;
   statusDateLabel: ComputedRef<string>;
+  primaryWeatherDay: Ref<DailyWeather | null>;
+  primaryWeatherDays: Ref<DailyWeather[]>;
+  primaryWeatherLocation: Ref<ExcursionWeatherLocation | null>;
 }
 
 export function useExcursionWeather(
@@ -40,6 +49,9 @@ export function useExcursionWeather(
   });
 
   const weatherSummary = ref<WeatherRangeSummary | null>(null);
+  const primaryWeatherDay = ref<DailyWeather | null>(null);
+  const primaryWeatherDays = ref<DailyWeather[]>([]);
+  const primaryWeatherLocation = ref<ExcursionWeatherLocation | null>(null);
 
   watch(
     () => {
@@ -47,12 +59,16 @@ export function useExcursionWeather(
       return [
         excursion.date,
         excursion.trip_id,
+        excursion.title,
         mappedStations.value,
         weatherProvider.model,
       ] as const;
     },
-    async ([date, tripId, stations, model]) => {
+    async ([date, tripId, tourTitle, stations, model]) => {
       weatherSummary.value = null;
+      primaryWeatherDay.value = null;
+      primaryWeatherDays.value = [];
+      primaryWeatherLocation.value = null;
 
       if (!date || !stations.length) {
         return;
@@ -80,6 +96,16 @@ export function useExcursionWeather(
 
           if (match) {
             stationWeathers.push(match);
+
+            if (!primaryWeatherDay.value) {
+              primaryWeatherDay.value = match;
+              primaryWeatherDays.value = days;
+              primaryWeatherLocation.value = {
+                lat: st.lat,
+                lng: st.lng,
+                label: st.title || tourTitle || 'Reiseziel',
+              };
+            }
           }
         }
 
@@ -100,5 +126,8 @@ export function useExcursionWeather(
     mappedStations,
     weatherSummary,
     statusDateLabel,
+    primaryWeatherDay,
+    primaryWeatherDays,
+    primaryWeatherLocation,
   };
 }

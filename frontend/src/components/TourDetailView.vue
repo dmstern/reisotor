@@ -15,7 +15,9 @@ import TourRoleBadge from './TourRoleBadge.vue';
 import ExcursionDoneStatus from './ExcursionDoneStatus.vue';
 import ExcursionMapLinks from './ExcursionMapLinks.vue';
 import LinkedDiaryPills from './LinkedDiaryPills.vue';
+import Button from './primitives/Button.vue';
 import WeatherIcon from './WeatherIcon.vue';
+import WeatherDayDetailDialog from './WeatherDayDetailDialog.vue';
 import AppIcon from './AppIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { summarizeTourLegsByTransport } from '../utils/travelDuration';
@@ -70,10 +72,19 @@ const {
   travelItems: () => props.travelItems,
 });
 
-const { weatherSummary } = useExcursionWeather({
-  excursion: () => props.excursion,
-  resolvedStations: () => resolvedStations.value,
-});
+const { weatherSummary, primaryWeatherDay, primaryWeatherDays, primaryWeatherLocation } =
+  useExcursionWeather({
+    excursion: () => props.excursion,
+    resolvedStations: () => resolvedStations.value,
+  });
+
+const isWeatherDialogOpen = ref(false);
+const selectedWeatherDate = ref('');
+
+function openWeatherDialog() {
+  selectedWeatherDate.value = props.excursion.date || '';
+  isWeatherDialogOpen.value = true;
+}
 
 const timeLabel = computed(() => {
   if (effectiveDepartureTime.value) {
@@ -168,15 +179,18 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
             </span>
           </div>
 
-          <div
+          <Button
             v-if="weatherSummary"
+            variant="ghost"
+            size="xs"
             class="tour-detail-weather"
-            :title="`${weatherLabel} (${weatherSummary.tempLabel})`"
-            :aria-label="`Wetter: ${weatherLabel}, ${weatherSummary.tempLabel}`"
+            :title="`${weatherLabel} (${weatherSummary.tempLabel}) – Tagesverlauf anzeigen`"
+            :aria-label="`Wetter: ${weatherLabel}, ${weatherSummary.tempLabel} – Tagesverlauf anzeigen`"
+            @click="openWeatherDialog"
           >
             <WeatherIcon :code="weatherSummary.weatherCode" :size="22" aria-hidden="true" />
             <span class="tour-detail-weather-temp">{{ weatherSummary.tempLabel }}</span>
-          </div>
+          </Button>
         </div>
 
         <div
@@ -265,6 +279,17 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
     <div class="tour-detail-stations">
       <slot name="stations" />
     </div>
+
+    <WeatherDayDetailDialog
+      v-model="isWeatherDialogOpen"
+      :date="selectedWeatherDate || excursion.date || undefined"
+      :day="primaryWeatherDay"
+      :days="primaryWeatherDays"
+      :lat="primaryWeatherLocation?.lat ?? null"
+      :lng="primaryWeatherLocation?.lng ?? null"
+      :location-label="primaryWeatherLocation?.label || excursion.title"
+      @navigate-day="(d) => (selectedWeatherDate = d.date)"
+    />
   </article>
 </template>
 
@@ -388,7 +413,8 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
   gap: var(--space-1-5);
   flex-shrink: 0;
   white-space: nowrap;
-  color: var(--color-text);
+  padding: var(--space-2xs) var(--space-xs);
+  min-height: auto;
 }
 
 .tour-detail-weather-temp {

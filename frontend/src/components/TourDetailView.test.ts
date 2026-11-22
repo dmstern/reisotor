@@ -23,6 +23,9 @@ vi.mock('../composables/useExcursionWeather', async () => {
       mappedStations: ref([]),
       weatherSummary: ref(mockWeatherSummary),
       statusDateLabel: ref('15.07.'),
+      primaryWeatherDay: ref(null),
+      primaryWeatherDays: ref([]),
+      primaryWeatherLocation: ref(null),
     }),
   };
 });
@@ -112,7 +115,8 @@ describe('TourDetailView', () => {
     expect(html).toContain('Von Daniel');
     expect(html).toContain('1\u00A0Std. 30\u00A0Min.');
     expect(html).toContain('22 °C');
-    expect(html).toContain('aria-label="Wetter: Überwiegend klar, 22 °C"');
+    expect(html).toContain('aria-label="Wetter: Überwiegend klar, 22 °C – Tagesverlauf anzeigen"');
+    expect(html).toContain('tour-detail-weather');
     expect(html).not.toContain('2 Stationen');
     expect(html).not.toContain('Parkplatz → Wasserfall');
     expect(html).toContain('tour-detail-header-controls');
@@ -184,5 +188,20 @@ describe('TourDetailView', () => {
     expect(html).toContain('40\u00A0Min.');
     expect(html).toContain('Auto: 46\u00A0km (55\u00A0Min.)');
     expect(html).toContain('Straßenbahn: 40\u00A0Min.');
+  });
+
+  it('rendert den Wetter-Button als interaktives Element', async () => {
+    const html = await mountComponent({
+      excursion: mockExcursion,
+      creatorLabel: 'Daniel',
+      likeCount: 0,
+      liked: false,
+      comments: [],
+      stations: mockStations,
+      travelItems: [],
+    });
+
+    expect(html).toContain('class="btn btn--ghost btn--xs tour-detail-weather"');
+    expect(html).toContain('title="Überwiegend klar (22 °C) – Tagesverlauf anzeigen"');
   });
 });
