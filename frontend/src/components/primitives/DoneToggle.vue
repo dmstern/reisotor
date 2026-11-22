@@ -104,7 +104,7 @@ function onClick(event: MouseEvent) {
   gap: var(--control-gap-sm);
   min-height: var(--control-height-sm, 36px);
   background-color: var(--color-surface);
-  border: var(--border-width) solid var(--color-border-strong);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-pill);
   corner-shape: round;
   padding: var(--space-1) var(--space-md);
@@ -152,7 +152,7 @@ function onClick(event: MouseEvent) {
 
 .done-toggle.planned {
   color: var(--color-text);
-  border-color: var(--color-border-strong);
+  border-color: var(--color-border);
   background-color: var(--color-surface);
 }
 

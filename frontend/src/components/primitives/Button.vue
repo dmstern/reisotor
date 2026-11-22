@@ -351,7 +351,7 @@ a.btn.is-loading {
   @include control-physics-raised;
   background-color: var(--color-surface);
   color: var(--color-primary);
-  border: 1.5px solid var(--color-border-strong);
+  border: 1.5px solid var(--color-border);
 }
 
 .btn--secondary:focus-visible {
@@ -379,6 +379,7 @@ a.btn.is-loading {
 .btn--dashed {
   @include control-physics-progressive;
   background-color: transparent;
+  border-color: var(--color-border-strong);
 }
 
 .btn--secondary.btn--flat:focus-visible,
@@ -739,7 +740,7 @@ a.btn.is-loading {
   max-width: 100%;
   min-width: 0;
   padding: var(--space-1) var(--space-md) var(--space-1) var(--space-1-5);
-  border: var(--border-width) solid var(--color-border-strong);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-pill);
   corner-shape: round;
   background-color: var(--color-surface);
