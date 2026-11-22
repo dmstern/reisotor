@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createApp, h, nextTick } from 'vue';
+import { createApp, h, nextTick, ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import PackingEditModal from './PackingEditModal.vue';
 import { useAuthStore } from '../stores/auth';
+import { useTripStore } from '../stores/trip';
 import type { PackingItem, User } from '../api/types';
 
 vi.mock('../api/client', () => ({
@@ -138,5 +139,60 @@ describe('PackingEditModal', () => {
       1,
     ]);
     expect(getEmittedClose()).toBe(true);
+  });
+
+  it('markiert Gegenstände beim bloßen Öffnen oder Wechseln nicht als Entwurf (#855)', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const authStore = useAuthStore();
+    authStore.user = dummyUsers[0];
+    const tripStore = useTripStore();
+    tripStore.currentTripId = 1;
+
+    const currentItem = ref<PackingItem | null>(null);
+    const app = createApp({
+      render: () =>
+        h(PackingEditModal, {
+          item: currentItem.value,
+          users: dummyUsers,
+          categories: ['Kleidung', 'Elektronik'],
+          subcategories: ['Schwimmsachen'],
+          categoryRequired: false,
+          onSubmit: () => {},
+          onClose: () => {
+            currentItem.value = null;
+          },
+        }),
+    });
+    app.use(pinia);
+    app.mount(container);
+    await nextTick();
+
+    // 1. Ersten Gegenstand öffnen
+    currentItem.value = dummyItem;
+    await nextTick();
+    await Promise.resolve();
+    await Promise.resolve();
+    await nextTick();
+
+    expect(document.body.querySelector('.draft-status-bar')).toBeNull();
+
+    // 2. Schließen und zweiten Gegenstand öffnen
+    currentItem.value = null;
+    await nextTick();
+
+    currentItem.value = {
+      ...dummyItem,
+      id: 16,
+      label: 'Sonnenbrille',
+      category: 'Elektronik',
+      subcategory: '',
+    };
+    await nextTick();
+    await Promise.resolve();
+    await Promise.resolve();
+    await nextTick();
+
+    expect(document.body.querySelector('.draft-status-bar')).toBeNull();
   });
 });

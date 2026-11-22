@@ -37,12 +37,6 @@ const editForm = ref({
 
 const editLabelTouched = ref(false);
 
-const editDraft = useDraftAutosave(
-  () => `shopping:edit:${props.item?.id}`,
-  editForm,
-  computed(() => props.item !== null)
-);
-
 watch(
   () => props.item,
   (newItem) => {
@@ -59,6 +53,12 @@ watch(
     }
   },
   { immediate: true }
+);
+
+const editDraft = useDraftAutosave(
+  () => `shopping:edit:${props.item?.id}`,
+  editForm,
+  computed(() => props.item !== null)
 );
 
 function handleSubmit() {
