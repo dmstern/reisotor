@@ -10,7 +10,6 @@ import RichTextDisplay from './RichTextDisplay.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import SocialRow from './SocialRow.vue';
 import Accordion from './primitives/Accordion.vue';
-import Badge from './primitives/Badge.vue';
 import FileAttachments from './FileAttachments.vue';
 import TourRoleBadge from './TourRoleBadge.vue';
 import ExcursionDoneStatus from './ExcursionDoneStatus.vue';
@@ -19,7 +18,7 @@ import LinkedDiaryPills from './LinkedDiaryPills.vue';
 import WeatherIcon from './WeatherIcon.vue';
 import AppIcon from './AppIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
-import { ACTION_ICONS } from '../utils/actionIcons';
+import { weatherCodeMeta } from '../utils/weather';
 
 const props = withDefaults(
   defineProps<{
@@ -67,10 +66,12 @@ const { weatherSummary } = useExcursionWeather({
   resolvedStations: () => resolvedStations.value,
 });
 
-const hasInfoBadges = computed(() =>
-  Boolean(
-    props.creatorLabel || travelDuration.value || weatherSummary.value || linkedTracks.value.length
-  )
+const hasMeta = computed(() =>
+  Boolean(props.creatorLabel || travelDuration.value || weatherSummary.value)
+);
+
+const weatherLabel = computed(() =>
+  weatherSummary.value ? weatherCodeMeta(weatherSummary.value.weatherCode).label : ''
 );
 </script>
 
@@ -83,46 +84,56 @@ const hasInfoBadges = computed(() =>
     }"
   >
     <header class="tour-detail-header">
-      <div class="tour-detail-header-top">
-        <component :is="headingTag" class="tour-detail-title" :title="excursion.title">
-          {{ excursion.title }}
-        </component>
+      <div class="tour-detail-heading-group">
+        <div class="tour-detail-header-top">
+          <component :is="headingTag" class="tour-detail-title" :title="excursion.title">
+            {{ excursion.title }}
+          </component>
 
-        <div class="tour-detail-badges">
-          <TourRoleBadge :role="excursion.role" translucent />
-          <PendingSyncBadge v-if="excursion._pending" />
-          <EditButton
-            size="sm"
-            shape="squircle"
-            variant="ghost"
-            class="tour-edit-btn"
-            @click="emit('edit', excursion)"
-          />
+          <div class="tour-detail-badges">
+            <TourRoleBadge :role="excursion.role" translucent />
+            <PendingSyncBadge v-if="excursion._pending" />
+            <EditButton
+              size="sm"
+              shape="squircle"
+              variant="ghost"
+              class="tour-edit-btn"
+              @click="emit('edit', excursion)"
+            />
+          </div>
         </div>
-      </div>
 
-      <div v-if="hasInfoBadges" class="tour-detail-info-badges">
-        <Badge v-if="creatorLabel" variant="default" size="sm" class="tour-detail-info-badge">
-          <span class="tour-detail-info-badge-text">Von {{ creatorLabel }}</span>
-        </Badge>
-        <Badge v-if="travelDuration" variant="default" size="sm" class="tour-detail-info-badge">
-          <AppIcon :icon="FORM_FIELD_ICONS.time" :size="13" group="formFields" />
-          {{ travelDuration }}
-        </Badge>
-        <Badge v-if="weatherSummary" variant="default" size="sm" class="tour-detail-info-badge">
-          <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-          {{ weatherSummary.tempLabel }}
-        </Badge>
-        <Badge
-          v-if="linkedTracks.length"
-          variant="default"
-          size="sm"
-          class="tour-detail-info-badge"
-        >
-          <AppIcon :icon="ACTION_ICONS.history" :size="13" group="actions" />
-          {{ linkedTracks.length }}
-          {{ linkedTracks.length === 1 ? 'Aufzeichnung' : 'Aufzeichnungen' }}
-        </Badge>
+        <div v-if="hasMeta" class="tour-detail-meta-row">
+          <div v-if="creatorLabel || travelDuration" class="tour-detail-meta">
+            <span v-if="creatorLabel" class="tour-detail-author">Von {{ creatorLabel }}</span>
+            <span
+              v-if="creatorLabel && travelDuration"
+              class="tour-detail-meta-sep"
+              aria-hidden="true"
+            >
+              ·
+            </span>
+            <span v-if="travelDuration" class="tour-detail-duration">
+              <AppIcon
+                :icon="FORM_FIELD_ICONS.time"
+                :size="13"
+                group="formFields"
+                aria-hidden="true"
+              />
+              <span class="tour-detail-meta-text">{{ travelDuration }}</span>
+            </span>
+          </div>
+
+          <div
+            v-if="weatherSummary"
+            class="tour-detail-weather"
+            :title="`${weatherLabel} (${weatherSummary.tempLabel})`"
+            :aria-label="`Wetter: ${weatherLabel}, ${weatherSummary.tempLabel}`"
+          >
+            <WeatherIcon :code="weatherSummary.weatherCode" :size="22" aria-hidden="true" />
+            <span class="tour-detail-weather-temp">{{ weatherSummary.tempLabel }}</span>
+          </div>
+        </div>
       </div>
 
       <div class="tour-detail-header-controls">
@@ -220,6 +231,13 @@ const hasInfoBadges = computed(() =>
   @include divider-engraved('bottom');
 }
 
+.tour-detail-heading-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+  min-width: 0;
+}
+
 .tour-detail-header-top {
   display: flex;
   align-items: flex-start;
@@ -250,29 +268,66 @@ const hasInfoBadges = computed(() =>
   flex-shrink: 0;
 }
 
-.tour-detail-info-badges {
+.tour-detail-meta-row {
   display: flex;
-  align-items: center;
+  align-items: safe center;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--space-xs);
+  gap: var(--space-xs) var(--space-md);
   min-width: 0;
 }
 
-.tour-detail-info-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
+.tour-detail-meta {
+  display: flex;
+  align-items: safe center;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-1-5);
+  min-width: 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-muted);
+}
+
+.tour-detail-author {
+  min-width: 0;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: 500;
+  white-space: nowrap;
+  font-weight: 600;
 }
 
-.tour-detail-info-badge-text {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.tour-detail-meta-sep {
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.tour-detail-duration {
+  display: inline-flex;
+  align-items: safe center;
+  gap: var(--space-xs);
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tour-detail-meta-text {
+  text-box: trim-both cap alphabetic;
+}
+
+.tour-detail-weather {
+  display: inline-flex;
+  align-items: safe center;
+  gap: var(--space-1-5);
+  flex-shrink: 0;
+  white-space: nowrap;
+  color: var(--color-text);
+}
+
+.tour-detail-weather-temp {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  line-height: var(--line-height-none);
+  text-box: trim-both cap alphabetic;
 }
 
 .tour-detail-header-controls {

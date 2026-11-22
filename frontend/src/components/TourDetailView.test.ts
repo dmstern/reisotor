@@ -85,9 +85,12 @@ describe('TourDetailView', () => {
     return renderToString(app);
   }
 
-  it('rendert Header mit Info-Badges, Wetter-Badge, DoneStatus und ohne Stations-Meta im Header', async () => {
+  it('rendert Header mit dezenter Meta-Zeile, offener Wetter-Grafik, DoneStatus und ohne Info-Badges oder Track-Counter', async () => {
     const html = await mountComponent({
-      excursion: mockExcursion,
+      excursion: {
+        ...mockExcursion,
+        tracks: [{ id: 99, title: 'GPX-Track' }],
+      } as unknown as Excursion,
       creatorLabel: 'Daniel',
       likeCount: 3,
       liked: true,
@@ -98,11 +101,18 @@ describe('TourDetailView', () => {
 
     expect(html).toContain('tour-detail-view');
     expect(html).toContain('Wanderung zum Wasserfall');
-    expect(html).toContain('tour-detail-info-badges');
-    expect(html).toContain('tour-detail-info-badge');
+    expect(html).toContain('tour-detail-meta-row');
+    expect(html).toContain('tour-detail-meta');
+    expect(html).toContain('tour-detail-author');
+    expect(html).toContain('tour-detail-duration');
+    expect(html).toContain('tour-detail-weather');
+    expect(html).not.toContain('tour-detail-info-badges');
+    expect(html).not.toContain('tour-detail-info-badge');
+    expect(html).not.toContain('1 Aufzeichnung');
     expect(html).toContain('Von Daniel');
     expect(html).toContain('1\u00A0Std. 30\u00A0Min.');
     expect(html).toContain('22 °C');
+    expect(html).toContain('aria-label="Wetter: Überwiegend klar, 22 °C"');
     expect(html).not.toContain('2 Stationen');
     expect(html).not.toContain('Parkplatz → Wasserfall');
     expect(html).toContain('tour-detail-header-controls');
