@@ -475,7 +475,7 @@ function dismissPwaInstall() {
   transform-origin: top right;
   width: min(360px, calc(100vw - 2 * var(--space-4)));
   max-height: min(70vh, 480px);
-  border: 1px solid var(--color-border-strong);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   z-index: var(--z-popover, 1100);
