@@ -597,8 +597,8 @@ function clearFilters() {
   position: relative;
 }
 
-.bar-icon-btn {
-  @include touch-target;
+.search-filter-bar .bar-icon-btn {
+  @include touch-target($expand: true);
   position: relative;
   width: var(--input-width, 46px);
   height: var(--input-height, 46px);
@@ -606,8 +606,7 @@ function clearFilters() {
   min-height: var(--input-height, 46px);
 }
 
-/* Responsiver Fallback auf schmalen Viewports und Containern (<= 360px) (#684) */
-@include media-down('mobile-compact') {
+@mixin compact-search-filter-bar {
   .search-filter-bar {
     gap: var(--space-1-5);
   }
@@ -618,7 +617,7 @@ function clearFilters() {
     padding: 0 32px 0 34px;
   }
 
-  .bar-icon-btn {
+  .search-filter-bar .bar-icon-btn {
     width: var(--input-width-sm, 38px);
     height: var(--input-height-sm, 38px);
     min-width: var(--input-width-sm, 38px);
@@ -626,23 +625,13 @@ function clearFilters() {
   }
 }
 
+/* Responsiver Fallback auf schmalen Viewports und Containern (<= 360px) (#684) */
+@include media-down('mobile-compact') {
+  @include compact-search-filter-bar;
+}
+
 @include container-spots-col-down('mobile-compact') {
-  .search-filter-bar {
-    gap: var(--space-1-5);
-  }
-
-  .search-input-wrapper .search-input {
-    height: var(--input-height-sm, 38px);
-    min-height: var(--input-height-sm, 38px);
-    padding: 0 32px 0 34px;
-  }
-
-  .bar-icon-btn {
-    width: var(--input-width-sm, 38px);
-    height: var(--input-height-sm, 38px);
-    min-width: var(--input-width-sm, 38px);
-    min-height: var(--input-height-sm, 38px);
-  }
+  @include compact-search-filter-bar;
 }
 
 :global(.filter-popover-menu) {
