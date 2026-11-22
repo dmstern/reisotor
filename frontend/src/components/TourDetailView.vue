@@ -183,13 +183,12 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
             v-if="weatherSummary"
             variant="ghost"
             size="xs"
-            class="tour-detail-weather"
             :title="`${weatherLabel} (${weatherSummary.tempLabel}) – Tagesverlauf anzeigen`"
             :aria-label="`Wetter: ${weatherLabel}, ${weatherSummary.tempLabel} – Tagesverlauf anzeigen`"
             @click="openWeatherDialog"
           >
             <WeatherIcon :code="weatherSummary.weatherCode" :size="22" aria-hidden="true" />
-            <span class="tour-detail-weather-temp">{{ weatherSummary.tempLabel }}</span>
+            <span>{{ weatherSummary.tempLabel }}</span>
           </Button>
         </div>
 
@@ -404,23 +403,6 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
 }
 
 .tour-detail-meta-text {
-  text-box: trim-both cap alphabetic;
-}
-
-.tour-detail-weather {
-  display: inline-flex;
-  align-items: safe center;
-  gap: var(--space-1-5);
-  flex-shrink: 0;
-  white-space: nowrap;
-  padding: var(--space-2xs) var(--space-xs);
-  min-height: auto;
-}
-
-.tour-detail-weather-temp {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  line-height: var(--line-height-none);
   text-box: trim-both cap alphabetic;
 }
 
