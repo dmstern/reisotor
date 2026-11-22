@@ -1,15 +1,26 @@
 import type { Meta, StoryObj } from '@storybook/vue3';
+import { ref } from 'vue';
 import Button from '../components/primitives/Button.vue';
 import IconButton from '../components/primitives/IconButton.vue';
 import DropdownMenu from '../components/primitives/DropdownMenu.vue';
+import DropdownMenuItem from '../components/primitives/DropdownMenuItem.vue';
+import PickerMenu from '../components/primitives/PickerMenu.vue';
 import DoneToggle from '../components/primitives/DoneToggle.vue';
 import CollapsibleFieldset from '../components/primitives/CollapsibleFieldset.vue';
 import LinkedEntityButton from '../components/primitives/LinkedEntityButton.vue';
 import InfoPopover from '../components/primitives/InfoPopover.vue';
+import Input from '../components/primitives/Input.vue';
+import Textarea from '../components/primitives/Textarea.vue';
+import Select from '../components/primitives/Select.vue';
+import Checkbox from '../components/primitives/Checkbox.vue';
+import CheckboxCard from '../components/primitives/CheckboxCard.vue';
+import Radio from '../components/primitives/Radio.vue';
+import RadioCard from '../components/primitives/RadioCard.vue';
+import ToggleSwitch from '../components/primitives/ToggleSwitch.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 
 const meta: Meta = {
-  title: 'Design System/Button & Trigger Matrix',
+  title: 'Design System/Button, Form & Trigger Matrix',
   tags: ['autodocs'],
 };
 
@@ -130,7 +141,7 @@ export const TriggerFamilyBaseline: Story = {
     template: `
       <div style="display: flex; flex-direction: column; gap: 20px; max-width: 960px;">
         <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">
-          Alle kompakten Card-Elemente und Trigger sind initial flach, teilen exakt 36px Höhe (sm) bzw. 30px (xs) und dieselbe 2-Stufen-Hover-Physik:
+          Alle kompakten Card-Elemente und Trigger teilen exakt 36px Höhe (sm) bzw. 30px (xs) und dieselbe 2-Stufen-Hover-Physik (<code>DropdownMenu</code>, <code>DoneToggle</code> und <code>LinkedEntityButton</code> initial 3D-erhaben; <code>tonal</code>, <code>ghost</code> und <code>CollapsibleFieldset</code> initial flach):
         </p>
         <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px; border: 1px dashed var(--color-border-strong); border-radius: 14px; background: var(--color-surface);">
           <DropdownMenu label="Sortieren" size="sm" :icon="ACTION_ICONS.sort" />
@@ -145,8 +156,211 @@ export const TriggerFamilyBaseline: Story = {
         </div>
 
         <CollapsibleFieldset label="Erweiterte Optionen" :count="3" :icon="ACTION_ICONS.filterSettings">
-          <p style="margin: 0; font-size: 0.85rem;">Inhalt im CollapsibleFieldset (Toggle nutzt Button secondary pill sm = 36px).</p>
+          <p style="margin: 0; font-size: 0.85rem;">Inhalt im CollapsibleFieldset (Toggle nutzt Button secondary pill sm flat = 36px).</p>
         </CollapsibleFieldset>
+      </div>
+    `,
+  }),
+};
+
+export const FormInputsAndControls: Story = {
+  name: '4. Formular-Controls & Auswahl-Primitives',
+  render: () => ({
+    components: {
+      Input,
+      Textarea,
+      Select,
+      DropdownMenu,
+      DropdownMenuItem,
+      PickerMenu,
+      Checkbox,
+      CheckboxCard,
+      Radio,
+      RadioCard,
+      ToggleSwitch,
+      CollapsibleFieldset,
+    },
+    setup() {
+      const textValue = ref('Lissabon');
+      const notesValue = ref('Aussichtspunkt bei Sonnenuntergang besuchen.');
+      const selectValue = ref('train');
+      const dropdownOpen = ref(false);
+      const selectedMode = ref('auto');
+      const checkboxValue = ref(true);
+      const checkboxCardValue = ref(true);
+      const radioValue = ref('car');
+      const radioCardValue = ref('shared');
+      const switchValue = ref(true);
+
+      const selectOptions = [
+        { value: 'train', label: 'Zug / Bahn' },
+        { value: 'car', label: 'Auto' },
+        { value: 'bike', label: 'Fahrrad' },
+      ];
+
+      return {
+        ACTION_ICONS,
+        textValue,
+        notesValue,
+        selectValue,
+        selectOptions,
+        dropdownOpen,
+        selectedMode,
+        checkboxValue,
+        checkboxCardValue,
+        radioValue,
+        radioCardValue,
+        switchValue,
+      };
+    },
+    template: `
+      <div style="display: flex; flex-direction: column; gap: 24px; max-width: 960px;">
+        <section>
+          <h3 style="margin: 0 0 10px; font-size: 0.9rem; color: var(--color-text-muted);">
+            Eingabefelder (initial flach · Inset-Schacht bei Fokus) vs. DropdownMenu (initial 3D-erhaben)
+          </h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; align-items: start;">
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <span style="font-size: 0.78rem; font-weight: 600; color: var(--color-text-muted);">Input (Standard · Pill · Zustände)</span>
+              <Input v-model="textValue" placeholder="Reiseziel…" aria-label="Standard Input" />
+              <Input model-value="Suche…" shape="pill" size="sm" aria-label="Pill Input" />
+              <Input model-value="Ungültig" invalid aria-label="Ungültiger Input" />
+              <Input model-value="Geändert" modified aria-label="Geänderter Input" />
+              <Input model-value="Deaktiviert" disabled aria-label="Deaktivierter Input" />
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <span style="font-size: 0.78rem; font-weight: 600; color: var(--color-text-muted);">Select (flach) vs. DropdownMenu (3D)</span>
+              <Select v-model="selectValue" :options="selectOptions" aria-label="Standard Select" />
+              <Select v-model="selectValue" :options="selectOptions" size="sm" aria-label="Kleiner Select" />
+              <Select v-model="selectValue" :options="selectOptions" invalid aria-label="Ungültiger Select" />
+              <Select v-model="selectValue" :options="selectOptions" disabled aria-label="Deaktivierter Select" />
+              <DropdownMenu
+                block
+                :open="dropdownOpen"
+                :label="selectedMode === 'auto' ? 'Automatisch (System)' : 'Hell'"
+                :icon="ACTION_ICONS.filter"
+                @toggle="dropdownOpen = !dropdownOpen"
+              >
+                <PickerMenu position="absolute" @close="dropdownOpen = false">
+                  <DropdownMenuItem
+                    label="Automatisch (System)"
+                    :active="selectedMode === 'auto'"
+                    @click="selectedMode = 'auto'; dropdownOpen = false"
+                  />
+                  <DropdownMenuItem
+                    label="Hell"
+                    :active="selectedMode === 'light'"
+                    @click="selectedMode = 'light'; dropdownOpen = false"
+                  />
+                </PickerMenu>
+              </DropdownMenu>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <span style="font-size: 0.78rem; font-weight: 600; color: var(--color-text-muted);">Textarea (Standard · Invalid · Modified · Disabled)</span>
+              <Textarea v-model="notesValue" :rows="2" placeholder="Notizen…" aria-label="Standard Textarea" />
+              <Textarea model-value="Fehlerhafte Eingabe" :rows="2" invalid aria-label="Ungültige Textarea" />
+              <Textarea model-value="Bearbeiteter Text" :rows="2" modified aria-label="Geänderte Textarea" />
+              <Textarea model-value="Nur lesbar / deaktiviert" :rows="2" disabled aria-label="Deaktivierte Textarea" />
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3 style="margin: 0 0 10px; font-size: 0.9rem; color: var(--color-text-muted);">
+            Checkbox, Radio &amp; ToggleSwitch
+          </h3>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 20px; padding: 14px; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-surface);">
+            <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+              <Checkbox v-model="checkboxValue" aria-label="Checkbox aktiv" />
+              <span style="font-size: 0.875rem;">Checkbox ({{ checkboxValue ? 'an' : 'aus' }})</span>
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 8px; cursor: not-allowed; opacity: 0.6;">
+              <Checkbox :model-value="true" disabled aria-label="Checkbox deaktiviert" />
+              <span style="font-size: 0.875rem;">Deaktiviert</span>
+            </label>
+
+            <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+              <Radio v-model="radioValue" value="car" name="matrix-radio" aria-label="Auto" />
+              <span style="font-size: 0.875rem;">Radio Auto</span>
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+              <Radio v-model="radioValue" value="train" name="matrix-radio" aria-label="Bahn" />
+              <span style="font-size: 0.875rem;">Radio Bahn</span>
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 8px; cursor: not-allowed; opacity: 0.6;">
+              <Radio :model-value="'disabled'" value="disabled" disabled name="matrix-radio-dis" aria-label="Radio deaktiviert" />
+              <span style="font-size: 0.875rem;">Deaktiviert</span>
+            </label>
+
+            <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+              <ToggleSwitch v-model="switchValue" aria-label="Toggle Switch" />
+              <span style="font-size: 0.875rem;">Switch ({{ switchValue ? 'an' : 'aus' }})</span>
+            </label>
+            <ToggleSwitch :model-value="false" disabled aria-label="Switch deaktiviert" />
+          </div>
+        </section>
+
+        <section>
+          <h3 style="margin: 0 0 10px; font-size: 0.9rem; color: var(--color-text-muted);">
+            CheckboxCard &amp; RadioCard (3D-Referenz für Light- &amp; Dark-Mode)
+          </h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;">
+            <div>
+              <CheckboxCard
+                v-model="checkboxCardValue"
+                variant="card"
+                label="CheckboxCard (card)"
+                description="Referenz für klare Kanten & 3D-Tiefe in Light & Dark Mode."
+                :icon="ACTION_ICONS.done"
+              />
+              <CheckboxCard
+                :model-value="false"
+                variant="muted"
+                label="CheckboxCard (muted)"
+                description="Kompakte Variante für Dialoge & Popovers."
+              />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <RadioCard
+                v-model="radioCardValue"
+                value="shared"
+                name="matrix-radiocard"
+                variant="card"
+                label="RadioCard (ausgewählt)"
+                description="Für alle Mitreisenden sichtbar."
+                :icon="ACTION_ICONS.shared"
+              />
+              <RadioCard
+                v-model="radioCardValue"
+                value="private"
+                name="matrix-radiocard"
+                variant="muted"
+                label="RadioCard (muted)"
+                description="Nur für mich sichtbar."
+                :icon="ACTION_ICONS.private"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3 style="margin: 0 0 10px; font-size: 0.9rem; color: var(--color-text-muted);">
+            CollapsibleFieldset (geschlossen &amp; geöffnet — Toggle bleibt flach)
+          </h3>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <CollapsibleFieldset label="Geschlossenes Fieldset" :icon="ACTION_ICONS.filterSettings">
+              <Input model-value="Eingebettetes Feld" aria-label="Eingebettetes Feld" />
+            </CollapsibleFieldset>
+            <CollapsibleFieldset label="Geöffnetes Fieldset" :open-initial="true" count="(2 Felder)" :icon="ACTION_ICONS.edit">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                <Input model-value="Feld im Fieldset" aria-label="Feld im Fieldset" />
+                <Select v-model="selectValue" :options="selectOptions" aria-label="Select im Fieldset" />
+              </div>
+            </CollapsibleFieldset>
+          </div>
+        </section>
       </div>
     `,
   }),

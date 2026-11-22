@@ -96,7 +96,7 @@ function onClick(event: MouseEvent) {
 
 <style lang="scss" scoped>
 .done-toggle {
-  @include control-physics-progressive('&:active:not(:disabled), &.is-dropdown-open');
+  @include control-physics-raised('&:active:not(:disabled), &.is-dropdown-open');
   @include touch-target($expand: true);
   position: relative;
   display: inline-flex;
@@ -104,7 +104,7 @@ function onClick(event: MouseEvent) {
   gap: var(--control-gap-sm);
   min-height: var(--control-height-sm, 36px);
   background-color: var(--color-surface);
-  border: var(--border-width) solid var(--color-border-strong);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-pill);
   corner-shape: round;
   padding: var(--space-1) var(--space-md);
@@ -135,7 +135,7 @@ function onClick(event: MouseEvent) {
 .done-toggle:focus-visible {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
   outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo);
+  box-shadow: var(--focus-ring-halo), var(--shadow-control);
 }
 
 @include can-hover {
@@ -152,7 +152,7 @@ function onClick(event: MouseEvent) {
 
 .done-toggle.planned {
   color: var(--color-text);
-  border-color: var(--color-border-strong);
+  border-color: var(--color-border);
   background-color: var(--color-surface);
 }
 
