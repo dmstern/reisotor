@@ -85,22 +85,25 @@ const store = useBudgetStore();
 .row {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) 0;
-  @include divider-engraved('bottom');
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+  @include divider-engraved-row;
   flex-wrap: wrap;
   min-width: 0;
 }
 
-.row:last-child {
-  border-bottom: none;
-  box-shadow: none;
+.row:first-child:not(.new-highlight) {
+  padding-top: 0;
+}
+
+.row:last-child:not(.new-highlight) {
+  padding-bottom: 0;
 }
 
 .row-main {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xs);
+  gap: var(--space-xs);
   flex: 1 1 140px;
   min-width: 0;
 }
@@ -112,8 +115,9 @@ const store = useBudgetStore();
 
 .row-meta {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   min-width: 0;
@@ -142,13 +146,13 @@ const store = useBudgetStore();
 .row-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   flex-wrap: wrap;
   flex-shrink: 0;
 }
 
 .empty {
-  padding: var(--space-3) 0;
+  padding: var(--space-lg) 0;
   color: var(--color-text-muted);
   text-align: center;
 }

@@ -146,72 +146,74 @@ function onTotalSectionClick(e: MouseEvent) {
 
 <template>
   <Card class="pot-card" :class="{ 'is-collapsed': !isExpanded && hasCategories }">
-    <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
-    <div class="pot-head" :class="{ 'is-collapsible': hasCategories }" @click="onHeaderClick">
-      <div class="pot-title">
-        <h3>{{ displayBudgetName }}</h3>
-        <span v-if="store.users.length > 1" class="kind-badge">
-          <template v-if="budget.owner_id == null"
-            ><AppIcon :icon="ACTION_ICONS.shared" :size="14" group="actions" /> Geteilt</template
-          >
-          <template v-else
-            ><AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> Privat</template
-          >
-        </span>
-      </div>
-      <div class="pot-actions">
-        <EditButton
-          small
-          :icon="ACTION_ICONS.moneybagEdit"
-          aria-label="Budget bearbeiten"
-          @click="emit('edit', budget)"
-        />
-        <IconButton
-          v-if="hasCategories"
-          variant="ghost"
-          size="sm"
-          class="collapse-btn"
-          :class="{ 'is-open': isExpanded }"
-          :icon="ACTION_ICONS.chevronDown"
-          :aria-expanded="isExpanded"
-          :aria-controls="`budget-categories-${budget.id}`"
-          :aria-label="isExpanded ? 'Kategorien einklappen' : 'Kategorien ausklappen'"
-          :title="isExpanded ? 'Kategorien einklappen' : 'Kategorien ausklappen'"
-          @click.stop="toggleExpand"
-        />
-      </div>
-    </div>
-
-    <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
-    <div
-      class="total-section"
-      :class="{
-        'has-categories': hasCategories,
-        'is-collapsed': !isExpanded && hasCategories,
-      }"
-      @click="onTotalSectionClick"
-    >
-      <div class="total-row">
-        <BudgetMeter
-          label="Gesamt"
-          :icon="ACTION_ICONS.moneybag"
-          :spent="totalSpentForBudget"
-          :target="effectiveTarget"
-          :prominent="hasCategories"
-        />
-        <div class="category-edit total-edit">
-          <Input
-            :id="`budget-target-${budget.id}`"
-            v-model="targetInput"
-            type="number"
-            step="0.01"
-            size="sm"
-            class="category-amount-input"
-            :aria-label="`Ziel (gesamt) für ${displayBudgetName}`"
-            :placeholder="effectiveTarget > 0 ? String(effectiveTarget) : '0'"
-            @change="updateTargetAmount"
+    <div class="pot-top">
+      <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
+      <div class="pot-head" :class="{ 'is-collapsible': hasCategories }" @click="onHeaderClick">
+        <div class="pot-title">
+          <h3>{{ displayBudgetName }}</h3>
+          <span v-if="store.users.length > 1" class="kind-badge">
+            <template v-if="budget.owner_id == null"
+              ><AppIcon :icon="ACTION_ICONS.shared" :size="14" group="actions" /> Geteilt</template
+            >
+            <template v-else
+              ><AppIcon :icon="ACTION_ICONS.private" :size="14" group="actions" /> Privat</template
+            >
+          </span>
+        </div>
+        <div class="pot-actions">
+          <EditButton
+            small
+            :icon="ACTION_ICONS.moneybagEdit"
+            aria-label="Budget bearbeiten"
+            @click="emit('edit', budget)"
           />
-          <span v-if="hasCategories" class="btn-spacer" aria-hidden="true"></span>
+          <IconButton
+            v-if="hasCategories"
+            variant="ghost"
+            size="sm"
+            class="collapse-btn"
+            :class="{ 'is-open': isExpanded }"
+            :icon="ACTION_ICONS.chevronDown"
+            :aria-expanded="isExpanded"
+            :aria-controls="`budget-categories-${budget.id}`"
+            :aria-label="isExpanded ? 'Kategorien einklappen' : 'Kategorien ausklappen'"
+            :title="isExpanded ? 'Kategorien einklappen' : 'Kategorien ausklappen'"
+            @click.stop="toggleExpand"
+          />
+        </div>
+      </div>
+
+      <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
+      <div
+        class="total-section"
+        :class="{
+          'has-categories': hasCategories,
+          'is-collapsed': !isExpanded && hasCategories,
+        }"
+        @click="onTotalSectionClick"
+      >
+        <div class="total-row">
+          <BudgetMeter
+            label="Gesamt"
+            :icon="ACTION_ICONS.moneybag"
+            :spent="totalSpentForBudget"
+            :target="effectiveTarget"
+            :prominent="hasCategories"
+          />
+          <div class="category-edit total-edit">
+            <Input
+              :id="`budget-target-${budget.id}`"
+              v-model="targetInput"
+              type="number"
+              step="0.01"
+              size="sm"
+              class="category-amount-input"
+              :aria-label="`Ziel (gesamt) für ${displayBudgetName}`"
+              :placeholder="effectiveTarget > 0 ? String(effectiveTarget) : '0'"
+              @change="updateTargetAmount"
+            />
+            <span v-if="hasCategories" class="btn-spacer" aria-hidden="true"></span>
+          </div>
         </div>
       </div>
     </div>
@@ -368,21 +370,25 @@ function onTotalSectionClick(e: MouseEvent) {
 .pot-card {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 0;
   min-width: 0;
   width: 100%;
-  /* Schmaler als das globale .card-Padding (var(--space-4) = 24px): Pot-Karten stecken bereits in
-     der äußeren "Budgets"-Karte (siehe BudgetView.vue) - zwei volle Karten-Paddings ineinander
-     ließen auf schmalen Mobilbreiten zu wenig Platz für die Meter-Beschriftungen. */
-  padding: var(--space-3);
+  padding: var(--space-lg);
+}
+
+.pot-top {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 0;
 }
 
 .pot-head {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   min-width: 0;
 }
 
@@ -394,7 +400,7 @@ function onTotalSectionClick(e: MouseEvent) {
 .pot-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   flex-shrink: 0;
 }
 
@@ -434,14 +440,14 @@ function onTotalSectionClick(e: MouseEvent) {
 .kind-badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
 .btn-spacer {
-  width: var(--input-width-sm, 38px);
-  height: var(--input-height-sm, 38px);
+  width: calc(var(--control-height-sm, 36px) - var(--space-md) - var(--border-width, 1px));
+  height: var(--control-height-sm, 36px);
   flex-shrink: 0;
 }
 
@@ -455,7 +461,7 @@ function onTotalSectionClick(e: MouseEvent) {
   border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  padding: var(--space-1) var(--space-3);
+  padding: var(--space-sm) var(--space-md);
 }
 
 .total-section.is-collapsed {
@@ -476,32 +482,28 @@ function onTotalSectionClick(e: MouseEvent) {
   cursor: default;
 }
 
-.total-section.has-categories .total-row :deep(.meter-row) {
-  padding: var(--space-1) 0;
-}
-
 .categories-accordion {
   width: 100%;
-  margin-top: var(--space-2xs);
-}
-
-.categories-accordion:not(.is-expanded) {
-  margin-top: calc(-1 * var(--space-2));
+  margin-top: 0;
 }
 
 .categories-wrapper {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   min-width: 0;
+}
+
+.categories-accordion.is-expanded .categories-wrapper {
+  padding-top: var(--space-md);
 }
 
 .categories-header {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-1);
-  padding: 0 var(--space-1);
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 0;
 }
 
 .categories-title {
@@ -515,10 +517,10 @@ function onTotalSectionClick(e: MouseEvent) {
 .categories-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-md);
   border-left: 2px solid color-mix(in srgb, var(--color-primary) 20%, var(--color-border));
-  margin-left: var(--space-1);
-  padding-left: var(--space-2);
+  margin-left: 0;
+  padding-left: var(--space-md);
   min-width: 0;
 }
 
@@ -526,7 +528,7 @@ function onTotalSectionClick(e: MouseEvent) {
 .total-row {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   flex-wrap: wrap;
   min-width: 0;
 }
@@ -540,7 +542,7 @@ function onTotalSectionClick(e: MouseEvent) {
 .category-edit {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   flex-shrink: 0;
   margin-left: auto;
 }
@@ -567,8 +569,12 @@ function onTotalSectionClick(e: MouseEvent) {
 .add-category {
   display: flex;
   flex-direction: column;
-  margin-top: var(--space-1);
+  margin-top: 0;
   min-width: 0;
+}
+
+.pot-card > .add-category {
+  margin-top: var(--space-sm);
 }
 
 .add-category-toggle {
@@ -576,8 +582,8 @@ function onTotalSectionClick(e: MouseEvent) {
   color: var(--color-primary-dark);
   font-size: var(--font-size-xs);
   font-weight: 600;
-  padding: var(--space-1) var(--space-2);
-  gap: var(--space-1);
+  padding: var(--space-xs) var(--space-sm);
+  gap: var(--space-xs);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
 }
@@ -601,9 +607,9 @@ function onTotalSectionClick(e: MouseEvent) {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  margin-top: var(--space-2);
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  margin-top: var(--space-sm);
   background: color-mix(in srgb, var(--color-primary) 4%, var(--color-surface));
   border: 1px dashed color-mix(in srgb, var(--color-primary) 20%, transparent);
   border-radius: var(--radius-sm-squircle);
