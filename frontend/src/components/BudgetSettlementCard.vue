@@ -129,22 +129,7 @@ const store = useBudgetStore();
   flex-wrap: wrap;
   gap: var(--space-sm);
   padding: var(--space-md);
-  background: var(--color-hover);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  transition:
-    transform 0.2s cubic-bezier(0.34, 1.4, 0.64, 1),
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
-}
-
-@include can-hover {
-  .suggestion-row:hover {
-    transform: translateY(-1.5px);
-    box-shadow: var(--shadow-sm);
-    border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-border));
-  }
+  @include surface-sunken-box(var(--radius-sm-squircle));
 }
 
 .suggestion-text {
@@ -223,11 +208,5 @@ const store = useBudgetStore();
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   margin: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .suggestion-row {
-    transition: none;
-  }
 }
 </style>
