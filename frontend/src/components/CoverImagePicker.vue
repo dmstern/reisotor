@@ -586,7 +586,7 @@ function handleModalClose(visible: boolean) {
             <Button
               type="button"
               :variant="isSearchButtonPrimary ? 'primary' : 'secondary'"
-              size="sm"
+              size="md"
               :icon="isSearchingAction === 'query' ? undefined : ACTION_ICONS.search"
               :disabled="!searchQuery.trim() || isSearching || isUploading"
               title="Nach Bildern für diesen Suchbegriff suchen"
