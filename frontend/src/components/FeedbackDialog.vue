@@ -164,7 +164,9 @@ function close() {
           >
           angelegt.
         </p>
-        <Button type="button" @click="close">Schließen</Button>
+        <div class="actions-row">
+          <Button type="button" @click="close">Schließen</Button>
+        </div>
       </template>
 
       <form v-else class="form" @submit.prevent="requestSubmit">

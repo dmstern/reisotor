@@ -472,18 +472,20 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
             </h2>
           </div>
           <div class="modal-body-wrap">
-            <div class="modal-body confirm-close-body">
-              <p class="confirm-close-message">
-                {{ resolvedConfirmMessage }}
-              </p>
-              <ButtonGroup class="confirm-close-actions">
-                <Button type="button" variant="secondary" @click="cancelConfirmClose">
-                  {{ confirmCloseCancelLabel || 'Weiter bearbeiten' }}
-                </Button>
-                <Button type="button" variant="danger" @click="acceptConfirmClose">
-                  {{ resolvedConfirmConfirmLabel }}
-                </Button>
-              </ButtonGroup>
+            <div class="modal-body">
+              <div class="modal-body-content confirm-close-body">
+                <p class="confirm-close-message">
+                  {{ resolvedConfirmMessage }}
+                </p>
+                <ButtonGroup class="confirm-close-actions">
+                  <Button type="button" variant="secondary" @click="cancelConfirmClose">
+                    {{ confirmCloseCancelLabel || 'Weiter bearbeiten' }}
+                  </Button>
+                  <Button type="button" variant="danger" @click="acceptConfirmClose">
+                    {{ resolvedConfirmConfirmLabel }}
+                  </Button>
+                </ButtonGroup>
+              </div>
             </div>
           </div>
         </div>
@@ -543,8 +545,8 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   border-radius: var(--radius-lg-squircle);
   corner-shape: squircle;
   /* Ausreichend Außen-Padding unten (20px Desktop, 12px Mobile), damit der Scrollbereich
-     klar innerhalb der abgerundeten Squircle-Ecken von .modal bleibt; die verbleibenden 12px/16px
-     Abstand unter den Buttons liegen innerhalb von .modal-body für unbeschnittene Schatten. */
+     klar innerhalb der abgerundeten Squircle-Ecken von .modal bleibt; weitere 16px Abstand
+     (--space-lg) liegen innerhalb von .modal-body für unbeschnittene Schatten (gesamt 36px Desktop / 28px Mobile). */
   padding: var(--space-xl) var(--space-xl) var(--space-3-5);
   max-width: 480px;
   width: 100%;
@@ -669,6 +671,11 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   flex-direction: column;
   flex: 1 0 auto;
   min-width: 0;
+  margin: 0;
+}
+
+.modal-body-content :slotted(*) form {
+  margin: 0;
 }
 
 .modal-body-content :slotted(textarea) {
