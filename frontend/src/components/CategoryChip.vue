@@ -106,7 +106,7 @@ const meta = computed(() => {
 }
 
 .category-chip.is-icon-only {
-  padding: 3px 6px;
+  padding: 3px var(--space-1-5);
   gap: 0;
   max-width: none;
 }

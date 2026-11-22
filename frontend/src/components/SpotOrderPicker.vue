@@ -457,7 +457,7 @@ function onDeleteLeg() {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 2px 0 2px var(--space-3);
+  padding: var(--space-2xs) 0 var(--space-2xs) var(--space-3);
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
@@ -541,7 +541,7 @@ function onDeleteLeg() {
   background: var(--color-hover);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  padding: 2px 6px;
+  padding: var(--space-2xs) var(--space-1-5);
   margin-left: auto;
   white-space: nowrap;
   max-width: 100%;
@@ -550,7 +550,7 @@ function onDeleteLeg() {
 .planned-box,
 .spot-picker {
   @include surface-sunken-box;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-md) var(--space-lg);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -581,7 +581,7 @@ function onDeleteLeg() {
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-2);
-  padding: 6px var(--space-2);
+  padding: var(--space-1-5) var(--space-2);
   background: var(--color-surface);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
@@ -667,7 +667,7 @@ function onDeleteLeg() {
      Reset klebten in dieser dichten Liste die Einzelschatten benachbarter Zeilen aneinander und
      wirkten buggy, statt wie ein einzelnes, flaches Listenelement auszusehen. */
   box-shadow: none;
-  padding: 4px 2px;
+  padding: var(--space-xs) var(--space-2xs);
   cursor: pointer;
   color: var(--color-text);
   width: 100%;
@@ -693,9 +693,9 @@ function onDeleteLeg() {
 }
 
 .spot-picker-create-row {
-  margin-top: var(--space-1);
-  padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border-divider);
+  margin-top: var(--space-xs);
+  padding-top: var(--space-sm);
+  @include divider-engraved('top');
   display: flex;
   justify-content: flex-start;
 }

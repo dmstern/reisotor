@@ -55,12 +55,10 @@ export const WithPhoto: Story = {
               ☀️ 24° / 17°
             </span>
           </template>
-          <DetailRow label="Zeit">
-            <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" /> 10:00 – 16:30
-          </DetailRow>
-          <DetailRow label="Treffpunkt">
-            <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" /> Haupteingang Nationalpark
-          </DetailRow>
+          <dl style="margin: 0;">
+            <DetailRow label="Zeit" icon="time">10:00 – 16:30</DetailRow>
+            <DetailRow label="Treffpunkt" icon="location">Haupteingang Nationalpark</DetailRow>
+          </dl>
           <p style="margin: 8px 0 0; font-size: 0.92rem; line-height: 1.5; color: var(--color-text);">
             Wunderschöner Wanderweg entlang der Steilküste. Feste Wanderschuhe und ausreichend Wasser mitbringen!
           </p>
@@ -96,9 +94,9 @@ export const WithCollage: Story = {
               Mi., 30.09.2026
             </span>
           </template>
-          <DetailRow label="Stationen">
-            3 Orte eingeplant
-          </DetailRow>
+          <dl style="margin: 0;">
+            <DetailRow label="Stationen" icon="tour">3 Orte eingeplant</DetailRow>
+          </dl>
         </DetailModal>
       </div>
     `,
@@ -134,12 +132,10 @@ export const PlaceholderHero: Story = {
               Do., 01.10.2026
             </span>
           </template>
-          <DetailRow label="Zeit">
-            <AppIcon :icon="FORM_FIELD_ICONS.time" :size="14" group="formFields" /> 19:30 Uhr
-          </DetailRow>
-          <DetailRow label="Ort">
-            <AppIcon :icon="FORM_FIELD_ICONS.location" :size="14" group="formFields" /> Osteria del Sole
-          </DetailRow>
+          <dl style="margin: 0;">
+            <DetailRow label="Zeit" icon="time">19:30 Uhr</DetailRow>
+            <DetailRow label="Ort" icon="location">Osteria del Sole</DetailRow>
+          </dl>
         </DetailModal>
       </div>
     `,

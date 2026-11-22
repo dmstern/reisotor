@@ -51,7 +51,7 @@ defineProps<{
 .tour-route-line {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-xs);
   min-width: 0;
 }
 

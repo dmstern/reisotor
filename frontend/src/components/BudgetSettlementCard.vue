@@ -77,16 +77,22 @@ const store = useBudgetStore();
 </template>
 
 <style scoped lang="scss">
+.settlement-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
 .settlement-card h2 {
-  margin: 0 0 var(--space-2);
+  margin: 0;
 }
 
 .settled-banner {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  margin: var(--space-2) 0;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  margin: 0;
   background: color-mix(in srgb, var(--color-success) 10%, var(--color-surface));
   border: 1px solid color-mix(in srgb, var(--color-success) 25%, transparent);
   border-radius: var(--radius-sm-squircle);
@@ -110,10 +116,10 @@ const store = useBudgetStore();
 .suggestion-list {
   list-style: none;
   padding: 0;
-  margin: var(--space-2) 0;
+  margin: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 
 .suggestion-row {
@@ -121,24 +127,9 @@ const store = useBudgetStore();
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-hover);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  transition:
-    transform 0.2s cubic-bezier(0.34, 1.4, 0.64, 1),
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
-}
-
-@include can-hover {
-  .suggestion-row:hover {
-    transform: translateY(-1.5px);
-    box-shadow: var(--shadow-sm);
-    border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-border));
-  }
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  @include surface-sunken-box(var(--radius-sm-squircle));
 }
 
 .suggestion-text {
@@ -150,9 +141,9 @@ const store = useBudgetStore();
 .suggestion-debt-flow {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   vertical-align: middle;
-  margin: 0 2px;
+  margin: 0 var(--space-2xs);
 }
 
 .debt-amount {
@@ -181,11 +172,12 @@ const store = useBudgetStore();
 
 .balance-list {
   list-style: none;
-  padding: 0;
-  margin: var(--space-2) 0;
+  padding: var(--space-md) 0 0;
+  margin: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-sm);
+  @include divider-engraved('top');
 }
 
 .balance-row {
@@ -193,18 +185,9 @@ const store = useBudgetStore();
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   font-size: var(--font-size-sm);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  transition: background 0.15s ease;
-}
-
-@include can-hover {
-  .balance-row:hover {
-    background: var(--color-hover);
-  }
+  padding: 0;
 }
 
 .balance-row :deep(.badge) {
@@ -224,13 +207,6 @@ const store = useBudgetStore();
 .hint {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  margin: var(--space-2) 0 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .suggestion-row,
-  .balance-row {
-    transition: none;
-  }
+  margin: 0;
 }
 </style>

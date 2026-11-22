@@ -1,22 +1,50 @@
 <script setup lang="ts">
-withDefaults(
+import { computed } from 'vue';
+import { FORM_FIELD_ICONS, type FormFieldIconKey } from '../../utils/formFieldIcons';
+import type { IconDef } from '../../utils/icon';
+import type { IconGroup } from '../../stores/iconStyle';
+import AppIcon from '../AppIcon.vue';
+
+const props = withDefaults(
   defineProps<{
     label?: string;
+    icon?: FormFieldIconKey | IconDef;
+    iconGroup?: IconGroup;
     tag?: string;
   }>(),
   {
     label: '',
-    tag: 'p',
+    icon: undefined,
+    iconGroup: 'formFields',
+    tag: 'div',
   }
 );
+
+const resolvedIcon = computed<IconDef | undefined>(() => {
+  if (!props.icon) {
+    return undefined;
+  }
+
+  return typeof props.icon === 'string' ? FORM_FIELD_ICONS[props.icon] : props.icon;
+});
 </script>
 
 <template>
   <component :is="tag" class="detail-row">
     <slot name="label">
-      <span v-if="label" class="detail-row__label">{{ label }}</span>
+      <dt v-if="label || resolvedIcon" class="detail-row__label">
+        <AppIcon
+          v-if="resolvedIcon"
+          :icon="resolvedIcon"
+          :size="13"
+          :group="iconGroup"
+          class="detail-row__icon"
+        /><span v-if="label" class="detail-row__label-text">{{ label }}</span>
+      </dt>
     </slot>
-    <slot />
+    <dd class="detail-row__value">
+      <slot />
+    </dd>
   </component>
 </template>
 
@@ -24,23 +52,44 @@ withDefaults(
 .detail-row {
   margin: 0 0 var(--space-2);
   font-size: var(--font-size-sm);
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: var(--space-sm);
+  row-gap: var(--space-2xs);
   overflow-wrap: break-word;
   min-width: 0;
 }
 
 .detail-row__label {
+  margin: 0;
   font-size: var(--font-size-xs);
   font-weight: 600;
+  line-height: var(--line-height-snug);
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.detail-row__icon {
+  vertical-align: -2px;
+}
+
+.detail-row__icon + .detail-row__label-text {
+  margin-left: var(--space-xs);
+}
+
+.detail-row__value {
+  margin: 0;
+  min-width: 0;
+  line-height: var(--line-height-snug);
+  color: var(--color-text);
+  overflow-wrap: break-word;
+}
+
+.detail-row__value :deep(.detail-chunk) {
+  display: inline-block;
+  max-width: 100%;
 }
 </style>

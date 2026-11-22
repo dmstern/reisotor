@@ -325,22 +325,30 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
                 : `Entfernung zu ${accommodationDistance.accommodationTitle}: ${formatSpotDistance(accommodationDistance.distanceMeters, accommodationDistance.isFallback)}`
             "
           >
-            <AppIcon
-              :icon="
-                travelTypeIconDef(
-                  accommodationDistance.profile === 'foot-walking' ? 'zu Fuß' : 'Auto'
-                )
-              "
-              :size="12"
-              group="categories"
-            />
+            <AppIcon :icon="ACTION_ICONS.distance" :size="12" group="actions" />
             <span class="spot-distance-text">
               {{
                 formatSpotDistance(
                   accommodationDistance.distanceMeters,
                   accommodationDistance.isFallback
                 )
-              }}
+              }}<template v-if="accommodationDistance.durationSeconds != null">
+                ·
+                <AppIcon
+                  :icon="
+                    travelTypeIconDef(
+                      accommodationDistance.profile === 'foot-walking' ? 'zu Fuß' : 'Auto'
+                    )
+                  "
+                  :size="12"
+                  group="categories"
+                />
+                {{
+                  formatTravelDuration(
+                    Math.max(1, Math.round(accommodationDistance.durationSeconds / 60))
+                  )
+                }}</template
+              >
             </span>
           </Badge>
         </div>
@@ -358,7 +366,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
         </div>
       </div>
 
-      <Accordion :expanded="expanded && showComments">
+      <Accordion class="comments-accordion" :expanded="expanded && showComments">
         <Comments
           :comments="comments"
           @click.stop
@@ -375,12 +383,12 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 <style scoped lang="scss">
 .spot-card {
   --spot-cover-height: 120px;
-  --spot-card-pad: var(--space-2);
+  --spot-card-pad: var(--space-md);
   container: spot-card / inline-size;
   position: relative;
   z-index: var(--z-card);
   isolation: isolate;
-  padding: var(--spot-card-pad) var(--spot-card-pad) 14px var(--spot-card-pad);
+  padding: var(--spot-card-pad);
   display: flex;
   flex-direction: column;
   cursor: pointer;
@@ -463,7 +471,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 .body {
   display: flex;
   flex-direction: column;
-  padding: var(--spot-card-pad) var(--space-2) 0 var(--space-2);
+  padding: var(--spot-card-pad) 0 0 0;
   gap: var(--space-2);
   min-width: 0;
   transition: padding 0.3s cubic-bezier(0.32, 0.72, 0, 1);
@@ -561,8 +569,25 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 }
 
 .spot-card.expanded .body {
-  padding-top: var(--space-3);
-  gap: var(--space-3);
+  padding-top: var(--spot-card-pad);
+  gap: var(--space-md);
+}
+
+.comments-accordion {
+  margin-top: calc(-1 * var(--space-2));
+}
+
+.spot-card.expanded .comments-accordion {
+  margin-top: calc(-1 * var(--space-md));
+}
+
+.comments-accordion.is-expanded {
+  margin-top: 0;
+}
+
+.comments-accordion :deep(.comments) {
+  margin-top: 0;
+  padding-top: var(--space-md);
 }
 
 .card-title-block {
@@ -696,7 +721,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 }
 
 .spot-card.expanded .spot-layover-badge {
-  margin-top: 2px;
+  margin-top: var(--space-2xs);
 }
 
 .spot-layover-text {
@@ -739,7 +764,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 .card-social-actions {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2xs);
   flex-shrink: 0;
 }
 
@@ -795,8 +820,8 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 .actions-accordion-inner {
   display: block;
   overflow: hidden;
-  padding: 6px;
-  margin: -6px;
+  padding: var(--space-1-5);
+  margin: calc(-1 * var(--space-1-5));
 }
 
 .actions-accordion.is-expanded .actions-accordion-inner {
@@ -823,8 +848,8 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 @container spots-col (max-width: 480px) {
   .spot-card {
     --spot-cover-height: 100px;
-    --spot-card-pad: 6px;
-    padding: var(--spot-card-pad) var(--spot-card-pad) 10px var(--spot-card-pad);
+    --spot-card-pad: var(--space-md);
+    padding: var(--spot-card-pad);
   }
 
   .spot-card:not(.expanded) {
@@ -833,12 +858,12 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   }
 
   .body {
-    padding: var(--spot-card-pad) var(--space-2) var(--space-1) var(--space-2);
+    padding: var(--spot-card-pad) 0 0 0;
   }
 
   .spot-card:not(.expanded) .body {
     min-height: 64px;
-    gap: 2px;
+    gap: var(--space-sm);
     overflow: hidden;
   }
 
@@ -894,7 +919,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   }
 
   .spot-card:not(.expanded) .card-badge-group :deep(.spot-location-badge-action-btn) {
-    padding: 0 2px 0 4px;
+    padding: 0 var(--space-2xs) 0 var(--space-xs);
   }
 }
 

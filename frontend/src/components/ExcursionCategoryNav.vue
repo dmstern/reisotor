@@ -102,11 +102,11 @@ const emit = defineEmits<{
   top: -1px;
   padding-top: 1px;
   z-index: 10;
-  margin-bottom: var(--space-3);
-  margin-left: calc(var(--space-3) * -1);
-  margin-right: calc(var(--space-3) * -1);
-  padding-left: var(--space-3);
-  padding-right: var(--space-3);
+  margin-bottom: var(--space-lg);
+  margin-left: calc(var(--spots-col-pad, var(--space-lg)) * -1);
+  margin-right: calc(var(--spots-col-pad, var(--space-lg)) * -1);
+  padding-left: var(--spots-col-pad, var(--space-lg));
+  padding-right: var(--spots-col-pad, var(--space-lg));
   --category-nav-bg: var(--color-surface);
   background: var(--category-nav-bg);
   @include divider-engraved('bottom');
@@ -118,7 +118,7 @@ const emit = defineEmits<{
 
 .category-nav-wrap.is-stuck {
   box-shadow:
-    0 calc(var(--space-3) * -1) 0 0 var(--category-nav-bg),
+    0 calc(var(--spots-col-pad, var(--space-lg)) * -1) 0 0 var(--category-nav-bg),
     var(--shadow-sm);
 }
 
@@ -199,7 +199,7 @@ const emit = defineEmits<{
   position: relative;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   background: none;
   border: none;
   box-shadow: none;

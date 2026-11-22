@@ -334,7 +334,7 @@ function onTabClick(key: string) {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  gap: 6px;
+  gap: var(--space-1-5);
   padding: var(--space-2) var(--space-3);
   min-height: 44px;
   scroll-margin: 0 36px;

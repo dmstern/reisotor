@@ -383,27 +383,27 @@ async function deleteEditingTrack() {
 .edit-form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-lg);
 }
 
 .track-tab-bar {
-  margin-bottom: var(--space-2);
+  margin-bottom: 0;
 }
 
 .track-edit-form .tab-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-lg);
 }
 
 .track-status-alert {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-3);
-  padding: var(--space-3);
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  margin-bottom: var(--space-3);
+  margin-bottom: 0;
   font-size: var(--font-size-sm);
 }
 
@@ -429,7 +429,7 @@ async function deleteEditingTrack() {
   display: block;
   font-weight: 600;
   font-size: var(--font-size-sm);
-  margin-bottom: 2px;
+  margin-bottom: var(--space-2xs);
 }
 
 .track-status-alert__desc {
@@ -470,10 +470,6 @@ async function deleteEditingTrack() {
   gap: var(--space-2);
 }
 
-.track-tour-selected-badge {
-  max-width: 100%;
-}
-
 .track-title-field {
   position: relative;
   display: flex;
@@ -481,35 +477,27 @@ async function deleteEditingTrack() {
   width: 100%;
 }
 
-.track-title-field :deep(.form-input) {
-  padding-right: 32px;
+.track-title-field :deep(.input) {
+  flex: 1;
+  width: 100%;
+  padding-right: calc(30px + var(--space-md));
 }
 
 .track-title-field :deep(.sparkle-suggest-btn) {
-  right: 6px;
+  right: var(--space-sm);
 }
 
 .track-tour-selected-badge {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  padding: 4px var(--space-2);
+  max-width: 100%;
+  padding: var(--space-xs) var(--space-2);
   background: var(--color-primary-tint);
   color: var(--color-primary);
   border-radius: var(--radius-pill);
   font-size: var(--font-size-sm);
   font-weight: 500;
-}
-
-.actions-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-}
-
-.spacer {
-  flex: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {

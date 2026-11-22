@@ -197,7 +197,7 @@ const hasPhoto = computed(() => {
 .detail-header-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   margin-left: auto;
 }
 
@@ -220,7 +220,7 @@ const hasPhoto = computed(() => {
   border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
-  padding: 6px;
+  padding: var(--space-1-5);
   box-shadow:
     0 3px 10px rgba(0, 0, 0, 0.06),
     0 1px 3px rgba(0, 0, 0, 0.04);
@@ -306,7 +306,7 @@ const hasPhoto = computed(() => {
 }
 
 .detail-title {
-  margin: 0 0 6px;
+  margin: 0 0 var(--space-1-5);
   font-size: var(--font-size-xl);
   font-weight: 700;
   color: var(--color-text);

@@ -212,7 +212,7 @@ async function handleActionClick(toast: ToastItem) {
   text-decoration: underline;
   text-underline-offset: 2px;
   align-self: flex-start;
-  margin-top: 2px;
+  margin-top: var(--space-2xs);
   cursor: pointer;
   transition: opacity 0.15s ease;
 }

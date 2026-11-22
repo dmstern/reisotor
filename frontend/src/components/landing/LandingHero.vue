@@ -110,7 +110,7 @@ const { robotPhase, onPackingDone } = useLandingRobot();
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  padding: 12px var(--space-4);
+  padding: var(--space-md) var(--space-4);
   min-height: var(--control-height-md);
   box-sizing: border-box;
   border-radius: var(--radius-pill);

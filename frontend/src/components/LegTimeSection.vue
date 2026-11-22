@@ -172,7 +172,7 @@ function onArrivalChange(event: Event) {
 .time-section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-md);
 }
 
 .time-row {
@@ -318,10 +318,6 @@ function onArrivalChange(event: Event) {
   border-color: transparent;
 }
 
-.time-sync-bar {
-  margin-top: calc(-1 * var(--space-1));
-}
-
 .time-sync-message {
   white-space: nowrap;
   overflow: hidden;
@@ -353,7 +349,7 @@ function onArrivalChange(event: Event) {
 
 @container (max-width: 480px) {
   .time-input-wrap :deep(.input) {
-    padding: 9px 6px;
+    padding: 9px var(--space-1-5);
     font-size: var(--font-size-sm);
   }
 }

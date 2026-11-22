@@ -97,12 +97,12 @@ const label = computed(() => (visibleKind.value ? LABELS[visibleKind.value] : ''
   z-index: 30;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
   font-size: var(--font-size-xs);
   font-weight: 600;
   color: #fff;
   background: var(--color-primary);
-  padding: 4px 10px;
+  padding: var(--space-xs) 10px;
   border-radius: 999px;
   line-height: var(--line-height-snug);
   white-space: nowrap;

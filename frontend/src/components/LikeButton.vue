@@ -45,6 +45,6 @@ const emit = defineEmits<{ (e: 'toggle'): void }>();
 .social-count {
   font-size: var(--font-size-xs);
   font-weight: 600;
-  margin-left: 2px;
+  margin-left: var(--space-2xs);
 }
 </style>

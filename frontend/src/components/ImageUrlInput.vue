@@ -227,7 +227,7 @@ button.upload-label {
   font-size: var(--font-size-sm);
   color: var(--color-primary);
   cursor: pointer;
-  padding: 4px 8px;
+  padding: var(--space-xs) var(--space-sm);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   transition: background-color 0.15s;

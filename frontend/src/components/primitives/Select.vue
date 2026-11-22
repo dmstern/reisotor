@@ -70,7 +70,7 @@ function onChange(event: Event) {
 <style scoped lang="scss">
 .select {
   @include control-field-inset;
-  padding: 9px 12px;
+  padding: 9px var(--space-md);
   color: var(--color-text);
   font-family: inherit;
   font-size: var(--font-size-md);
@@ -103,7 +103,7 @@ function onChange(event: Event) {
 }
 
 .select--sm {
-  padding: 6px 10px;
+  padding: var(--space-1-5) 10px;
   padding-right: 30px;
   background-position: right 8px center;
   background-size: 14px 14px;
@@ -122,7 +122,7 @@ function onChange(event: Event) {
 }
 
 .select--lg {
-  padding: 12px 16px;
+  padding: var(--space-md) var(--space-lg);
   padding-right: 42px;
   height: var(--input-height-lg, 52px);
   min-height: var(--input-height-lg, 52px);

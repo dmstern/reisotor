@@ -73,7 +73,7 @@ function onInput(event: Event) {
 <style scoped lang="scss">
 .textarea {
   @include control-field-inset;
-  padding: 9px 12px;
+  padding: 9px var(--space-md);
   color: var(--color-text);
   font-family: inherit;
   font-size: var(--font-size-md);

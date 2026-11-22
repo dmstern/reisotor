@@ -5,6 +5,7 @@ import { formatInline } from '../utils/richText';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
+import Divider from './primitives/Divider.vue';
 
 const props = defineProps<{
   groups?: ChangelogGroup[];
@@ -258,6 +259,7 @@ const changelogGithubUrl = computed(() => {
     </template>
 
     <!-- 6. Link zum vollständigen GitHub-Changelog -->
+    <Divider />
     <div class="changelog-footer">
       <a
         :href="changelogGithubUrl"
@@ -276,13 +278,13 @@ const changelogGithubUrl = computed(() => {
 .changelog-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-3-5);
 }
 
 .changelog-group {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 
 .changelog-group--highlights {
@@ -318,20 +320,21 @@ const changelogGithubUrl = computed(() => {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 
 .changelog-item {
   display: flex;
   align-items: baseline;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-normal);
   color: var(--color-text);
-  padding: 2px 0;
 }
 
 .note-bullet {
+  width: 1.25em;
+  text-align: center;
   font-size: var(--font-size-md);
   flex-shrink: 0;
   line-height: var(--line-height-snug);
@@ -347,10 +350,6 @@ const changelogGithubUrl = computed(() => {
   color: var(--color-text);
 }
 
-.changelog-collapsible {
-  margin-top: var(--space-1);
-}
-
 .changelog-other-groups {
   padding-top: var(--space-2);
   display: flex;
@@ -359,9 +358,6 @@ const changelogGithubUrl = computed(() => {
 }
 
 .changelog-footer {
-  margin-top: var(--space-2);
-  padding-top: var(--space-2);
-  border-top: 1px dashed var(--color-border-divider);
   display: flex;
   align-items: center;
 }

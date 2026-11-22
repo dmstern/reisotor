@@ -222,7 +222,9 @@ export function useDraftAutosave<T extends Record<string, unknown>>(
         { deep: true }
       );
     },
-    { immediate: true }
+    // flush: 'post' stellt sicher, dass synchron laufende Caller-Watcher (z. B. watch(() => props.item, ...)
+    // zum Befüllen von formRef beim Öffnen eines Modals) vor der Baseline-Erfassung gelaufen sind (#855).
+    { immediate: true, flush: 'post' }
   );
 
   const isDirty = computed(() => status.value !== 'idle');

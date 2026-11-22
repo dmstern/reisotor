@@ -50,7 +50,7 @@ function onClick(event: MouseEvent) {
   font-weight: 600;
   line-height: var(--line-height-tight);
   white-space: nowrap;
-  padding: 2px var(--space-2);
+  padding: var(--space-2xs) var(--space-2);
   border-radius: var(--radius-pill);
   color: var(--color-primary-contrast, #ffffff);
   background: var(--color-accent);

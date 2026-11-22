@@ -25,9 +25,21 @@ export const ColorPalette: Story = {
             },
             {
               var: '--color-border-divider',
-              name: 'Semantischer Trenner',
+              name: 'Semantischer Trenner (Inset-Boxen)',
               light: '#e8e2d9',
               dark: '#2e2c28',
+            },
+            {
+              var: '--color-divider-groove',
+              name: 'Eingefräste Trennlinie (Rille)',
+              light: 'rgba(43, 42, 40, 0.11)',
+              dark: 'rgba(0, 0, 0, 0.36)',
+            },
+            {
+              var: '--color-divider-highlight',
+              name: 'Eingefräste Trennlinie (Lichtkante)',
+              light: 'rgba(255, 255, 255, 0.75)',
+              dark: 'rgba(255, 255, 255, 0.07)',
             },
             {
               var: '--color-border-strong',

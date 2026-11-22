@@ -38,7 +38,7 @@ const html = computed(() => {
 
 .richtext :deep(ul),
 .richtext :deep(ol) {
-  margin: 4px 0;
+  margin: var(--space-xs) 0;
   padding-left: 1.3em;
 }
 
@@ -48,7 +48,7 @@ const html = computed(() => {
 .richtext :deep(h4),
 .richtext :deep(h5),
 .richtext :deep(h6) {
-  margin: var(--space-2) 0 4px;
+  margin: var(--space-sm) 0 var(--space-xs);
   font-weight: 600;
   line-height: var(--line-height-tight);
   color: var(--color-text);
@@ -73,14 +73,14 @@ const html = computed(() => {
 }
 
 .richtext :deep(blockquote) {
-  margin: 4px 0;
-  padding: 2px 0 2px 10px;
+  margin: var(--space-xs) 0;
+  padding: var(--space-2xs) 0 var(--space-2xs) 10px;
   border-left: 3px solid var(--color-border-divider);
   color: var(--color-text-muted);
 }
 
 .richtext :deep(hr) {
-  margin: var(--space-2) 0;
+  margin: var(--space-sm) 0;
   border: none;
   @include divider-engraved('bottom');
 }
@@ -94,6 +94,10 @@ const html = computed(() => {
 
 .richtext :deep(del) {
   color: var(--color-text-muted);
+}
+
+.richtext :deep(> :last-child) {
+  margin-bottom: 0;
 }
 
 .richtext :deep(> br:last-child) {

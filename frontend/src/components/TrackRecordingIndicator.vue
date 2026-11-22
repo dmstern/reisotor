@@ -131,7 +131,7 @@ const elapsedLabel = computed(() => {
   font-weight: 600;
   color: #fff;
   background: var(--color-danger);
-  padding: 4px;
+  padding: var(--space-xs);
   border-radius: var(--radius-pill);
   line-height: var(--line-height-none);
   white-space: nowrap;

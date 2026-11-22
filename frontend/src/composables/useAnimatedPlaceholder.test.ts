@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ref } from 'vue';
+import { ref, nextTick } from 'vue';
 import { useAnimatedPlaceholder } from './useAnimatedPlaceholder';
 
 describe('useAnimatedPlaceholder', () => {
@@ -72,5 +72,27 @@ describe('useAnimatedPlaceholder', () => {
     });
 
     expect(placeholder.value).toBe('Fokussierter Platzhalter...');
+  });
+
+  it('resets to the first phrase from character 0 when phrases change', async () => {
+    const phrases = ref(['Ort suchen...', 'Adresse eingeben...']);
+    const { placeholder } = useAnimatedPlaceholder(phrases, {
+      typingSpeed: 10,
+      deletingSpeed: 10,
+      pauseDelay: 50,
+      betweenDelay: 20,
+      animateInTest: true,
+    });
+
+    expect(placeholder.value).toBe('O');
+    vi.advanceTimersByTime(20);
+    expect(placeholder.value).toBe('Ort');
+
+    phrases.value = ['Booking.com-Link einfügen...', 'Airbnb-Link einfügen...'];
+    await nextTick();
+
+    expect(placeholder.value).toBe('B');
+    vi.advanceTimersByTime(10);
+    expect(placeholder.value).toBe('Bo');
   });
 });

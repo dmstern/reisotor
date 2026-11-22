@@ -193,8 +193,8 @@ watch(
   background-image: var(--texture-grain);
   background-blend-mode: overlay;
   border-radius: var(--radius-pill);
-  padding: 4px;
-  gap: 2px;
+  padding: var(--space-xs);
+  gap: var(--space-2xs);
   box-shadow:
     var(--shadow-inset),
     0 1px 0 var(--shadow-control-highlight);
@@ -248,7 +248,7 @@ watch(
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-  padding: 6px 12px;
+  padding: var(--space-1-5) var(--space-md);
   border: none;
   /* Explizit zurückgesetzt statt sich auf style.css's globale button-Regel zu verlassen (#95 gab
      jedem <button> per Default einen Schatten) - hier trägt bereits .segmented-thumb den einzigen

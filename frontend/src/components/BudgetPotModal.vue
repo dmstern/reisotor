@@ -6,6 +6,7 @@ import FormField from './FormField.vue';
 import Input from './primitives/Input.vue';
 import Select from './primitives/Select.vue';
 import Button from './primitives/Button.vue';
+import ButtonGroup from './primitives/ButtonGroup.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { useBudgetStore } from '../stores/budget';
 import { useAuthStore } from '../stores/auth';
@@ -119,14 +120,17 @@ async function handleDelete() {
         />
       </FormField>
 
-      <div v-if="budgetStore.users.length > 1" class="row">
-        <FormField icon="visibility" label="Sichtbarkeit" v-slot="{ id }">
-          <Select :id="id" v-model="form.kind">
-            <option value="shared">Geteilt (für alle im Urlaub sichtbar)</option>
-            <option value="personal">Privat (nur für mich sichtbar)</option>
-          </Select>
-        </FormField>
-      </div>
+      <FormField
+        v-if="budgetStore.users.length > 1"
+        icon="visibility"
+        label="Sichtbarkeit"
+        v-slot="{ id }"
+      >
+        <Select :id="id" v-model="form.kind">
+          <option value="shared">Geteilt (für alle im Urlaub sichtbar)</option>
+          <option value="personal">Privat (nur für mich sichtbar)</option>
+        </Select>
+      </FormField>
 
       <FormField icon="amount" label="Gesamtziel" v-slot="{ id }">
         <Input
@@ -139,7 +143,7 @@ async function handleDelete() {
         />
       </FormField>
 
-      <div class="actions-row">
+      <ButtonGroup no-margin class="actions-row">
         <Button
           v-if="isEdit"
           type="button"
@@ -150,44 +154,21 @@ async function handleDelete() {
         >
           Löschen
         </Button>
-        <div class="spacer"></div>
+        <div v-if="isEdit" class="spacer"></div>
         <Button type="button" variant="secondary" class="btn-cancel" @click="handleClose">
           Abbrechen
         </Button>
         <Button type="submit">{{ isEdit ? 'Speichern' : 'Anlegen' }}</Button>
-      </div>
+      </ButtonGroup>
     </form>
   </Modal>
 </template>
 
 <style scoped>
 .edit-form {
-  container-type: inline-size;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-lg);
   min-width: 0;
-}
-
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.row > * {
-  flex: 1 1 140px;
-  min-width: 0;
-}
-
-.actions-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-}
-
-.spacer {
-  flex: 1;
 }
 </style>

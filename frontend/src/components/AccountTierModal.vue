@@ -290,7 +290,7 @@ function close() {
 .notice-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   min-width: 0;
   overflow-wrap: break-word;
 }
@@ -387,7 +387,7 @@ function close() {
 .feature-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   min-width: 0;
   overflow-wrap: break-word;
 }

@@ -75,7 +75,7 @@ const displayDate = computed(() => {
   position: relative;
   width: 90px;
   height: 80px;
-  margin: 4px auto 2px;
+  margin: 0 auto;
   perspective: 600px;
   display: flex;
   align-items: center;

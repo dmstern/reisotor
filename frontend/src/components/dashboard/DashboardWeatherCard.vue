@@ -87,217 +87,240 @@ onMounted(() => {
 
 <template>
   <section class="card weather-card">
-    <h3><AppIcon :icon="ACTION_ICONS.sun" :size="16" group="actions" /> Wetter</h3>
-    <template v-if="trip.lat != null && trip.lng != null">
-      <p
-        v-if="weatherLoading && !weatherDays"
-        class="hint weather-loading-hint"
-        role="status"
-        aria-live="polite"
-      >
-        <LoadingSpinner variant="radar" size="sm" decorative />
-        <span>Lädt …</span>
-      </p>
-      <Alert
-        v-else-if="weatherError"
-        variant="danger"
-        size="sm"
-        reportable
-        :description="weatherError"
-        error-context="Wetterdaten laden"
-        class="weather-error-alert"
-      />
-      <template v-else>
-        <!-- Nach Urlaubsende (isTripOver): Falls ein Heimatort mit Koordinaten
-             hinterlegt ist, wird das heutige Wetter zuhause angezeigt (Nutzer:innen sind wieder
-             daheim), und das Reiseziel-Wetter transparent als "Heute am Reiseziel" ausgewiesen.
-             Vor/während des Urlaubs wird nur das Reiseziel transparent benannt. -->
-        <DashboardWeatherTodayRow
-          v-if="isTripOver && home && todayHomeWeather"
-          :weather="todayHomeWeather"
-          :label="`Heute ${homeLocationLabel}`"
-          :icon="ACTION_ICONS.home"
-          :alert="getDayAlert(todayHomeWeather)"
-          @click="
-            openWeatherDayDialog(todayHomeWeather, {
-              lat: home.lat,
-              lng: home.lng,
-              label: homeSpot?.title || 'Zuhause',
-              type: 'home',
-            })
-          "
-        />
-
-        <DashboardWeatherTodayRow
-          v-if="todayWeather"
-          :weather="todayWeather"
-          :label="`Heute ${isTripOver ? overDestinationLabel : destinationLocationLabel}`"
-          :icon="isTripOver ? ACTION_ICONS.vacation : undefined"
-          :alert="getDayAlert(todayWeather)"
-          @click="openWeatherDayDialog(todayWeather)"
-        />
-
-        <p class="weather-section-label">
-          <AppIcon
-            :icon="isTripOver ? ACTION_ICONS.sun : ACTION_ICONS.vacation"
-            :size="14"
-            group="actions"
-          />
-          {{ isTripOver ? 'Rückblick: Wetter im Urlaub' : 'Wetter im Urlaub' }}
-        </p>
-        <p v-if="!trip.start_date" class="hint">
-          Hinterlege einen Reisezeitraum beim Urlaub, um hier die Wettervorhersage für die
-          Urlaubstage zu sehen.
-        </p>
-        <p v-else-if="!vacationForecastDays.length && !isTripOver" class="hint">
-          Für die Urlaubstage liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden
-          ~16 Tage ab, schau kurz vorher nochmal vorbei.
-        </p>
-        <p v-else-if="!vacationForecastDays.length" class="hint">
-          Für diesen Zeitraum sind keine Wetterdaten gespeichert.
-        </p>
-        <HorizontalScroller
-          v-else
-          class="weather-days"
-          prev-label="Urlaubswetter nach links scrollen"
-          next-label="Urlaubswetter nach rechts scrollen"
+    <div class="weather-header">
+      <h3><AppIcon :icon="ACTION_ICONS.sun" :size="16" group="actions" /> Wetter</h3>
+      <template v-if="trip.lat != null && trip.lng != null">
+        <p
+          v-if="weatherLoading && !weatherDays"
+          class="hint weather-loading-hint"
+          role="status"
+          aria-live="polite"
         >
-          <DashboardWeatherDayItem
-            v-for="day in vacationForecastDays"
-            :key="day.date"
-            :day="day"
-            :date-label="formatWeekdayDate(day.date)"
-            :is-past="day.date < todayStr()"
-            :alert="getDayAlert(day)"
-            @click="openWeatherDayDialog(day)"
-          />
-        </HorizontalScroller>
-
-        <p v-if="DEMO_MODE" class="weather-source static">
-          Demo-Wetterdaten (keine echte Vorhersage)
+          <LoadingSpinner variant="radar" size="sm" decorative />
+          <span>Lädt …</span>
         </p>
-        <button
-          v-else
-          type="button"
-          class="weather-source"
-          @click="tripStore.requestEditTrip('settings')"
-        >
-          Quelle: Open-Meteo ({{ weatherModelLabel }}) · Anbieter wechseln
-        </button>
+        <Alert
+          v-else-if="weatherError"
+          variant="danger"
+          size="sm"
+          reportable
+          :description="weatherError"
+          error-context="Wetterdaten laden"
+        />
+        <template v-else>
+          <!-- Nach Urlaubsende (isTripOver): Falls ein Heimatort mit Koordinaten
+               hinterlegt ist, wird das heutige Wetter zuhause angezeigt (Nutzer:innen sind wieder
+               daheim), und das Reiseziel-Wetter transparent als "Heute am Reiseziel" ausgewiesen.
+               Vor/während des Urlaubs wird nur das Reiseziel transparent benannt. -->
+          <DashboardWeatherTodayRow
+            v-if="isTripOver && home && todayHomeWeather"
+            :weather="todayHomeWeather"
+            :label="`Heute ${homeLocationLabel}`"
+            :icon="ACTION_ICONS.home"
+            :alert="getDayAlert(todayHomeWeather)"
+            @click="
+              openWeatherDayDialog(todayHomeWeather, {
+                lat: home.lat,
+                lng: home.lng,
+                label: homeSpot?.title || 'Zuhause',
+                type: 'home',
+              })
+            "
+          />
+
+          <DashboardWeatherTodayRow
+            v-if="todayWeather"
+            :weather="todayWeather"
+            :label="`Heute ${isTripOver ? overDestinationLabel : destinationLocationLabel}`"
+            :icon="isTripOver ? ACTION_ICONS.vacation : undefined"
+            :alert="getDayAlert(todayWeather)"
+            @click="openWeatherDayDialog(todayWeather)"
+          />
+        </template>
       </template>
-    </template>
-    <p v-else class="hint">
-      Hinterlege beim Urlaub einen Maps-Link, um hier die Wettervorhersage für die Urlaubstage zu
-      sehen.
-    </p>
-
-    <template v-if="home && !isTripOver">
-      <p class="weather-section-label">
-        <AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" /> Wetter zuhause
+      <p v-else class="hint">
+        Hinterlege beim Urlaub einen Maps-Link, um hier die Wettervorhersage für die Urlaubstage zu
+        sehen.
       </p>
-      <p v-if="homeWeatherLoading && !homeWeatherDays" class="hint">Lädt …</p>
-      <Alert
-        v-else-if="homeWeatherError"
-        variant="danger"
-        size="sm"
-        reportable
-        :description="homeWeatherError"
-        error-context="Wetterdaten (Zuhause) laden"
-        class="weather-error-alert"
-      />
-      <p v-else-if="!homeForecastDays.length" class="hint">
-        Für
-        {{ uiSettings.showHomeWeatherFullTrip ? 'den Urlaubszeitraum' : 'die letzten Urlaubstage' }}
-        liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden ~16 Tage ab, schau kurz
-        vorher nochmal vorbei.
+    </div>
+
+    <div
+      v-if="
+        trip.lat != null && trip.lng != null && !(weatherLoading && !weatherDays) && !weatherError
+      "
+      class="weather-section"
+    >
+      <h4 class="weather-section-label">
+        <AppIcon
+          :icon="isTripOver ? ACTION_ICONS.sun : ACTION_ICONS.vacation"
+          :size="14"
+          group="actions"
+        />
+        {{ isTripOver ? 'Rückblick: Wetter im Urlaub' : 'Wetter im Urlaub' }}
+      </h4>
+      <p v-if="!trip.start_date" class="hint">
+        Hinterlege einen Reisezeitraum beim Urlaub, um hier die Wettervorhersage für die Urlaubstage
+        zu sehen.
+      </p>
+      <p v-else-if="!vacationForecastDays.length && !isTripOver" class="hint">
+        Für die Urlaubstage liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden ~16
+        Tage ab, schau kurz vorher nochmal vorbei.
+      </p>
+      <p v-else-if="!vacationForecastDays.length" class="hint">
+        Für diesen Zeitraum sind keine Wetterdaten gespeichert.
       </p>
       <HorizontalScroller
         v-else
         class="weather-days"
-        prev-label="Wetter zuhause nach links scrollen"
-        next-label="Wetter zuhause nach rechts scrollen"
+        prev-label="Urlaubswetter nach links scrollen"
+        next-label="Urlaubswetter nach rechts scrollen"
       >
         <DashboardWeatherDayItem
-          v-for="day in homeForecastDays"
+          v-for="day in vacationForecastDays"
           :key="day.date"
           :day="day"
           :date-label="formatWeekdayDate(day.date)"
+          :is-past="day.date < todayStr()"
           :alert="getDayAlert(day)"
-          @click="
-            openWeatherDayDialog(day, {
-              lat: home.lat,
-              lng: home.lng,
-              label: homeSpot?.title || 'Zuhause',
-              type: 'home',
-            })
-          "
+          @click="openWeatherDayDialog(day)"
         />
       </HorizontalScroller>
-    </template>
-    <p v-else-if="!home && !isTripOver" class="hint">
-      Markiere in der Karte unter Spots einen Spot mit
-      <AppIcon :icon="ACTION_ICONS.home" :size="13" group="actions" /> „Zuhause“, um hier zusätzlich
-      das Wetter zuhause gegen Ende des Urlaubs zu sehen.
-    </p>
 
-    <template v-if="regionLoading && !regionInfo">
-      <p class="weather-section-label">
-        <AppIcon :icon="ACTION_ICONS.region" :size="14" group="actions" /> Reiseregion
+      <p v-if="DEMO_MODE" class="weather-source static">
+        Demo-Wetterdaten (keine echte Vorhersage)
       </p>
-      <p class="hint">Lädt …</p>
-    </template>
-    <template v-else-if="regionError">
-      <p class="weather-section-label">
-        <AppIcon :icon="ACTION_ICONS.region" :size="14" group="actions" /> Reiseregion
+      <button
+        v-else
+        type="button"
+        class="weather-source"
+        @click="tripStore.requestEditTrip('settings')"
+      >
+        Quelle: Open-Meteo ({{ weatherModelLabel }}) · Anbieter wechseln
+      </button>
+    </div>
+
+    <div v-if="!isTripOver" class="weather-section">
+      <h4 class="weather-section-label">
+        <AppIcon :icon="ACTION_ICONS.home" :size="14" group="actions" /> Wetter zuhause
+      </h4>
+      <template v-if="home">
+        <p v-if="homeWeatherLoading && !homeWeatherDays" class="hint">Lädt …</p>
+        <Alert
+          v-else-if="homeWeatherError"
+          variant="danger"
+          size="sm"
+          reportable
+          :description="homeWeatherError"
+          error-context="Wetterdaten (Zuhause) laden"
+        />
+        <p v-else-if="!homeForecastDays.length" class="hint">
+          Für
+          {{
+            uiSettings.showHomeWeatherFullTrip ? 'den Urlaubszeitraum' : 'die letzten Urlaubstage'
+          }}
+          liegt noch keine Vorhersage vor – Open-Meteo deckt nur die kommenden ~16 Tage ab, schau
+          kurz vorher nochmal vorbei.
+        </p>
+        <HorizontalScroller
+          v-else
+          class="weather-days"
+          prev-label="Wetter zuhause nach links scrollen"
+          next-label="Wetter zuhause nach rechts scrollen"
+        >
+          <DashboardWeatherDayItem
+            v-for="day in homeForecastDays"
+            :key="day.date"
+            :day="day"
+            :date-label="formatWeekdayDate(day.date)"
+            :alert="getDayAlert(day)"
+            @click="
+              openWeatherDayDialog(day, {
+                lat: home.lat,
+                lng: home.lng,
+                label: homeSpot?.title || 'Zuhause',
+                type: 'home',
+              })
+            "
+          />
+        </HorizontalScroller>
+      </template>
+      <p v-else class="hint">
+        Markiere in der Karte unter Spots einen Spot mit
+        <AppIcon :icon="ACTION_ICONS.home" :size="13" group="actions" /> „Zuhause“, um hier
+        zusätzlich das Wetter zuhause gegen Ende des Urlaubs zu sehen.
       </p>
+    </div>
+
+    <div
+      v-if="
+        (regionLoading && !regionInfo) ||
+        regionError ||
+        (regionInfo && (regionInfo.languages.length || regionInfo.currency || regionInfo.advisory))
+      "
+      class="weather-section"
+    >
+      <h4 class="weather-section-label">
+        <AppIcon :icon="ACTION_ICONS.region" :size="14" group="actions" /> Reiseregion
+      </h4>
+      <p v-if="regionLoading && !regionInfo" class="hint">Lädt …</p>
       <Alert
+        v-else-if="regionError"
         variant="danger"
         size="sm"
         reportable
         :description="regionError"
         error-context="Regionsinfos laden"
-        class="weather-error-alert"
       />
-    </template>
-    <template
-      v-else-if="
-        regionInfo && (regionInfo.languages.length || regionInfo.currency || regionInfo.advisory)
-      "
-    >
-      <p class="weather-section-label">
-        <AppIcon :icon="ACTION_ICONS.region" :size="14" group="actions" /> Reiseregion
-      </p>
-      <DetailRow v-if="regionInfo.languages.length" label="Sprache">
-        {{ regionInfo.languages.join(', ') }}
-      </DetailRow>
-      <DetailRow v-if="regionInfo.currency" label="Währung">
-        <AppIcon :icon="ACTION_ICONS.currency" :size="14" group="actions" />
-        {{ regionInfo.currency.name }} ({{ regionInfo.currency.code }})
-        <span v-if="regionInfo.exchangeRate != null">
-          · <span class="nobr">1&nbsp;{{ regionInfo.currency.code }}</span> ≈
-          <span class="nobr"
-            >{{ regionInfo.exchangeRate.toFixed(2) }}&nbsp;{{ homeCurrency.currency }}</span
+      <template v-else-if="regionInfo">
+        <dl class="region-details">
+          <DetailRow
+            v-if="regionInfo.languages.length"
+            label="Sprache"
+            :icon="ACTION_ICONS.region"
+            icon-group="actions"
           >
-        </span>
-      </DetailRow>
-      <DetailRow v-if="regionInfo.advisory" label="Sicherheit">
-        <AppIcon
-          :icon="regionInfo.advisory.score > 2.0 ? ACTION_ICONS.warning : ACTION_ICONS.shieldCheck"
-          :size="14"
-          group="actions"
-        />
-        {{ regionInfo.advisory.message }}
-        <span class="region-advisory-score">({{ regionInfo.advisory.score.toFixed(1) }}/5)</span>
-      </DetailRow>
-      <router-link
-        v-if="regionShowsExchange"
-        to="/settings?tab=trip#home-currency-settings"
-        class="weather-source"
-      >
-        Quelle: {{ regionSourceParts.join(' · ') }} · Anbieter wechseln
-      </router-link>
-      <p v-else class="weather-source static">Quelle: {{ regionSourceParts.join(' · ') }}</p>
-    </template>
+            {{ regionInfo.languages.join(', ') }}
+          </DetailRow>
+          <DetailRow
+            v-if="regionInfo.currency"
+            label="Währung"
+            :icon="ACTION_ICONS.currency"
+            icon-group="actions"
+          >
+            <span class="detail-chunk"
+              >{{ regionInfo.currency.name }} ({{ regionInfo.currency.code }})</span
+            >
+            <span v-if="regionInfo.exchangeRate != null" class="detail-chunk">
+              · <span class="nobr">1&nbsp;{{ regionInfo.currency.code }}</span> ≈
+              <span class="nobr"
+                >{{ regionInfo.exchangeRate.toFixed(2) }}&nbsp;{{ homeCurrency.currency }}</span
+              >
+            </span>
+          </DetailRow>
+          <DetailRow
+            v-if="regionInfo.advisory"
+            label="Sicherheit"
+            :icon="
+              regionInfo.advisory.score > 2.0 ? ACTION_ICONS.warning : ACTION_ICONS.shieldCheck
+            "
+            icon-group="actions"
+          >
+            {{ regionInfo.advisory.message }}
+            <span class="region-advisory-score detail-chunk"
+              >({{ regionInfo.advisory.score.toFixed(1) }}/5)</span
+            >
+          </DetailRow>
+        </dl>
+        <router-link
+          v-if="regionShowsExchange"
+          to="/settings?tab=trip#home-currency-settings"
+          class="weather-source"
+        >
+          Quelle: {{ regionSourceParts.join(' · ') }} · Anbieter wechseln
+        </router-link>
+        <p v-else class="weather-source static">Quelle: {{ regionSourceParts.join(' · ') }}</p>
+      </template>
+    </div>
   </section>
 
   <WeatherDayDetailDialog
@@ -324,28 +347,66 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .weather-card {
-  margin-bottom: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+}
+
+.weather-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
 }
 
 .weather-card h3 {
   display: flex;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   align-items: center;
+  margin: 0;
   color: var(--color-primary-dark);
-  font-size: var(--font-size-md);
-  margin-bottom: var(--space-2);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  line-height: var(--line-height-tight);
+}
+
+.weather-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding-top: var(--space-md);
+  @include divider-engraved('top');
 }
 
 .weather-section-label {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  margin: 0 0 var(--space-2);
-  color: var(--color-text-muted);
+  gap: var(--space-1-5);
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
   font-weight: 600;
-  font-size: var(--font-size-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  line-height: var(--line-height-snug);
+}
+
+.weather-section-label :deep(.app-icon) {
+  color: var(--color-primary-dark);
+}
+
+.region-details {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: var(--space-sm);
+  row-gap: var(--space-1-5);
+  align-items: baseline;
+  margin: 0;
+}
+
+.region-details :deep(.detail-row) {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  margin: 0;
 }
 
 .weather-card .hint {
@@ -354,26 +415,24 @@ onMounted(() => {
   font-size: var(--font-size-sm);
 }
 
-.weather-error-alert {
-  margin-bottom: var(--space-2);
-}
-
 .weather-days {
-  --horizontal-scroller-gap: var(--space-2);
-  --horizontal-scroller-padding: 8px 6px;
-  margin: -6px -6px calc(-8px + var(--space-1));
+  --horizontal-scroller-gap: var(--space-sm);
+  --horizontal-scroller-padding: var(--space-1-5);
+  margin: calc(-1 * var(--space-1-5));
 }
 
 .weather-source {
-  display: inline-block;
-  margin: var(--space-2) 0 var(--space-2);
+  align-self: flex-start;
+  margin: 0;
+  padding: 0;
   font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
   color: var(--color-text-muted);
   text-decoration: underline;
   text-decoration-style: dotted;
+  text-align: left;
   background: none;
   border: none;
-  padding: var(--space-1) 0;
   cursor: pointer;
   font-family: inherit;
   word-break: break-word;

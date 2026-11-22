@@ -8,6 +8,7 @@ import Alert from '../primitives/Alert.vue';
 import Modal from '../Modal.vue';
 import Input from '../primitives/Input.vue';
 import Textarea from '../primitives/Textarea.vue';
+import Divider from '../primitives/Divider.vue';
 import AppIcon from '../AppIcon.vue';
 import { ACTION_ICONS } from '../../utils/actionIcons';
 import {
@@ -415,6 +416,8 @@ function handleMigrateData() {
       </Button>
     </div>
 
+    <Divider v-if="outboxEntries.length > 0" spacing="lg" />
+
     <!-- Liste der ausstehenden Einträge -->
     <div v-if="outboxEntries.length > 0" class="outbox-list">
       <div v-for="entry in outboxEntries" :key="entry.id" class="outbox-item">
@@ -556,37 +559,29 @@ function handleMigrateData() {
 </template>
 
 <style scoped lang="scss">
-.pending-sync-card {
-  margin-top: var(--space-4);
-}
-
 .header-title-row {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
   flex-wrap: wrap;
 }
 
 .header-title-row h2 {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   margin: 0;
 }
 
 .header-desc {
-  margin: var(--space-2) 0 var(--space-3);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-snug);
+  margin: 0 0 var(--space-lg);
 }
 
 .card-actions-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-bottom: var(--space-4);
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--color-border-divider);
+  gap: var(--space-sm);
 }
 
 .discard-all-btn {
@@ -602,23 +597,31 @@ function handleMigrateData() {
 .outbox-item {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-3) 0;
+  gap: var(--space-sm);
+  padding: var(--space-md) 0;
   @include divider-engraved-row;
+
+  &:first-child {
+    padding-top: 0;
+  }
+
+  &:last-child {
+    padding-bottom: 0;
+  }
 }
 
 .item-summary-row {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-lg);
   flex-wrap: wrap;
 }
 
 .item-main-info {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   flex: 1 1 200px;
   min-width: 0;
 }
@@ -626,7 +629,7 @@ function handleMigrateData() {
 .badges-row {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   flex-wrap: wrap;
 }
 
@@ -659,18 +662,18 @@ function handleMigrateData() {
 .item-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   flex-wrap: wrap;
 }
 
 .item-error-alert {
-  margin-top: var(--space-1);
+  margin-top: var(--space-xs);
 }
 
 .error-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   font-size: var(--font-size-sm);
 }
 
@@ -685,19 +688,19 @@ function handleMigrateData() {
 }
 
 .item-details-box {
-  margin-top: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  margin-top: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
   @include surface-sunken-box(var(--radius-sm-squircle));
   font-size: var(--font-size-xs);
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 
 .detail-field {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
 }
 
 .detail-label {
@@ -707,7 +710,7 @@ function handleMigrateData() {
 
 .json-code {
   margin: 0;
-  padding: var(--space-2);
+  padding: var(--space-sm);
   background: var(--color-surface);
   border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-sm);
@@ -721,14 +724,14 @@ function handleMigrateData() {
 .edit-form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-lg);
 }
 
 .modal-buttons {
   display: flex;
   justify-content: flex-end;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
 }
 
 .hint.error {

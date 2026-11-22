@@ -54,7 +54,7 @@ const heroStyle = computed(() => {
         </Button>
       </div>
     </div>
-    <p v-if="trip?.destination">
+    <p v-if="trip?.destination" class="hero-location">
       <AppIcon :icon="ACTION_ICONS.myLocation" :size="14" group="actions" />
       {{ trip.destination }}
     </p>
@@ -96,10 +96,23 @@ const heroStyle = computed(() => {
 <style lang="scss" scoped>
 .hero {
   position: relative;
-  margin-bottom: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xl);
   background: linear-gradient(135deg, var(--color-primary-tint), var(--color-surface));
   background-size: cover;
   background-position: center;
+}
+
+.hero p {
+  margin: 0;
+}
+
+.hero-location {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
 }
 
 .hero.has-image {
@@ -126,8 +139,8 @@ const heroStyle = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
 }
 
 .hero-header h1 {
@@ -141,7 +154,7 @@ const heroStyle = computed(() => {
 
 .banner-actions {
   display: flex;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   flex-shrink: 0;
   align-items: flex-start;
 }
@@ -172,7 +185,8 @@ const heroStyle = computed(() => {
   }
 }
 
-.countdown {
+.hero .countdown {
+  margin-top: var(--space-sm);
   color: var(--color-accent);
   font-weight: 600;
 }

@@ -7,6 +7,7 @@ import FormField from './FormField.vue';
 import Input from './primitives/Input.vue';
 import Select from './primitives/Select.vue';
 import Button from './primitives/Button.vue';
+import ButtonGroup from './primitives/ButtonGroup.vue';
 import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -170,7 +171,7 @@ async function handleDelete() {
         </FormField>
       </CollapsibleFieldset>
 
-      <div class="actions-row">
+      <ButtonGroup no-margin class="actions-row">
         <Button
           v-if="isEdit"
           type="button"
@@ -181,29 +182,28 @@ async function handleDelete() {
         >
           Löschen
         </Button>
-        <div class="spacer"></div>
+        <div v-if="isEdit" class="spacer"></div>
         <Button type="button" variant="secondary" class="btn-cancel" @click="handleClose">
           Abbrechen
         </Button>
         <Button type="submit">{{ isEdit ? 'Speichern' : 'Eintragen' }}</Button>
-      </div>
+      </ButtonGroup>
     </form>
   </Modal>
 </template>
 
 <style scoped lang="scss">
 .edit-form {
-  container-type: inline-size;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-lg);
   min-width: 0;
 }
 
 .row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-md);
 }
 
 .row > * {
@@ -211,25 +211,15 @@ async function handleDelete() {
   min-width: 0;
 }
 
-@include media-down('mobile') {
+@include container-down('modal', 'mobile-sm') {
   .row {
     flex-direction: column;
+    gap: var(--space-lg);
   }
 
   .row > * {
     flex: 1 1 auto;
     width: 100%;
   }
-}
-
-.actions-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-}
-
-.spacer {
-  flex: 1;
 }
 </style>

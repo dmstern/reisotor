@@ -269,7 +269,7 @@ onMounted(() => {
   </Card>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .role-badge-select {
   position: relative;
   display: inline-flex;
@@ -278,7 +278,7 @@ onMounted(() => {
 }
 
 .role-badge {
-  padding-right: 6px;
+  padding-right: var(--space-1-5);
   user-select: none;
 }
 
@@ -342,18 +342,7 @@ onMounted(() => {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   font-weight: 500;
-  margin-left: 2px;
-}
-
-.admin-card {
-  margin-bottom: var(--space-4);
-}
-
-.hint {
-  margin: 0 0 var(--space-3);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  line-height: var(--line-height-normal);
+  margin-left: var(--space-2xs);
 }
 
 .hint.error {
@@ -375,7 +364,7 @@ onMounted(() => {
 
 .users-table th {
   text-align: left;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-sm) var(--space-md);
   border-bottom: 2px solid var(--color-border-divider);
   color: var(--color-text-muted);
   font-weight: 600;
@@ -386,15 +375,29 @@ onMounted(() => {
 }
 
 .users-table td {
-  padding: var(--space-3);
+  padding: var(--space-md);
   border-bottom: 1px solid var(--color-border-divider);
   vertical-align: middle;
+}
+
+.users-table th:first-child,
+.users-table td:first-child {
+  padding-left: 0;
+}
+
+.users-table th:last-child,
+.users-table td:last-child {
+  padding-right: 0;
+}
+
+.users-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .user-cell {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   font-weight: 500;
   min-width: 0;
 }
@@ -425,7 +428,7 @@ onMounted(() => {
 .status-badges {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: var(--space-1);
+  gap: var(--space-xs);
 }
 
 .actions-col {
@@ -438,6 +441,6 @@ onMounted(() => {
   justify-content: flex-end;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 </style>

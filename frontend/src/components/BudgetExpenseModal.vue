@@ -6,6 +6,7 @@ import FormField from './FormField.vue';
 import Input from './primitives/Input.vue';
 import Select from './primitives/Select.vue';
 import Button from './primitives/Button.vue';
+import ButtonGroup from './primitives/ButtonGroup.vue';
 import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
 import CategoryCombobox from './CategoryCombobox.vue';
 import FileAttachments from './FileAttachments.vue';
@@ -108,12 +109,6 @@ const detailsCount = computed(() => {
   return count > 0 ? count : undefined;
 });
 
-const draft = useDraftAutosave(
-  () => (props.expense ? `budgetExpense:edit:${props.expense.id}` : 'budgetExpense:new'),
-  form,
-  () => props.modelValue
-);
-
 watch(
   () => [props.modelValue, props.expense] as const,
   ([isOpen, exp]) => {
@@ -163,6 +158,12 @@ watch(
     }
   },
   { immediate: true }
+);
+
+const draft = useDraftAutosave(
+  () => (props.expense ? `budgetExpense:edit:${props.expense.id}` : 'budgetExpense:new'),
+  form,
+  () => props.modelValue
 );
 
 watch(
@@ -462,7 +463,7 @@ async function handleDelete() {
         @discard="discardDraft"
       />
 
-      <div class="actions-row">
+      <ButtonGroup no-margin class="actions-row">
         <Button
           v-if="isEdit"
           type="button"
@@ -474,36 +475,34 @@ async function handleDelete() {
         >
           Löschen
         </Button>
-        <div class="spacer"></div>
+        <div v-if="isEdit" class="spacer"></div>
         <Button type="button" variant="secondary" class="btn-cancel" @click="handleClose">
           Abbrechen
         </Button>
         <Button type="submit" :disabled="isUploading">
           {{ submitLabel }}
         </Button>
-      </div>
+      </ButtonGroup>
     </form>
   </Modal>
 </template>
 
 <style scoped lang="scss">
 .type-toggle-wrapper {
-  margin-bottom: var(--space-1);
   min-width: 0;
 }
 
 .edit-form {
-  container-type: inline-size;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-lg);
   min-width: 0;
 }
 
 .row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-md);
 }
 
 .row > * {
@@ -516,25 +515,15 @@ async function handleDelete() {
   width: 100%;
 }
 
-@include media-down('mobile') {
+@include container-down('modal', 'mobile-sm') {
   .row {
     flex-direction: column;
+    gap: var(--space-lg);
   }
 
   .row > * {
     flex: 1 1 auto;
     width: 100%;
   }
-}
-
-.actions-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-}
-
-.spacer {
-  flex: 1;
 }
 </style>

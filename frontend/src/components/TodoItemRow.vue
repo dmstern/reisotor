@@ -107,7 +107,7 @@ const emit = defineEmits<{
 .item-main {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   min-width: 0;
   width: 100%;
 }
@@ -115,7 +115,7 @@ const emit = defineEmits<{
 .check {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   cursor: pointer;
   min-width: 0;
   min-height: 24px;
@@ -162,9 +162,9 @@ const emit = defineEmits<{
 .item-meta {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   flex-wrap: wrap;
-  margin-left: calc(24px + var(--space-2));
+  margin-left: calc(24px + var(--space-sm));
   font-size: var(--font-size-xs);
 }
 
@@ -172,9 +172,9 @@ const emit = defineEmits<{
 .period-badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   min-height: 34px;
-  padding: 4px 10px;
+  padding: var(--space-xs) var(--space-md);
   font-size: var(--font-size-xs);
   max-width: 100%;
   min-width: 0;
@@ -190,7 +190,7 @@ const emit = defineEmits<{
 .note {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   max-width: min(200px, 100%);

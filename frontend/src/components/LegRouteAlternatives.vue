@@ -159,7 +159,7 @@ const singleRouteDistance = computed(() => {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 6px 10px;
+  padding: var(--space-1-5) 10px;
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-surface);
@@ -217,7 +217,7 @@ const singleRouteDistance = computed(() => {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  padding: 2px var(--space-1);
+  padding: var(--space-2xs) var(--space-1);
   font-size: var(--font-size-xs);
   font-weight: 600;
   border-radius: var(--radius-pill);

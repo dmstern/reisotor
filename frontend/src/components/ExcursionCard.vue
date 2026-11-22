@@ -174,7 +174,7 @@ function onCardKeydown(event: KeyboardEvent) {
   flex-direction: row;
   align-items: stretch;
   min-height: 5rem;
-  margin-inline: 2px;
+  margin-inline: var(--space-2xs);
   border: var(--border-width) solid transparent;
   background: transparent !important;
   cursor: pointer;
@@ -273,8 +273,8 @@ function onCardKeydown(event: KeyboardEvent) {
   flex-direction: row;
   align-items: stretch;
   position: relative;
-  padding: calc(var(--space-2) + var(--space-1)) var(--space-3);
-  gap: calc(var(--space-2) + var(--space-1));
+  padding: var(--space-lg) var(--spots-col-pad, var(--space-lg));
+  gap: var(--space-md);
 }
 
 .body {
@@ -284,7 +284,7 @@ function onCardKeydown(event: KeyboardEvent) {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-1-5);
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -312,7 +312,7 @@ function onCardKeydown(event: KeyboardEvent) {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
 }
 
 .card-title-row {
@@ -401,8 +401,8 @@ function onCardKeydown(event: KeyboardEvent) {
 
 @include container-down('spots-col', 'mobile-compact') {
   .tour-card-main {
-    padding: var(--space-2) var(--space-3);
-    gap: var(--space-2);
+    padding: var(--space-md) var(--spots-col-pad, var(--space-lg));
+    gap: var(--space-sm);
   }
 }
 

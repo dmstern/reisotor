@@ -3,6 +3,7 @@ import Card from '../primitives/Card.vue';
 import Button from '../primitives/Button.vue';
 import CheckboxCard from '../primitives/CheckboxCard.vue';
 import Accordion from '../primitives/Accordion.vue';
+import Divider from '../primitives/Divider.vue';
 import ThemeModeSelect from '../ThemeModeSelect.vue';
 import AccentColorSettings from '../AccentColorSettings.vue';
 import GlassSettings from '../GlassSettings.vue';
@@ -80,7 +81,7 @@ const {
         @reset="resetNav"
       />
 
-      <p class="hint nav-config-hint">
+      <p class="hint">
         Reihenfolge und Sichtbarkeit der übrigen Einträge ("Übersicht" bleibt immer an erster
         Stelle).
       </p>
@@ -117,7 +118,8 @@ const {
 
       <Accordion :expanded="navConfig.customMobile">
         <div class="mobile-nav-config-section">
-          <p class="hint mobile-nav-config-hint">
+          <Divider spacing="lg" />
+          <p class="hint">
             Reihenfolge und Sichtbarkeit auf Mobilgeräten ("Übersicht" bleibt immer an erster
             Stelle):
           </p>
@@ -156,7 +158,7 @@ const {
         "
         @reset="resetDashboard"
       />
-      <p class="hint nav-config-hint">Reihenfolge und Sichtbarkeit der Dashboard-Kacheln.</p>
+      <p class="hint">Reihenfolge und Sichtbarkeit der Dashboard-Kacheln.</p>
       <ul class="dashboard-config-list">
         <ReorderableConfigItem
           v-for="(entry, index) in dashboardConfig.entries"
@@ -190,7 +192,7 @@ const {
         "
         @reset="resetVacationCountdown"
       />
-      <p class="hint intro-hint">
+      <p class="hint">
         Passe das Verhalten des Hinweises im Dashboard-Header während eines laufenden Urlaubs an.
       </p>
       <CheckboxCard
@@ -236,23 +238,11 @@ const {
   </div>
 </template>
 
-<style scoped>
-.app-tab :deep(.card) {
-  margin-bottom: var(--space-4);
-}
-
-.hint {
-  margin: 0 0 var(--space-3);
-  font-size: var(--font-size-sm);
-}
-
-.hint.nav-config-hint {
-  margin-top: var(--space-3);
-  margin-bottom: var(--space-3);
-}
-
-.hint.intro-hint {
-  margin-bottom: var(--space-3);
+<style lang="scss" scoped>
+.app-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
 }
 
 .nav-config-list,
@@ -263,32 +253,22 @@ const {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 0;
 }
 
 .mobile-nav-toggle-wrapper {
-  margin-top: var(--space-4);
-}
-
-.mobile-nav-config-section {
-  padding-top: var(--space-3);
-  margin-top: var(--space-3);
-  border-top: 1px dashed var(--color-border-divider);
-}
-
-.mobile-nav-config-hint {
-  margin-bottom: var(--space-3);
+  margin-top: var(--space-xl);
 }
 
 .factory-reset-card {
-  margin-top: var(--space-6);
+  margin-top: var(--space-sm);
 }
 
 .factory-reset-inner {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-xl);
 }
 
 .factory-reset-info {
@@ -298,8 +278,8 @@ const {
 .factory-reset-title-row {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-1);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
 }
 
 .factory-reset-title-row h2 {
@@ -310,18 +290,17 @@ const {
 
 .factory-reset-hint {
   margin: 0;
-  line-height: var(--line-height-normal);
 }
 
 .factory-reset-action {
   flex-shrink: 0;
 }
 
-@container app-main (max-width: 640px) {
+@include container-app-main-down('tablet-sm') {
   .factory-reset-inner {
     flex-direction: column;
     align-items: stretch;
-    gap: var(--space-3);
+    gap: var(--space-lg);
   }
 
   .factory-reset-action {

@@ -230,7 +230,7 @@ provide(
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--control-gap-md, var(--space-2));
+  gap: var(--control-gap-md);
   padding: 10px 18px;
   min-height: var(--control-height-md, 46px);
   box-sizing: border-box;
@@ -627,8 +627,8 @@ a.btn.is-loading {
 /* Einheitliche Größenstufen (Issue #810): xs (30px), sm (36px), md (46px), lg (52px) */
 .btn--xs {
   @include touch-target($expand: true, $position: null);
-  gap: var(--control-gap-xs, 4px);
-  padding: 4px 10px;
+  gap: var(--control-gap-xs);
+  padding: var(--space-xs) 10px;
   font-size: var(--font-size-xs);
   min-height: var(--control-height-xs, 30px);
   border-radius: var(--control-radius-xs-squircle, 6.5px);
@@ -637,8 +637,8 @@ a.btn.is-loading {
 
 .btn--sm {
   @include touch-target($expand: true, $position: null);
-  gap: var(--control-gap-sm, 6px);
-  padding: 6px 12px;
+  gap: var(--control-gap-sm);
+  padding: var(--space-1-5) var(--space-md);
   font-size: var(--font-size-sm);
   min-height: var(--control-height-sm, 36px);
   border-radius: var(--control-radius-sm-squircle, 8px);
@@ -646,8 +646,8 @@ a.btn.is-loading {
 }
 
 .btn--lg {
-  gap: var(--control-gap-md, 8px);
-  padding: 12px 22px;
+  gap: var(--control-gap-md);
+  padding: var(--space-md) 22px;
   font-size: var(--font-size-md);
   min-height: var(--control-height-lg, 52px);
   border-radius: var(--control-radius-lg-squircle, 11.5px);
@@ -711,11 +711,11 @@ a.btn.is-loading {
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
-  gap: var(--control-gap-sm, 6px);
+  gap: var(--control-gap-sm);
   min-height: var(--control-height-sm, 36px);
   max-width: 100%;
   min-width: 0;
-  padding: var(--space-1) 12px var(--space-1) 6px;
+  padding: var(--space-1) var(--space-md) var(--space-1) var(--space-1-5);
   border: var(--border-width) solid var(--color-border-strong);
   border-radius: var(--radius-pill);
   corner-shape: round;

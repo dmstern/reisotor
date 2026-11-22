@@ -533,13 +533,14 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 .modal {
   position: relative;
   container-type: inline-size;
+  container-name: modal;
   background: var(--color-surface);
   --scroll-fade-bg: var(--color-surface);
   --tab-bar-fade-bg: var(--color-surface);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-lg-squircle);
   corner-shape: squircle;
-  padding: var(--space-4);
+  padding: var(--space-xl);
   max-width: 480px;
   width: 100%;
   max-height: min(90vh, 100%);
@@ -558,13 +559,13 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 @include media-down('tablet-sm') {
   .overlay {
     padding-top: calc(var(--space-3) + env(safe-area-inset-top, 0px));
-    padding-right: calc(12px + env(safe-area-inset-right, 0px));
+    padding-right: calc(var(--space-md) + env(safe-area-inset-right, 0px));
     padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
-    padding-left: calc(12px + env(safe-area-inset-left, 0px));
+    padding-left: calc(var(--space-md) + env(safe-area-inset-left, 0px));
   }
 
   .modal {
-    padding: var(--space-3);
+    padding: var(--space-lg);
   }
 }
 
@@ -614,7 +615,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   /* padding (6px) reserviert Platz für den Fokus-Rahmen (outline-offset 2px +
      outline-Breite 3px = 5px, siehe input:focus-visible in style.css) von Feldern ganz am Rand
      des Formulars - sonst schneidet das eigene overflow-y:auto des Containers diesen Rahmen ab. */
-  padding: 6px;
+  padding: var(--space-1-5);
 }
 
 /* Sanfte Fade-Out-Verläufe in die Hintergrundfarbe (--color-surface) am oberen und unteren Rand,
@@ -673,10 +674,10 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-4);
-  padding-top: var(--space-3);
-  padding-bottom: var(--space-3);
+  gap: var(--space-sm);
+  margin-top: 0;
+  padding-top: var(--space-lg);
+  padding-bottom: 0;
   @include divider-engraved('top');
 }
 
@@ -686,7 +687,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   flex: 1;
 }
 
-@include container-down('mobile') {
+@include container-down('modal', 'mobile-sm') {
   .modal-body :slotted(form) .actions-row,
   .modal-body :slotted(*) .actions-row,
   .modal-body :slotted(.actions-row) {
@@ -716,8 +717,8 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
 }
 
 .modal-head h2 {
@@ -730,7 +731,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 .modal-head-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   flex-shrink: 0;
 }
 

@@ -55,23 +55,11 @@ const { exporting, exportError, exportBackup } = useBackupExport();
 </template>
 
 <style scoped>
-.admin-card {
-  margin-bottom: var(--space-4);
-}
-
 .backup-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-  margin-bottom: var(--space-4);
-}
-
-.hint {
-  margin: 0 0 var(--space-3);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  line-height: var(--line-height-normal);
+  gap: var(--space-sm);
+  margin: 0 0 var(--space-lg);
 }
 
 .hint:last-child {

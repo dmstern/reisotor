@@ -487,8 +487,8 @@ defineExpose({
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  padding: 10px 12px;
-  gap: var(--space-2, 8px);
+  padding: var(--space-md);
+  gap: var(--space-sm);
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
@@ -543,7 +543,7 @@ defineExpose({
 .polaroid-body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2, 8px);
+  gap: var(--space-sm);
   min-width: 0;
   padding: 0;
 }
@@ -551,7 +551,7 @@ defineExpose({
 .status-details {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2, 8px);
+  gap: var(--space-sm);
   min-width: 0;
   max-width: 100%;
   width: 100%;
@@ -623,7 +623,7 @@ defineExpose({
   height: 20px;
   min-width: 20px;
   min-height: 20px;
-  margin-left: 2px;
+  margin-left: var(--space-2xs);
   color: var(--color-text-muted);
 }
 
@@ -637,7 +637,7 @@ defineExpose({
 .coords-missing-wrap {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
 }
 
 .coords-info-popover {

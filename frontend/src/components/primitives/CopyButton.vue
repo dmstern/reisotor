@@ -162,12 +162,16 @@ async function handleCopy(event: MouseEvent) {
   user-select: none;
 }
 
-/* Größen */
+/* Größen: Kompakte 22px in 'sm', damit der Button als echtes Inline-Suffix am Textende fließt
+   und nicht durch eine 28px-Box vorzeitig in eine eigene Geister-Zeile umbricht.
+   Die 36px/44px Touch-Hitbox bleibt über ::before vollständig erhalten. */
 .copy-btn--sm {
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  min-height: 28px;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+  margin-left: var(--space-2xs);
+  margin-block: -3px;
 }
 
 .copy-btn--md {

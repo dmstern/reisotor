@@ -200,7 +200,7 @@ function openCalendarAtDate(date: string) {
 .tour-status-meta {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
   font-size: var(--font-size-xs);
   line-height: var(--line-height-snug);
   color: var(--color-text-muted);
@@ -238,7 +238,7 @@ function openCalendarAtDate(date: string) {
 @container spots-col (max-width: 360px) {
   :deep(.done-toggle) {
     font-size: var(--font-size-xs);
-    padding: 2px var(--space-2);
+    padding: var(--space-2xs) var(--space-2);
   }
 }
 </style>

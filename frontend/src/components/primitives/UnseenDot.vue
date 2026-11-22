@@ -120,7 +120,7 @@ withDefaults(
 
 .unseen-dot--inline {
   display: inline-block;
-  margin-left: 2px;
+  margin-left: var(--space-2xs);
   vertical-align: middle;
 }
 

@@ -184,7 +184,7 @@ async function onSubmit() {
 .field label {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2xs);
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text-heading);

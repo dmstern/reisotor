@@ -5,8 +5,10 @@ import Button from '../primitives/Button.vue';
 import Badge from '../primitives/Badge.vue';
 import IconButton from '../primitives/IconButton.vue';
 import Input from '../primitives/Input.vue';
+import Divider from '../primitives/Divider.vue';
 import PasswordInput from '../PasswordInput.vue';
 import AppIcon from '../AppIcon.vue';
+import SettingsCardHeader from './SettingsCardHeader.vue';
 import PendingSyncCard from './PendingSyncCard.vue';
 import { useAccountTierModal } from '../../composables/useAccountTierModal';
 import { useAuthStore } from '../../stores/auth';
@@ -176,6 +178,8 @@ watch(
         </Button>
       </div>
 
+      <Divider spacing="lg" />
+
       <form class="form username-form" @submit.prevent="changeUsername">
         <div class="field">
           <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
@@ -193,6 +197,8 @@ watch(
           {{ usernameSaving ? 'Speichern…' : 'Benutzername speichern' }}
         </Button>
       </form>
+
+      <Divider spacing="lg" />
 
       <form class="form email-form" @submit.prevent="changeEmail">
         <div class="field">
@@ -276,6 +282,8 @@ watch(
         </Button>
       </form>
 
+      <Divider spacing="lg" />
+
       <h3>Avatar wählen</h3>
       <div class="emoji-scroll">
         <div v-for="cat in EMOJI_CATEGORIES" :key="cat.label" class="emoji-category">
@@ -296,13 +304,13 @@ watch(
           </div>
         </div>
       </div>
-      <p v-if="avatarSaved" class="hint success">
+      <p v-if="avatarSaved" class="hint success avatar-saved-hint">
         Gespeichert <AppIcon :icon="ACTION_ICONS.done" :size="14" group="actions" />
       </p>
     </Card>
 
     <Card>
-      <h2>Passwort ändern</h2>
+      <SettingsCardHeader title="Passwort ändern" />
       <form class="form" @submit.prevent="changePassword">
         <div class="field">
           <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
@@ -359,7 +367,7 @@ watch(
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .tier-badge-btn {
   background: none;
   border: none;
@@ -385,16 +393,18 @@ watch(
 .tier-badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
 }
 
-.account-tab :deep(.card) {
-  margin-bottom: var(--space-4);
+.account-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
 }
 
 .jump-to-unsynced {
   display: inline-block;
-  margin-left: var(--space-2);
+  margin-left: var(--space-sm);
   background: none;
   border: none;
   padding: 0;
@@ -411,15 +421,15 @@ watch(
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 
 .account-header {
-  align-items: flex-start;
-  margin-bottom: var(--space-4);
+  align-items: center;
+  margin-bottom: 0;
 }
 
-@container app-main (max-width: 600px) {
+@include container-app-main-down('tablet-sm') {
   .account-header {
     flex-direction: column;
     align-items: stretch;
@@ -433,7 +443,7 @@ watch(
 .user-info {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   min-width: 0;
 }
 
@@ -441,7 +451,7 @@ watch(
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-3);
+  gap: var(--space-lg);
   min-width: 0;
 }
 
@@ -454,8 +464,8 @@ watch(
 .status-badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-1) var(--space-2);
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
   border-radius: var(--radius-pill);
   font-size: var(--font-size-xs);
   font-weight: 600;
@@ -465,8 +475,8 @@ watch(
 
 .status-dot {
   display: inline-block;
-  width: var(--space-2);
-  height: var(--space-2);
+  width: var(--space-sm);
+  height: var(--space-sm);
   border-radius: var(--radius-full);
 }
 
@@ -516,21 +526,9 @@ watch(
 .form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-lg);
   width: 100%;
   max-width: 360px;
-}
-
-.username-form {
-  margin-bottom: var(--space-4);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--color-border-divider);
-}
-
-.email-form {
-  margin-bottom: var(--space-4);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--color-border-divider);
 }
 
 .label-row {
@@ -543,35 +541,36 @@ watch(
 .verified-badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
 }
 
 .pending-email-box {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-3);
+  gap: var(--space-sm);
+  padding: var(--space-lg);
   background: var(--color-primary-tint);
   border: 1px solid var(--color-primary);
   border-radius: var(--radius-md-squircle);
+  corner-shape: squircle;
 }
 
 .pending-email-info {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 
 .pending-icon {
   color: var(--color-primary);
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: var(--space-2xs);
 }
 
 .pending-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   font-size: var(--font-size-xs);
 }
 
@@ -591,14 +590,14 @@ watch(
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-top: var(--space-1);
+  gap: var(--space-sm);
+  margin-top: var(--space-xs);
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   font-weight: 600;
   font-size: var(--font-size-sm);
 }
@@ -607,22 +606,25 @@ watch(
   display: inline-flex;
   align-items: center;
   flex-direction: row;
-  gap: var(--space-1);
+  gap: var(--space-xs);
 }
 
 .required-indicator {
   color: var(--color-danger);
 }
 
-.hint {
-  margin: 0 0 var(--space-3);
-  font-size: var(--font-size-sm);
+.form .hint {
+  margin: 0;
+}
+
+.avatar-saved-hint {
+  margin: var(--space-md) 0 0;
 }
 
 .hint.success {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   color: var(--color-success);
 }
 
@@ -632,22 +634,22 @@ watch(
 
 h3 {
   font-size: var(--font-size-md);
-  margin: var(--space-4) 0 var(--space-3) 0;
+  margin: 0 0 var(--space-md);
 }
 
 .emoji-scroll {
   max-height: 220px;
   overflow-y: auto;
-  margin-top: var(--space-2);
-  padding-right: var(--space-1);
+  margin-top: 0;
+  padding-right: var(--space-xs);
 }
 
 .emoji-category + .emoji-category {
-  margin-top: var(--space-2);
+  margin-top: var(--space-lg);
 }
 
 .emoji-category-label {
-  margin: var(--space-3) 0 var(--space-2);
+  margin: 0 0 var(--space-sm);
   font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
@@ -658,6 +660,6 @@ h3 {
 .emoji-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 </style>
