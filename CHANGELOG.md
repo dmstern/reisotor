@@ -5,6 +5,65 @@ Format lose an [Keep a Changelog](https://keepachangelog.com/) angelehnt, Versio
 [Semantic Versioning](https://semver.org/). Neue Einträge werden beim Erstellen eines Releases
 (`.github/workflows/release.yml`) oben ergänzt.
 
+## [2.3.0] - 2026-11-22
+
+### Reisen und Urlaube
+
+- ✨ **Urlaubsübersicht im modernen Karten-Design**: Die Urlaubsverwaltung zeigt Urlaube jetzt als übersichtliche Karten-Sammlung mit Titelbild, Zeitraum und Reisedauer, Reiseziel, Mitreisenden sowie kompakten Statistiken zu Spots, Touren, Tagebucheinträgen und Packlisten-Fortschritt. Die Mitglieder-Verwaltung ist einheitlich im Bearbeiten-Dialog gebündelt.
+
+### Karte und Navigation
+
+- 💡 **Routenkarte im Weg-Dialog auf dem Smartphone**: Die Routenführung wird jetzt direkt ohne extra Aufklapp-Menü angezeigt. Auf schmalen Bildschirmen steht die Routen-Auswahl über der Karte statt darüber zu schweben. Beim Herunterscrollen wird die Karte nicht mehr versehentlich verschoben oder gezoomt; mit „Karte bedienen“ lässt sie sich bei Bedarf gezielt freigeben.
+- ✨ **Liquid-Glass-Optik für die mobile Spots-Liste**: Im eingeklappten und halb geöffneten Zustand schwebt die mobile Listenansicht über der Karte in halbtransparenter Glas-Optik, inklusive weichgezeichneter Kategorie-Leiste beim Scrollen.
+- 🔍 **Direkte Suche im eingeklappten Karten-Fenster**: Im ganz eingeklappten Zustand zeigt die schmale Leiste unten ein eingebettetes Suchfeld samt aktivem Filter-Zähler, das beim Antippen die Ansicht öffnet und die Suche sofort fokussiert.
+- 🥾 **Tour-Aufzeichnungen direkt auf der Karte abspielen**: Beim Fokussieren einer Tour werden verknüpfte Aufzeichnungen automatisch auf der Karte angezeigt und lassen sich über den neu gestalteten, touch-freundlichen Player mit breiter Zeitleiste direkt abspielen – bei mehreren Aufzeichnungen kann bequem zwischen ihnen gewechselt werden.
+
+### Spots, Touren und Unterkünfte
+
+- 🐛 **Bugfix**: Touren mit langen Notizen werden im aufgeklappten Zustand nicht mehr abgeschnitten und lassen sich in der mobilen Tourenliste sofort flüssig scrollen.
+- 📍 **Spots direkt zur Tour hinzufügen**: Auf Tour-Karten und beim Bearbeiten von Touren lassen sich bestehende Spots über ein eigenes Auswahlmenü direkt als Station ergänzen oder sofort neu anlegen.
+- ✨ **Übersichtlichere Touren mit eigener Detailansicht**: Statt langer aufklappbarer Karten öffnet ein Tipp auf eine Tour nun eine ruhige, eigene Detailansicht mit Zurück-Navigation – inklusive Uhrzeit, summierter Reisedauer, kompakter Kilometer- und Dauer-Zusammenfassung nach Verkehrsmittel, Autor, Wetter-Anzeige, Schalter für den Besucht-Status und einer Fokus-Markierung der zuletzt angesehenen Tour beim Zurückkehren in die Liste.
+- ✨ **Präzise Teilstrecken-Distanzen & reine Symbole**: In der Tour-Schlange zeigen Teilstrecken-Verbinder nun neben der Dauer auch die exakte Distanz (z. B. aus der Routenberechnung). Alle Verkehrsmittel werden konsistent mit modernen Tabler-Symbolen statt Emojis dargestellt.
+- 💡 **Schnellere Eingabe bei Unterkünften**: Beim Anlegen einer Unterkunft schlägt das Suchfeld direkt zu Beginn passende Beispiele für Links von Buchungsportalen vor.
+- 🚆 **An- und Abreisen flexibel speichern**: Touren für Anreise, Abreise oder Weiterreise können ab sofort auch ohne zwei zugewiesene Stationen gespeichert werden, sodass fehlende Zwischenhalte bequem später ergänzt werden können.
+- ✅ **„Gemacht / Besucht“ auch ohne festes Datum & direkt im Dialog**: Ungeplante Spots und Touren können nun direkt ohne Datumsangabe als erledigt beziehungsweise besucht markiert werden. Im Tour-Dialog lässt sich der Gemacht-Status direkt neben dem Datum umschalten, und im Spot-Dialog können Besuchstage bereits beim Anlegen und Bearbeiten einzeln als besucht abgehakt werden.
+- 📖 **Symmetrische Verknüpfungen mit dem Reisetagebuch**: Verknüpfte Tagebucheinträge erscheinen nun auf Spot- und Tour-Karten einheitlich als klickbare Hinweise und weisen ungeplanten Einträgen beim Speichern echte, bearbeitbare Daten zu.
+- 💡 **Einheitliches Status- und Einplanen-Menü für Spots und Touren**: Der separate „Einplanen“-Button auf ungeplanten Tour-Karten wurde entfernt. Sowohl Spots als auch Touren nutzen nun unabhängig von der Anzahl der Termine durchgehend denselben Status-Button mit Auswahlmenü, über das Einträge für ein Datum eingeplant, als besucht/gemacht abgehakt oder direkt im Kalender geöffnet werden können.
+
+### Kalender und Planung
+
+- 📅 **Direkte Kalender-Projektion statt versteckter Hintergrund-Termine**: Spots (mit eigenen Besuchsdaten), Touren, Reisen, ToDos und veröffentlichte Tagebucheinträge erscheinen nun direkt anhand ihres jeweiligen Datums im Kalender und öffnen per Klick unmittelbar den zugehörigen Bereich, während die Kalender-Schublade am Desktop geöffnet bleibt. Manuelle Termine über das Plus-Symbol bleiben eigenständig und können optional einen Ort als Treffpunkt oder Adresse referenzieren.
+- 🔄 **Sofortige Synchronisation geplanter Aufgaben**: Neue oder geänderte ToDos mit Fälligkeitsdatum werden ab sofort unmittelbar und ohne erneutes Laden im Kalender angezeigt.
+
+### Wetter
+
+- 💡 **Komfortableres Blättern in der Wettervorhersage**: Die Tageskacheln im Wetter-Widget lassen sich nun mit dezenten Pfeil-Schaltflächen und weichem Randverlauf statt über einen nativen Scrollbalken durchblättern.
+
+### Design und Bedienung
+
+- ✨ **Einheitliche Abstände & luftigeres Layout**: Karten, Dialoge, Listen, Übersichten und Formulare nutzen nun app-weit ein harmonisches, einheitliches Abstands- und Fluchtlinien-System. Dadurch wirken alle Ansichten spürbar ruhiger, aufgeräumter und luftiger – sowohl auf großen Bildschirmen als auch auf schmalen Smartphones.
+- 💡 **Verbesserung**: Hinweise auf fehlende Standorte nutzen nun ein eigenes Standort-Warnicon, und der Info-Button im „Standort fehlt“-Badge fügt sich mit gleichmäßigem Abstand harmonisch in das Badge ein.
+- 📱 **Besseres Layout für Datumsfelder und Smartphones**: Datums- und Zeitfelder bleiben auf iOS und schmalen Bildschirmen sauber innerhalb der Dialoge und ordnen sich bei Bedarf untereinander an. Zudem wurden verschiedene kleine Darstellungs-, Umbruch- und Scroll-Fehler in mobilen Ansichten und bei deaktivierten Auswahlfeldern behoben.
+- ✨ **Neues Reisotor-Optik-Ladesystem**: Der bisherige Standard-Spinner wurde durch moderne, auf die aktuelle Primary- und Liquid-Glass-Optik abgestimmte Lade-Animationen ersetzt – mit einem fein skalierenden Glass-Lens-Indikator für allgemeines Laden, einem Visier-Scanner für Orts-, Adress-, Bild- und Nutzersuchen sowie einem ruhigen Spot-Radar für externe Wetterabfragen.
+- 🐛 **Bugfix**: Spot-Karten und Listenelemente werden beim Scrollen auf Mobilgeräten und Tablets nicht mehr versehentlich eingedrückt, wenn man die Liste auf einer Karte berührt.
+- ✨ **Hintergrundadaptive 3D-Bedienelemente**: Sekundäre Buttons, Umschalter und Status-Pillen passen ihren Hintergrund halbtransparent an helle, dunkle und gläserne Oberflächen an, während die Körnung der Auswahlschalter dezent erhalten bleibt.
+- ✨ **3D-Glasoptik für Startseite, Login und bessere Lesbarkeit**: Die öffentliche Startseite und die Anmeldekarte übernehmen nun die aktuelle 3D-Oberflächen- und Glasoptik, und weiße Texte auf hellen Urlaubs-Titelbildern im Dashboard sind dank optimiertem Schattenverlauf deutlich besser lesbar.
+- 💡 **Feinschliff an Menüs, Buttons und Eingabefeldern**: Dropdown-Menüs reagieren sauberer beim Überfahren, Listen-Filter nutzen einheitliche Schaltflächen, und kleinere Details wie die Rahmen von Benachrichtigungen, das Symbol für gesetzte Karten-Pins sowie die Höhe des Notiz-Editors wurden optisch angeglichen.
+- 💡 **Ruhigere Listen & versenkte Vorschau-Bereiche**: Lange Listen in Einstellungen und Dialogen (etwa Kategorien, betroffene Einträge oder Synchronisations-Warteschlange) trennen Einträge nun mit feinen eingefrästen Glanzkanten statt einzelner Rahmenboxen. Vorschau- und Infobereiche erscheinen einheitlich als dezent abgesetzte, versenkte Flächen im Stil aufklappbarer Bereiche, Mitglieder- und Besuchsdaten-Listen halten ihre Zeilen automatisch gleich hoch, Besuchsdaten nutzen nun die vertrauten Standard-Checkbox-Karten und GPS-Tracks in der Kartenansicht erscheinen in denselben plastischen 3D-Karten mit Hover-Animation wie Spots und Touren.
+
+### Einstellungen, Benachrichtigungen und Synchronisation
+
+- ✨ **Zweistufiges App-Update**: Kleinere Updates lassen sich weiterhin auf später verschieben, während bei tiefgreifenden Serveränderungen direkt eine verbindliche Aktualisierung angezeigt wird – ungespeicherte Offline-Änderungen bleiben dabei sicher erhalten.
+
+### Demo und Feedback
+
+- 🛡️ **Klarerer Schutz vor versehentlich öffentlichen Angaben**: Das Feedback-Formular weist nun deutlich auf die öffentliche Speicherung auf GitHub hin und fragt vor dem endgültigen Absenden über einen Bestätigungsdialog noch einmal nach.
+
+### Weitere Verbesserungen und Fehlerbehebungen
+
+- 🐛 **Entwurfs-Fehlalarm, Überläufe und Kalender-Leiste behoben**: Beim Öffnen bestehender Einträge in Pack-, Einkaufs-, To-do- und Budget-Dialogen wird nicht mehr fälschlich ein ungespeicherter Entwurf angezeigt. Außerdem brechen lange Tour- und Spot-Verknüpfungen im Tagebuch auf Smartphones nicht mehr aus den Karten aus, und die Kalender-Kopfzeile springt beim Blättern durch Zeiträume nicht mehr um.
+- 🐛 **Keine falschen „Neu“-Markierungen bei Sprüngen und Fokus**: Beim Wechseln zwischen Tagebucheinträgen, Touren, Spots, Karte und Kalender wird das angesprungene Element nun im Fokusrahmen hervorgehoben statt dauerhaft mit dem grünen „Neu“-Effekt und Funken-Symbol für Änderungen anderer Mitreisender markiert zu bleiben.
+
 ## [2.2.0] - 2026-11-15
 
 ### Karte und Navigation
