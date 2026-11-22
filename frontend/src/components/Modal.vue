@@ -540,7 +540,10 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-lg-squircle);
   corner-shape: squircle;
-  padding: var(--space-xl);
+  /* Unten weniger Modal-Padding, dafür mehr Bottom-Padding in .modal-body (16px statt 6px),
+     damit Button-Schatten (--shadow-control / --shadow-control-hover) und Fokus-Ringe am Ende
+     des Scroll-Containers nicht vom overflow:hidden abgeschnitten werden. */
+  padding: var(--space-xl) var(--space-xl) var(--space-sm);
   max-width: 480px;
   width: 100%;
   max-height: min(90vh, 100%);
@@ -565,7 +568,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   }
 
   .modal {
-    padding: var(--space-lg);
+    padding: var(--space-lg) var(--space-lg) var(--space-xs);
   }
 }
 
@@ -612,10 +615,11 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
-  /* padding (6px) reserviert Platz für den Fokus-Rahmen (outline-offset 2px +
-     outline-Breite 3px = 5px, siehe input:focus-visible in style.css) von Feldern ganz am Rand
-     des Formulars - sonst schneidet das eigene overflow-y:auto des Containers diesen Rahmen ab. */
-  padding: var(--space-1-5);
+  /* padding (6px oben/seitlich, 16px unten) reserviert Platz für den Fokus-Rahmen (outline-offset 2px +
+     outline-Breite 3px = 5px, siehe input:focus-visible in style.css) sowie unten zusätzlich für
+     Button-Schatten (--shadow-control / --shadow-control-hover), sonst schneidet overflow-y:auto
+     bzw. .modal-body-wrap (overflow:hidden) diese ab. */
+  padding: var(--space-1-5) var(--space-1-5) var(--space-lg);
 }
 
 /* Sanfte Fade-Out-Verläufe in die Hintergrundfarbe (--color-surface) am oberen und unteren Rand,
@@ -673,6 +677,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 .modal-body :slotted(.actions-row) {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
   gap: var(--space-sm);
   margin-top: 0;
