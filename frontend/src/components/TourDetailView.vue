@@ -182,7 +182,7 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
           <Button
             v-if="weatherSummary"
             variant="ghost"
-            size="xs"
+            size="sm"
             :title="`${weatherLabel} (${weatherSummary.tempLabel}) – Tagesverlauf anzeigen`"
             :aria-label="`Wetter: ${weatherLabel}, ${weatherSummary.tempLabel} – Tagesverlauf anzeigen`"
             @click="openWeatherDialog"
