@@ -5,6 +5,9 @@ import 'leaflet/dist/leaflet.css';
 import type { Spot, RouteResult } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { arcPoints, cachedEmojiPin, getRouteColor } from '../utils/mapRoute';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import { useMobileMapLock } from '../composables/useMobileMapLock';
+import Button from './primitives/Button.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -33,11 +36,28 @@ const emit = defineEmits<{
   (e: 'select-route', index: number): void;
 }>();
 
+const DESKTOP_CARD_FALLBACK_WIDTH_PX = 272;
+
 const mapEl = ref<HTMLDivElement | null>(null);
 let map: leaflet.Map | null = null;
 let markersLayer: leaflet.LayerGroup | null = null;
 let routesLayer: leaflet.LayerGroup | null = null;
 let resizeObserver: ResizeObserver | null = null;
+
+const {
+  isExpanded: isMapExpanded,
+  isMobileLayout,
+  syncInteractivity,
+  toggleExpanded,
+} = useMobileMapLock({ getMap: () => map, containerEl: mapEl });
+
+function onToggleExpanded() {
+  toggleExpanded();
+  nextTick(() => {
+    map?.invalidateSize();
+    render();
+  });
+}
 
 function getCoveredOffsets(): { coveredTopPx: number; coveredLeftPx: number } {
   if (props.coveredTopPx || props.coveredLeftPx) {
@@ -47,40 +67,27 @@ function getCoveredOffsets(): { coveredTopPx: number; coveredLeftPx: number } {
     };
   }
 
-  const container = mapEl.value?.closest('.route-calc-map-wrap') || mapEl.value?.parentElement;
-  const isNarrow =
-    (container && container.clientWidth > 0 && container.clientWidth <= 400) ||
-    (typeof window !== 'undefined' && window.innerWidth <= 580);
+  // Auf Mobile ist die Card im gestapelten Layout und überdeckt die Karte nicht mehr.
+  if (isMobileLayout()) {
+    return { coveredTopPx: 0, coveredLeftPx: 0 };
+  }
 
-  if (mapEl.value && container) {
-    const cardEl = container.querySelector<HTMLElement>('.route-floating-card');
+  const container = mapEl.value?.closest('.route-calc-map-wrap');
+  const cardEl = container?.querySelector<HTMLElement>('.route-floating-card');
 
-    if (cardEl) {
-      const cardRect = cardEl.getBoundingClientRect();
-      const mapRect = mapEl.value.getBoundingClientRect();
+  if (mapEl.value && cardEl) {
+    const cardRect = cardEl.getBoundingClientRect();
+    const mapRect = mapEl.value.getBoundingClientRect();
 
-      if (cardRect.height > 0 || cardRect.width > 0) {
-        if (isNarrow || (mapRect.width > 0 && cardRect.width >= mapRect.width - 40)) {
-          // Auf Mobile / schmalen Containern überdeckt die Card den oberen Bereich der Karte.
-          // Sichtbar ist der Bereich unterhalb der Card bis zum unteren Kartenrand.
-          const coveredTopPx = Math.max(0, cardRect.bottom - mapRect.top);
-          return { coveredTopPx, coveredLeftPx: 0 };
-        }
-
-        // Auf Desktop / breiten Containern überdeckt die Card die linke Seite der Karte.
-        // Sichtbar ist der Bereich rechts von der Card.
-        const coveredLeftPx = Math.max(0, cardRect.right - mapRect.left);
-        return { coveredTopPx: 0, coveredLeftPx };
-      }
+    if (cardRect.height > 0 || cardRect.width > 0) {
+      // Auf Desktop überdeckt die Card die linke Seite der Karte.
+      // Sichtbar ist der Bereich rechts von der Card.
+      return { coveredTopPx: 0, coveredLeftPx: Math.max(0, cardRect.right - mapRect.left) };
     }
   }
 
   // Fallback für Tests (jsdom liefert 0 für getBoundingClientRect) und initiales Rendern:
-  if (isNarrow) {
-    return { coveredTopPx: 170, coveredLeftPx: 0 };
-  }
-
-  return { coveredTopPx: 0, coveredLeftPx: 272 };
+  return { coveredTopPx: 0, coveredLeftPx: DESKTOP_CARD_FALLBACK_WIDTH_PX };
 }
 
 async function render() {
@@ -264,11 +271,13 @@ onMounted(async () => {
     .addTo(map);
   routesLayer = leaflet.layerGroup().addTo(map);
   markersLayer = leaflet.layerGroup().addTo(map);
+  syncInteractivity();
 
   render();
 
   if (typeof ResizeObserver !== 'undefined' && mapEl.value) {
     resizeObserver = new ResizeObserver(() => {
+      syncInteractivity();
       map?.invalidateSize();
       render();
     });
@@ -317,12 +326,29 @@ defineExpose({
 </script>
 
 <template>
-  <div class="leg-mini-map-wrap">
+  <div class="leg-mini-map-wrap" :class="{ 'is-map-expanded': isMapExpanded }">
     <div ref="mapEl" class="leg-mini-map" data-testid="leg-mini-map"></div>
+
+    <!-- Nur auf Mobile sichtbar: Karte bewusst zum Zoomen/Verschieben freigeben -->
+    <Button
+      :variant="isMapExpanded ? 'primary' : 'overlay'"
+      shape="pill"
+      size="xs"
+      class="leg-map-expand-btn"
+      :aria-expanded="isMapExpanded"
+      :icon="isMapExpanded ? ACTION_ICONS.done : ACTION_ICONS.maximize"
+      data-testid="leg-map-expand-btn"
+      @click.stop="onToggleExpanded"
+    >
+      {{ isMapExpanded ? 'Fertig' : 'Karte bedienen' }}
+    </Button>
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+$leg-map-preview-height: 180px;
+$leg-map-expanded-height: 320px;
+
 .leg-mini-map-wrap {
   width: 100%;
   height: 100%;
@@ -338,9 +364,27 @@ defineExpose({
   background: var(--color-hover);
 }
 
-@container (max-width: 400px) {
+.leg-map-expand-btn {
+  display: none;
+}
+
+@include container-down('tablet-sm') {
   .leg-mini-map {
-    height: 500px;
+    height: $leg-map-preview-height;
+    touch-action: pan-y;
+  }
+
+  .is-map-expanded .leg-mini-map {
+    height: $leg-map-expanded-height;
+    touch-action: auto;
+  }
+
+  .leg-map-expand-btn {
+    display: inline-flex;
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    z-index: var(--z-fab, 120);
   }
 }
 </style>

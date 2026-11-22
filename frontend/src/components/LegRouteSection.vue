@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed } from 'vue';
 import type { RouteResult, Spot } from '../api/types';
-import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
 import Alert from './primitives/Alert.vue';
 import Badge from './primitives/Badge.vue';
 import Button from './primitives/Button.vue';
@@ -9,24 +8,17 @@ import LoadingSpinner from './primitives/LoadingSpinner.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
 import LegMiniMap from './LegMiniMap.vue';
 import LegRouteAlternatives from './LegRouteAlternatives.vue';
-import { IconMapRoute } from '@tabler/icons-vue';
-import type { IconDef } from '../utils/icon';
 import { ROUTE_MODE_OPTIONS, ROUTE_PREFERENCE_OPTIONS } from '../utils/legTransportConfig';
-import type { MiniMapHandle } from '../composables/useLegRoutingAccordion';
 import { createCapturedError, type CapturedError } from '../composables/useErrorNotifier';
 
 export type RoutePreference = 'fastest' | 'shortest';
 export type RouteDisplayMode = 'exact' | 'direct';
 
-const MINIMAP_REFRESH_DELAY_MS = 150;
-
-const isOpen = defineModel<boolean>('isOpen', { default: true });
 const routePreference = defineModel<RoutePreference>('routePreference', { default: 'fastest' });
 const routeDisplayMode = defineModel<RouteDisplayMode>('routeDisplayMode', { default: 'exact' });
 
 const props = defineProps<{
-  isDisabled: boolean;
-  disabledTitle?: string;
+  isDisabled?: boolean;
   isCalculatingRoute: boolean;
   hasExactRoute: boolean;
   routeCalculationError: string | null;
@@ -48,8 +40,6 @@ const emit = defineEmits<{
   (e: 'selectRoute', index: number): void;
 }>();
 
-const miniMapRef = ref<MiniMapHandle | null>(null);
-
 const resolvedRouteErrorDetails = computed<CapturedError | undefined>(() => {
   if (!props.routeCalculationError) {
     return undefined;
@@ -64,41 +54,10 @@ const resolvedRouteErrorDetails = computed<CapturedError | undefined>(() => {
     })
   );
 });
-
-watch(isOpen, async (open) => {
-  if (open) {
-    await nextTick();
-    setTimeout(() => {
-      miniMapRef.value?.invalidateSize?.();
-      miniMapRef.value?.render?.();
-    }, MINIMAP_REFRESH_DELAY_MS);
-  }
-});
-
-const routeHeadingIconDef: IconDef = {
-  id: 'map-route',
-  emoji: '🗺️',
-  outline: IconMapRoute,
-};
 </script>
 
 <template>
-  <CollapsibleFieldset
-    v-model="isOpen"
-    label="Routenführung"
-    :icon="routeHeadingIconDef"
-    :disabled="isDisabled"
-    :title="disabledTitle"
-    class="route-calc-fieldset"
-    :class="{ 'route-calc-fieldset--has-route': hasExactRoute }"
-  >
-    <template v-if="!isDisabled && isCalculatingRoute" #badge>
-      <Badge variant="primary" size="sm" class="route-calc-badge route-calc-badge--loading">
-        <LoadingSpinner size="sm" decorative />
-        Route wird berechnet…
-      </Badge>
-    </template>
-
+  <section v-if="!isDisabled" class="route-calc-fieldset" aria-label="Routenführung">
     <!-- Zustand 1: Noch keine Route berechnet -> Aufforderung zur Berechnung -->
     <div v-if="!hasExactRoute" class="route-calc-empty">
       <div class="route-calc-header">
@@ -106,6 +65,15 @@ const routeHeadingIconDef: IconDef = {
           <span class="route-calc-hint">
             Exakte Route, Distanz und Fahrzeit für {{ transportType }} berechnen.
           </span>
+          <Badge
+            v-if="isCalculatingRoute"
+            variant="primary"
+            size="sm"
+            class="route-calc-badge route-calc-badge--loading"
+          >
+            <LoadingSpinner size="sm" decorative />
+            Route wird berechnet…
+          </Badge>
         </div>
         <div class="route-calc-init-controls">
           <SegmentedToggle
@@ -145,7 +113,6 @@ const routeHeadingIconDef: IconDef = {
       <!-- Mini-Map der Teilstrecke mit Start-, Ziel-Pins und gerouteten Alternativen -->
       <div class="route-mini-map-container">
         <LegMiniMap
-          ref="miniMapRef"
           :from-spot="fromSpot"
           :to-spot="toSpot"
           :routes="calculatedRoutes"
@@ -220,11 +187,18 @@ const routeHeadingIconDef: IconDef = {
         </div>
       </div>
     </div>
-  </CollapsibleFieldset>
+  </section>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+.route-calc-fieldset {
+  flex-shrink: 0;
+  min-width: 0;
+}
+
 .route-calc-empty {
+  @include surface-sunken-box;
+  padding: var(--space-3);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -243,7 +217,8 @@ const routeHeadingIconDef: IconDef = {
 .route-calc-info {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2xs);
+  align-items: flex-start;
+  gap: var(--space-1);
   flex: 1 1 200px;
   min-width: 0;
   min-height: 40px;
@@ -260,50 +235,6 @@ const routeHeadingIconDef: IconDef = {
   flex-shrink: 0;
   min-width: 125px;
   justify-content: center;
-}
-
-.route-calc-fieldset--has-route {
-  position: relative;
-  padding: 0;
-  border-color: transparent;
-  background: transparent;
-  margin: 14px 0 0;
-}
-
-.route-calc-fieldset--has-route.is-closed {
-  margin: 0;
-}
-
-.route-calc-fieldset--has-route:not(.is-closed) :deep(legend) {
-  position: absolute;
-  top: -14px;
-  left: 12px;
-  z-index: var(--z-dropdown, 500);
-  padding: 0;
-  margin: 0;
-}
-
-.route-calc-fieldset--has-route :deep(.collapsible-anim-wrapper) {
-  min-height: 0;
-}
-
-.route-calc-fieldset--has-route.is-closed :deep(.collapsible-anim-wrapper) {
-  height: 0;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.route-calc-fieldset--has-route :deep(.collapsible-anim-inner) {
-  padding: 0;
-  margin: 0;
-  overflow: hidden;
-  min-height: 0;
-}
-
-.route-calc-fieldset--has-route :deep(.collapsible-content) {
-  margin-top: 0;
-  padding: 0;
-  gap: 0;
 }
 
 .route-calc-active.route-calc-map-wrap {
@@ -340,12 +271,12 @@ const routeHeadingIconDef: IconDef = {
 
 .route-floating-card {
   position: absolute;
-  top: 22px;
+  top: 12px;
   left: 12px;
   right: auto;
   width: 260px;
   max-width: calc(100% - 24px);
-  max-height: calc(100% - 34px);
+  max-height: calc(100% - 24px);
   overflow-y: auto;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -363,16 +294,23 @@ const routeHeadingIconDef: IconDef = {
   z-index: var(--z-card-elevated, 5);
 }
 
-@container route-map (max-width: 400px) {
+/* Mobile: Card gestapelt über der (gesperrten) Karte statt schwebend – wie im Spot-Dialog. */
+@include container-down('route-map', 'tablet-sm') {
+  .route-calc-active.route-calc-map-wrap {
+    display: flex;
+    flex-direction: column;
+  }
+
   .route-floating-card {
-    position: absolute;
-    top: 22px;
-    left: 12px;
-    right: 12px;
-    width: auto;
+    position: static;
+    width: 100%;
     max-width: none;
-    max-height: calc(100% - 160px);
-    overflow-y: auto;
+    max-height: none;
+    overflow: visible;
+    border: none;
+    border-bottom: 1px solid var(--color-border);
+    border-radius: 0;
+    box-shadow: none;
   }
 }
 
@@ -487,12 +425,6 @@ const routeHeadingIconDef: IconDef = {
     width: 100%;
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .route-calc-body {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
   }
 
   .route-mode-toggle :deep(.segmented-option) {

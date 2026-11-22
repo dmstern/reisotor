@@ -175,14 +175,12 @@ describe('LegTransportModal', () => {
 
     const routeFieldset = document.querySelector('.route-calc-fieldset');
     expect(routeFieldset).not.toBeNull();
-    expect(routeFieldset?.classList.contains('is-open')).toBe(true);
-    expect(routeFieldset?.textContent).toContain('Routenführung');
     expect(routeFieldset?.textContent).toContain('Route berechnen');
 
     cleanUp();
   });
 
-  it('klappt Routen-Berechnung ein wenn Verkehrsmittel nicht geroutet werden kann', async () => {
+  it('blendet Routen-Berechnung aus wenn Verkehrsmittel nicht geroutet werden kann', async () => {
     const spotWithCoordsA = { ...mockFromSpot, lat: 38.71, lng: -9.14 };
     const spotWithCoordsB = { ...mockToSpot, lat: 38.8, lng: -9.38 };
     const trainLeg: ExcursionLeg = {
@@ -200,11 +198,7 @@ describe('LegTransportModal', () => {
     await nextTick();
 
     const routeFieldset = document.querySelector('.route-calc-fieldset');
-    expect(routeFieldset).not.toBeNull();
-    expect(routeFieldset?.classList.contains('is-closed')).toBe(true);
-    const toggleBtn = routeFieldset?.querySelector('.collapsible-toggle');
-    expect(toggleBtn?.hasAttribute('disabled')).toBe(true);
-    expect(toggleBtn?.getAttribute('title')).toContain('Für ÖPNV');
+    expect(routeFieldset).toBeNull();
 
     cleanUp();
   });
@@ -328,15 +322,8 @@ describe('LegTransportModal', () => {
     expect(transitWrapper?.classList.contains('is-expanded')).toBe(true);
     expect(transitWrapper?.hasAttribute('inert')).toBe(false);
 
-    // Hinweis zu nicht verfügbarer exakter Routenberechnung soll als Tooltip am deaktivierten Routen-Toggle sichtbar sein
-    const routeFieldset = document.querySelector('.route-calc-fieldset');
-    expect(routeFieldset).not.toBeNull();
-    expect(routeFieldset?.classList.contains('is-closed')).toBe(true);
-    const routeToggle = routeFieldset?.querySelector('.collapsible-toggle');
-    expect(routeToggle?.hasAttribute('disabled')).toBe(true);
-    expect(routeToggle?.getAttribute('title')).toContain(
-      'Für ÖPNV ist aktuell noch keine Routenberechnung möglich'
-    );
+    // Bei ÖPNV ist keine exakte Routenberechnung verfügbar, der Routen-Abschnitt ist ausgeblendet
+    expect(document.querySelector('.route-calc-fieldset')).toBeNull();
 
     const toggleOptions = Array.from(
       document.querySelectorAll('.transport-toggle .segmented-option')
@@ -358,38 +345,27 @@ describe('LegTransportModal', () => {
 
     expect(transitWrapper?.classList.contains('is-expanded')).toBe(false);
     expect(transitWrapper?.hasAttribute('inert')).toBe(true);
-    expect(document.querySelector('.route-calc-fieldset')?.classList.contains('is-open')).toBe(
-      true
-    );
+    expect(document.querySelector('.route-calc-fieldset')).not.toBeNull();
 
     // Klick auf Fahrrad: Dropdown bleibt eingeklappt, Route-Berechnung bleibt aktiv
     bikeBtn.click();
     await nextTick();
     expect(transitWrapper?.classList.contains('is-expanded')).toBe(false);
-    expect(document.querySelector('.route-calc-fieldset')?.classList.contains('is-open')).toBe(
-      true
-    );
+    expect(document.querySelector('.route-calc-fieldset')).not.toBeNull();
 
     // Klick auf Zu Fuß: Dropdown bleibt eingeklappt, Route-Berechnung bleibt aktiv
     walkBtn.click();
     await nextTick();
     expect(transitWrapper?.classList.contains('is-expanded')).toBe(false);
-    expect(document.querySelector('.route-calc-fieldset')?.classList.contains('is-open')).toBe(
-      true
-    );
+    expect(document.querySelector('.route-calc-fieldset')).not.toBeNull();
 
-    // Zurück zu ÖPNV: Dropdown klappt wieder aus, Route-Berechnung klappt ein und ist deaktiviert
+    // Zurück zu ÖPNV: Dropdown klappt wieder aus, Route-Berechnung ist ausgeblendet
     opnvBtn.click();
     await nextTick();
 
     expect(transitWrapper?.classList.contains('is-expanded')).toBe(true);
     expect(transitWrapper?.hasAttribute('inert')).toBe(false);
-    expect(document.querySelector('.route-calc-fieldset')?.classList.contains('is-closed')).toBe(
-      true
-    );
-    expect(
-      document.querySelector('.route-calc-fieldset .collapsible-toggle')?.hasAttribute('disabled')
-    ).toBe(true);
+    expect(document.querySelector('.route-calc-fieldset')).toBeNull();
 
     // Öffi-Verkehrsmittel im Dropdown auf "Bus" umstellen
     const select = document.querySelector('.transit-select') as HTMLSelectElement;
@@ -600,25 +576,6 @@ describe('LegTransportModal', () => {
     // Ankunftszeit soll aus Route 2 (14:00 + 35m = 14:35) aktualisiert worden sein
     const arrivalInput = document.querySelector('.arrival-time-wrapper input') as HTMLInputElement;
     expect(arrivalInput?.value).toBe('14:35');
-
-    // Fieldset soll sich bei Klick auf den Toggle sauber schließen lassen
-    const routeFieldset = document.querySelector('.route-calc-fieldset');
-    const toggleBtn = routeFieldset?.querySelector('.collapsible-toggle') as HTMLButtonElement;
-    expect(routeFieldset?.classList.contains('is-open')).toBe(true);
-
-    toggleBtn.click();
-    await nextTick();
-
-    expect(routeFieldset?.classList.contains('is-closed')).toBe(true);
-    expect(
-      routeFieldset?.querySelector('.collapsible-anim-wrapper')?.classList.contains('is-open')
-    ).toBe(false);
-
-    // Wieder aufklappen
-    toggleBtn.click();
-    await nextTick();
-
-    expect(routeFieldset?.classList.contains('is-open')).toBe(true);
 
     // Speichern
     const submitBtn = Array.from(document.querySelectorAll('button')).find((b) =>
