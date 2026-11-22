@@ -53,7 +53,7 @@ defineProps<{ station: ExcursionStation }>();
 .body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   /* Ringsherum derselbe Abstand (oben/rechts/unten/links) - der Abstand zum Vorschaubild kommt
      dadurch automatisch aus diesem Padding statt aus einem zusätzlichen, separaten Gap auf
      .mini-station-card (das addierte sich vorher ungewollt zum Padding, siehe PR #173). */

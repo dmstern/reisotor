@@ -45,27 +45,27 @@ const isAllDone = computed(() => props.completed === props.total && props.total 
 
 <style scoped>
 .page-header-row {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-xl);
 }
 
 .page-header-top {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-lg);
 }
 
 .page-title-group {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   min-width: 0;
 }
 
 .title-with-pill {
   display: flex;
   align-items: baseline;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   flex-wrap: wrap;
 }
 
@@ -82,7 +82,7 @@ const isAllDone = computed(() => props.completed === props.total && props.total 
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 
 .progress-percentage {
@@ -99,7 +99,7 @@ const isAllDone = computed(() => props.completed === props.total && props.total 
   background: var(--color-hover);
   border-radius: var(--radius-pill);
   overflow: hidden;
-  margin-top: var(--space-1);
+  margin-top: var(--space-xs);
 }
 
 .header-progress-bar {

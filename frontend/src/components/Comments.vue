@@ -162,18 +162,18 @@ function formatCommentDate(dateStr?: string): string {
 
 <style lang="scss" scoped>
 .comments {
-  margin-top: var(--space-3);
-  padding-top: var(--space-3);
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
   @include divider-engraved('top');
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 
 .comment {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 
 .avatar-sm {
@@ -187,13 +187,13 @@ function formatCommentDate(dateStr?: string): string {
   flex: 1;
   min-width: 0;
   font-size: var(--font-size-sm);
-  gap: 2px;
+  gap: var(--space-2xs);
 }
 
 .comment-header {
   display: flex;
   align-items: baseline;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   flex-wrap: wrap;
 }
 
@@ -209,7 +209,7 @@ function formatCommentDate(dateStr?: string): string {
 
 .comment-edited {
   font-style: italic;
-  margin-left: 2px;
+  margin-left: var(--space-2xs);
 }
 
 .comment-text {
@@ -221,7 +221,7 @@ function formatCommentDate(dateStr?: string): string {
 .comment-actions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2xs);
   flex-shrink: 0;
   margin-left: auto;
 }
@@ -229,8 +229,8 @@ function formatCommentDate(dateStr?: string): string {
 .comment-edit-form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  margin-top: var(--space-1);
+  gap: var(--space-xs);
+  margin-top: var(--space-xs);
   width: 100%;
 }
 
@@ -240,7 +240,7 @@ function formatCommentDate(dateStr?: string): string {
 
 .comment-edit-actions {
   display: flex;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   justify-content: flex-end;
 }
 

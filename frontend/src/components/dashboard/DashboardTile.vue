@@ -61,7 +61,7 @@ const isLink = computed(() => !!props.to);
     box-shadow var(--transition-fast);
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-md);
   min-width: 0;
 }
 
@@ -94,14 +94,14 @@ const isLink = computed(() => !!props.to);
   align-items: center;
   justify-content: center;
   font-size: var(--font-size-xl);
-  padding: var(--space-2);
+  padding: var(--space-sm);
   backdrop-filter: blur(2px);
 }
 
 .tile h3 {
   color: var(--color-primary-dark);
   font-size: var(--font-size-md);
-  margin-top: var(--space-2);
+  margin: var(--space-sm) 0 0;
   text-align: center;
   min-width: 0;
   word-break: break-word;
@@ -111,14 +111,13 @@ const isLink = computed(() => !!props.to);
 .tile :deep(p) {
   text-align: center;
   font-size: var(--font-size-sm);
-  margin-top: auto;
-  padding-top: 2px;
+  margin: auto 0 0;
   min-width: 0;
   word-break: break-word;
   overflow-wrap: break-word;
 }
 
-.tile :deep(.budget-meter) {
+.tile :deep(.meter-row) {
   margin-top: auto;
 }
 </style>

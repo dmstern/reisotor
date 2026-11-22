@@ -119,28 +119,30 @@ anlegen, nicht als lokaler Wert in der Komponente.
 
 ### Zentrale Farb-Tokens
 
-| Variable                   | Bedeutung / Einsatz                                                                 | Light Mode               | Dark Mode                   |
-| -------------------------- | ----------------------------------------------------------------------------------- | ------------------------ | --------------------------- |
-| `--color-bg`               | Haupt-App-Hintergrund                                                               | `#faf8f5`                | `#181715`                   |
-| `--color-surface`          | Karten, Panels, Modal-Flächen                                                       | `#ffffff`                | `#232220`                   |
-| `--color-border`           | Dekorativer Rahmen (Cards, Drawers, Modals, Popovers, Dropdowns)                    | `#e8e2d9`                | `#0d0d0c`                   |
-| `--color-border-divider`   | Semantischer Trenner (Listen, `<hr>`, Tabellen, Sektions-Trenner, Sub-Boxen)        | `#e8e2d9`                | `#2e2c28`                   |
-| `--color-border-strong`    | Interaktive Controls (Inputs, Selects, Comboboxes, `btn--secondary`, Pill-Outlines) | `rgba(43, 42, 40, 0.23)` | `rgba(242, 239, 233, 0.22)` |
-| `--color-text`             | Primäre Textfarbe                                                                   | `#2b2a28`                | `#f2efe9`                   |
-| `--color-text-muted`       | Gedämpfter Fließtext & Untertitel                                                   | `#66625b`                | `#a8a29a`                   |
-| `--color-primary`          | Marken-Farbe (Haupt-Buttons & Fokus)                                                | `#9141ac`                | `#cf77dd`                   |
-| `--color-primary-dark`     | Hover-Status für Marken-Farbe                                                       | `#7b3793`                | `#d68ee3`                   |
-| `--color-primary-tint`     | Leichter Akzentton für Steuerungen & Badges                                         | `#f4ecf7`                | `#352538`                   |
-| `--color-hover`            | Hover-Hintergrund & Muted-Surface                                                   | `#f4f1ec`                | `#2a2823`                   |
-| `--color-accent`           | Echtzeit-Updates / Aufmerksamkeits-Akzent                                           | `#e08e45`                | `#f0a05a`                   |
-| `--color-danger`           | Gefahr / Löschen / Warnungen                                                        | `#c1503f`                | `#e0685a`                   |
-| `--color-success`          | Erfolg / Fertig-Status                                                              | `#3f8f5c`                | `#5cb37e`                   |
-| `--color-scheduled`        | Geplant (Kalender & Streifen)                                                       | `#1e96d1`                | `#52b8ea`                   |
-| `--color-scheduled-dark`   | Geplant (Text & Kontrast für Chips/Preise)                                          | `#0f70a0`                | `#7acaf2`                   |
-| `--color-tour`             | Touren / Ausflüge (Kacheln, Kalender, Spots)                                        | `#eb6834`                | `#f08254`                   |
-| `--color-travel`           | Reisen / Etappen (Kacheln, Kalender, Chips)                                         | `#1baf7a`                | `#2ecb91`                   |
-| `--color-highlight`        | Highlight-Fläche für Notizen                                                        | `#fff4e8`                | `#332a1c`                   |
-| `--color-accent-secondary` | Sekundärer Akzent (Indigo)                                                          | `#485acf`                | `#8b98f0`                   |
+| Variable                    | Bedeutung / Einsatz                                                                    | Light Mode                  | Dark Mode                   |
+| --------------------------- | -------------------------------------------------------------------------------------- | --------------------------- | --------------------------- |
+| `--color-bg`                | Haupt-App-Hintergrund                                                                  | `#faf8f5`                   | `#181715`                   |
+| `--color-surface`           | Karten, Panels, Modal-Flächen                                                          | `#ffffff`                   | `#232220`                   |
+| `--color-border`            | Dekorativer Rahmen (Cards, Drawers, Modals, Popovers, Dropdowns)                       | `#e8e2d9`                   | `#0d0d0c`                   |
+| `--color-border-divider`    | Semantischer Trenner für 4-seitige Inset-Boxen, Fieldsets & Zitat-Balken               | `#e8e2d9`                   | `#2e2c28`                   |
+| `--color-divider-groove`    | Eingefräste Rille horizontaler Trennlinien (`<Divider>`, `@mixin divider-engraved`)    | `rgba(43, 42, 40, 0.11)`    | `rgba(0, 0, 0, 0.36)`       |
+| `--color-divider-highlight` | Untere 3D-Lichtkante horizontaler Trennlinien (`<Divider>`, `@mixin divider-engraved`) | `rgba(255, 255, 255, 0.75)` | `rgba(255, 255, 255, 0.07)` |
+| `--color-border-strong`     | Interaktive Controls (Inputs, Selects, Comboboxes, `btn--secondary`, Pill-Outlines)    | `rgba(43, 42, 40, 0.23)`    | `rgba(242, 239, 233, 0.22)` |
+| `--color-text`              | Primäre Textfarbe                                                                      | `#2b2a28`                   | `#f2efe9`                   |
+| `--color-text-muted`        | Gedämpfter Fließtext & Untertitel                                                      | `#66625b`                   | `#a8a29a`                   |
+| `--color-primary`           | Marken-Farbe (Haupt-Buttons & Fokus)                                                   | `#9141ac`                   | `#cf77dd`                   |
+| `--color-primary-dark`      | Hover-Status für Marken-Farbe                                                          | `#7b3793`                   | `#d68ee3`                   |
+| `--color-primary-tint`      | Leichter Akzentton für Steuerungen & Badges                                            | `#f4ecf7`                   | `#352538`                   |
+| `--color-hover`             | Hover-Hintergrund & Muted-Surface                                                      | `#f4f1ec`                   | `#2a2823`                   |
+| `--color-accent`            | Echtzeit-Updates / Aufmerksamkeits-Akzent                                              | `#e08e45`                   | `#f0a05a`                   |
+| `--color-danger`            | Gefahr / Löschen / Warnungen                                                           | `#c1503f`                   | `#e0685a`                   |
+| `--color-success`           | Erfolg / Fertig-Status                                                                 | `#3f8f5c`                   | `#5cb37e`                   |
+| `--color-scheduled`         | Geplant (Kalender & Streifen)                                                          | `#1e96d1`                   | `#52b8ea`                   |
+| `--color-scheduled-dark`    | Geplant (Text & Kontrast für Chips/Preise)                                             | `#0f70a0`                   | `#7acaf2`                   |
+| `--color-tour`              | Touren / Ausflüge (Kacheln, Kalender, Spots)                                           | `#eb6834`                   | `#f08254`                   |
+| `--color-travel`            | Reisen / Etappen (Kacheln, Kalender, Chips)                                            | `#1baf7a`                   | `#2ecb91`                   |
+| `--color-highlight`         | Highlight-Fläche für Notizen                                                           | `#fff4e8`                   | `#332a1c`                   |
+| `--color-accent-secondary`  | Sekundärer Akzent (Indigo)                                                             | `#485acf`                   | `#8b98f0`                   |
 
 Semantische statt beschreibende Namen (`--color-danger`, nicht `--color-red`) – Töne können sich
 ändern, die Bedeutung bleibt.
@@ -165,7 +167,9 @@ klar benannte Variable anlegen statt eine bestehende zweitzuverwenden.
 Für alle neutralen Ränder und Trennlinien gilt verbindlich eine dreistufige Hierarchie (hartcodierte neutrale Farben wie `#e2e8f0`, `rgba(0,0,0,0.08)` oder `rgba(255,255,255,0.12)` sind nicht zulässig):
 
 1. **`--color-border` (Dekorativer Rahmen):** Für erhobene/schattierte Container (`Card`, `Drawer`, `Modal`, `Popover`, `PickerMenu`/Dropdowns). Im Dark Mode bewusst dunkel (`#0d0d0c`), da sich die Fläche bereits über Hintergrundton und Schatten abhebt.
-2. **`--color-border-divider` (Semantischer Trenner):** Für Trennlinien zwischen Bereichen gleicher oder ähnlicher Hintergrundfarbe — Listen-Trenner (`border-top`/`border-bottom`), `<hr>`, Tabellenzeilen, Sektions-Trenner in Cards/Modals/Menüs sowie verschachtelte Sub-Boxen auf gleicher Hintergrundfarbe. Im Light Mode identisch zu `--color-border` (`#e8e2d9`), im Dark Mode ein dezentes Warmgrau (`#2e2c28`) zwischen Surface und `--color-border-strong`.
+2. **Horizontale Trennlinien mit Lichtkante (`<Divider>` / `@mixin divider-engraved`) vs. `--color-border-divider` (Inset-Boxen):**
+   - **Horizontale Trennlinien (Sektions-Trenner in Cards/Modals/Drawers/Menüs, Listen-Zeilen, `<hr>`):** Dürfen **niemals** als flaches `border-top`/`border-bottom: 1px solid var(--color-border-divider)` gezeichnet werden! In Reisotor besitzen alle horizontalen Trennlinien einen eingefrästen 3D-Look (Licht von oben: oben dunkle Rille `--color-divider-groove`, direkt darunter eine feine 1px-Lichtkante `--color-divider-highlight`). Verwende dafür entweder die UI-Primitive **`<Divider />`** (`components/primitives/Divider.vue`, optional mit `spacing="xs" | "sm" | "md" | "lg" | "xl"`) oder direkt auf einem Sektions-/Zeilen-Container das SCSS-Mixin **`@include divider-engraved('top' | 'bottom' | 'both')`** bzw. **`@include divider-engraved-row`** für Listen-Einträge. Die Tokens passen sich auf opaken Surfaces (Light & Dark Mode) sowie in Liquid-Glass-Containern automatisch an.
+   - **`--color-border-divider` (4-seitige Inset-Boxen & vertikale Akzente):** Für geschlossene Rahmen verschachtelter Sub-Boxen/Fieldsets auf gleicher oder versenkter Fläche (`@mixin surface-sunken-box`), vertikale Zitat-Balken (`border-left`) oder gestrichelte Platzhalter-Boxen. Im Light Mode identisch zu `--color-border` (`#e8e2d9`), im Dark Mode ein dezentes Warmgrau (`#2e2c28`) zwischen Surface und `--color-border-strong`.
 3. **`--color-border-strong` (Interaktive Controls):** Für Eingabefelder (`--input-border-color`), Selects, Comboboxes, `btn--secondary`, Pill-/Control-Outlines und Toggle-Controls.
 
 _Ausnahmen (nicht Teil dieser Regel):_ Liquid-Glass-Borders (`--color-surface-glass-border`, `--color-glass-field-inset-border`) sowie farbige Akzent-, Domänen- und Status-Borders (`--color-primary`, `--color-danger`, `--color-tour-border`, `--color-travel-border`, `--color-like-border`, etc.).
@@ -187,18 +191,28 @@ dem jeweiligen Kontext unterordnen statt sich als eigene, andersfarbige Fläche 
 
 ## Abstände
 
-`--space-1` (4px) bis `--space-6` (48px), verdoppelnd/gestuft. Für Innenabstände/Gaps immer diese
-Stufen verwenden statt beliebiger px-Werte – macht Layouts über Views hinweg optisch konsistent und
-Design-Anpassungen global statt Datei für Datei nötig:
+10-stufige T-Shirt-Skala von `--space-2xs` (2px) bis `--space-3xl` (48px). Für Innenabstände, Außenabstände und Gaps immer diese Stufen verwenden statt beliebiger px-Werte – macht Layouts über Views hinweg optisch konsistent und Design-Anpassungen global statt Datei für Datei nötig:
 
-| Variable    | Wert | Typischer Verwendungszweck                                           |
-| ----------- | ---- | -------------------------------------------------------------------- |
-| `--space-1` | 4px  | Mikro-Abstände (Icon-Gaps, Badges, Chips, Button-Gap)                |
-| `--space-2` | 8px  | Standard-Gap für dichte Flex-Zeilen (Formularfelder, Button-Gruppen) |
-| `--space-3` | 16px | Standard Card-Padding (Mobil), Listen-Gaps, Fließtext-Abstand        |
-| `--space-4` | 24px | Großzügiges Card-Padding (Desktop), Dialoge, Sektions-Abstände       |
-| `--space-5` | 32px | Große Trennabstände zwischen Hauptbereichen einer View               |
-| `--space-6` | 48px | Maximale Außenabstände / Hero-Layouts                                |
+| Variable      | Wert | Alias (Legacy) | Typischer Verwendungszweck                                                   |
+| ------------- | ---- | -------------- | ---------------------------------------------------------------------------- |
+| `--space-2xs` | 2px  | —              | Haarfeine Abstände (Inline-Dots, Badge-Close-Offset, Switch-Padding)         |
+| `--space-xs`  | 4px  | `--space-1`    | Mikro-Abstände (Icon-Gaps, kompakte Badges, Chips, Button-Gap XS)            |
+| `--space-1-5` | 6px  | —              | Enge Control-Gaps (`--control-gap-sm`), kleine Button-/Listenaktions-Gaps    |
+| `--space-sm`  | 8px  | `--space-2`    | Standard-Gap für dichte Flex-Zeilen (Formularfelder, Button-Gruppen)         |
+| `--space-md`  | 12px | —              | Kompaktes Card-/Listen-Padding, horizontales Control-Padding, Drawer-Gap     |
+| `--space-lg`  | 16px | `--space-3`    | Standard Card-Padding, Modal-/Drawer-Padding (Mobil), Listen-Gaps, Fließtext |
+| `--space-3-5` | 20px | —              | Übergangs-Abstand zwischen Standard- und Groß-Sektion (z. B. Dialog-Köpfe)   |
+| `--space-xl`  | 24px | `--space-4`    | Großzügiges Padding (Modals & Drawers Desktop), Sektions-Abstände            |
+| `--space-2xl` | 32px | `--space-5`    | Große Trennabstände zwischen Hauptbereichen einer View                       |
+| `--space-3xl` | 48px | `--space-6`    | Maximale Außenabstände / Hero-Layouts                                        |
+
+> **Abwärtskompatible Aliase:** Die bisherigen numerischen Tokens `--space-1` (`--space-xs`), `--space-2` (`--space-sm`), `--space-3` (`--space-lg`), `--space-4` (`--space-xl`), `--space-5` (`--space-2xl`) und `--space-6` (`--space-3xl`) bleiben in `style.css` als Aliase erhalten, sodass bestehender Code nahtlos weiterfunktioniert. Für neuen Code und harmonisierte Primitives bevorzugt die T-Shirt-Namen verwenden.
+
+**Einheitliche Container-Innenabstände (verbindlich):**
+
+- **Cards:** Standard-Padding `--space-lg` (16px); kompakte/condensed Cards `--space-md` (12px).
+- **Modals & Drawers:** `--space-lg` (16px) auf Mobil, `--space-xl` (24px) auf Desktop.
+- **Listen-Einträge:** Vertikales Padding `--space-sm` (8px) bis `--space-md` (12px), horizontales Padding `--space-md` (12px) bis `--space-lg` (16px).
 
 **Absatz vor Button / Aktion (#69)**: Eine erklärende `<p>`-Zeile direkt vor einem Button oder einer
 Aktionsleiste braucht zwingend sichtbaren Freiraum nach unten (`margin-top: var(--space-3)` via
@@ -234,6 +248,63 @@ Einleitungszeile im gerenderten Ergebnis prüfen, ob der Abstand tatsächlich an
 - `h3`: `margin: 0 0 var(--space-1)` (Kompakte Gruppen-Titel).
 - **Card-Gutters**: In Grids und Listen beträgt der Abstand zwischen Cards `--space-3` (mobil) bzw. `--space-3` bis `--space-4` (Desktop).
 - **Leerzustände (`.empty`)**: Dezent `--color-text-muted` mit mindestens `--space-3` bis `--space-4` vertikalem Innenabstand, um Leere klar als ruhigen Zustand zu vermitteln.
+
+### Praxis-Checkliste für harmonische Abstände (Audit-Learnings)
+
+Typische Abstandsfehler, die im Code unauffällig wirken, aber das visuelle Gleichgewicht stören – bei jedem Spacing-/Typografie-Audit aktiv prüfen:
+
+1. **Keine doppelten Abstände (`gap` + `margin`/`padding`) & versteckte Primitive-Gaps:**
+   - In Flex-/Grid-Containern mit `gap` niemals zusätzlich `margin-top` oder vertikales `padding` auf Kindelementen stapeln (z. B. kein `padding-block` auf Listen-Items, wenn die Liste schon `gap` hat, und kein `margin-top` auf Footer-/Collapsible-Kindern).
+   - Bringt eine Primitive bereits ein eigenes `gap` mit (z. B. `PickerMenu` mit `gap: var(--space-2xs)`), erzeugt ein zusätzliches `margin-top` auf Sektions-Trennern asymmetrische Abstände (oben enger als unten). Im spezialisierten Container `gap: 0` setzen oder den Container-`gap` rechnerisch ausgleichen.
+2. **Zugeklappte CSS-Grid-Akkordions (`grid-template-rows: 0fr`):**
+   - Ein `.accordion-inner` mit eigenem vertikalem `padding` behält im `0fr`-Track sein Padding als unsichtbare Resthöhe, was darüberliegende Sektions-Headings optisch nach oben verschiebt. Vertikales Padding im Akkordion-Inhalt darf erst im geöffneten Zustand (`.accordion.is-expanded > ...`) greifen.
+3. **Kein Margin-Collapsing zwischen Block-`<p>` und `inline-flex`-`.btn`:**
+   - Vertikale Margins zwischen einem Block-Element (`<p>`) und einem `inline-flex`-Button (`.btn`, `<button>`) kollabieren in CSS **nicht**, sondern addieren sich. Die globale Regel `p + button, p + .btn { margin-top: var(--space-3); }` in `style.css` verdoppelt den Abstand auf `32px`, sobald das `<p>` ebenfalls `margin-bottom: var(--space-3)` hat. Bei kontrollierten Intro-Absätzen vor Buttons explizit `margin-top: 0` auf dem Button setzen (oder über Container-`gap` steuern).
+4. **Primitive-Verbesserungen immer zentral an der Quelle, nicht als lokaler View-Override:**
+   - Fällt bei einer grundlegenden Primitive (z. B. `CollapsibleFieldset`, `SettingsCardHeader`, `Divider`, `CheckboxCard`) ein generelles Abstands- oder Ausrichtungsproblem auf (wie `padding-inline` im `.is-closed`-Zustand von `CollapsibleFieldset`), wird es **immer direkt in der Primitive** behoben, damit alle Views und Dialoge (z. B. Tour-/Spot-Edit-Dialoge, Settings) einheitlich profitieren – niemals als lokaler Workaround in einer einzelnen View.
+   - **Spezifitäts-Falle bei Zustands-Klassen:** Zustands-Selektoren wie `.collapsible-fieldset.is-closed` (`0,2,0`) überschreiben einfache Wrapper-Klassen (`0,1,0`) wie `.push-details-collapsible { margin-top: var(--space-3); }`. Außenabstände für solche Primitives über Container-`gap` oder mit entsprechender Spezifität setzen.
+5. **Gestalt-Gesetz der Nähe (Hierarchie-Verhältnisse & Fluchtlinien):**
+   - **Überschrift → Intro → Inhalt:** Überschrift enger an den eigenen Intro-Text (`--space-md`, `12px`) als Intro-Text an das nachfolgende Control/die Tabelle (`--space-lg` bis `--space-3-5`, `16–20px`); semantisch zusammengehörige Controls enger (`--space-lg`, `16px`) als getrennte Themenblöcke (`--space-xl`, `24px`).
+   - **Listen-Hierarchie:** Abstand zwischen einzelnen Punkten (`--space-sm`, `8px`) deutlich enger als zwischen Kategorien (`--space-3-5` bis `--space-xl`, `20–24px`, Faktor ≥ 2).
+   - **Symmetrie um Trennlinien:** Ober- und unterhalb von `<Divider />` / `@include divider-engraved` stets symmetrische Abstände halten (nie `16px` oben / `8px` unten) und keine flachen `1px solid/dashed var(--color-border-divider)`-Linien mehr verwenden. Listen mit `@include divider-engraved-row` und `padding-block` auf `<li>` dürfen am umschließenden `<ul>` kein `gap` setzen (`gap: 0`), da der Gap sonst nur unterhalb der Trennlinie wirkt und asymmetrische Abstände (z. B. `8px` oben / `12px` unten) erzeugt; zusätzlich `:first-child { padding-top: 0 }` und `:last-child { padding-bottom: 0 }` für saubere Container-Enden nutzen.
+   - **Vertikale Textachse bei Emoji-/Icon-Bullets:** Bullets/Icons vor Listen-Labels mit fester Breite (`width: 1.25em`–`1.4em; text-align: center;`) versehen, damit alle Textanfänge exakt untereinander fluchten.
+   - **Saubere Container-Enden:** Karten-Stapel (z. B. Settings-Tabs) über `display: flex; flex-direction: column; gap: var(--space-xl)` statt `margin-bottom` auf `:deep(.card)` trennen; letzte Hinweise/Fehlermeldungen in Cards ohne überhängendes `margin-bottom` (`:last-child { margin-bottom: 0; }`).
+6. **Karten-Header in Multi-Column-Grids: eigene Breite statt `app-main` abfragen:**
+   - Kompakt-Umschaltungen innerhalb einer Karte (z. B. Ausblenden von `.card-reset-btn-label` in `SettingsCardHeader`) müssen per eigenem `container-type: inline-size` + `@include container-down('mobile-compact')` auf der Header-Zeile/Karte erfolgen, nicht per `@container app-main`. In 3-Spalten-Grids ist `app-main` > 1000px breit, während einzelne Karten nur ~300px messen – ohne eigene Container-Query brechen Aktions-Buttons in schmalen Karten um und zerreißen die horizontale Grundlinie.
+   - **`container-type: inline-size` in Flex-Containern:** `container-type: inline-size` aktiviert implizit `contain: inline-size` und setzt die intrinsische Breite auf `0px`. Wird eine solche Primitive (z. B. `SettingsCardHeader`) als Flex-Item ohne `width: 100%` / `flex: 1` gerendert, schrumpft sie auf 1 Zeichen Breite (senkrechter Textumbruch). Primitives mit `container-type: inline-size` daher immer mit `width: 100%` absichern; mehrere Header-Aktionen in einem eigenen Flex-Wrapper (`.card-header-actions`) gruppieren statt direkt über `justify-content: space-between` zu verteilen.
+7. **Geteilte Typografie-Klassen & Header in ausgelagerten Komponenten:**
+   - Ausgelagerte Karten-Komponenten (z. B. `AccentColorSettings`, `GlassSettings`, `IconStyleSettings`, `DiaryFontSettings`) dürfen niemals scoped `.hint`- oder `.card-header-row`-Regeln der Eltern-View voraussetzen oder duplizieren. Typografie-Basen wie `.hint` gehören zentral in `style.css` (ohne `margin`-Override) und Karten-Header immer über `<SettingsCardHeader />`.
+8. **Globale `h3`/`p`-Margins in Flex-Cards & veraltete `:deep()`-Selektoren:**
+   - Die globalen Basisregeln `h1, h2, h3 { margin: 0 0 var(--space-3); }` und `p { margin: 0 0 var(--space-3); }` aus `style.css` bleiben auch in Flex-Karten aktiv: Sie erzeugen unter `<h3/>` doppelten Abstand (`16px` + Container-`gap`) und hängen am letzten `<p>` der Karte unsichtbare `16px` Extra-Luft an (`32px` unten vs. `16px` oben). In Flex-Cards `h3` und `p` explizit auf `margin: 0` (bzw. `margin: auto 0 0` für Bottom-Pinned-Texte) zurücksetzen und Spezifität beachten (`.hero .countdown` statt `.countdown`, wenn `.hero p` existiert).
+   - Bei `:deep(.klassenname)` in Wrapper-Komponenten (z. B. `DashboardTile` → `BudgetMeter`) nach Umbenennungen der Kind-Wurzelklasse (`.budget-meter` → `.meter-row`) prüfen, ob der Selektor noch greift – tote `:deep()`-Regeln fallen ohne Compiler-Warnung still aus.
+9. **Modal-Formulare & `.actions-row` (Kein doppeltes Modal-Padding):**
+   - `Modal.vue` bringt bereits eigenes Container-Padding (`--space-lg` / `--space-xl`), `.modal-head`-Margin (`--space-lg`) sowie zentrale `:slotted(form) .actions-row`-Regeln (mit `@include divider-engraved('top')` und symmetrischem `16px`-Abstand) mit.
+   - Formulare im Modal-Slot (`.edit-form`) dürfen **niemals eigenes vertikales `padding`** (wie `padding: var(--space-4) 0`) setzen und **niemals `.actions-row` lokal mit `border-top: 1px solid ...` duplizieren** (überschreibt den zentralen engraved Divider und verdoppelt die Abstände nach oben und unten).
+10. **Einheitliches Card-Padding & Primitives statt Ad-hoc-Elementen (`<Divider />`, `<IconButton :badge />`, `<FormField />`):**
+    - Cards und Formular-Cards (z. B. `.add-form`) nutzen standardmäßig auf allen vier Seiten denselben Innenabstand (`padding: var(--space-lg)` statt `16px` vertikal / `24px` horizontal), damit linke und untere Innenkante optisch gleichmäßig sitzen.
+    - Innerhalb von CSS-Grids/Flex-Rows mit `gap` (z. B. `.form-details-grid`) immer `:deep(.form-field) { margin-bottom: 0; }` setzen, damit kein unsichtbarer Zusatzabstand am unteren Card-Rand entsteht.
+    - Trennlinien zwischen Inhaltsblöcken in Cards immer über `<Divider spacing="md" />` (oder `@include divider-engraved`) mit symmetrischem Abstand ziehen – niemals per flachem `border-top: 1px solid/dashed`.
+    - Quadratische Icon-Trigger mit Zähler-Badge (z. B. Filter-/Settings-Buttons in `SearchFilterBar` und `ListSettingsMenu`) immer über `<IconButton :badge="count" />` bauen – niemals `<Badge>` in den Default-Slot eines normalen `<Button>` legen (macht den Button durch Text-Padding + Slot-Gap rechteckig).
+11. **Container-Query-Schwellenwerte auf gepolsterten Containern (`content-box`-Falle):**
+    - `container-type: inline-size` misst bei Container-Queries die **Content-Box** (ohne `padding` und `border`). Bei einem `480px`-Modal (`.modal.size-md`) mit `2 × 24px` Padding (`430px` Content-Box) feuert `@include container-down('mobile')` (`480px`) fälschlicherweise permanent auch auf Desktop. Schwellenwerte auf gepolsterten Containern müssen daher das eigene Padding/Border einrechnen (z. B. `mobile-sm` = `420px` für einen echten Desktop/Mobile-Umbruch im `480px`-Dialog).
+12. **Globale `h4`-Top-Margin & `<RichTextDisplay>`-Trailing-Margins in Flex-Containern:**
+    - Neben `h1–h3` und `p` besitzt auch `h4` in `style.css` eigene Basis-Margins (`margin: var(--space-2) 0 var(--space-1)`). Überschriften wie `.heading` in `FileAttachments` müssen ihre obere Margin explizit auf `0` zurücksetzen (`margin: 0 0 var(--space-sm)`).
+    - `<RichTextDisplay>` rendert HTML-`<p>`-Absätze mit globalem `margin-bottom: var(--space-3)` und schließt diesen über `.richtext :deep(> :last-child) { margin-bottom: 0; }` zentral ab, damit Notizblöcke keine überhängende Unterkante in Flex-Containern leaken.
+13. **Negative Korrektur-Margins gegen Container-`gap` bei Breakpoints:**
+    - Ein negatives `margin-top` zum Heranrücken eines Elements (z. B. `-4px` gegen `8px` Gap) darf bei engeren Breakpoints niemals auf einen kleineren Container-`gap` (z. B. `2px`) treffen, sonst entstehen negative Netto-Abstände bzw. Textüberlappungen.
+14. **Full-Bleed-Trennlinien & Sticky-Leisten bei responsivem Drawer-Padding über lokale CSS-Variable:**
+    - Wechselt ein Drawer- oder Karten-Container sein Padding responsiv (z. B. `--spots-col-pad`: `16px` mobil → `24px` Desktop), beziehen alle Full-Bleed-Kinder (negative Seitenmargins, innere Fluchtlinien wie `ExcursionCard` und Sticky-Abdeckschatten wie `ExcursionCategoryNav`) denselben Token mit identischem Fallback.
+15. **Zugeklappte `<Accordion>`-Elemente in `flex-direction: column`-Containern mit `gap` (Phantom-Gap):**
+    - Ein geschlossenes `<Accordion :expanded="false">` hat zwar `0px` Höhe (`grid-template-rows: 0fr`), bleibt aber als Flex-Item im DOM. In einer Flex-Column-Karte mit `gap` (z. B. `.note-card`) fügt Flexbox trotzdem vollen `gap` vor dem unsichtbaren Element ein – das erzeugt am unteren Kartenrand unsichtbaren Extra-Leerraum und verdoppelt im aufgeklappten Zustand den `margin-top` von `<Comments>`. Den Karteninhalt oberhalb von `<Accordion>` in einen eigenen Flex-Container (`.note-body`) kapseln, damit `<Accordion>` außerhalb des `gap`-Flusses sitzt.
+16. **Interne Top-Paddings in Statusleisten (`DraftStatusBar`) innerhalb von `gap`-Formularen:**
+    - Statusleisten wie `DraftStatusBar` (mit `padding-top: var(--space-1-5)`) erzeugen in Flex-Column-Formularen mit `gap` asymmetrische Abstände (oben `gap + padding-top`, unten nur `gap` zur `.actions-row`-Trennlinie). Statusleisten ohne eigenes vertikales Padding (`padding: 0`) halten und den Abstand allein über den Formular-`gap` steuern.
+17. **Verschachtelte `container-type: inline-size`-Falle in `<Modal>`-Formularen & symmetrisches `<CollapsibleFieldset>`-Padding:**
+    - `Modal.vue` trägt bereits `container-type: inline-size; container-name: modal;` auf `.modal` (`480px - 48px` Padding - `2px` Border = `430px` Content-Box). Ein zweites `container-type: inline-size` auf `.edit-form` innerhalb `.modal-body` (`padding: 6px`) schrumpft den inneren Container auf `418px` – dadurch feuern anonyme `@include container-down('mobile-sm')` (`420px`) fälschlich auch auf Desktop und stapeln `.actions-row`-Buttons vertikal. Modal-Formulare setzen daher kein eigenes `container-type: inline-size`, sondern nutzen `@include container-down('modal', 'mobile-sm')`.
+    - In `CollapsibleFieldset` summieren sich `padding-top` und `.collapsible-content { margin-top }` unter dem `<legend>`-Button. Mit `padding: var(--space-xs) var(--space-lg) var(--space-lg)` (`4px` + `12px` = `16px`) bleiben alle vier Innenseiten im geöffneten Zustand symmetrisch.
+18. **Kein äußeres `padding-block` auf Meter-Primitives (`BudgetMeter`) & exakt berechnete Fluchtlinien-Spacer:**
+    - Wiederverwendbare Meter-/Fortschrittsbalken (`BudgetMeter`) bringen kein eigenes äußeres `padding-block` mit – den vertikalen Rhythmus steuert stets der umschließende Container (`gap`), sonst ragen vertikale Akzentlinien über Balken hinaus und Labels unter dem Balken kleben mit doppeltem Abstand weg.
+    - Ausgleichs-Spacer (z. B. `.btn-spacer` für eine fehlende Löschen-Schaltfläche in `.total-row` gegenüber `.category-row`) müssen die umschließende Box-Polsterung (`padding` + `border`) rechnerisch abziehen (`control-height-sm - padding-inline - border-width`), damit Eingabefelder exakt vertikal fluchten.
+    - Nicht-interaktive Summen-/Saldenzeilen (z. B. `.balance-row`) erhalten weder `:hover`-Hintergrund noch Schein-Padding, damit Texte links und Badges rechts sauber auf den Kartenkanten fluchten.
 
 ## Eckenrundung: Squircle-Prinzip
 
@@ -845,7 +916,8 @@ unerwünschte Vererbungen in Spezialfällen (z. B. ungerahmte Inputs in `QuickAd
 - **`DropdownMenu.vue`**: Aktions-Menü / Flyout-Trigger-Container-Primitive. Kapselt `.dropdown`, `.dropdown__button` und `.dropdown__field` gemäß BEM-System mit Slot für Menüs (`PickerMenu.vue`). Dient als Auslöser für Aktions- und Flyout-Menüs (Export, Teilen, Werkzeuge, Filter), nicht für reine Formular-Dateneingaben.
 - **`PickerMenu.vue` & `DropdownMenuItem.vue`**: Wiederverwendbare Popover-Menüs und Menü-Einträge für Filter-, Aktionen- und Options-Menüs mit Fokus-Management, Tastaturnavigation und Backdrop. Unterstützt Links (`href`), Aktions-Buttons und Checkbox-Mehrfachauswahl (`multiselect`).
 - **`CheckableListItem.vue`**: Wiederverwendbare Primitive für abhakbare Listeneinträge (`ShoppingListView`, `TodoView`, `PackingItem`). Kapselt Zeilen-Layout, Trennlinien, Strikethrough-Text (`row__text--done`), Done-Transparenz (`row--done`), Kalender-Fokus in Brand-Farbe mit Ambient Glow (`row.is-focused`) sowie Echtzeit-Highlighting in Grün mit Ambient Glow (`row.new-highlight`), Sparkle-Badge (`.list-item-sparkle` ✨) und Glanzanimation (`rowGlanceSweep`).
-- **`DetailRow.vue`**: Standardisierte Schlüssel-Wert-Zeile mit Icon, Label und Wert für Detailansichten, Modals und Listen.
+- **`DetailRow.vue`**: Standardisierte, semantische Schlüssel-Wert-Zeile (`<div class="detail-row">` mit `<dt class="detail-row__label">` und `<dd class="detail-row__value">` zur Gruppierung in einer `<dl>`) für Detailansichten (`SpotDetails`, `DashboardWeatherCard`, `ScheduleDetailModal`, `TravelDetailDialog`). Das optionale `icon`-Prop (`FormFieldIconKey | IconDef`, `iconGroup`) rendert das Feld-Icon links vor dem Label im `<dt>` (analog zu `FormField.vue`), während der Wert inkl. Inline-Suffixen wie `<CopyButton>` im `<dd>` zusammenhängend umbricht.
+- **`Divider.vue`**: Semantische horizontale Trennlinie (`<hr class="divider">`) im eingefrästen Reisotor-3D-Look (`@include divider-engraved('bottom')`: oben dunkle Rille `--color-divider-groove`, darunter feine 1px-Lichtkante `--color-divider-highlight`). Unterstützt optionales vertikales Spacing (`spacing="none" | "xs" | "sm" | "md" | "lg" | "xl"`, Default `'none'` für Flex-/Grid-Container mit `gap`). Für Sektions-Container, die keinen eigenen `<Divider />`-Knoten rendern, stattdessen `@include divider-engraved('top' | 'bottom')` nutzen — niemals flaches `border-top: 1px solid var(--color-border-divider)` ohne Lichtkante.
 - **`EmptyState.vue`**: Einheitlicher Leerzustand mit Icon, Titel, Beschreibung und optionaler Aktions-Schaltfläche.
 - **`Kicker.vue`**: Kleiner Eyebrow-/Kicker-Text (`.kicker`) oberhalb von Hauptüberschriften.
 - **`UnseenDot.vue`**: Diskreter Indikator-Punkt (roter Punkt) für ungesehene bzw. geänderte Inhalte aus dem Echtzeit-Sync sowie anstehende System-Benachrichtigungen in der Benachrichtigungs-Inbox.

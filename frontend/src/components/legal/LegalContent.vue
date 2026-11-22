@@ -1263,7 +1263,7 @@ const isFeedbackActive = computed(() =>
   background: color-mix(in srgb, var(--color-warning) 18%, transparent);
   color: var(--color-warning);
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: var(--space-2xs);
 }
 
 .legal-alert-body {

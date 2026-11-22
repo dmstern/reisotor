@@ -54,7 +54,7 @@ withDefaults(
 .weather-alert-card__alert-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
 }
 
 .weather-alert-card__alert-content strong {

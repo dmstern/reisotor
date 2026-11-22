@@ -1604,6 +1604,7 @@ onUnmounted(() => {
               size="sm"
               :active="activeSearchAndFilterCount > 0"
               :icon="ACTION_ICONS.search"
+              :badge="activeSearchAndFilterCount > 0 ? activeSearchAndFilterCount : undefined"
               :title="
                 activeSearchAndFilterCount > 0
                   ? `Suche & Filter öffnen (${activeSearchAndFilterCount} aktiv)`
@@ -1614,13 +1615,8 @@ onUnmounted(() => {
                   ? `Suche und Filter öffnen (${activeSearchAndFilterCount} aktiv)`
                   : 'Suche und Filter öffnen'
               "
-              class="partial-search-trigger-btn"
               @click="expandAndFocusSearch"
-            >
-              <Badge v-if="activeSearchAndFilterCount > 0" variant="primary" class="active-badge">
-                {{ activeSearchAndFilterCount }}
-              </Badge>
-            </IconButton>
+            />
             <Button
               v-if="sheetState !== 'collapsed'"
               size="sm"
@@ -2431,7 +2427,7 @@ onUnmounted(() => {
   height: min(100dvh, var(--sheet-max-height));
 
   .spots-col-body {
-    padding-bottom: var(--navbar-bottom-offset, 0px);
+    padding-bottom: calc(var(--navbar-bottom-offset, 0px) + var(--spots-col-pad));
   }
 }
 
@@ -2450,7 +2446,7 @@ onUnmounted(() => {
      gerundeten Sheet-Ecke (--radius-lg-squircle, siehe .spots-col oben) saßen die Stufen-Buttons
      sonst fast in der Rundung selbst statt sichtbar davor (genau der von Apples "X"-Button
      abweichende Effekt aus dem PR-Review-Screenshot). */
-  padding: var(--space-3) var(--space-3) var(--space-2);
+  padding: var(--space-lg) var(--space-lg) var(--space-md);
   /* Gilt für die ganze Zeile (nicht nur .sheet-handle): ein Zug, der knapp neben dem eigentlichen
      Anfasser beginnt (z. B. noch über den Stufen-Buttons), soll trotzdem nicht als Seiten-Scroll/
      Pull-to-Refresh interpretiert werden. */
@@ -2466,13 +2462,13 @@ onUnmounted(() => {
   height: 100%;
   box-sizing: border-box;
   align-items: center;
-  padding: 0 12px;
+  padding: 0 var(--space-md);
 }
 
 .sheet-title-group {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   min-width: 0;
 }
 
@@ -2567,7 +2563,7 @@ onUnmounted(() => {
 .sheet-handle {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   min-width: 0;
   cursor: grab;
   touch-action: none;
@@ -2581,7 +2577,7 @@ onUnmounted(() => {
 .sheet-title {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   margin: 0;
   min-width: 0;
   font-size: var(--font-size-xl);
@@ -2660,7 +2656,8 @@ onUnmounted(() => {
      kann der Browser den falschen Anker wählen und springt sichtbar zu einer völlig anderen Stelle in
      der Liste (#140 - "Details verschwinden", auf Safari/iOS deutlich ausgeprägter als auf Chrome). */
   overflow-anchor: none;
-  padding: 0 var(--space-3) var(--space-3);
+  --spots-col-pad: var(--space-lg);
+  padding: 0 var(--spots-col-pad) var(--spots-col-pad);
   /* Live gemessene Höhe der sticky .category-nav-Leiste (Icon+Label-Zeile plus Padding/Trennlinie,
      siehe dortiges CSS), per ResizeObserver im Script (setCategoryNavRef -> categoryNavHeight) als
      Inline-Style-Var auf dieses Element gebunden - der 44px-Wert hier ist nur ein Fallback für den
@@ -2695,8 +2692,8 @@ onUnmounted(() => {
 }
 
 .map-focus-dock:not(:empty) {
-  padding-top: var(--space-2);
-  margin-bottom: var(--space-3);
+  padding-top: 0;
+  margin-bottom: var(--space-lg);
 }
 
 /* Nebeneinander statt untereinander, sobald genug Breite verfügbar ist – schmalere Spots-Liste
@@ -2849,7 +2846,8 @@ onUnmounted(() => {
       flex: 1;
       overflow-y: auto;
       overflow-x: hidden;
-      padding: var(--space-3);
+      --spots-col-pad: var(--space-xl);
+      padding: var(--spots-col-pad);
       touch-action: auto;
     }
 
@@ -2875,8 +2873,8 @@ onUnmounted(() => {
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-2);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
 }
 
 .subheader {
@@ -2889,7 +2887,7 @@ onUnmounted(() => {
 .header h2 {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   margin: 0;
   min-width: 0;
 }
@@ -2905,31 +2903,12 @@ onUnmounted(() => {
   margin-left: auto;
 }
 
-.partial-search-trigger-btn {
-  position: relative;
-  flex-shrink: 0;
-
-  .active-badge {
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    justify-content: center;
-    font-size: var(--font-size-xs);
-    line-height: var(--line-height-none);
-    padding: 0 4px;
-    min-width: 16px;
-    height: 16px;
-    border-radius: var(--radius-pill);
-    pointer-events: none;
-  }
-}
-
 /* #515: Der 3-teilige SegmentedToggle (Spots / Touren / Tracks) sitzt in einer eigenen Zeile
    über die volle Breite des Drawer-Headers, sodass die Segmente auch auf 320px ohne Quetschen sitzen. */
 .header-mode-toggle {
   width: 100%;
   flex: 1 1 100%;
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-md);
 }
 
 .header-mode-toggle :deep(.segmented-option) {
@@ -2939,6 +2918,13 @@ onUnmounted(() => {
 }
 
 @include container-spots-col-down('mobile-sm') {
+  .spots-col-body,
+  .spots-col.collapsed .spots-col-body,
+  .spots-col.partial .spots-col-body,
+  .spots-col.full .spots-col-body {
+    --spots-col-pad: var(--space-lg);
+  }
+
   .sheet-handle-actions .add-button__label {
     display: none;
   }
@@ -2977,7 +2963,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 6px 12px;
+  padding: var(--space-1-5) var(--space-md);
   background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
   border: 1px solid color-mix(in srgb, var(--color-danger) 30%, var(--color-border));
   border-radius: var(--radius-sm-squircle);
@@ -3013,13 +2999,17 @@ onUnmounted(() => {
 }
 
 .group {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-xl);
   min-width: 0;
 }
 
+.group:last-of-type {
+  margin-bottom: 0;
+}
+
 .category-group.is-tour-group {
-  margin-left: calc(var(--space-3) * -1);
-  margin-right: calc(var(--space-3) * -1);
+  margin-left: calc(var(--spots-col-pad, var(--space-lg)) * -1);
+  margin-right: calc(var(--spots-col-pad, var(--space-lg)) * -1);
   margin-bottom: 0;
   @include divider-engraved('bottom');
   transition:
@@ -3051,13 +3041,13 @@ onUnmounted(() => {
 }
 
 .category-group.is-tour-group + .category-group:not(.is-tour-group) {
-  margin-top: var(--space-4);
+  margin-top: var(--space-xl);
 }
 
 .group h3 {
   font-size: var(--font-size-md);
   color: var(--color-primary-dark);
-  margin-bottom: var(--space-3);
+  margin: 0 0 var(--space-md);
 }
 
 .cards {
@@ -3073,7 +3063,7 @@ onUnmounted(() => {
 .tour-detail-back-bar {
   display: flex;
   align-items: center;
-  padding: var(--space-1) 0 var(--space-2);
+  padding: 0 0 var(--space-md);
   @include divider-engraved('bottom');
 }
 
@@ -3144,8 +3134,8 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-4);
+  gap: var(--space-md);
+  padding: var(--space-xl);
 }
 
 .empty-state-wrap .empty {
@@ -3200,10 +3190,10 @@ onUnmounted(() => {
 
 .drawer-search-accordion-inner {
   min-height: 0;
-  padding-top: 6px;
-  margin-top: -6px;
-  padding-bottom: 6px;
-  margin-bottom: -6px;
+  padding-top: var(--space-1-5);
+  margin-top: calc(-1 * var(--space-1-5));
+  padding-bottom: var(--space-1-5);
+  margin-bottom: calc(-1 * var(--space-1-5));
   overflow: visible;
 }
 
@@ -3214,8 +3204,8 @@ onUnmounted(() => {
 .filter-bar {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  margin: 0 0 var(--space-3);
+  gap: var(--space-sm);
+  margin: 0 0 var(--space-lg);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
 }
@@ -3234,7 +3224,7 @@ onUnmounted(() => {
 .category-heading {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   /* scrollToCategory() landet sonst mit der Überschrift teilweise unter der sticky Kategorie-Nav.
      Bewusst OHNE --app-header-height/--navbar-offset (anders als .spots-col/.map-col weiter oben
      und Drawer.vue, wo tatsächlich das Fenster/eine eigene Overlay-Ebene relativ zur AppHeader

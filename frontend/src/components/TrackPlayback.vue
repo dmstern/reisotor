@@ -575,8 +575,8 @@ defineExpose({
 .track-playback {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-3);
+  gap: var(--space-md);
+  padding: var(--space-lg);
   container: track-playback / inline-size;
   background: var(--color-surface-glass-dense, var(--color-surface-glass, var(--color-surface)));
   backdrop-filter: var(--backdrop-blur-md);
@@ -652,7 +652,7 @@ defineExpose({
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-1-5);
 }
 
 .metric-chip {
@@ -673,7 +673,7 @@ defineExpose({
 .track-playback-scrubber {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0;
   min-width: 0;
 }
 
@@ -801,7 +801,7 @@ defineExpose({
   font-size: var(--font-size-xs);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
-  padding: 0 2px;
+  padding: 0 var(--space-2xs);
 }
 
 .range-time.current-time {
@@ -859,7 +859,7 @@ defineExpose({
 .playback-speed-group {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2xs);
   background-color: var(--color-control-track-bg);
   padding: 3px;
   border-radius: var(--radius-pill);
@@ -920,8 +920,8 @@ defineExpose({
 
 @include container-down('track-playback', 'mobile-sm') {
   .track-playback {
-    padding: var(--space-2);
-    gap: var(--space-1);
+    padding: var(--space-md);
+    gap: var(--space-sm);
   }
 
   .speed-inline-group {

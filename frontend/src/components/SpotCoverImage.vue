@@ -162,7 +162,7 @@ function formatAccommodationDate(dateStr: string | null) {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding: var(--space-3);
+  padding: var(--space-md);
   background:
     var(--gradient-control-3d),
     linear-gradient(
@@ -184,7 +184,7 @@ function formatAccommodationDate(dateStr: string | null) {
 .overlay-bottom-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   min-width: 0;
   position: relative;
   z-index: 1;
@@ -202,7 +202,7 @@ function formatAccommodationDate(dateStr: string | null) {
 .overlay-bottom-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   flex: 1;
   min-width: 0;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -257,7 +257,7 @@ function formatAccommodationDate(dateStr: string | null) {
 }
 
 .overlay-note {
-  margin-top: 2px;
+  margin-top: var(--space-2xs);
   overflow: clip;
   max-height: 2.85em;
 }

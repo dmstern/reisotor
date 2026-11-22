@@ -328,22 +328,22 @@ onMounted(async () => {
 .cards {
   grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   padding-top: 22px;
-  /* Zeilenabstand größer als der globale .grid-Standard (--space-3, 16px): .tile-icon ragt
+  /* Zeilenabstand größer als der globale .grid-Standard (--space-lg, 16px): .tile-icon ragt
      über den oberen Rand seiner eigenen Kachel hinaus (44px Kreis-Icon, 22px halb über die Kachel)
      - bei nur 16px Zeilenabstand überdeckt es damit die Kachel der Zeile darüber.
-     --space-5 lässt dafür ausreichend Luft; Spaltenabstand bleibt beim Standardwert --space-3. */
-  row-gap: var(--space-5);
-  column-gap: var(--space-3);
+     --space-2xl lässt dafür ausreichend Luft; Spaltenabstand bleibt beim Standardwert --space-lg. */
+  row-gap: var(--space-2xl);
+  column-gap: var(--space-lg);
 }
 
 .mini-list {
   list-style: none;
-  margin: var(--space-1) 0 0;
+  margin: 0;
   padding: 0;
   font-size: var(--font-size-xs);
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   /* Block als Ganzes bleibt mittig in der Kachel (wie h3/p daneben), schrumpft dabei aber auf
      die tatsächlich benötigte Breite – sonst würde .entry-text (flex:1, s.u.) über die volle
      Kachelbreite gestreckt und sein Text (per :left ausdrücklich statt vom <button>-Element der
@@ -358,7 +358,7 @@ onMounted(async () => {
 .mini-list li {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
 }
 
 .entry-text {
@@ -370,8 +370,8 @@ onMounted(async () => {
 }
 
 .mini-dot {
-  width: var(--space-2);
-  height: var(--space-2);
+  width: var(--space-sm);
+  height: var(--space-sm);
   border-radius: var(--radius-full);
   flex-shrink: 0;
 }
@@ -380,7 +380,7 @@ onMounted(async () => {
   color: var(--color-text-muted);
   flex-wrap: wrap;
   flex-direction: row;
-  gap: var(--space-1) var(--space-2);
+  gap: var(--space-xs) var(--space-sm);
   /* Diese Variante (Zeilen-Umbruch statt vertikaler Liste) soll weiterhin die volle Kachelbreite
      nutzen können, nicht auf den engeren Fluchtlinien-Look der Kalender-Liste schrumpfen. */
   align-self: stretch;

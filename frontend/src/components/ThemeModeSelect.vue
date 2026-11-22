@@ -198,7 +198,7 @@ function selectMode(val: ThemeMode) {
   width: 100%;
   min-width: 100%;
   box-sizing: border-box;
-  margin-top: 4px;
+  margin-top: var(--space-xs);
   z-index: var(--z-popover, 1100);
 }
 

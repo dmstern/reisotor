@@ -1481,26 +1481,21 @@ async function handleGenerateVapid() {
   </div>
 </template>
 
-<style scoped>
-.admin-card {
-  margin-bottom: var(--space-4);
+<style lang="scss" scoped>
+.admin-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
 }
 
 .error-banner {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-md) var(--space-lg);
   background: var(--color-danger-tint, #fee2e2);
   color: var(--color-danger, #b91c1c);
   border: 1px solid var(--color-danger);
   border-radius: var(--radius-sm-squircle);
-  margin-bottom: var(--space-4);
+  corner-shape: squircle;
   font-size: var(--font-size-sm);
-}
-
-.hint {
-  margin: 0 0 var(--space-3);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  line-height: var(--line-height-normal);
 }
 
 .hint.error {
@@ -1510,16 +1505,15 @@ async function handleGenerateVapid() {
 .registration-mode-options {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-  margin-bottom: var(--space-3);
+  gap: var(--space-sm);
+  margin: 0 0 var(--space-lg);
 }
 
 .mode-option {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-3);
-  padding: var(--space-3);
+  gap: var(--space-md);
+  padding: var(--space-md);
   border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
@@ -1530,7 +1524,7 @@ async function handleGenerateVapid() {
 }
 
 .mode-option :deep(.radio) {
-  margin-top: 2px;
+  margin-top: var(--space-2xs);
 }
 
 .mode-option:hover {
@@ -1551,13 +1545,13 @@ async function handleGenerateVapid() {
 .mode-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-xs);
 }
 
 .mode-title {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   font-size: var(--font-size-sm);
 }
 
@@ -1568,8 +1562,7 @@ async function handleGenerateVapid() {
 }
 
 .reg-email-alert {
-  margin-top: var(--space-2);
-  margin-bottom: var(--space-3);
+  margin: var(--space-lg) 0;
 }
 
 .reg-email-link {
@@ -1582,15 +1575,14 @@ async function handleGenerateVapid() {
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-  gap: var(--space-3) var(--space-4);
-  margin-top: var(--space-3);
-  margin-bottom: var(--space-4);
+  gap: var(--space-lg) var(--space-xl);
+  margin: 0 0 var(--space-lg);
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   min-width: 0;
 }
 
@@ -1608,7 +1600,7 @@ async function handleGenerateVapid() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 
 .label-with-badge label {
@@ -1624,7 +1616,7 @@ async function handleGenerateVapid() {
 .secret-input-row {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   min-width: 0;
 }
 
@@ -1660,15 +1652,16 @@ async function handleGenerateVapid() {
 .section-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--color-border-divider);
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  @include divider-engraved('top');
 }
 
 .save-success-msg {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   font-size: var(--font-size-sm);
   color: var(--color-success);
   font-weight: 500;
@@ -1676,12 +1669,12 @@ async function handleGenerateVapid() {
 
 .smtp-test-row {
   display: flex;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   align-items: center;
   flex-wrap: wrap;
-  margin-top: var(--space-3);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--color-border-divider);
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  @include divider-engraved('top');
 }
 
 .smtp-test-input {
@@ -1690,14 +1683,18 @@ async function handleGenerateVapid() {
 }
 
 .test-email-alert {
-  margin-top: var(--space-3);
+  margin-top: var(--space-lg);
 }
 
-.smtp-guide-fieldset,
-.feedback-guide-fieldset,
-.push-guide-fieldset,
-.geo-guide-fieldset {
-  margin-bottom: var(--space-4);
+.smtp-guide-fieldset.collapsible-fieldset,
+.smtp-guide-fieldset.collapsible-fieldset.is-closed,
+.feedback-guide-fieldset.collapsible-fieldset,
+.feedback-guide-fieldset.collapsible-fieldset.is-closed,
+.push-guide-fieldset.collapsible-fieldset,
+.push-guide-fieldset.collapsible-fieldset.is-closed,
+.geo-guide-fieldset.collapsible-fieldset,
+.geo-guide-fieldset.collapsible-fieldset.is-closed {
+  margin: 0 0 var(--space-lg);
 }
 
 .smtp-guide-content,
@@ -1706,7 +1703,7 @@ async function handleGenerateVapid() {
 .geo-guide-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   font-size: var(--font-size-xs);
   line-height: var(--line-height-relaxed);
   color: var(--color-text-secondary);
@@ -1724,14 +1721,21 @@ async function handleGenerateVapid() {
 .push-guide-content ul,
 .geo-guide-content ul {
   margin: 0;
-  padding-left: var(--space-4);
+  padding-left: var(--space-xl);
 }
 
 .smtp-guide-content li,
 .feedback-guide-content li,
 .push-guide-content li,
 .geo-guide-content li {
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-sm);
+}
+
+.smtp-guide-content li:last-child,
+.feedback-guide-content li:last-child,
+.push-guide-content li:last-child,
+.geo-guide-content li:last-child {
+  margin-bottom: 0;
 }
 
 .smtp-guide-content code,
@@ -1758,13 +1762,13 @@ async function handleGenerateVapid() {
 .label-with-info {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
 }
 
 .info-popover-text {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   font-size: var(--font-size-xs);
   line-height: var(--line-height-normal);
   color: var(--color-text-secondary);
@@ -1784,8 +1788,7 @@ async function handleGenerateVapid() {
 }
 
 .feedback-alert {
-  margin-top: var(--space-2);
-  margin-bottom: var(--space-3);
+  margin: var(--space-lg) 0;
 }
 
 .guide-note {

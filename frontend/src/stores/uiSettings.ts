@@ -83,40 +83,20 @@ export const DIARY_FONT_OPTIONS: readonly DiaryFontOption[] = [
   },
 ] as const;
 
-export const VIBRANT_PRIMARY_COLOR_PRESETS = [
-  { name: 'Türkis', hex: '#2a7f74' },
-  { name: 'Ozeanblau', hex: '#2563eb' },
-  { name: 'Violett', hex: '#9141AC' },
-  { name: 'Smaragd', hex: '#059669' },
+export const PRIMARY_COLOR_PRESETS = [
   { name: 'Rubin', hex: '#e11d48' },
-  { name: 'Bernstein', hex: '#d97706' },
-  { name: 'Indigo', hex: '#4f46e5' },
-  { name: 'Pink', hex: '#db2777' },
-  { name: 'Aubergine', hex: '#77216f' },
   { name: 'Koralle', hex: '#ea580c' },
   { name: 'Sonnengelb', hex: '#ca8a04' },
   { name: 'Lime', hex: '#65a30d' },
-] as const;
-
-export const PASTEL_PRIMARY_COLOR_PRESETS = [
-  { name: 'Mint-Soft', hex: '#14b8a6' },
-  { name: 'Eisblau', hex: '#3b82f6' },
-  { name: 'Flieder', hex: '#a855f7' },
-  { name: 'Salbei', hex: '#10b981' },
-  { name: 'Altrosa', hex: '#f43f5e' },
-  { name: 'Pfirsich', hex: '#f97316' },
-  { name: 'Lavendel', hex: '#6366f1' },
-  { name: 'Soft-Pink', hex: '#ec4899' },
-  { name: 'Malve', hex: '#c084fc' },
-  { name: 'Sand', hex: '#eab308' },
+  { name: 'Smaragd', hex: '#059669' },
+  { name: 'Türkis', hex: '#2a7f74' },
   { name: 'Aquamarin', hex: '#06b6d4' },
-  { name: 'Pistazie', hex: '#84cc16' },
+  { name: 'Ozeanblau', hex: '#2563eb' },
+  { name: 'Indigo', hex: '#4f46e5' },
+  { name: 'Violett', hex: '#9141AC' },
+  { name: 'Aubergine', hex: '#77216f' },
+  { name: 'Pink', hex: '#db2777' },
 ] as const;
-
-export const PRIMARY_COLOR_PRESETS = [
-  ...VIBRANT_PRIMARY_COLOR_PRESETS,
-  ...PASTEL_PRIMARY_COLOR_PRESETS,
-];
 
 export const DEFAULT_PRIMARY_COLOR = '#9141AC';
 export const DEFAULT_TOAST_TIMEOUT = 5; // Sekunden

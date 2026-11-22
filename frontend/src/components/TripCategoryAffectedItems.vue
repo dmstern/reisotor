@@ -181,7 +181,7 @@ function formatAmount(amount: number): string {
   color: var(--color-primary);
   text-decoration: none;
   cursor: pointer;
-  padding: 2px 6px;
+  padding: var(--space-2xs) var(--space-1-5);
   border-radius: var(--radius-sm);
   background: var(--color-primary-tint);
   transition:
@@ -219,7 +219,7 @@ function formatAmount(amount: number): string {
   gap: 0;
   max-height: 180px;
   overflow-y: auto;
-  padding-right: 2px;
+  padding-right: var(--space-2xs);
 }
 
 .affected-item-row {
@@ -260,7 +260,7 @@ function formatAmount(amount: number): string {
   .affected-item-row {
     flex-direction: column;
     align-items: flex-start;
-    gap: 2px;
+    gap: var(--space-2xs);
   }
 }
 </style>

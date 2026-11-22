@@ -184,7 +184,7 @@
 :root {
   color-scheme: light;
   interpolate-size: allow-keywords;
-  --drawer-handle-gap: 12px;
+  --drawer-handle-gap: var(--space-md);
   /* Von NavBar.vue live per ResizeObserver gepflegt: tatsächliche Höhe der NavBar, wenn sie
      (je nach Breakpoint/Einstellung) oben klebt – 0px, wenn sie unten fixiert ist. Schubladen
      (Drawer.vue) addieren das zur Header-Höhe, damit sie die NavBar nie überdecken. */
@@ -290,7 +290,7 @@
 
   /* Dreistufige Border-Token-Regel (Details & Abgrenzung siehe DESIGN.md):
      1. --color-border: Dekorativer Rahmen für erhobene/schattierte Flächen (Cards, Drawers, Modals, Popovers, Dropdowns)
-     2. --color-border-divider: Semantischer Trenner zwischen Bereichen gleicher/ähnlicher Fläche (Listen, <hr>, Tabellen, Sektions-Trenner, Sub-Boxen)
+     2. Horizontale Trennlinien (<Divider /> / @include divider-engraved): Eingefräste 3D-Rille (--color-divider-groove) mit unterer Lichtkante (--color-divider-highlight); --color-border-divider für 4-seitige Inset-Boxen/Fieldsets
      3. --color-border-strong: Interaktive Controls (Inputs, Selects, Comboboxes, btn--secondary, Pill-/Control-Outlines)
      --color-button-edge zusätzlich für farbige Buttons (primary/danger) auf satte Hintergrundfarben. */
   --color-border-divider: #e8e2d9;
@@ -370,12 +370,24 @@
     grid-template-rows var(--duration-accordion-close) var(--ease-accordion), opacity 0.2s ease;
   --transition-caret: transform 0.24s cubic-bezier(0.34, 1.4, 0.64, 1);
 
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 16px;
-  --space-4: 24px;
-  --space-5: 32px;
-  --space-6: 48px;
+  --space-2xs: 2px;
+  --space-xs: 4px;
+  --space-1-5: 6px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-3-5: 20px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+  --space-3xl: 48px;
+
+  /* Abwärtskompatible Aliase (keine Breaking Changes auf bestehenden Stellen) */
+  --space-1: var(--space-xs);
+  --space-2: var(--space-sm);
+  --space-3: var(--space-lg);
+  --space-4: var(--space-xl);
+  --space-5: var(--space-2xl);
+  --space-6: var(--space-3xl);
 
   /* Standard-Inhaltsbreite für Desktop (.page): 1400px füllt FullHD (1920px) bei geöffnetem
      Kalender-Drawer (~400px) ideal mit ausgewogenen ~56px Seitenrändern aus. Auf Ultra-Wide /
@@ -568,9 +580,9 @@
   --control-height-sm: 36px;
   --control-height-md: var(--input-height);
   --control-height-lg: var(--input-height-lg);
-  --control-gap-xs: var(--space-1);
-  --control-gap-sm: 6px;
-  --control-gap-md: var(--space-2);
+  --control-gap-xs: var(--space-xs);
+  --control-gap-sm: var(--space-1-5);
+  --control-gap-md: var(--space-sm);
   --control-radius-xs: 6.5px;
   --control-radius-sm: 8px;
   --control-radius-md: 10px;
@@ -1271,6 +1283,12 @@ p {
   color: var(--color-text-muted);
 }
 
+.hint {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-muted);
+}
+
 a {
   color: var(--color-primary);
 }
@@ -1332,7 +1350,7 @@ button {
 .required-indicator {
   color: var(--color-danger, #ef4444);
   font-weight: 700;
-  margin-left: 2px;
+  margin-left: var(--space-2xs);
   display: inline;
 }
 
@@ -1808,7 +1826,7 @@ p + .btn {
 .card-sparkle-badge {
   position: absolute;
   top: -9px;
-  right: 12px;
+  right: var(--space-md);
   width: 24px;
   height: 24px;
   background: var(--color-surface);

@@ -173,16 +173,16 @@ function discardDraft() {
   </form>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .add-form {
-  margin-bottom: var(--space-4);
-  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-xl);
+  padding: var(--space-lg);
 }
 
 .quick-input-row {
   display: flex;
   align-items: flex-end;
-  gap: var(--space-3);
+  gap: var(--space-lg);
   flex-wrap: wrap;
 }
 
@@ -231,7 +231,7 @@ function discardDraft() {
 .quick-input-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   flex-shrink: 0;
 }
 
@@ -256,9 +256,9 @@ function discardDraft() {
 .details-toggle-btn {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   height: var(--input-height, 44px);
-  padding: 0 var(--space-3);
+  padding: 0 var(--space-lg);
   color: var(--color-text-muted);
 }
 
@@ -269,9 +269,13 @@ function discardDraft() {
 .form-details-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: var(--space-3);
-  padding-top: var(--space-3);
-  margin-top: var(--space-2);
-  border-top: 1px dashed var(--color-border-divider);
+  gap: var(--space-lg);
+  padding-top: var(--space-lg);
+  margin-top: var(--space-lg);
+  @include divider-engraved('top');
+}
+
+.form-details-grid :deep(.form-field) {
+  margin-bottom: 0;
 }
 </style>

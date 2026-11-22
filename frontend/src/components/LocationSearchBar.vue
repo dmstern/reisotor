@@ -299,7 +299,7 @@ function onDropdownScroll(e: Event) {
   border: 1px solid var(--color-surface-glass-border);
   border-radius: var(--radius-pill);
   height: 28px;
-  padding: 2px var(--space-2);
+  padding: var(--space-2xs) var(--space-2);
   cursor: pointer;
   transition: var(--transition-glass);
 
@@ -508,7 +508,7 @@ function onDropdownScroll(e: Event) {
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
-  padding: var(--space-2) 12px;
+  padding: var(--space-2) var(--space-md);
   cursor: pointer;
   transition: background 0.15s ease;
 
@@ -525,7 +525,7 @@ function onDropdownScroll(e: Event) {
 }
 
 .item-icon {
-  margin-top: 2px;
+  margin-top: var(--space-2xs);
   color: var(--color-text-muted);
   flex-shrink: 0;
 }
@@ -533,7 +533,7 @@ function onDropdownScroll(e: Event) {
 .location-item-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   min-width: 0;
   flex: 1;
 }
@@ -569,7 +569,7 @@ function onDropdownScroll(e: Event) {
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
-  padding: 10px 12px;
+  padding: 10px var(--space-md);
   color: var(--color-text-muted);
   user-select: none;
 }
@@ -577,7 +577,7 @@ function onDropdownScroll(e: Event) {
 .location-empty-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
 }
 
 .location-empty-content .empty-title {
@@ -597,7 +597,7 @@ function onDropdownScroll(e: Event) {
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  padding: var(--space-2) 12px;
+  padding: var(--space-2) var(--space-md);
   margin-top: var(--space-1);
   border-top: 1px dashed var(--color-surface-glass-border);
   cursor: pointer;
@@ -643,7 +643,7 @@ function onDropdownScroll(e: Event) {
 
 .popover-tip-icon {
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: var(--space-2xs);
   color: var(--color-primary);
 }
 </style>

@@ -197,7 +197,7 @@ function onEditClick(closePopover?: () => void) {
   align-items: center;
   gap: var(--space-1);
   min-height: 20px;
-  padding: 0 3px 0 6px;
+  padding: 0 3px 0 var(--space-1-5);
   background: none;
   border: none;
   color: inherit;
@@ -222,7 +222,7 @@ function onEditClick(closePopover?: () => void) {
   align-items: center;
   gap: var(--space-1);
   min-height: 20px;
-  padding: 0 3px 0 6px;
+  padding: 0 3px 0 var(--space-1-5);
   line-height: var(--line-height-tight);
 }
 

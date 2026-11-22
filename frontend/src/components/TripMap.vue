@@ -748,7 +748,7 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   z-index: auto;
   width: 100%;
   max-width: 100%;
-  margin-bottom: var(--space-3);
+  margin-bottom: 0;
 }
 
 .excursion-track-switcher {
@@ -758,7 +758,7 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
   overflow-x: auto;
   scrollbar-width: none;
   margin-bottom: var(--space-2);
-  padding: 6px 2px;
+  padding: var(--space-1-5) var(--space-2xs);
 }
 
 .excursion-track-switcher::-webkit-scrollbar {

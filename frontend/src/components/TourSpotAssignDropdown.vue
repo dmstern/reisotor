@@ -228,7 +228,7 @@ onUnmounted(() => {
 }
 
 .popup-head {
-  padding: 2px 6px 6px;
+  padding: var(--space-2xs) var(--space-1-5) var(--space-1-5);
   @include divider-engraved('bottom');
 }
 
@@ -245,7 +245,7 @@ onUnmounted(() => {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
 }
 
 .spot-assign-trailing {
@@ -274,13 +274,13 @@ onUnmounted(() => {
   margin: 0;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
-  padding: 8px 6px;
+  padding: var(--space-sm) var(--space-1-5);
   cursor: default;
 }
 
 .create-spot-footer {
-  margin-top: var(--space-1);
-  padding-top: var(--space-1);
+  margin-top: var(--space-xs);
+  padding-top: var(--space-1-5);
   @include divider-engraved('top');
 }
 

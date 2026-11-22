@@ -36,43 +36,59 @@ defineEmits<{
       <AppIcon v-if="icon" :icon="icon" :group="iconGroup" :size="iconSize" />
       {{ title }}
     </h2>
-    <Button
-      v-if="showReset"
-      variant="ghost"
-      size="sm"
-      :icon="ACTION_ICONS.restore"
-      :disabled="isDefault"
-      aria-label="Auf Standard zurücksetzen"
-      :title="resetTitle ?? (isDefault ? 'Bereits auf Standard' : 'Auf Standard zurücksetzen')"
-      class="card-reset-btn"
-      @click="$emit('reset')"
-    >
-      <span class="card-reset-btn-label">Zurücksetzen</span>
-    </Button>
-    <slot name="actions" />
+    <div v-if="showReset || $slots.actions" class="card-header-actions">
+      <Button
+        v-if="showReset"
+        variant="ghost"
+        size="sm"
+        :icon="ACTION_ICONS.restore"
+        :disabled="isDefault"
+        aria-label="Auf Standard zurücksetzen"
+        :title="resetTitle ?? (isDefault ? 'Bereits auf Standard' : 'Auf Standard zurücksetzen')"
+        class="card-reset-btn"
+        @click="$emit('reset')"
+      >
+        <span class="card-reset-btn-label">Zurücksetzen</span>
+      </Button>
+      <slot name="actions" />
+    </div>
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .card-header-row {
+  container-type: inline-size;
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
 }
 
 .card-header-row h2 {
   margin: 0;
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   min-width: 0;
   word-break: break-word;
 }
 
-@container app-main (max-width: 420px) {
+.card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.card-reset-btn {
+  flex-shrink: 0;
+}
+
+@include container-down('mobile-compact') {
   .card-reset-btn-label {
     display: none;
   }

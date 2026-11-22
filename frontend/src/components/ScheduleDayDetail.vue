@@ -122,8 +122,8 @@ defineEmits<{
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
   flex-wrap: wrap;
   min-width: 0;
 }
@@ -132,7 +132,7 @@ defineEmits<{
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   min-width: 0;
   flex: 1 1 180px;
 }
@@ -149,22 +149,22 @@ defineEmits<{
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 
 .day-meta-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
 }
 
 .day-meta-pill {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-1) var(--space-2);
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
   border-radius: var(--radius-pill);
   font-size: var(--font-size-xs);
   border: var(--border-width) solid var(--color-border-divider);
@@ -191,7 +191,7 @@ defineEmits<{
 .temp-range {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2xs);
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -204,7 +204,7 @@ defineEmits<{
 .rain-prob {
   display: inline-flex;
   align-items: center;
-  gap: calc(var(--space-1) / 2);
+  gap: var(--space-2xs);
   color: var(--color-text-muted);
   font-size: var(--font-size-xs);
   white-space: nowrap;
@@ -234,6 +234,6 @@ defineEmits<{
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 </style>

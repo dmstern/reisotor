@@ -138,22 +138,27 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
         <BudgetOverviewCard />
 
         <Card class="pots-card">
-          <div class="header">
-            <h2>Budgets</h2>
-            <Button @click="openCreateBudget"
-              ><AppIcon :icon="ACTION_ICONS.moneybagPlus" :size="14" group="actions" /> Budget
-              anlegen</Button
-            >
+          <div class="pots-head-group">
+            <div class="header">
+              <h2>Budgets</h2>
+              <Button @click="openCreateBudget"
+                ><AppIcon :icon="ACTION_ICONS.moneybagPlus" :size="14" group="actions" /> Budget
+                anlegen</Button
+              >
+            </div>
+            <div class="pots-intro">
+              <p class="hint">Ganz einfach: ein Topf mit nur einer Gesamtsumme.</p>
+              <p v-if="budgetStore.users.length > 1" class="hint">
+                Oder detaillierter: in Kategorien aufteilen, um daraus ein Gesamtbudget
+                zusammenzustellen. Geteilte Töpfe sehen alle Mitreisenden, private Töpfe nur du
+                selbst.
+              </p>
+              <p v-else class="hint">
+                Oder detaillierter: in Kategorien aufteilen, um daraus ein Gesamtbudget
+                zusammenzustellen.
+              </p>
+            </div>
           </div>
-          <p class="hint">Ganz einfach: ein Topf mit nur einer Gesamtsumme.</p>
-          <p v-if="budgetStore.users.length > 1" class="hint">
-            Oder detaillierter: in Kategorien aufteilen, um daraus ein Gesamtbudget
-            zusammenzustellen. Geteilte Töpfe sehen alle Mitreisenden, private Töpfe nur du selbst.
-          </p>
-          <p v-else class="hint">
-            Oder detaillierter: in Kategorien aufteilen, um daraus ein Gesamtbudget
-            zusammenzustellen.
-          </p>
 
           <TransitionGroup tag="div" name="list" class="pot-grid">
             <BudgetPotCard
@@ -225,11 +230,11 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
   <ViewLoadingState v-else />
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .budget-page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-xl);
   min-width: 0;
 }
 
@@ -238,13 +243,13 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 
 .title-wrap {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-lg);
   flex-wrap: wrap;
   min-width: 0;
 }
@@ -256,12 +261,12 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
 .budget-kpi-pill {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   max-width: 100%;
   font-size: var(--font-size-sm);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  padding: var(--space-1) var(--space-3);
+  padding: var(--space-xs) var(--space-lg);
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--color-success) 12%, var(--color-surface));
   color: var(--color-success);
@@ -306,22 +311,22 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
 .budget-main-grid {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-xl);
 }
 
-@container app-main (min-width: 960px) {
+@include container-app-main-up('desktop-md') {
   .budget-main-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
     align-items: start;
-    gap: var(--space-4);
+    gap: var(--space-xl);
   }
 }
 
-@container app-main (min-width: 1500px) {
+@include container-app-main-up('page-max') {
   .budget-main-grid {
     grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-    gap: var(--space-5);
+    gap: var(--space-2xl);
   }
 }
 
@@ -329,7 +334,7 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
 .budget-col-transactions {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-xl);
   min-width: 0;
 }
 
@@ -338,10 +343,22 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
   color: var(--color-primary-dark);
 }
 
+.pots-head-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.pots-intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
 .hint {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  margin: var(--space-2) 0 var(--space-3);
+  margin: 0;
 }
 
 .header {
@@ -349,8 +366,8 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  gap: var(--space-sm);
+  margin-bottom: 0;
 }
 
 .header h2 {
@@ -363,7 +380,7 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
 .pot-grid {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-lg);
   width: 100%;
   min-width: 0;
 }
@@ -372,6 +389,9 @@ function openTransferWithSuggestion(suggestion: SettlementSuggestion) {
 .pots-card,
 .expenses-card,
 .transfers-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
   animation: card-appear 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 

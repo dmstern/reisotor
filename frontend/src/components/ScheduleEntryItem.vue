@@ -119,8 +119,8 @@ const hasObjectJump = computed(() => jumpLabel.value !== undefined);
 .item {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-border);
   border-left: 3px solid var(--entry-cat-color, var(--color-primary));
@@ -162,7 +162,7 @@ const hasObjectJump = computed(() => jumpLabel.value !== undefined);
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  padding-top: 2px;
+  padding-top: var(--space-2xs);
 }
 
 .item-cat-icon {
@@ -179,7 +179,7 @@ const hasObjectJump = computed(() => jumpLabel.value !== undefined);
 }
 
 .todo-checkbox {
-  margin-top: 2px;
+  margin-top: var(--space-2xs);
 }
 
 .item-main {
@@ -191,20 +191,20 @@ const hasObjectJump = computed(() => jumpLabel.value !== undefined);
 .item-header-line {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  margin-bottom: 3px;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
   flex-wrap: wrap;
 }
 
 .item-time-badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   font-size: var(--font-size-xs);
   font-weight: 700;
   color: var(--color-primary-dark);
   background: var(--color-primary-tint);
-  padding: 1px var(--space-1);
+  padding: var(--space-2xs) var(--space-1-5);
   border-radius: var(--radius-xs-squircle);
   corner-shape: squircle;
   line-height: var(--line-height-tight);
@@ -232,31 +232,31 @@ const hasObjectJump = computed(() => jumpLabel.value !== undefined);
 }
 
 .item .location {
-  margin: var(--space-1) 0 0;
+  margin: var(--space-xs) 0 0;
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   display: flex;
   align-items: flex-start;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   min-width: 0;
 }
 
 .item .location :deep(.app-icon) {
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: var(--space-2xs);
 }
 
 .item .note {
-  margin: var(--space-1) 0 0;
+  margin: var(--space-xs) 0 0;
   font-size: var(--font-size-sm);
 }
 
 .item-actions {
   display: flex;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   flex-shrink: 0;
   align-items: center;
-  padding-top: calc(var(--space-1) / 2);
+  padding-top: var(--space-2xs);
 }
 
 .todo-nav-indicator {
@@ -264,7 +264,7 @@ const hasObjectJump = computed(() => jumpLabel.value !== undefined);
   align-items: center;
   justify-content: center;
   color: var(--color-text-muted);
-  padding: 2px;
+  padding: var(--space-2xs);
   border-radius: var(--radius-xs-squircle);
   corner-shape: squircle;
   transition:

@@ -46,16 +46,22 @@ describe('SpotDetails', () => {
     expect(html).toBe('<!--v-if-->');
   });
 
-  it('renders address detail row when spot has an address', async () => {
+  it('renders address detail row when spot has an address and groups comma segments as detail-chunks', async () => {
     const html = await mountComponent({
-      spot: { ...baseSpot, category: 'Aktivität', address: 'Alexanderplatz 1' },
+      spot: {
+        ...baseSpot,
+        category: 'Aktivität',
+        address: 'Av. 24 de Julho 49, 1200-479 Lisboa',
+      },
       expanded: true,
       isAccommodation: false,
     });
     expect(html).toContain('spot-accordion');
     expect(html).toContain('is-expanded');
     expect(html).toContain('Adresse');
-    expect(html).toContain('Alexanderplatz 1');
+    expect(html).toContain('detail-chunk');
+    expect(html).toContain('>Av. 24 de Julho 49,</span>');
+    expect(html).toContain('>1200-479 Lisboa</span>');
     expect(html).toContain('Adresse kopieren');
   });
 

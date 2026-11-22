@@ -51,25 +51,27 @@ const totalIncomes = computed(() =>
         </Badge>
       </div>
     </div>
-    <BudgetMeter
-      label="Budget"
-      :icon="ACTION_ICONS.moneybag"
-      :spent="budgetStore.totalSpent"
-      :target="budgetStore.grandTotal"
-      :prominent="true"
-    />
-    <!-- BudgetMeter zeigt den Überzug-Fall (⚠️ X € über Budget) schon selbst an - hier nur den
-         positiven Rest-Fall ergänzen, den BudgetMeter (auch anderswo für Packliste/Einkaufsliste/
-         ToDo genutzt, siehe DashboardView.vue) bewusst nicht kennt. -->
-    <p
-      v-if="budgetStore.grandTotal > 0 && budgetStore.remaining >= 0"
-      class="remaining-line"
-      :class="{
-        'is-low': budgetStore.remaining / budgetStore.grandTotal <= 0.2,
-      }"
-    >
-      Noch übrig: <strong class="nobr">{{ budgetStore.remaining.toFixed(2) }}&nbsp;€</strong>
-    </p>
+    <div class="overview-meter-group">
+      <BudgetMeter
+        label="Budget"
+        :icon="ACTION_ICONS.moneybag"
+        :spent="budgetStore.totalSpent"
+        :target="budgetStore.grandTotal"
+        :prominent="true"
+      />
+      <!-- BudgetMeter zeigt den Überzug-Fall (⚠️ X € über Budget) schon selbst an - hier nur den
+           positiven Rest-Fall ergänzen, den BudgetMeter (auch anderswo für Packliste/Einkaufsliste/
+           ToDo genutzt, siehe DashboardView.vue) bewusst nicht kennt. -->
+      <p
+        v-if="budgetStore.grandTotal > 0 && budgetStore.remaining >= 0"
+        class="remaining-line"
+        :class="{
+          'is-low': budgetStore.remaining / budgetStore.grandTotal <= 0.2,
+        }"
+      >
+        Noch übrig: <strong class="nobr">{{ budgetStore.remaining.toFixed(2) }}&nbsp;€</strong>
+      </p>
+    </div>
   </Card>
 </template>
 
@@ -77,7 +79,7 @@ const totalIncomes = computed(() =>
 .overview-card {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-md);
   margin-bottom: 0;
   animation: card-appear 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -87,8 +89,8 @@ const totalIncomes = computed(() =>
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-bottom: var(--space-1);
+  gap: var(--space-sm);
+  margin-bottom: 0;
 }
 
 .overview-header h2 {
@@ -101,10 +103,17 @@ const totalIncomes = computed(() =>
 .overview-badges {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   flex-wrap: wrap;
   min-width: 0;
   font-variant-numeric: tabular-nums;
+}
+
+.overview-meter-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 0;
 }
 
 .overview-card :deep(.meter-head) {
@@ -116,7 +125,7 @@ const totalIncomes = computed(() =>
 }
 
 .remaining-line {
-  margin: var(--space-1) 0 0;
+  margin: 0;
   font-size: var(--font-size-sm);
   color: var(--color-success);
   font-variant-numeric: tabular-nums;

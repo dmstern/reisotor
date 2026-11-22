@@ -176,7 +176,7 @@ function handleClick(event: MouseEvent) {
   gap: var(--space-2);
   width: 100%;
   min-height: 44px;
-  padding: 10px 12px;
+  padding: 10px var(--space-md);
   border: none;
   background: transparent;
   border-radius: var(--radius-sm-squircle);

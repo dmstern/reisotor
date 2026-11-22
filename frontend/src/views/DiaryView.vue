@@ -284,8 +284,8 @@ onMounted(() => {
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
   max-width: 800px;
   margin-left: auto;
   margin-right: auto;
@@ -310,7 +310,7 @@ onMounted(() => {
 .entries {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-lg);
   max-width: 800px;
   margin: 0 auto;
   width: 100%;

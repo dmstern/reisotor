@@ -288,7 +288,7 @@ onBeforeUnmount(() => {
      (.resize-handle) exklusiv liegt – überlappt dadurch nie mit dem nativen Scrollbalken des
      Panels (dessen Breite je nach Betriebssystem/Browser variiert), egal wie breit dieser
      tatsächlich ist. */
-  --drawer-handle-gap: 12px;
+  --drawer-handle-gap: var(--space-md);
 }
 
 /* Mobil (Default): Panel als fixed Overlay, Tab bleibt als touch-tauglicher Griff permanent am

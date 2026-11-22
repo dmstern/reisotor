@@ -134,7 +134,7 @@ defineExpose({
 .input {
   /* Basis-Styles für Input-Primitive mit 3D-Look via _controls.scss (#701 & #729) */
   @include control-field-inset;
-  padding: 9px 12px;
+  padding: 9px var(--space-md);
   color: var(--color-text);
   min-width: 0;
   max-width: 100%;
@@ -145,7 +145,7 @@ defineExpose({
 }
 
 .input--sm {
-  padding: 6px 10px;
+  padding: var(--space-1-5) 10px;
   min-height: var(--input-height-sm, 38px);
   font-size: var(--font-size-sm);
 
@@ -160,7 +160,7 @@ defineExpose({
 }
 
 .input--lg {
-  padding: 12px 16px;
+  padding: var(--space-md) var(--space-lg);
   min-height: var(--input-height-lg, 52px);
   font-size: var(--font-size-md);
 }
@@ -218,7 +218,7 @@ defineExpose({
 .input[type='month']::-webkit-calendar-picker-indicator,
 .input[type='week']::-webkit-calendar-picker-indicator {
   padding: 0;
-  margin-left: 4px;
+  margin-left: var(--space-xs);
   width: 16px;
   height: 16px;
 }
@@ -236,8 +236,8 @@ defineExpose({
 
 .input--pill.input--sm,
 .input--sm[type='search'] {
-  padding-left: 12px;
-  padding-right: 12px;
+  padding-left: var(--space-md);
+  padding-right: var(--space-md);
 }
 
 .input--pill.input--lg,

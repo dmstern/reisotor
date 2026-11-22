@@ -319,8 +319,8 @@ function goToSettings() {
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 2px var(--space-1);
-  padding: 3px 12px;
+  gap: var(--space-2xs) var(--space-1);
+  padding: 3px var(--space-md);
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--color-primary-tint) 65%, var(--color-surface));
   border: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);

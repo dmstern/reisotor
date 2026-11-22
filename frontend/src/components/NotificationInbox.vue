@@ -566,7 +566,7 @@ function dismissPwaInstall() {
 .row-body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   min-width: 0;
   flex: 1;
 }
@@ -671,7 +671,7 @@ function dismissPwaInstall() {
 .notice-body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   min-width: min(140px, 100%);
   flex: 1 1 140px;
 }
@@ -692,7 +692,7 @@ function dismissPwaInstall() {
 .notice-actions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2xs);
   flex-shrink: 0;
   margin-left: auto;
 }

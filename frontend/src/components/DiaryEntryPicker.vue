@@ -129,8 +129,8 @@ function entryLabel(entry: DiaryEntry): string {
 .diary-picker-option {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-2);
-  padding: 6px var(--space-2);
+  gap: var(--space-sm);
+  padding: var(--space-1-5) var(--space-sm);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   cursor: pointer;
@@ -157,24 +157,24 @@ function entryLabel(entry: DiaryEntry): string {
 .diary-picker-option-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   flex: 1;
   min-width: 0;
 }
 
-@container (min-width: 480px) {
+@include container-up('mobile-sm') {
   .diary-picker-option-content {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-2);
+    gap: var(--space-sm);
   }
 }
 
 .diary-picker-option-title {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   min-width: 0;
   max-width: 100%;
   font-size: var(--font-size-sm);
@@ -194,7 +194,7 @@ function entryLabel(entry: DiaryEntry): string {
 .diary-picker-badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   font-size: var(--font-size-xs);
   max-width: 100%;
   box-sizing: border-box;
@@ -211,7 +211,7 @@ function entryLabel(entry: DiaryEntry): string {
 .diary-picker-badge.recommended {
   background: var(--color-primary-tint);
   color: var(--color-text);
-  padding: 2px var(--space-2);
+  padding: var(--space-2xs) var(--space-sm);
   border-radius: var(--radius-pill);
   corner-shape: round;
   font-weight: 600;
@@ -221,7 +221,7 @@ function entryLabel(entry: DiaryEntry): string {
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-border);
   color: var(--color-text-muted);
-  padding: 2px var(--space-2);
+  padding: var(--space-2xs) var(--space-sm);
   border-radius: var(--radius-pill);
   corner-shape: round;
   font-weight: 500;

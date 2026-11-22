@@ -94,12 +94,12 @@ const emit = defineEmits<{
 }
 
 .badge--size-sm {
-  padding: 2px 8px;
+  padding: var(--space-2xs) var(--space-sm);
   font-size: var(--font-size-xs);
 }
 
 .badge--size-md {
-  padding: 4px 10px;
+  padding: var(--space-xs) 10px;
   font-size: var(--font-size-sm);
 }
 
@@ -108,7 +108,7 @@ const emit = defineEmits<{
 }
 
 .badge--closable.badge--size-md {
-  padding-right: 4px;
+  padding-right: var(--space-xs);
 }
 
 .badge--primary {
@@ -226,7 +226,7 @@ const emit = defineEmits<{
   padding: 0;
   line-height: var(--line-height-none);
   opacity: 0.8;
-  margin-left: 2px;
+  margin-left: var(--space-2xs);
   flex-shrink: 0;
   transition:
     background-color var(--transition-fast),

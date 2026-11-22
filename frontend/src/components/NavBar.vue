@@ -318,11 +318,11 @@ function onLinkClick(event: MouseEvent) {
   background: transparent;
   border: none;
   box-shadow: none;
-  padding: 6px;
-  margin: -6px;
+  padding: var(--space-1-5);
+  margin: calc(-1 * var(--space-1-5));
   overflow-x: auto;
   overflow-y: hidden;
-  max-width: calc(100% + 12px);
+  max-width: calc(100% + var(--space-1-5) * 2);
   z-index: 1;
 }
 
@@ -365,7 +365,7 @@ function onLinkClick(event: MouseEvent) {
     100vw - max(var(--space-2), env(safe-area-inset-left, 0px)) -
       max(var(--space-2), env(safe-area-inset-right, 0px))
   );
-  padding: 6px 6px;
+  padding: var(--space-1-5);
   border: 1px solid var(--color-surface-glass-border);
   border-radius: var(--radius-pill);
   background: var(--color-surface-glass);
@@ -382,11 +382,11 @@ function onLinkClick(event: MouseEvent) {
 }
 
 .navbar.floating-bottom .links {
-  gap: 2px;
+  gap: var(--space-2xs);
 }
 
 .navbar.floating-bottom .link {
-  padding: 4px 8px;
+  padding: var(--space-xs) var(--space-sm);
 }
 
 .links {
@@ -432,8 +432,8 @@ function onLinkClick(event: MouseEvent) {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  padding: 4px 10px;
+  gap: var(--space-2xs);
+  padding: var(--space-xs) 10px;
   border-radius: var(--radius-pill);
   corner-shape: round;
   color: var(--color-text-muted);

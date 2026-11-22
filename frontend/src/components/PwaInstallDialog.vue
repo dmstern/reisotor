@@ -160,7 +160,7 @@ h3 {
 .hint {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   margin: 0 0 var(--space-2);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);

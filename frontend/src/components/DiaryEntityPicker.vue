@@ -238,7 +238,7 @@ const hasDateMismatch = computed(() => {
 .diary-entity-pickers {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   min-width: 0;
   max-width: 100%;
 }
@@ -246,8 +246,8 @@ const hasDateMismatch = computed(() => {
 .diary-picker-option {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-2);
-  padding: 6px var(--space-2);
+  gap: var(--space-sm);
+  padding: var(--space-1-5) var(--space-sm);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   cursor: pointer;
@@ -275,24 +275,24 @@ const hasDateMismatch = computed(() => {
 .diary-picker-option-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   flex: 1;
   min-width: 0;
 }
 
-@container (min-width: 480px) {
+@include container-up('mobile-sm') {
   .diary-picker-option-content {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-2);
+    gap: var(--space-sm);
   }
 }
 
 .diary-picker-option-title {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   min-width: 0;
   max-width: 100%;
   font-size: var(--font-size-sm);
@@ -312,7 +312,7 @@ const hasDateMismatch = computed(() => {
 .diary-picker-badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   font-size: var(--font-size-xs);
   max-width: 100%;
   box-sizing: border-box;
@@ -330,7 +330,7 @@ const hasDateMismatch = computed(() => {
 .diary-picker-badge.recommended {
   background: var(--color-primary-tint);
   color: var(--color-text);
-  padding: 2px var(--space-2);
+  padding: var(--space-2xs) var(--space-sm);
   border-radius: var(--radius-pill);
   corner-shape: round;
   font-weight: 600;
@@ -339,20 +339,20 @@ const hasDateMismatch = computed(() => {
 .diary-picker-badge.warning {
   background: var(--color-warning-tint);
   color: var(--color-warning-dark);
-  padding: 2px var(--space-2);
+  padding: var(--space-2xs) var(--space-sm);
   border-radius: var(--radius-pill);
   corner-shape: round;
   font-weight: 600;
 }
 
 .diary-mismatch-alert {
-  margin-top: var(--space-1);
+  margin: 0;
 }
 
 .mismatch-alert-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   font-size: var(--font-size-xs);
 }
 
@@ -362,27 +362,27 @@ const hasDateMismatch = computed(() => {
 
 .mismatch-list {
   margin: 0;
-  padding-left: var(--space-4);
+  padding-left: var(--space-lg);
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 
 .mismatch-spot-item {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-xs);
 }
 
 .mismatch-opt-in-label {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   cursor: pointer;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   user-select: none;
-  margin-top: 2px;
+  margin-top: var(--space-2xs);
 }
 
 @include can-hover {

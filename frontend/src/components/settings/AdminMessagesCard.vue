@@ -119,9 +119,8 @@ onMounted(() => {
 
 <template>
   <Card id="admin-messages" class="admin-card admin-messages-card">
-    <div class="card-header-wrap">
-      <SettingsCardHeader title="Kontaktanfragen & Anmeldeprobleme" :icon="MESSAGES_ICON" />
-      <div class="header-badges">
+    <SettingsCardHeader title="Kontaktanfragen & Anmeldeprobleme" :icon="MESSAGES_ICON">
+      <template #actions>
         <Badge v-if="props.contactAdminEnabled === false" variant="danger" size="sm">
           Deaktiviert
         </Badge>
@@ -135,8 +134,8 @@ onMounted(() => {
           title="Aktualisieren"
           @click="loadMessages"
         />
-      </div>
-    </div>
+      </template>
+    </SettingsCardHeader>
 
     <p class="hint">
       Nachrichten und Hilfegesuche von Personen, die sich auf dieser Instanz registrieren oder
@@ -269,38 +268,24 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
-.admin-messages-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.card-header-wrap {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.header-badges {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
 .filter-bar {
   display: flex;
   justify-content: flex-start;
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-md);
 }
 
 .filter-buttons {
   display: flex;
-  gap: var(--space-1);
+  gap: var(--space-xs);
 }
 
 .empty-state {
-  padding: var(--space-4) 0;
+  padding: var(--space-lg) 0;
   text-align: center;
+}
+
+.empty-state .hint {
+  margin: 0;
 }
 
 .messages-list {
@@ -312,15 +297,23 @@ onMounted(() => {
 .message-item {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-3) 0;
+  gap: var(--space-sm);
+  padding: var(--space-md) 0;
   @include divider-engraved-row;
   transition: border-color var(--transition-fast, 0.15s ease);
+
+  &:first-child:not(.unread) {
+    padding-top: 0;
+  }
+
+  &:last-child:not(.unread) {
+    padding-bottom: 0;
+  }
 }
 
 .message-item.unread {
   border-left: 3px solid var(--color-warning);
-  padding-inline: var(--space-3);
+  padding: var(--space-md);
   border-radius: 0 var(--radius-sm-squircle) var(--radius-sm-squircle) 0;
   background: color-mix(in srgb, var(--color-warning) 6%, transparent);
 }
@@ -329,14 +322,14 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   flex-wrap: wrap;
 }
 
 .message-meta {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   flex-wrap: wrap;
   font-size: var(--font-size-sm);
 }
@@ -368,8 +361,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
   @include surface-sunken-box(var(--radius-sm-squircle));
   font-size: var(--font-size-xs);
   flex-wrap: wrap;
@@ -378,11 +371,11 @@ onMounted(() => {
 .matched-user-info {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 
 .unmatched-user-box {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-sm) var(--space-md);
   @include surface-sunken-box(var(--radius-sm-squircle), dashed);
   font-size: var(--font-size-xs);
 }
@@ -394,16 +387,18 @@ onMounted(() => {
 .message-actions {
   display: flex;
   justify-content: flex-end;
-  gap: var(--space-2);
-  margin-top: var(--space-1);
+  gap: var(--space-sm);
+  margin-top: var(--space-xs);
 }
 
 .error-banner {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-lg);
   background: var(--color-danger-subtle, rgba(239, 68, 68, 0.1));
   border: 1px solid var(--color-danger, #ef4444);
   color: var(--color-danger, #ef4444);
   border-radius: var(--radius-sm-squircle, 6px);
+  corner-shape: squircle;
   font-size: var(--font-size-sm);
 }
 </style>

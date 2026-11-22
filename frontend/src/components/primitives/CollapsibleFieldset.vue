@@ -121,8 +121,8 @@ function toggle() {
 <style scoped lang="scss">
 .collapsible-fieldset {
   @include surface-sunken-box;
-  padding: var(--space-2) var(--space-3) var(--space-3);
-  margin: var(--space-2) 0;
+  padding: var(--space-xs) var(--space-lg) var(--space-lg);
+  margin: 0;
   min-inline-size: 0;
   max-inline-size: 100%;
   box-sizing: border-box;
@@ -136,9 +136,8 @@ function toggle() {
 .collapsible-fieldset.is-closed {
   border-color: transparent;
   background: transparent;
-  padding-top: 0;
-  padding-bottom: 0;
-  margin: var(--space-1) 0;
+  padding: 0;
+  margin: 0;
 }
 
 .collapsible-fieldset legend {
@@ -219,8 +218,8 @@ function toggle() {
   /* 4px Padding + -4px Margin reservieren Platz für Fokus-Rahmen von Kind-Elementen (z. B. Input-Felder
      mit 2px outline + 1px outline-offset = 3px), damit diese an den Rändern nicht durch overflow: hidden
      abgeschnitten werden, während der visuelle Inhalt exakt ausgerichtet bleibt. */
-  padding: var(--space-1, 4px) 0;
-  margin: calc(-1 * var(--space-1, 4px)) 0;
+  padding: var(--space-xs) 0;
+  margin: calc(-1 * var(--space-xs)) 0;
   transition: overflow 0s 0s;
 }
 
@@ -232,8 +231,8 @@ function toggle() {
 .collapsible-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
+  gap: var(--space-md);
+  margin-top: var(--space-md);
   min-width: 0;
   max-width: 100%;
 }

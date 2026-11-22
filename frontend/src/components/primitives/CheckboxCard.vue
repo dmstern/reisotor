@@ -249,7 +249,7 @@ function onChange(event: Event) {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
 }
 
 .checkbox-card__header {
@@ -273,7 +273,7 @@ function onChange(event: Event) {
 }
 
 .checkbox-card__description {
-  margin: 2px 0 0;
+  margin: var(--space-2xs) 0 0;
   font-size: var(--font-size-xs);
   font-weight: normal;
   line-height: var(--line-height-snug);

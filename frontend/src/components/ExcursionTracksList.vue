@@ -244,17 +244,17 @@ onMounted(() => {
 .tracks-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-md);
   margin: 0;
-  padding: 4px 2px;
+  padding: var(--space-xs) var(--space-2xs) 0;
   list-style: none;
 }
 
 .track-row {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
 }
 
 .track-row:has(.track-row-main:focus-visible) {
@@ -266,7 +266,7 @@ onMounted(() => {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-xs);
   background: none;
   border: none;
   padding: 0;
@@ -281,7 +281,7 @@ onMounted(() => {
 .track-row-title {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-xs);
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text);
@@ -300,7 +300,7 @@ onMounted(() => {
   color: var(--color-text-muted);
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1-5);
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -310,7 +310,7 @@ onMounted(() => {
 .track-meta-author {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-1-5);
   flex-shrink: 0;
 }
 
@@ -360,7 +360,7 @@ onMounted(() => {
 .track-meta-live {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   color: var(--color-danger);
   font-weight: 600;
   flex-shrink: 0;
@@ -405,13 +405,13 @@ onMounted(() => {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   display: block;
-  margin-top: var(--space-1);
+  margin-top: var(--space-sm);
 }
 
 @container spots-col (max-width: 480px) {
   .track-row {
-    padding: var(--space-2);
-    gap: var(--space-1);
+    padding: var(--space-md);
+    gap: var(--space-sm);
   }
 }
 

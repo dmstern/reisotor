@@ -344,7 +344,7 @@ async function emptyTrash() {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
 }
 
 .trash-title {

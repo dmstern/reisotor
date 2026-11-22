@@ -132,7 +132,7 @@ defineEmits<{
 .schedule-toolbar-container {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-md);
   min-width: 0;
 }
 
@@ -141,8 +141,8 @@ defineEmits<{
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   background: var(--color-scheduled-tint);
@@ -165,7 +165,7 @@ defineEmits<{
 .calendar-toolbar {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   min-width: 0;
 }
 
@@ -173,7 +173,7 @@ defineEmits<{
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   flex-wrap: wrap;
   min-width: 0;
 }
@@ -188,7 +188,7 @@ defineEmits<{
 .pager {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   max-width: 100%;
   min-width: 0;
 }
@@ -214,7 +214,7 @@ defineEmits<{
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   flex-wrap: wrap;
   min-width: 0;
 }
@@ -222,7 +222,7 @@ defineEmits<{
 .jump-row {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-sm);
   flex-wrap: wrap;
   min-width: 0;
 }
@@ -244,7 +244,7 @@ defineEmits<{
 
 @container schedule-view (max-width: 300px) {
   :deep(.segmented-option) {
-    padding: var(--space-1) 6px;
+    padding: var(--space-xs) var(--space-1-5);
     font-size: var(--font-size-xs);
   }
 }

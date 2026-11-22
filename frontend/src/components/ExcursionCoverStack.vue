@@ -83,10 +83,6 @@ defineProps<{
   z-index: var(--z-map-focus, 6);
 }
 
-.tour-collapsed-attachments :deep(.file-attachments) {
-  margin-top: 0;
-}
-
 :deep(.tour-polaroid-stack) {
   width: 54px;
   height: 64px;

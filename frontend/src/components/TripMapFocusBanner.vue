@@ -264,7 +264,7 @@ watch(
   /* Initial-Zustand Mobil: Runder Icon-Button */
   border-radius: var(--radius-pill);
   corner-shape: round;
-  padding: 2px;
+  padding: var(--space-2xs);
   width: auto;
   max-width: 44px;
   height: 44px;
@@ -293,7 +293,7 @@ watch(
   max-width: calc(100% - 60px);
   border-radius: var(--radius-pill);
   corner-shape: round;
-  padding: 2px 6px 2px 2px;
+  padding: var(--space-2xs) var(--space-1-5) var(--space-2xs) var(--space-2xs);
 }
 
 .focus-banner-toggle-btn {
@@ -368,7 +368,7 @@ watch(
     max-width: calc(100% - 60px);
     border-radius: var(--radius-pill);
     corner-shape: round;
-    padding: 2px 6px 2px 2px;
+    padding: var(--space-2xs) var(--space-1-5) var(--space-2xs) var(--space-2xs);
     height: 44px;
   }
 
@@ -438,12 +438,12 @@ watch(
 .focus-date-nav {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2xs);
   flex-shrink: 0;
 }
 
 .focus-date-label {
-  padding: 0 2px;
+  padding: 0 var(--space-2xs);
   font-size: var(--font-size-sm);
   font-weight: 600;
   white-space: nowrap;

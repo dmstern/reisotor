@@ -10,6 +10,7 @@ import Modal from './Modal.vue';
 import FormField from './FormField.vue';
 import Input from './primitives/Input.vue';
 import Button from './primitives/Button.vue';
+import ButtonGroup from './primitives/ButtonGroup.vue';
 import RichTextEditor from './RichTextEditor.vue';
 import UploadProgressBar from './UploadProgressBar.vue';
 import AttachmentThumbnails from './AttachmentThumbnails.vue';
@@ -235,24 +236,21 @@ function handleUploadClick() {
         @discard="discardNewDraft"
       />
 
-      <div class="actions-row">
-        <div class="spacer"></div>
+      <ButtonGroup no-margin class="actions-row">
         <Button type="button" variant="secondary" class="btn-cancel" @click="closeForm">
           Abbrechen
         </Button>
         <Button type="submit" :disabled="!canSubmit" :title="saveTooltip"> Eintragen </Button>
-      </div>
+      </ButtonGroup>
     </form>
   </Modal>
 </template>
 
 <style scoped>
 .add-form {
-  container-type: inline-size;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  margin-bottom: var(--space-4);
+  gap: var(--space-lg);
 }
 
 .file-input-hidden {
@@ -272,18 +270,6 @@ function handleUploadClick() {
 
 .hint.error {
   color: var(--color-danger);
-}
-
-.actions-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-}
-
-.spacer {
-  flex: 1;
 }
 
 .diary-editor :deep(.richtext-content) {

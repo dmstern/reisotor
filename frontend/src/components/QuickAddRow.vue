@@ -142,7 +142,7 @@ function onBlur(event: FocusEvent) {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  padding: 12px;
+  padding: var(--space-md);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
   transition:
@@ -179,7 +179,7 @@ function onBlur(event: FocusEvent) {
 
 .leading-icon {
   margin-left: 10px;
-  margin-right: 2px;
+  margin-right: var(--space-2xs);
   flex-shrink: 0;
   color: var(--color-text-muted);
   opacity: 0.65;
@@ -199,7 +199,7 @@ function onBlur(event: FocusEvent) {
   min-width: 80px;
   border: none;
   background: transparent;
-  padding: 9px 8px;
+  padding: 9px var(--space-sm);
   /* Mindestens 16px (1rem, siehe style.css's globale input-Regel) - iOS Safari zoomt beim
      Fokussieren eines Eingabefelds automatisch rein, sobald dessen font-size darunter liegt. */
   font-size: var(--font-size-md);
@@ -302,8 +302,8 @@ function onBlur(event: FocusEvent) {
   /* Bündig an der linken Fluchtlinie der Eingabekapsel ausgerichtet */
   margin-left: 0;
   margin-top: var(--space-2);
-  padding-top: 2px;
-  padding-bottom: 2px;
+  padding-top: var(--space-2xs);
+  padding-bottom: var(--space-2xs);
   opacity: 0;
   transform: translateY(-4px);
   transition:
@@ -337,7 +337,7 @@ function onBlur(event: FocusEvent) {
   font-size: var(--font-size-sm);
   height: var(--input-height-sm, 38px);
   min-height: var(--input-height-sm, 38px);
-  padding: 6px 30px 6px 10px;
+  padding: var(--space-1-5) 30px var(--space-1-5) 10px;
   background-position: right 8px center;
   background-size: 14px 14px;
   min-width: 0;
@@ -366,7 +366,7 @@ function onBlur(event: FocusEvent) {
   font-size: var(--font-size-sm);
   height: var(--input-height-sm, 38px);
   min-height: var(--input-height-sm, 38px);
-  padding: 6px 28px 6px 10px;
+  padding: var(--space-1-5) 28px var(--space-1-5) 10px;
   width: 100%;
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;

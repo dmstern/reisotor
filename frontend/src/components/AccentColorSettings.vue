@@ -9,7 +9,7 @@ import Button from './primitives/Button.vue';
 import Card from './primitives/Card.vue';
 import Badge from './primitives/Badge.vue';
 import AppIcon from './AppIcon.vue';
-import { ACTION_ICONS } from '../utils/actionIcons';
+import SettingsCardHeader from './settings/SettingsCardHeader.vue';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 
 const uiSettings = useUiSettingsStore();
@@ -25,21 +25,13 @@ function resetColor() {
 
 <template>
   <Card>
-    <div class="card-header-row">
-      <h2>Akzentfarbe</h2>
-      <Button
-        variant="ghost"
-        size="sm"
-        :icon="ACTION_ICONS.restore"
-        :disabled="isDefault"
-        aria-label="Auf Standard zurücksetzen"
-        :title="isDefault ? 'Bereits auf Standard-Farbe' : 'Auf Standard zurücksetzen'"
-        class="card-reset-btn"
-        @click="resetColor"
-      >
-        <span class="card-reset-btn-label">Zurücksetzen</span>
-      </Button>
-    </div>
+    <SettingsCardHeader
+      title="Akzentfarbe"
+      show-reset
+      :is-default="isDefault"
+      :reset-title="isDefault ? 'Bereits auf Standard-Farbe' : 'Auf Standard zurücksetzen'"
+      @reset="resetColor"
+    />
     <p class="hint">
       Wähle deine persönliche Haupt-Akzentfarbe für Buttons, aktive Toggles, Links und Icons.
     </p>
@@ -62,22 +54,6 @@ function resetColor() {
       </button>
     </div>
 
-    <!-- Eigene Farbe (Color Picker) -->
-    <div class="color-picker-row">
-      <label for="accent-color-picker" class="picker-label">
-        <span class="picker-title">Eigene Farbe wählen</span>
-        <div class="picker-input-wrap">
-          <input
-            id="accent-color-picker"
-            type="color"
-            v-model="uiSettings.primaryColor"
-            class="color-input"
-          />
-          <span class="hex-code">{{ uiSettings.primaryColor.toUpperCase() }}</span>
-        </div>
-      </label>
-    </div>
-
     <!-- Live Demo Vorschau -->
     <div class="color-preview-stage">
       <div class="preview-header">
@@ -97,15 +73,14 @@ function resetColor() {
 .color-presets-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: var(--space-2);
-  margin-top: var(--space-3);
+  gap: var(--space-sm);
 }
 
 .color-preset-btn {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: 8px 12px;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
   border: var(--border-width) solid var(--color-border-divider);
   border-radius: var(--radius-md-squircle);
   corner-shape: squircle;
@@ -131,7 +106,7 @@ function resetColor() {
 .color-swatch {
   width: 18px;
   height: 18px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background: var(--preset-color);
   flex-shrink: 0;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
@@ -146,61 +121,19 @@ function resetColor() {
   white-space: nowrap;
 }
 
-.color-picker-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  margin-top: var(--space-4);
-  padding-top: var(--space-3);
-  border-top: var(--border-width) solid var(--color-border-divider);
-  flex-wrap: wrap;
-}
-
-.picker-label {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  cursor: pointer;
-}
-
-.picker-title {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.picker-input-wrap {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 4px 8px;
-  border: var(--border-width) solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  background: var(--color-surface);
-}
-
-.hex-code {
-  font-family: monospace;
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  color: var(--color-text-muted);
-}
-
 .color-preview-stage {
-  margin-top: var(--space-4);
-  padding: var(--space-3);
+  margin-top: var(--space-xl);
+  padding: var(--space-lg);
   @include surface-sunken-box;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-lg);
 }
 
 .preview-header {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   color: var(--color-primary);
 }
 
@@ -213,68 +146,6 @@ function resetColor() {
 
 .preview-actions {
   display: flex;
-  gap: var(--space-2);
-}
-
-.color-input {
-  width: var(--input-width, var(--input-default-width, 36px));
-  height: var(--input-height, var(--input-default-height, 36px));
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-}
-
-.color-input::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
-
-.color-input::-webkit-color-swatch {
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  box-shadow: none;
-  transition: box-shadow 0.15s ease;
-}
-
-.color-input:hover::-webkit-color-swatch,
-.color-input:active::-webkit-color-swatch,
-.color-input:focus::-webkit-color-swatch {
-  box-shadow: var(--shadow-sm);
-}
-
-.color-input::-moz-color-swatch {
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  box-shadow: none;
-  transition: box-shadow 0.15s ease;
-}
-
-.color-input:hover::-moz-color-swatch,
-.color-input:active::-moz-color-swatch,
-.color-input:focus::-moz-color-swatch {
-  box-shadow: var(--shadow-sm);
-}
-
-.card-header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
-}
-
-.card-header-row h2 {
-  margin: 0;
-}
-
-@container app-main (max-width: 420px) {
-  .card-reset-btn-label {
-    display: none;
-  }
+  gap: var(--space-sm);
 }
 </style>

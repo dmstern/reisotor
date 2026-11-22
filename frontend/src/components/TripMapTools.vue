@@ -6,6 +6,7 @@ import { MAP_TOOL_ICONS } from '../utils/mapToolIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import IconButton from './primitives/IconButton.vue';
+import Divider from './primitives/Divider.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
 import TrackRecordingWarningModal from './TrackRecordingWarningModal.vue';
@@ -181,7 +182,7 @@ const {
           @click="selectFocus(() => emit('focus-all-photos'))"
         />
 
-        <hr class="picker-divider" />
+        <Divider spacing="xs" />
 
         <DropdownMenuItem
           :disabled="!hasOwnPosition"
@@ -212,7 +213,7 @@ const {
           Zu Standort von {{ member.username }} springen
         </DropdownMenuItem>
 
-        <hr class="picker-divider" />
+        <Divider spacing="xs" />
 
         <DropdownMenuItem
           :active="mapOrientationMode === 'north'"
@@ -297,12 +298,6 @@ const {
 :global(.focus-picker-menu) {
   max-height: calc(100dvh - 80px);
   overflow-y: auto;
-}
-
-.picker-divider {
-  border: none;
-  @include divider-engraved('bottom');
-  margin: var(--space-1) 0;
 }
 
 .picker-item-emoji {

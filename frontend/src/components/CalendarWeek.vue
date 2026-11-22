@@ -156,8 +156,8 @@ function isTripEnd(date: string) {
      Zusammenschrumpfen der Spalten – einzelne Tage würden sonst aus dem Raster herausfallen,
      besonders in der schmalen Kalender-Schublade. */
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: var(--space-1);
-  margin-bottom: var(--space-1);
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xs);
 }
 
 .week:last-child {
@@ -170,10 +170,10 @@ function isTripEnd(date: string) {
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  padding: 5px var(--space-1);
+  padding: var(--space-1-5) var(--space-xs);
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--space-2xs);
   color: var(--color-text);
   cursor: pointer;
   min-height: 64px;
@@ -323,7 +323,7 @@ function isTripEnd(date: string) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 2px;
+  gap: var(--space-2xs);
   min-height: 22px;
 }
 
@@ -331,7 +331,7 @@ function isTripEnd(date: string) {
   .day-badge-wrap {
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: var(--space-2xs);
   }
 
   .day-weather-row {
@@ -345,7 +345,7 @@ function isTripEnd(date: string) {
 
 @include container-down('mobile-compact') {
   .day {
-    padding: var(--space-1) 2px;
+    padding: var(--space-xs) var(--space-2xs);
   }
 }
 
@@ -373,7 +373,7 @@ function isTripEnd(date: string) {
 .day-weather-row {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2xs);
 }
 
 .day-weather {
@@ -390,14 +390,14 @@ function isTripEnd(date: string) {
 .acc-bar {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2xs);
   background: var(--color-accent-secondary-bg);
   color: var(--color-accent-secondary);
   font-size: var(--font-size-xs);
   font-weight: 600;
   border-radius: var(--radius-xs-squircle);
   corner-shape: squircle;
-  padding: 1px var(--space-1);
+  padding: 1px var(--space-xs);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -418,13 +418,13 @@ function isTripEnd(date: string) {
 .items {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
 }
 
 .item-line {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2xs);
   font-size: var(--font-size-xs);
   background: var(--color-hover);
   border-radius: var(--radius-xs-squircle);
@@ -454,7 +454,7 @@ function isTripEnd(date: string) {
   flex-shrink: 0;
   width: 9px;
   height: 9px;
-  margin: 0 2px 0 0;
+  margin: 0 var(--space-2xs) 0 0;
   padding: 0;
   border: 1.5px solid var(--color-border-strong);
   border-radius: 2px;
@@ -487,7 +487,7 @@ function isTripEnd(date: string) {
 .time {
   color: var(--color-primary-dark);
   font-weight: 700;
-  margin-right: 2px;
+  margin-right: var(--space-2xs);
   flex-shrink: 0;
   white-space: nowrap;
 }
@@ -496,7 +496,7 @@ function isTripEnd(date: string) {
   font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-muted);
-  padding: 0 3px;
+  padding: 0 var(--space-xs);
   text-align: right;
   white-space: nowrap;
 }
@@ -504,8 +504,8 @@ function isTripEnd(date: string) {
 @container (min-width: 520px) {
   .day {
     min-height: 84px;
-    padding: 7px 6px;
-    gap: var(--space-1);
+    padding: var(--space-sm) var(--space-1-5);
+    gap: var(--space-xs);
   }
 }
 

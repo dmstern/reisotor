@@ -125,12 +125,17 @@ const {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .settings-grid {
   display: grid;
-  gap: var(--space-3);
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
-  margin-bottom: var(--space-4);
+  gap: var(--space-xl);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+}
+
+@include container-app-main-down('tablet-sm') {
+  .settings-grid {
+    gap: var(--space-lg);
+  }
 }
 
 .settings-grid > :deep(.card) {
@@ -140,13 +145,13 @@ const {
 .nav-position-row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
+  gap: var(--space-lg);
 }
 
 .nav-position-row label {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-sm);
   font-weight: 600;
   font-size: var(--font-size-sm);
   flex: 1 1 180px;
@@ -156,19 +161,16 @@ const {
 .weather-provider-label {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-sm);
   font-weight: 600;
   font-size: var(--font-size-sm);
   width: 100%;
   max-width: 320px;
 }
 
-.hint {
-  margin: 0 0 var(--space-3);
+.intro-hint {
+  margin: 0 0 var(--space-lg);
   font-size: var(--font-size-sm);
-}
-
-.hint.intro-hint {
-  margin-bottom: var(--space-3);
+  line-height: var(--line-height-normal);
 }
 </style>

@@ -288,7 +288,7 @@ async function copyToClipboard(text?: string | null, type?: 'password' | 'link')
 .credential-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   overflow: hidden;
   min-width: 0;
   flex: 1;

@@ -71,7 +71,7 @@ const emit = defineEmits<{
 }
 
 .transport-toggle :deep(.segmented-option) {
-  padding: 6px var(--space-2);
+  padding: var(--space-1-5) var(--space-2);
 }
 
 .transit-dropdown-wrapper {
@@ -130,7 +130,7 @@ const emit = defineEmits<{
 
 @container (max-width: 480px) {
   .transport-toggle :deep(.segmented-option) {
-    padding: 6px var(--space-1);
+    padding: var(--space-1-5) var(--space-1);
     font-size: var(--font-size-xs);
     gap: var(--space-1);
   }

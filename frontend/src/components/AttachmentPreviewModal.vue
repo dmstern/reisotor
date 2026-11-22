@@ -3,6 +3,7 @@ import { computed, nextTick, toRef, watch } from 'vue';
 import type { Attachment } from '../api/types';
 import Modal from './Modal.vue';
 import Button from './primitives/Button.vue';
+import ButtonGroup from './primitives/ButtonGroup.vue';
 import PagerButton from './primitives/PagerButton.vue';
 import FileFormatGraphic from './primitives/FileFormatGraphic.vue';
 import AttachmentExifCard from './AttachmentExifCard.vue';
@@ -124,7 +125,7 @@ function onRemoveCurrent() {
     @update:model-value="emit('update:modelValue', $event)"
   >
     <div v-if="currentAttachment" class="preview-container">
-      <div class="preview-meta">
+      <div v-if="attachments.length > 1 || currentAttachment.size_bytes" class="preview-meta">
         <span v-if="attachments.length > 1" class="preview-counter">
           {{ currentIndex + 1 }} von {{ attachments.length }}
         </span>
@@ -218,7 +219,7 @@ function onRemoveCurrent() {
         @close="emit('update:modelValue', false)"
       />
 
-      <div class="preview-actions">
+      <ButtonGroup no-margin class="actions-row">
         <Button
           v-if="editable"
           variant="danger"
@@ -229,16 +230,15 @@ function onRemoveCurrent() {
         >
           Löschen
         </Button>
-        <div class="preview-actions-right">
-          <Button
-            variant="primary"
-            :icon="ACTION_ICONS.download"
-            @click="download(currentAttachment)"
-          >
-            Herunterladen
-          </Button>
-        </div>
-      </div>
+        <div class="spacer"></div>
+        <Button
+          variant="primary"
+          :icon="ACTION_ICONS.download"
+          @click="download(currentAttachment)"
+        >
+          Herunterladen
+        </Button>
+      </ButtonGroup>
     </div>
   </Modal>
 </template>
@@ -247,8 +247,7 @@ function onRemoveCurrent() {
 .preview-container {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  container-type: inline-size;
+  gap: var(--space-lg);
 }
 
 .preview-meta {
@@ -263,7 +262,7 @@ function onRemoveCurrent() {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   min-height: 200px;
   touch-action: pan-y pinch-zoom;
 }
@@ -276,7 +275,7 @@ function onRemoveCurrent() {
     box-shadow var(--transition-fast);
 }
 
-@container (max-width: 520px) {
+@include container-down('modal', 'mobile') {
   .preview-stage {
     position: relative;
   }
@@ -291,11 +290,11 @@ function onRemoveCurrent() {
   }
 
   .nav-btn.prev-btn {
-    left: var(--space-2);
+    left: var(--space-sm);
   }
 
   .nav-btn.next-btn {
-    right: var(--space-2);
+    right: var(--space-sm);
   }
 }
 
@@ -381,7 +380,7 @@ function onRemoveCurrent() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--space-6) var(--space-4);
+  padding: var(--space-3xl) var(--space-xl);
   text-align: center;
   background: var(--color-surface-sunken);
   border: 1px dashed var(--color-border-divider);
@@ -393,20 +392,20 @@ function onRemoveCurrent() {
 
 .unsupported-icon {
   color: var(--color-text-muted);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-sm);
 }
 
 .unsupported-title {
   font-weight: 600;
   font-size: var(--font-size-md);
   color: var(--color-text);
-  margin: 0 0 var(--space-1);
+  margin: 0 0 var(--space-xs);
 }
 
 .unsupported-hint {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
-  margin: 0 0 var(--space-2);
+  margin: 0 0 var(--space-sm);
 }
 
 .unsupported-filename {
@@ -416,46 +415,10 @@ function onRemoveCurrent() {
   margin: 0;
 }
 
-@container (max-width: 480px) {
+@include container-down('modal', 'mobile-sm') {
   .unsupported-wrapper {
-    padding: var(--space-4) var(--space-3);
+    padding: var(--space-xl) var(--space-lg);
     min-height: 180px;
-  }
-}
-
-.preview-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-4);
-  padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border-divider);
-}
-
-.preview-actions-right {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-@container (max-width: 420px) {
-  .preview-actions {
-    flex-direction: column-reverse;
-    align-items: stretch;
-  }
-
-  .preview-actions-right {
-    margin-left: 0;
-    width: 100%;
-    flex-direction: column;
-  }
-
-  .preview-actions :deep(.btn) {
-    width: 100%;
-    justify-content: center;
   }
 }
 </style>

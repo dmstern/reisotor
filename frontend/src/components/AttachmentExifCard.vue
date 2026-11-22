@@ -101,9 +101,8 @@ const { currentMetadata, hasExifMetadata, formatExifDateTime, onShowLocationOnMa
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  margin-top: var(--space-3);
+  gap: var(--space-lg);
+  padding: var(--space-lg);
   background: var(--color-surface-sunken);
   border: var(--border-width) solid var(--color-border-divider);
   border-radius: var(--radius-md-squircle);
@@ -190,14 +189,14 @@ const { currentMetadata, hasExifMetadata, formatExifDateTime, onShowLocationOnMa
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-4);
+  gap: var(--space-xl);
   min-width: 0;
 }
 
 .exif-item {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   min-width: 0;
 }
 
@@ -241,22 +240,22 @@ const { currentMetadata, hasExifMetadata, formatExifDateTime, onShowLocationOnMa
 .exif-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   flex-wrap: wrap;
 }
 
-@container (max-width: 580px) {
+@include container-down('tablet-sm') {
   .preview-exif-card {
     flex-direction: column;
     align-items: stretch;
-    gap: var(--space-3);
-    padding: var(--space-3);
+    gap: var(--space-lg);
+    padding: var(--space-lg);
   }
 
   .exif-details {
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--space-2);
+    gap: var(--space-sm);
   }
 
   .exif-actions {
@@ -265,7 +264,7 @@ const { currentMetadata, hasExifMetadata, formatExifDateTime, onShowLocationOnMa
   }
 }
 
-@container (max-width: 380px) {
+@include container-down('mobile-compact') {
   .exif-actions {
     flex-direction: column;
     align-items: stretch;

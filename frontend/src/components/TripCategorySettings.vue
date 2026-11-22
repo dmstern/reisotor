@@ -496,8 +496,8 @@ watch([() => filteredCategories.value.length, activeType], () => {
   gap: 0;
   max-height: min(52vh, 460px);
   overflow-y: auto;
-  padding: 6px;
-  margin: -6px;
+  padding: var(--space-1-5);
+  margin: calc(-1 * var(--space-1-5));
 }
 
 .edit-dialog-content {

@@ -25,6 +25,7 @@ import { useDraftAutosave } from '../composables/useDraftAutosave';
 import AppIcon from '../components/AppIcon.vue';
 import Accordion from '../components/primitives/Accordion.vue';
 import Button from '../components/primitives/Button.vue';
+import ButtonGroup from '../components/primitives/ButtonGroup.vue';
 import Card from '../components/primitives/Card.vue';
 import EmptyState from '../components/primitives/EmptyState.vue';
 import Input from '../components/primitives/Input.vue';
@@ -414,29 +415,31 @@ async function remove(id: number) {
         :style="{ '--stagger-delay': `${index * 60}ms` }"
         :highlight="highlightedIds.has(note.id)"
       >
-        <div class="note-head">
-          <h3 v-if="note.title">{{ note.title }}</h3>
-          <DraftBadge v-if="note.is_draft" />
-          <PendingSyncBadge v-if="note._pending" />
-          <div class="note-actions">
-            <EditButton small @click="startEdit(note)" />
+        <div class="note-body">
+          <div class="note-head">
+            <h3 v-if="note.title">{{ note.title }}</h3>
+            <DraftBadge v-if="note.is_draft" />
+            <PendingSyncBadge v-if="note._pending" />
+            <div class="note-actions">
+              <EditButton small @click="startEdit(note)" />
+            </div>
           </div>
-        </div>
-        <RichTextDisplay class="content" :content="note.content" :format="note.content_format" />
-        <FileAttachments domain="notes" :entity-id="note.id" :editable="false" />
-        <div class="note-footer">
-          <p class="meta">
-            {{ authorLabel(note.created_by) }} ·
-            {{ formatDate(note.updated_at ?? note.created_at) }}
-          </p>
-          <SocialRow
-            :like-count="likesFor(note.id).length"
-            :liked="likedByMe(note.id)"
-            :comment-count="commentsFor(note.id).length"
-            :comments-open="openComments.has(note.id)"
-            @toggle-like="toggleLike(note.id)"
-            @toggle-comments="toggleComments(note.id)"
-          />
+          <RichTextDisplay class="content" :content="note.content" :format="note.content_format" />
+          <FileAttachments domain="notes" :entity-id="note.id" :editable="false" />
+          <div class="note-footer">
+            <p class="meta">
+              {{ authorLabel(note.created_by) }} ·
+              {{ formatDate(note.updated_at ?? note.created_at) }}
+            </p>
+            <SocialRow
+              :like-count="likesFor(note.id).length"
+              :liked="likedByMe(note.id)"
+              :comment-count="commentsFor(note.id).length"
+              :comments-open="openComments.has(note.id)"
+              @toggle-like="toggleLike(note.id)"
+              @toggle-comments="toggleComments(note.id)"
+            />
+          </div>
         </div>
         <Accordion :expanded="openComments.has(note.id)">
           <Comments
@@ -491,7 +494,7 @@ async function remove(id: number) {
           :mode="editingNote?.is_draft ? 'create' : 'edit'"
           @discard="discardEditDraft"
         />
-        <div class="actions-row">
+        <ButtonGroup no-margin class="actions-row">
           <Button
             type="button"
             variant="danger"
@@ -510,7 +513,7 @@ async function remove(id: number) {
           <Button type="submit" :disabled="!canSaveNote" :title="noteSaveTooltip">{{
             editingNote?.is_draft ? 'Veröffentlichen' : 'Speichern'
           }}</Button>
-        </div>
+        </ButtonGroup>
       </form>
     </Modal>
   </div>
@@ -523,8 +526,12 @@ async function remove(id: number) {
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+.header h1 {
+  margin: 0;
 }
 
 @include container-app-main-down('mobile') {
@@ -542,8 +549,7 @@ async function remove(id: number) {
 .add-form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  margin-bottom: var(--space-4);
+  gap: var(--space-lg);
 }
 
 .cards {
@@ -553,7 +559,13 @@ async function remove(id: number) {
 .note-card {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+}
+
+.note-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  flex: 1;
 }
 
 .note-footer {
@@ -561,7 +573,7 @@ async function remove(id: number) {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   margin-top: auto;
 }
 
@@ -569,7 +581,7 @@ async function remove(id: number) {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--space-2);
+  gap: var(--space-sm);
 }
 
 .note-head h3 {
@@ -583,7 +595,7 @@ async function remove(id: number) {
 
 .note-actions {
   display: flex;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   flex-shrink: 0;
   /* Rückt die Buttons auch dann ans rechte Zeilenende, wenn kein h3 (flex:1) daneben steht, das
      sie von selbst dorthin schiebt - z. B. bei einem Entwurf ohne Titel, wo nur DraftBadge.vue's
@@ -595,21 +607,7 @@ async function remove(id: number) {
 
 .error {
   color: var(--color-danger);
-  margin: 0 0 var(--space-3);
-}
-
-.syntax-hint {
-  margin: -4px 0 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-
-.syntax-hint code {
-  background: var(--color-bg);
-  border-radius: var(--radius-xs-squircle);
-  corner-shape: squircle;
-  padding: 1px 5px;
-  font-size: var(--font-size-xs);
+  margin: 0 0 var(--space-lg);
 }
 
 .content {
