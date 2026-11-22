@@ -600,10 +600,6 @@ function clearFilters() {
 .search-filter-bar .bar-icon-btn {
   @include touch-target($expand: true);
   position: relative;
-  width: var(--input-width, 46px);
-  height: var(--input-height, 46px);
-  min-width: var(--input-width, 46px);
-  min-height: var(--input-height, 46px);
 }
 
 @mixin compact-search-filter-bar {
@@ -612,16 +608,16 @@ function clearFilters() {
   }
 
   .search-input-wrapper .search-input {
-    height: var(--input-height-sm, 38px);
-    min-height: var(--input-height-sm, 38px);
+    height: var(--input-height-sm, 36px);
+    min-height: var(--input-height-sm, 36px);
     padding: 0 32px 0 34px;
   }
 
   .search-filter-bar .bar-icon-btn {
-    width: var(--input-width-sm, 38px);
-    height: var(--input-height-sm, 38px);
-    min-width: var(--input-width-sm, 38px);
-    min-height: var(--input-height-sm, 38px);
+    width: var(--control-height-sm, 36px);
+    height: var(--control-height-sm, 36px);
+    min-width: var(--control-height-sm, 36px);
+    min-height: var(--control-height-sm, 36px);
   }
 }
 

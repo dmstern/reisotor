@@ -574,7 +574,6 @@ function handleModalClose(visible: boolean) {
             <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
             <Input
               v-model="searchQuery"
-              size="sm"
               type="search"
               class="browse-search-input"
               placeholder="Suchbegriff für Bildersuche…"

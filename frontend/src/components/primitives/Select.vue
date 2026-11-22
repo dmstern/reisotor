@@ -107,8 +107,8 @@ function onChange(event: Event) {
   padding-right: 30px;
   background-position: right 8px center;
   background-size: 14px 14px;
-  height: var(--input-height-sm, 38px);
-  min-height: var(--input-height-sm, 38px);
+  height: var(--input-height-sm, 36px);
+  min-height: var(--input-height-sm, 36px);
   font-size: var(--font-size-sm);
 
   /* iOS/WebKit Auto-Zoom-Prävention: Auf Mobilgeräten & Touchscreens mindestens 16px (1rem) */

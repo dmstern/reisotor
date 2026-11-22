@@ -582,14 +582,14 @@
   --input-height: 46px;
   --input-width: 46px;
   --input-default-width: 46px;
-  --input-height-sm: 38px;
-  --input-width-sm: 38px;
+  --input-height-sm: 36px;
+  --input-width-sm: 36px;
   --input-height-lg: 52px;
   --input-width-lg: 52px;
 
   /* Einheitliche Button- & Trigger-Höhen, Icon-Abstände und proportionale Radien (Issue #810) */
   --control-height-xs: 30px;
-  --control-height-sm: 36px;
+  --control-height-sm: var(--input-height-sm);
   --control-height-md: var(--input-height);
   --control-height-lg: var(--input-height-lg);
   --control-gap-xs: var(--space-xs);
