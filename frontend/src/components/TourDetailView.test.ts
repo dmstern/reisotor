@@ -23,6 +23,9 @@ vi.mock('../composables/useExcursionWeather', async () => {
       mappedStations: ref([]),
       weatherSummary: ref(mockWeatherSummary),
       statusDateLabel: ref('15.07.'),
+      primaryWeatherDay: ref(null),
+      primaryWeatherDays: ref([]),
+      primaryWeatherLocation: ref(null),
     }),
   };
 });
@@ -85,9 +88,12 @@ describe('TourDetailView', () => {
     return renderToString(app);
   }
 
-  it('rendert Header mit Info-Badges, Wetter-Badge, DoneStatus und ohne Stations-Meta im Header', async () => {
+  it('rendert Header mit dezenter Meta-Zeile, offener Wetter-Grafik, DoneStatus und ohne Info-Badges oder Track-Counter', async () => {
     const html = await mountComponent({
-      excursion: mockExcursion,
+      excursion: {
+        ...mockExcursion,
+        tracks: [{ id: 99, title: 'GPX-Track' }],
+      } as unknown as Excursion,
       creatorLabel: 'Daniel',
       likeCount: 3,
       liked: true,
@@ -98,11 +104,14 @@ describe('TourDetailView', () => {
 
     expect(html).toContain('tour-detail-view');
     expect(html).toContain('Wanderung zum Wasserfall');
-    expect(html).toContain('tour-detail-info-badges');
-    expect(html).toContain('tour-detail-info-badge');
+    expect(html).toContain('tour-detail-meta-row');
+    expect(html).toContain('tour-detail-meta');
+    expect(html).toContain('tour-detail-author');
+    expect(html).toContain('tour-detail-duration');
     expect(html).toContain('Von Daniel');
     expect(html).toContain('1\u00A0Std. 30\u00A0Min.');
     expect(html).toContain('22 °C');
+    expect(html).toContain('aria-label="Wetter: Überwiegend klar, 22 °C – Tagesverlauf anzeigen"');
     expect(html).not.toContain('2 Stationen');
     expect(html).not.toContain('Parkplatz → Wasserfall');
     expect(html).toContain('tour-detail-header-controls');
@@ -114,5 +123,80 @@ describe('TourDetailView', () => {
     expect(html).toContain('tour-edit-btn');
     expect(html).toContain('is-translucent');
     expect(html).toContain('test-stations-slot');
+  });
+
+  it('rendert Uhrzeit-Spanne (Abfahrt/Ankunft) zusammen mit der Dauer in der Meta-Zeile', async () => {
+    const html = await mountComponent({
+      excursion: {
+        ...mockExcursion,
+        departure_time: '09:30',
+        arrival_time: '15:40',
+        legs: [{ departure_time: '09:30', arrival_time: '15:40', duration_seconds: 22200 }],
+      } as unknown as Excursion,
+      creatorLabel: 'Mia',
+      likeCount: 0,
+      liked: false,
+      comments: [],
+      stations: mockStations,
+      travelItems: [],
+    });
+
+    expect(html).toContain('tour-detail-time');
+    expect(html).toContain('09:30\u201315:40\u00A0Uhr');
+    expect(html).toContain('6\u00A0Std. 10\u00A0Min.');
+  });
+
+  it('rendert kompakte Teilstrecken-Zusammenfassung nach Verkehrsmittel', async () => {
+    const html = await mountComponent({
+      excursion: {
+        ...mockExcursion,
+        legs: [
+          {
+            transport_type: 'zu Fuß',
+            distance_meters: 1400,
+            duration_seconds: 1200,
+          },
+          {
+            transport_type: 'Auto',
+            distance_meters: 46000,
+            departure_time: '11:00',
+            arrival_time: '11:55',
+          },
+          {
+            transport_type: 'Straßenbahn',
+            departure_time: '14:00',
+            arrival_time: '14:40',
+          },
+        ],
+      } as unknown as Excursion,
+      creatorLabel: 'Daniel',
+      likeCount: 0,
+      liked: false,
+      comments: [],
+      stations: mockStations,
+      travelItems: [],
+    });
+
+    expect(html).toContain('tour-detail-transport-summary');
+    expect(html).toContain('1,4\u00A0km');
+    expect(html).toContain('46\u00A0km');
+    expect(html).toContain('40\u00A0Min.');
+    expect(html).toContain('Auto: 46\u00A0km (55\u00A0Min.)');
+    expect(html).toContain('Straßenbahn: 40\u00A0Min.');
+  });
+
+  it('rendert den Wetter-Button als interaktives Element', async () => {
+    const html = await mountComponent({
+      excursion: mockExcursion,
+      creatorLabel: 'Daniel',
+      likeCount: 0,
+      liked: false,
+      comments: [],
+      stations: mockStations,
+      travelItems: [],
+    });
+
+    expect(html).toContain('class="btn btn--ghost btn--sm"');
+    expect(html).toContain('title="Überwiegend klar (22 °C) – Tagesverlauf anzeigen"');
   });
 });

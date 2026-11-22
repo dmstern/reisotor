@@ -1,15 +1,20 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import FormField from './FormField.vue';
-import Select from './primitives/Select.vue';
 import SegmentedToggle from './SegmentedToggle.vue';
-import { travelTypeIcon } from '../utils/travelTypeIcon';
+import AppIcon from './AppIcon.vue';
+import DropdownMenu from './primitives/DropdownMenu.vue';
+import PickerMenu from './primitives/PickerMenu.vue';
+import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
+import { travelTypeIconDef } from '../utils/travelTypeIcon';
 import {
   TRANSPORT_MODE_OPTIONS,
   DEFAULT_TRANSIT_OPTIONS,
   type TransportCategory,
 } from '../utils/legTransportConfig';
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     category: TransportCategory;
     transitType: string;
@@ -24,6 +29,47 @@ const emit = defineEmits<{
   (e: 'selectCategory', cat: TransportCategory): void;
   (e: 'selectTransit', type: string): void;
 }>();
+
+const isOpen = ref(false);
+
+function toggle() {
+  isOpen.value = !isOpen.value;
+}
+
+function close() {
+  isOpen.value = false;
+}
+
+function selectOption(val: string) {
+  emit('selectTransit', val);
+  close();
+}
+
+function onNativeSelectChange(event: Event) {
+  const target = event.target as HTMLSelectElement;
+  emit('selectTransit', target.value);
+}
+
+function onKeyDown(event: KeyboardEvent) {
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    event.preventDefault();
+
+    if (!isOpen.value) {
+      isOpen.value = true;
+    } else {
+      const idx = props.transitOptions.indexOf(props.transitType);
+      const len = props.transitOptions.length;
+
+      if (len > 0) {
+        const nextIdx = event.key === 'ArrowDown' ? (idx + 1) % len : (idx - 1 + len) % len;
+        selectOption(props.transitOptions[nextIdx]);
+      }
+    }
+  } else if (event.key === 'Escape' && isOpen.value) {
+    event.preventDefault();
+    close();
+  }
+}
 </script>
 
 <template>
@@ -44,15 +90,71 @@ const emit = defineEmits<{
     >
       <div class="transit-dropdown-inner">
         <FormField icon="category" label="Verkehrsmittel">
-          <Select
-            :model-value="transitType"
-            class="transit-select"
-            @update:model-value="(val) => emit('selectTransit', val)"
-          >
-            <option v-for="t in transitOptions" :key="t" :value="t">
-              {{ travelTypeIcon(t) }} {{ t }}
-            </option>
-          </Select>
+          <div class="transit-picker-wrap">
+            <DropdownMenu
+              block
+              :open="isOpen"
+              aria-label="Verkehrsmittel auswählen"
+              aria-haspopup="listbox"
+              trigger-class="transit-trigger"
+              @toggle="toggle"
+              @keydown="onKeyDown"
+            >
+              <template #label>
+                <div class="transit-trigger-content">
+                  <AppIcon
+                    :icon="travelTypeIconDef(transitType)"
+                    group="actions"
+                    force-style="icons"
+                    :size="16"
+                    class="transit-trigger-icon"
+                    aria-hidden="true"
+                  />
+                  <span class="transit-trigger-label">{{ transitType }}</span>
+                </div>
+              </template>
+
+              <PickerMenu
+                v-if="isOpen"
+                position="absolute"
+                class="transit-menu"
+                role="listbox"
+                aria-label="Verkehrsmittel"
+                @close="close"
+              >
+                <DropdownMenuItem
+                  v-for="t in transitOptions"
+                  :key="t"
+                  :label="t"
+                  :icon="travelTypeIconDef(t)"
+                  icon-group="actions"
+                  icon-force-style="icons"
+                  :icon-size="16"
+                  :active="transitType === t"
+                  :trailing-icon="transitType === t ? ACTION_ICONS.done : undefined"
+                  trailing-icon-group="actions"
+                  :trailing-icon-size="14"
+                  role="option"
+                  :aria-selected="transitType === t"
+                  @click="selectOption(t)"
+                />
+              </PickerMenu>
+            </DropdownMenu>
+
+            <!-- Verstecktes Select für Barrierefreiheit, Formulare & Test-Kompatibilität -->
+            <!-- eslint-disable-next-line vuejs-accessibility/no-onchange -->
+            <select
+              :value="transitType"
+              class="transit-select transit-hidden-select"
+              aria-label="Verkehrsmittel"
+              tabindex="-1"
+              @change="onNativeSelectChange"
+            >
+              <option v-for="t in transitOptions" :key="t" :value="t">
+                {{ t }}
+              </option>
+            </select>
+          </div>
         </FormField>
       </div>
     </div>
@@ -72,6 +174,46 @@ const emit = defineEmits<{
 
 .transport-toggle :deep(.segmented-option) {
   padding: var(--space-1-5) var(--space-2);
+}
+
+.transit-picker-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.transit-trigger-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.transit-trigger-icon {
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+.transit-trigger-label {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.transit-menu {
+  width: 100%;
+  min-width: 100%;
+  box-sizing: border-box;
+}
+
+.transit-hidden-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.001;
+  pointer-events: none;
+  z-index: -1;
 }
 
 .transit-dropdown-wrapper {
@@ -101,7 +243,7 @@ const emit = defineEmits<{
 
 .transit-dropdown-inner {
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
   padding: var(--space-1);
   margin: calc(-1 * var(--space-1));
 }

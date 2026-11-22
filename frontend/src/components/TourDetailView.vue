@@ -10,16 +10,19 @@ import RichTextDisplay from './RichTextDisplay.vue';
 import PendingSyncBadge from './PendingSyncBadge.vue';
 import SocialRow from './SocialRow.vue';
 import Accordion from './primitives/Accordion.vue';
-import Badge from './primitives/Badge.vue';
 import FileAttachments from './FileAttachments.vue';
 import TourRoleBadge from './TourRoleBadge.vue';
 import ExcursionDoneStatus from './ExcursionDoneStatus.vue';
 import ExcursionMapLinks from './ExcursionMapLinks.vue';
 import LinkedDiaryPills from './LinkedDiaryPills.vue';
+import Button from './primitives/Button.vue';
 import WeatherIcon from './WeatherIcon.vue';
+import WeatherDayDetailDialog from './WeatherDayDetailDialog.vue';
 import AppIcon from './AppIcon.vue';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
-import { ACTION_ICONS } from '../utils/actionIcons';
+import { summarizeTourLegsByTransport } from '../utils/travelDuration';
+import { travelTypeIconDef } from '../utils/travelTypeIcon';
+import { weatherCodeMeta } from '../utils/weather';
 
 const props = withDefaults(
   defineProps<{
@@ -56,22 +59,58 @@ const linkedDiaryEntries = computed(() =>
   )
 );
 
-const { resolvedStations, hasMappedStations, travelDuration, linkedTracks } = useExcursionStations({
+const {
+  resolvedStations,
+  hasMappedStations,
+  effectiveDepartureTime,
+  effectiveArrivalTime,
+  travelDuration,
+  linkedTracks,
+} = useExcursionStations({
   excursion: () => props.excursion,
   stations: () => props.stations,
   travelItems: () => props.travelItems,
 });
 
-const { weatherSummary } = useExcursionWeather({
-  excursion: () => props.excursion,
-  resolvedStations: () => resolvedStations.value,
+const { weatherSummary, primaryWeatherDay, primaryWeatherDays, primaryWeatherLocation } =
+  useExcursionWeather({
+    excursion: () => props.excursion,
+    resolvedStations: () => resolvedStations.value,
+  });
+
+const isWeatherDialogOpen = ref(false);
+const selectedWeatherDate = ref('');
+
+function openWeatherDialog() {
+  selectedWeatherDate.value = props.excursion.date || '';
+  isWeatherDialogOpen.value = true;
+}
+
+const timeLabel = computed(() => {
+  if (effectiveDepartureTime.value) {
+    return effectiveArrivalTime.value
+      ? `${effectiveDepartureTime.value}\u2013${effectiveArrivalTime.value}\u00A0Uhr`
+      : `${effectiveDepartureTime.value}\u00A0Uhr`;
+  }
+
+  if (effectiveArrivalTime.value) {
+    return `Ankunft ${effectiveArrivalTime.value}\u00A0Uhr`;
+  }
+
+  return null;
 });
 
-const hasInfoBadges = computed(() =>
-  Boolean(
-    props.creatorLabel || travelDuration.value || weatherSummary.value || linkedTracks.value.length
-  )
+const hasTimeOrDuration = computed(() => Boolean(timeLabel.value || travelDuration.value));
+
+const hasMeta = computed(() =>
+  Boolean(props.creatorLabel || hasTimeOrDuration.value || weatherSummary.value)
 );
+
+const weatherLabel = computed(() =>
+  weatherSummary.value ? weatherCodeMeta(weatherSummary.value.weatherCode).label : ''
+);
+
+const transportSummary = computed(() => summarizeTourLegsByTransport(props.excursion.legs));
 </script>
 
 <template>
@@ -83,46 +122,98 @@ const hasInfoBadges = computed(() =>
     }"
   >
     <header class="tour-detail-header">
-      <div class="tour-detail-header-top">
-        <component :is="headingTag" class="tour-detail-title" :title="excursion.title">
-          {{ excursion.title }}
-        </component>
+      <div class="tour-detail-heading-group">
+        <div class="tour-detail-header-top">
+          <component :is="headingTag" class="tour-detail-title" :title="excursion.title">
+            {{ excursion.title }}
+          </component>
 
-        <div class="tour-detail-badges">
-          <TourRoleBadge :role="excursion.role" translucent />
-          <PendingSyncBadge v-if="excursion._pending" />
-          <EditButton
-            size="sm"
-            shape="squircle"
-            variant="ghost"
-            class="tour-edit-btn"
-            @click="emit('edit', excursion)"
-          />
+          <div class="tour-detail-badges">
+            <TourRoleBadge :role="excursion.role" translucent />
+            <PendingSyncBadge v-if="excursion._pending" />
+            <EditButton
+              size="sm"
+              shape="squircle"
+              variant="ghost"
+              class="tour-edit-btn"
+              @click="emit('edit', excursion)"
+            />
+          </div>
         </div>
-      </div>
 
-      <div v-if="hasInfoBadges" class="tour-detail-info-badges">
-        <Badge v-if="creatorLabel" variant="default" size="sm" class="tour-detail-info-badge">
-          <span class="tour-detail-info-badge-text">Von {{ creatorLabel }}</span>
-        </Badge>
-        <Badge v-if="travelDuration" variant="default" size="sm" class="tour-detail-info-badge">
-          <AppIcon :icon="FORM_FIELD_ICONS.time" :size="13" group="formFields" />
-          {{ travelDuration }}
-        </Badge>
-        <Badge v-if="weatherSummary" variant="default" size="sm" class="tour-detail-info-badge">
-          <WeatherIcon :code="weatherSummary.weatherCode" :size="14" />
-          {{ weatherSummary.tempLabel }}
-        </Badge>
-        <Badge
-          v-if="linkedTracks.length"
-          variant="default"
-          size="sm"
-          class="tour-detail-info-badge"
+        <div v-if="hasMeta" class="tour-detail-meta-row">
+          <div v-if="creatorLabel || hasTimeOrDuration" class="tour-detail-meta">
+            <span v-if="creatorLabel" class="tour-detail-author">Von {{ creatorLabel }}</span>
+            <span
+              v-if="creatorLabel && hasTimeOrDuration"
+              class="tour-detail-meta-sep"
+              aria-hidden="true"
+            >
+              ·
+            </span>
+            <span v-if="timeLabel" class="tour-detail-time">
+              <AppIcon
+                :icon="FORM_FIELD_ICONS.time"
+                :size="13"
+                group="formFields"
+                aria-hidden="true"
+              />
+              <span class="tour-detail-meta-text">{{ timeLabel }}</span>
+            </span>
+            <span
+              v-if="timeLabel && travelDuration"
+              class="tour-detail-meta-sep"
+              aria-hidden="true"
+            >
+              ·
+            </span>
+            <span v-if="travelDuration" class="tour-detail-duration">
+              <AppIcon
+                v-if="!timeLabel"
+                :icon="FORM_FIELD_ICONS.time"
+                :size="13"
+                group="formFields"
+                aria-hidden="true"
+              />
+              <span class="tour-detail-meta-text">{{ travelDuration }}</span>
+            </span>
+          </div>
+
+          <Button
+            v-if="weatherSummary"
+            variant="ghost"
+            size="sm"
+            :title="`${weatherLabel} (${weatherSummary.tempLabel}) – Tagesverlauf anzeigen`"
+            :aria-label="`Wetter: ${weatherLabel}, ${weatherSummary.tempLabel} – Tagesverlauf anzeigen`"
+            @click="openWeatherDialog"
+          >
+            <WeatherIcon :code="weatherSummary.weatherCode" :size="22" aria-hidden="true" />
+            <span>{{ weatherSummary.tempLabel }}</span>
+          </Button>
+        </div>
+
+        <div
+          v-if="transportSummary.length > 0"
+          class="tour-detail-transport-summary"
+          aria-label="Übersicht Verkehrsmittel"
         >
-          <AppIcon :icon="ACTION_ICONS.history" :size="13" group="actions" />
-          {{ linkedTracks.length }}
-          {{ linkedTracks.length === 1 ? 'Aufzeichnung' : 'Aufzeichnungen' }}
-        </Badge>
+          <span
+            v-for="item in transportSummary"
+            :key="item.type"
+            class="tour-detail-transport-item"
+            :title="item.tooltip"
+            :aria-label="item.ariaLabel"
+          >
+            <AppIcon
+              :icon="travelTypeIconDef(item.type)"
+              :size="15"
+              group="actions"
+              force-style="icons"
+              aria-hidden="true"
+            />
+            <span class="tour-detail-transport-text">{{ item.formattedPrimary }}</span>
+          </span>
+        </div>
       </div>
 
       <div class="tour-detail-header-controls">
@@ -187,6 +278,17 @@ const hasInfoBadges = computed(() =>
     <div class="tour-detail-stations">
       <slot name="stations" />
     </div>
+
+    <WeatherDayDetailDialog
+      v-model="isWeatherDialogOpen"
+      :date="selectedWeatherDate || excursion.date || undefined"
+      :day="primaryWeatherDay"
+      :days="primaryWeatherDays"
+      :lat="primaryWeatherLocation?.lat ?? null"
+      :lng="primaryWeatherLocation?.lng ?? null"
+      :location-label="primaryWeatherLocation?.label || excursion.title"
+      @navigate-day="(d) => (selectedWeatherDate = d.date)"
+    />
   </article>
 </template>
 
@@ -220,6 +322,13 @@ const hasInfoBadges = computed(() =>
   @include divider-engraved('bottom');
 }
 
+.tour-detail-heading-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+  min-width: 0;
+}
+
 .tour-detail-header-top {
   display: flex;
   align-items: flex-start;
@@ -250,29 +359,75 @@ const hasInfoBadges = computed(() =>
   flex-shrink: 0;
 }
 
-.tour-detail-info-badges {
+.tour-detail-meta-row {
   display: flex;
-  align-items: center;
+  align-items: safe center;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--space-xs);
+  gap: var(--space-xs) var(--space-md);
   min-width: 0;
 }
 
-.tour-detail-info-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
+.tour-detail-meta {
+  display: flex;
+  align-items: safe center;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-1-5);
+  min-width: 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-muted);
+}
+
+.tour-detail-author {
+  min-width: 0;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: 500;
+  white-space: nowrap;
+  font-weight: 600;
 }
 
-.tour-detail-info-badge-text {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.tour-detail-meta-sep {
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.tour-detail-time,
+.tour-detail-duration {
+  display: inline-flex;
+  align-items: safe center;
+  gap: var(--space-xs);
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tour-detail-meta-text {
+  text-box: trim-both cap alphabetic;
+}
+
+.tour-detail-transport-summary {
+  display: flex;
+  align-items: safe center;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-md);
+  min-width: 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-muted);
+}
+
+.tour-detail-transport-item {
+  display: inline-flex;
+  align-items: safe center;
+  gap: var(--space-xs);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tour-detail-transport-text {
+  font-weight: 500;
+  text-box: trim-both cap alphabetic;
 }
 
 .tour-detail-header-controls {

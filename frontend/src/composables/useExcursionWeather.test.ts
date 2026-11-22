@@ -85,7 +85,13 @@ describe('useExcursionWeather', () => {
       )
     );
 
-    const { mappedStations, weatherSummary } = useExcursionWeather({
+    const {
+      mappedStations,
+      weatherSummary,
+      primaryWeatherDay,
+      primaryWeatherDays,
+      primaryWeatherLocation,
+    } = useExcursionWeather({
       excursion,
       resolvedStations,
     });
@@ -99,5 +105,12 @@ describe('useExcursionWeather', () => {
 
     expect(weatherSummary.value?.weatherCode).toBe(0);
     expect(weatherSummary.value?.tempLabel).toBe('25°–30°');
+    expect(primaryWeatherDay.value?.date).toBe('2026-07-20');
+    expect(primaryWeatherDays.value).toHaveLength(1);
+    expect(primaryWeatherLocation.value).toEqual({
+      lat: 48.208,
+      lng: 16.373,
+      label: 'Station 1',
+    });
   });
 });

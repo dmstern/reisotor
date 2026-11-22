@@ -57,6 +57,8 @@ function travelDuration(item: TravelItem) {
     :placeholder-icon="travelTypeIconDef(item.type)"
     :category-label="item.type || 'Reise'"
     :category-icon="travelTypeIconDef(item.type)"
+    category-icon-group="actions"
+    category-icon-force-style="icons"
     theme-color="var(--color-travel)"
     theme-tint="var(--color-travel-tint)"
     @edit="emit('edit')"

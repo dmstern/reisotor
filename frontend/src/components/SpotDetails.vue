@@ -208,7 +208,8 @@ const addressChunks = computed(() => {
               )
             "
             :size="13"
-            group="categories"
+            group="actions"
+            force-style="icons"
             class="spot-distance-transport-icon"
           />
           ca.

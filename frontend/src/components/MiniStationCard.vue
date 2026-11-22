@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppIcon from './AppIcon.vue';
 import { imageDisplayUrl } from '../utils/imageDisplayUrl';
 import type { ExcursionStation } from '../utils/excursionStations';
 
@@ -19,11 +20,16 @@ defineProps<{ station: ExcursionStation }>();
         station.imageUrl ? { backgroundImage: `url(${imageDisplayUrl(station.imageUrl)})` } : {}
       "
     >
-      <span v-if="!station.imageUrl" class="placeholder">{{ station.icon }}</span>
+      <span v-if="!station.imageUrl" class="placeholder">
+        <AppIcon :icon="station.tabler" :size="20" group="actions" force-style="icons" />
+      </span>
     </div>
     <div class="body">
       <span class="title">{{ station.title }}</span>
-      <span class="category">{{ station.icon }} {{ station.category }}</span>
+      <span class="category">
+        <AppIcon :icon="station.tabler" :size="12" group="actions" force-style="icons" />
+        {{ station.category }}
+      </span>
     </div>
   </div>
 </template>

@@ -3,8 +3,12 @@ import type { ExcursionLeg, Spot } from '../api/types';
 import AppIcon from './AppIcon.vue';
 import Button from './primitives/Button.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
-import { travelTypeIcon } from '../utils/travelTypeIcon';
-import { getLegDurationParts, getLegTooltip } from '../composables/useTourSerpentine';
+import { travelTypeIconDef } from '../utils/travelTypeIcon';
+import {
+  formatLegDistance,
+  getLegDurationParts,
+  getLegTooltip,
+} from '../composables/useTourSerpentine';
 
 defineProps<{
   variant: 'horizontal' | 'row-break';
@@ -40,7 +44,13 @@ const emit = defineEmits<{
       @click.stop="emit('click')"
     >
       <span class="leg-pill-icon">
-        {{ travelTypeIcon(leg.transport_type ?? null) }}
+        <AppIcon
+          :icon="travelTypeIconDef(leg.transport_type ?? null)"
+          :size="18"
+          group="actions"
+          force-style="icons"
+          aria-hidden="true"
+        />
       </span>
       <span v-if="getLegDurationParts(leg)" class="leg-pill-duration">
         <span
@@ -53,6 +63,9 @@ const emit = defineEmits<{
       </span>
       <span v-else-if="leg.departure_time" class="leg-pill-duration">
         <span class="leg-duration-part">{{ leg.departure_time }}</span>
+      </span>
+      <span v-if="formatLegDistance(leg.distance_meters)" class="leg-pill-distance">
+        {{ formatLegDistance(leg.distance_meters) }}
       </span>
       <span v-if="leg.amount != null" class="leg-pill-cost nobr">
         {{ leg.amount.toFixed(2).replace('.', ',') }}&nbsp;€
@@ -96,7 +109,13 @@ const emit = defineEmits<{
         @click.stop="emit('click')"
       >
         <span class="leg-pill-icon">
-          {{ travelTypeIcon(leg.transport_type ?? null) }}
+          <AppIcon
+            :icon="travelTypeIconDef(leg.transport_type ?? null)"
+            :size="16"
+            group="actions"
+            force-style="icons"
+            aria-hidden="true"
+          />
         </span>
         <span v-if="leg.transport_type" class="leg-pill-type">
           {{ leg.transport_type }}
@@ -112,6 +131,9 @@ const emit = defineEmits<{
         </span>
         <span v-else-if="leg.departure_time" class="leg-pill-duration">
           <span class="leg-duration-part">{{ leg.departure_time }}</span>
+        </span>
+        <span v-if="formatLegDistance(leg.distance_meters)" class="leg-pill-distance">
+          {{ formatLegDistance(leg.distance_meters) }}
         </span>
         <span v-if="leg.amount != null" class="leg-pill-cost nobr">
           {{ leg.amount.toFixed(2).replace('.', ',') }}&nbsp;€
@@ -260,6 +282,14 @@ const emit = defineEmits<{
 }
 
 .leg-duration-part {
+  white-space: nowrap;
+}
+
+.leg-pill-distance {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  line-height: var(--line-height-tight);
   white-space: nowrap;
 }
 
