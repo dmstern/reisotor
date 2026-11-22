@@ -168,7 +168,7 @@ function handleClick(event: MouseEvent) {
   </button>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .dropdown-item {
   display: flex;
   align-items: center;
@@ -192,12 +192,20 @@ function handleClick(event: MouseEvent) {
   box-sizing: border-box;
   user-select: none;
   transition:
-    background 0.15s ease,
-    color 0.15s ease;
+    background-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1);
 }
 
-.dropdown-item:hover:not(.is-disabled) {
-  background: var(--color-hover);
+@include can-hover {
+  .dropdown-item:hover:not(.is-disabled) {
+    background: var(--color-menu-item-hover);
+  }
+}
+
+.dropdown-item:active:not(.is-disabled) {
+  background: var(--color-menu-item-active);
+  transform: scale(0.99);
 }
 
 .dropdown-item:focus-visible {
@@ -209,6 +217,18 @@ function handleClick(event: MouseEvent) {
   background: var(--color-primary-tint);
   color: var(--color-primary-dark);
   font-weight: 600;
+}
+
+@include can-hover {
+  .dropdown-item.is-active:hover:not(.is-disabled) {
+    background: var(--color-control-active-tint-hover);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dropdown-item:active:not(.is-disabled) {
+    transform: none;
+  }
 }
 
 .dropdown-item.is-disabled {

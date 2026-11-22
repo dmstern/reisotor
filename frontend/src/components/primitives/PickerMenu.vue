@@ -226,13 +226,22 @@ onUnmounted(() => {
   box-shadow: none;
   user-select: none;
   transition:
-    background 0.15s ease,
-    color 0.15s ease;
+    background-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.12s cubic-bezier(0.2, 0.8, 0.4, 1);
 }
 
-.picker-menu :deep(button:not(.btn):hover:not(:disabled)),
-.picker-menu :deep(a:not(.btn):hover) {
-  background: var(--color-hover);
+@include can-hover {
+  .picker-menu :deep(button:not(.btn):hover:not(:disabled)),
+  .picker-menu :deep(a:not(.btn):hover) {
+    background: var(--color-menu-item-hover);
+  }
+}
+
+.picker-menu :deep(button:not(.btn):active:not(:disabled)),
+.picker-menu :deep(a:not(.btn):active) {
+  background: var(--color-menu-item-active);
+  transform: scale(0.99);
 }
 
 .picker-menu :deep(button:not(.btn):disabled) {
@@ -247,6 +256,22 @@ onUnmounted(() => {
   background: var(--color-primary-tint);
   color: var(--color-primary-dark);
   font-weight: 600;
+}
+
+@include can-hover {
+  .picker-menu :deep(button:not(.btn).active:hover:not(:disabled)),
+  .picker-menu :deep(button:not(.btn).is-active:hover:not(:disabled)),
+  .picker-menu :deep(a:not(.btn).active:hover),
+  .picker-menu :deep(a:not(.btn).is-active:hover) {
+    background: var(--color-control-active-tint-hover);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .picker-menu :deep(button:not(.btn):active:not(:disabled)),
+  .picker-menu :deep(a:not(.btn):active) {
+    transform: none;
+  }
 }
 
 .picker-menu :deep(.picker-menu-hint) {

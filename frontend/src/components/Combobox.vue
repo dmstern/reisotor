@@ -847,13 +847,13 @@ defineOptions({
 
 .combobox-option.is-highlighted,
 .options li.is-highlighted {
-  background: var(--color-hover);
+  background: var(--color-menu-item-hover);
 }
 
 @include can-hover {
   .combobox-option:hover,
   .options li:hover {
-    background: var(--color-hover);
+    background: var(--color-menu-item-hover);
   }
 }
 
@@ -866,6 +866,13 @@ defineOptions({
 .combobox-option.is-highlighted.is-selected,
 .options li.is-highlighted.is-selected {
   background: var(--color-primary-tint);
+}
+
+@include can-hover {
+  .combobox-option.is-selected:hover,
+  .options li.is-selected:hover {
+    background: var(--color-control-active-tint-hover);
+  }
 }
 
 .combobox-empty {

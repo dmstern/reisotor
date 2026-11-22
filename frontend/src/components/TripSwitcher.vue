@@ -367,7 +367,7 @@ function selectAndClose(id: number) {
 }
 
 .manage-trips-btn:hover {
-  background: var(--color-hover);
+  background: var(--color-menu-item-hover);
 }
 
 .manage-trips-btn:focus-visible {
