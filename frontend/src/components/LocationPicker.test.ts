@@ -2191,5 +2191,21 @@ describe('LocationPicker', () => {
 
       cleanUp();
     });
+
+    it('prioritizes booking portal placeholders when category is Unterkunft', async () => {
+      const { container, cleanUp } = mountPicker({
+        modelValue: null,
+        title: '',
+        category: 'Unterkunft',
+        address: '',
+      });
+      await nextTick();
+
+      const searchInput = container.querySelector('.location-picker-input') as HTMLInputElement;
+      expect(searchInput).toBeTruthy();
+      expect(searchInput.placeholder).toBe('Booking.com-, Airbnb-Link oder Unterkunft suchen...');
+
+      cleanUp();
+    });
   });
 });
