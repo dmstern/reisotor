@@ -5,6 +5,7 @@ import { IconCompass, IconCompassFilled } from '@tabler/icons-vue';
 import { cachedEmojiPin, LEAFLET_ATTRIBUTION_PREFIX, pulsingEmojiPin } from '../utils/mapRoute';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import type { IconDef } from '../utils/icon';
+import { BREAKPOINTS } from '../tokens/breakpoints';
 
 export const OWN_LOCATION_ICON: IconDef = {
   id: 'compass',
@@ -49,10 +50,10 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
     const wrapWidth = options.mapEl.value?.parentElement?.clientWidth;
 
     if (wrapWidth && wrapWidth > 0) {
-      return wrapWidth <= 580;
+      return wrapWidth <= BREAKPOINTS.tabletSm;
     }
 
-    return typeof window !== 'undefined' && window.innerWidth <= 580;
+    return typeof window !== 'undefined' && window.innerWidth <= BREAKPOINTS.tabletSm;
   }
 
   function syncMapInteractivity() {

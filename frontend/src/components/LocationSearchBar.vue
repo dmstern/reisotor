@@ -650,9 +650,9 @@ function onDropdownScroll(e: Event) {
   color: var(--color-primary);
 }
 
-/* Auf schmalen Containern (<= 580px) mit sichtbaren Details wird die Suchleiste über der Karte gestackt */
+/* Auf schmalen Containern (<= tablet-sm) mit sichtbaren Details wird die Suchleiste über der Karte gestackt */
 /* statt darüber zu schweben — dann den normalen Eingabefeld-Look ohne Glas-Rahmen verwenden. */
-@container (max-width: 580px) {
+@include container-down('tablet-sm') {
   .location-search-row.has-details {
     .location-search-wrap {
       background-color: var(--color-input-bg);

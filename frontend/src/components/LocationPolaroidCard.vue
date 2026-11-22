@@ -806,7 +806,7 @@ defineExpose({
   }
 }
 
-@container (max-width: 580px) {
+@include container-down('tablet-sm') {
   .polaroid-card {
     position: relative;
     top: auto;

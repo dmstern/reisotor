@@ -711,7 +711,7 @@ defineExpose({
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .location-picker {
   display: flex;
   flex-direction: column;
@@ -806,7 +806,7 @@ defineExpose({
   display: none;
 }
 
-@container (max-width: 580px) {
+@include container-down('tablet-sm') {
   .map-wrap:not(.has-polaroid) .location-picker-map {
     height: 180px;
     min-height: 180px;
