@@ -71,7 +71,7 @@ Mitglied des betroffenen `trip_id` ist (403, auch bei nicht-existenter `trip_id`
 nicht zu verraten). Weitere Nutzer:innen werden über eine Autocomplete-Suche nach
 Benutzername/E-Mail (`GET /users/search?q=&trip_id=`, nur bereits registrierte Accounts, die noch
 nicht Mitglied sind) gefunden und per `POST /trips/:id/members` eingeladen (Frontend:
-`TripMembersDialog.vue`, aufrufbar über den 👥-Button im `TripSwitcher.vue`). Innerhalb eines
+`TripPermissionsSettings.vue` im Tab „Zugriffsberechtigungen“ von `TripForm.vue`). Innerhalb eines
 Urlaubs gibt es keine hierarchische Rollenunterscheidung — jedes Mitglied kann weitere Mitglieder einladen oder
 entfernen (auch sich selbst), kein Schutz vor einem Urlaub mit null Mitgliedern.
 
@@ -206,7 +206,7 @@ Eine Zeile pro Domäne, keine Vollständigkeits-Doku.
 
 | Domäne                           | Backend-Route                                                       | Frontend (Store/View/Komponente)                                                                            | Kurzbeschreibung                                                                                                                                |
 | -------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Trips/Mitgliedschaft             | `routes/trips.ts`, `tripAccess.ts`                                  | `stores/trip.ts`, `TripSwitcher.vue`, `TripMembersDialog.vue`                                               | Trip-CRUD, `requireTripMember()`-Gate, Einladung                                                                                                |
+| Trips/Mitgliedschaft             | `routes/trips.ts`, `tripAccess.ts`                                  | `stores/trip.ts`, `TripsView.vue`, `TripCard.vue`, `TripPermissionsSettings.vue`                            | Trip-CRUD, `requireTripMember()`-Gate, Einladung                                                                                                |
 | Kalender                         | `routes/schedule.ts`                                                | `stores/schedule.ts`, `ScheduleView.vue`, `CalendarWeek.vue`                                                | Wochenansicht, Termine, Drag&Drop von Ideen                                                                                                     |
 | Listen (Packen/Einkauf/ToDo)     | `routes/packing.ts`, `routes/shopping.ts`, `routes/todos.ts`        | `ListenView.vue` (`PackingListView.vue`, `ShoppingListView.vue`, `TodoView.vue`)                            | Zentrale Listen-Ansicht (`/listen`) mit Tabs für Packliste, Einkaufsliste und ToDos                                                             |
 | Touren, Tracks & Reise           | `routes/ideas.ts`, `routes/tracks.ts`, `routes/routing.ts`          | `stores/excursions.ts`, `stores/tracks.ts`, `stores/routing.ts`, `ExcursionsView.vue`, `ExcursionCard.vue`  | Touren mit Stationen/Etappen, Routing & Fahrzeiten (OpenRouteService), Live-GPS-Track-Aufzeichnung; Reise-Etappen per 'travel'-Rolle abgeleitet |
