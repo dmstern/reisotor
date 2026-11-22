@@ -277,8 +277,15 @@ const routeHeadingIconDef: IconDef = {
      identisch (absolut) über dem Kartenrand. Ein Moduswechsel der <legend> beim Zuklappen führte
      in WebKit zu verlorenem Label und verschobenem Button (#868). */
   margin: var(--route-legend-overhang) 0 0;
-  min-height: var(--route-legend-clearance);
+  /* Nie unter die Inhaltshöhe schrumpfen (sonst überlagert die Karte die folgenden Felder) */
+  flex-shrink: 0;
   transition: none;
+}
+
+/* Nur zugeklappt: Platz für den absolut positionierten Legend-Button. Im offenen Zustand
+   bleibt min-height auto, damit der Inhalt die Höhe bestimmt. */
+.route-calc-fieldset--has-route.is-closed {
+  min-height: var(--route-legend-clearance);
 }
 
 .route-calc-fieldset--has-route :deep(legend) {
