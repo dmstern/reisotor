@@ -1522,6 +1522,26 @@ onUnmounted(() => {
                 </Badge>
               </button>
             </template>
+            <template v-else-if="isSheetOverlayMode && isTourDetailOpen">
+              <div
+                class="sheet-handle"
+                role="separator"
+                aria-orientation="horizontal"
+                aria-label="Tour-Details ein-/ausklappen"
+              >
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  shape="squircle"
+                  :icon="ACTION_ICONS.arrowLeft"
+                  class="tour-detail-back-btn"
+                  @pointerdown.stop
+                  @click="closeTourDetail"
+                >
+                  Alle Touren
+                </Button>
+              </div>
+            </template>
             <template v-else>
               <div
                 class="sheet-handle"
@@ -1618,7 +1638,7 @@ onUnmounted(() => {
               @click="expandAndFocusSearch"
             />
             <Button
-              v-if="sheetState !== 'collapsed'"
+              v-if="sheetState !== 'collapsed' && !isTourDetailOpen"
               size="sm"
               class="add-button"
               :class="{ recording: groupMode === 'tracks' && hasActiveRecording }"
@@ -1678,7 +1698,7 @@ onUnmounted(() => {
            Kartenausschnitt und teils die Zoom-Steuerung). Auf Desktop bleibt sie unverändert Teil
            der Karte-Spalte (Teleport dort deaktiviert), dieser Anker bleibt also leer. -->
           <div id="map-focus-dock" class="map-focus-dock"></div>
-          <div v-if="!isSheetOverlayMode" class="header">
+          <div v-if="!isSheetOverlayMode && !isTourDetailOpen" class="header">
             <h2>
               <AnimatedText
                 :text="
@@ -1770,6 +1790,7 @@ onUnmounted(() => {
           <!-- #515: Der 3-teilige SegmentedToggle (Spots / Touren / Tracks) bekommt eine eigene Zeile
            in voller Breite, damit die größeren 40px-Buttons auch auf 320px ohne Quetschen sitzen. -->
           <SegmentedToggle
+            v-if="!isTourDetailOpen"
             v-model="groupMode"
             class="header-mode-toggle"
             :options="[
@@ -1928,7 +1949,7 @@ onUnmounted(() => {
                 ref="tourDetailScreenEl"
                 class="tour-detail-screen"
               >
-                <div class="tour-detail-back-bar">
+                <div v-if="!isSheetOverlayMode" class="tour-detail-back-bar">
                   <Button
                     variant="ghost"
                     size="xs"

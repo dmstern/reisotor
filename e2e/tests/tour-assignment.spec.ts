@@ -75,6 +75,7 @@ test.describe('Tour-Zuordnung: einfacher Tagging-Modus + Kategorie/Touren-Gruppi
     await tourGroupCard.locator('h3').click();
     await expect(spotCard).toBeVisible();
 
+    await page.locator('.tour-detail-back-btn').click();
     await page.locator('.segmented-option', { hasText: 'Spots' }).click();
   });
 
