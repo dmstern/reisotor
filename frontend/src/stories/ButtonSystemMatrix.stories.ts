@@ -130,7 +130,7 @@ export const TriggerFamilyBaseline: Story = {
     template: `
       <div style="display: flex; flex-direction: column; gap: 20px; max-width: 960px;">
         <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">
-          Alle kompakten Card-Elemente und Trigger sind initial flach, teilen exakt 36px Höhe (sm) bzw. 30px (xs) und dieselbe 2-Stufen-Hover-Physik:
+          Alle kompakten Card-Elemente und Trigger teilen exakt 36px Höhe (sm) bzw. 30px (xs) und dieselbe 2-Stufen-Hover-Physik (<code>DropdownMenu</code>, <code>DoneToggle</code> und <code>LinkedEntityButton</code> initial 3D-erhaben; <code>tonal</code>, <code>ghost</code> und <code>CollapsibleFieldset</code> initial flach):
         </p>
         <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px; border: 1px dashed var(--color-border-strong); border-radius: 14px; background: var(--color-surface);">
           <DropdownMenu label="Sortieren" size="sm" :icon="ACTION_ICONS.sort" />

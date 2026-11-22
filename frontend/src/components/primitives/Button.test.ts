@@ -264,4 +264,13 @@ describe('Button primitive', () => {
     expect(html).toContain('btn--secondary');
     expect(html).toContain('btn--opaque');
   });
+
+  it('renders btn--flat when flat prop is true', async () => {
+    const app = createApp({
+      render: () => h(Button, { variant: 'secondary', flat: true }, () => 'Flat Toggle'),
+    });
+    const html = await renderToString(app);
+    expect(html).toContain('btn--secondary');
+    expect(html).toContain('btn--flat');
+  });
 });

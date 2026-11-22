@@ -28,6 +28,9 @@ describe('CollapsibleFieldset primitive', () => {
     );
     const html = await renderToString(app);
     expect(html).toContain('collapsible-fieldset');
+    expect(html).toContain('btn--secondary');
+    expect(html).toContain('btn--pill');
+    expect(html).toContain('btn--flat');
     expect(html).toContain('is-closed');
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain('aria-hidden="true"');

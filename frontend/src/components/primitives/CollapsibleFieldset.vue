@@ -82,6 +82,7 @@ function toggle() {
         surface="opaque"
         shape="pill"
         size="sm"
+        flat
         class="collapsible-toggle"
         :aria-expanded="isOpen"
         :disabled="disabled"

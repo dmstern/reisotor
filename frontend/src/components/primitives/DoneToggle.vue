@@ -96,7 +96,7 @@ function onClick(event: MouseEvent) {
 
 <style lang="scss" scoped>
 .done-toggle {
-  @include control-physics-progressive('&:active:not(:disabled), &.is-dropdown-open');
+  @include control-physics-raised('&:active:not(:disabled), &.is-dropdown-open');
   @include touch-target($expand: true);
   position: relative;
   display: inline-flex;
@@ -135,7 +135,7 @@ function onClick(event: MouseEvent) {
 .done-toggle:focus-visible {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
   outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo);
+  box-shadow: var(--focus-ring-halo), var(--shadow-control);
 }
 
 @include can-hover {

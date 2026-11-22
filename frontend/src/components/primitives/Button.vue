@@ -18,10 +18,10 @@ const _props = withDefaults(
     /**
      * Button-Variante (Issue #810):
      * - 'primary': Haupt-Aktionsbutton (gefüllt mit --color-primary, leicht erhaben)
-     * - 'secondary': Sekundärbutton (initial flach mit Rahmen, Progressive 3D bei Hover/Active)
+     * - 'secondary': Sekundärbutton (initial 3D-erhaben mit Rahmen & --shadow-control)
      * - 'tonal': Sanft getönte Kontext-Aktion in Cards/Modals (initial flach, Progressive 3D bei Hover/Active)
      * - 'ghost': Leise Hilfsaktion ohne Rahmen/Schatten (ruhiger, flacher Hover/Active ohne 3D-Verlauf/Schatten)
-     * - 'danger': Destruktive Aktion (gefüllt mit --color-danger; mit secondary-Flag gerahmt & initial flach)
+     * - 'danger': Destruktive Aktion (gefüllt mit --color-danger; mit secondary-Flag gerahmt & initial 3D-erhaben)
      * - 'overlay': Kontrast-gesicherter Frosted-Glass-Button auf Fotos/Bannern/Karten (initial schattenlos)
      *
      * Spezial- & interne Varianten:
@@ -41,6 +41,8 @@ const _props = withDefaults(
       | 'linked-entity';
     /** Ob der Button als Sekundär-Variante gestylt werden soll (z. B. in Kombination mit variant="danger"). */
     secondary?: boolean;
+    /** Ob eine sonst 3D-erhabene Variante (z. B. secondary) im Ruhezustand flach bleiben soll. */
+    flat?: boolean;
     /** Button-Größe: 'xs' (30px), 'sm' (36px), 'md' (46px, Standard), 'lg' (52px). */
     size?: 'xs' | 'sm' | 'md' | 'lg';
     /** Optionale IconDef-Definition für Tabler-Icon Rendering via AppIcon.vue */
@@ -75,6 +77,7 @@ const _props = withDefaults(
   {
     variant: 'primary',
     secondary: false,
+    flat: false,
     size: 'md',
     shape: 'squircle',
     surface: 'transparent',
@@ -104,6 +107,7 @@ const btnClasses = computed(() => [
     'is-disabled': _props.disabled,
     'is-loading': _props.loading,
     'is-active': _props.active,
+    'btn--flat': _props.flat,
     'btn--dashed': _props.dashed,
     'btn--icon-only':
       _props.iconOnly ||
@@ -342,12 +346,16 @@ a.btn.is-loading {
     0 1px 1px rgba(0, 0, 0, 0.06);
 }
 
-/* Secondary: initial ruhig & flach mit Rahmen, Progressive 3D erst bei Hover/Active (#810) */
+/* Secondary: initial 3D-erhaben mit Rahmen & --shadow-control (#871) */
 .btn--secondary {
-  @include control-physics-progressive;
-  background-color: transparent;
+  @include control-physics-raised;
+  background-color: var(--color-surface);
   color: var(--color-primary);
   border: 1.5px solid var(--color-border-strong);
+}
+
+.btn--secondary:focus-visible {
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control);
 }
 
 .btn--secondary.btn--icon-only,
@@ -357,16 +365,27 @@ a.btn.is-loading {
 
 @include can-hover {
   .btn--secondary:hover:not(:disabled):not(.is-disabled) {
-    background-color: var(--color-control-hover-bg);
+    background-color: var(--color-hover);
     border-color: var(--color-primary);
   }
 }
 
 .btn--secondary:active:not(:disabled):not(.is-disabled) {
-  background-color: var(--color-control-active-bg);
+  background-color: var(--color-hover);
 }
 
-/* Gestrichelte Sekundär-/Hinzufügen-Variante für leere/optionale Slots (#810) */
+/* Explizit flache Sekundär-Buttons (z. B. CollapsibleFieldset) & gestrichelte Leer-Slots (#871) */
+.btn--secondary.btn--flat,
+.btn--dashed {
+  @include control-physics-progressive;
+  background-color: transparent;
+}
+
+.btn--secondary.btn--flat:focus-visible,
+.btn--dashed:focus-visible {
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
+}
+
 .btn--dashed {
   border-style: dashed;
   color: var(--color-text-muted);
@@ -411,24 +430,28 @@ a.btn.is-loading {
     0 1px 1px rgba(0, 0, 0, 0.06);
 }
 
-/* Danger Secondary: initial flach mit rotem Rahmen, Progressive 3D bei Hover/Active */
+/* Danger Secondary: initial 3D-erhaben mit rotem Rahmen auf gleicher physischer Ebene wie Abbrechen/Speichern (#871) */
 .btn--danger.btn--secondary {
-  @include control-physics-progressive;
-  background-color: transparent;
+  @include control-physics-raised;
+  background-color: var(--color-surface);
   color: var(--color-danger);
   border: 1.5px solid var(--color-danger);
 }
 
+.btn--danger.btn--secondary:focus-visible {
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control);
+}
+
 @include can-hover {
   .btn--danger.btn--secondary:hover:not(:disabled):not(.is-disabled) {
-    background-color: color-mix(in srgb, var(--color-danger) 12%, transparent);
+    background-color: color-mix(in srgb, var(--color-danger) 12%, var(--color-surface));
     border-color: var(--color-danger-dark, #b91c1c);
     color: var(--color-danger-dark, #b91c1c);
   }
 }
 
 .btn--danger.btn--secondary:active:not(:disabled):not(.is-disabled) {
-  background-color: color-mix(in srgb, var(--color-danger) 18%, transparent);
+  background-color: color-mix(in srgb, var(--color-danger) 18%, var(--color-surface));
 }
 
 /* Opake Oberfläche für gerahmte Buttons auf Rahmen- oder Verbindungslinien (z. B. CollapsibleFieldset, TourLegConnector) */
@@ -704,9 +727,9 @@ a.btn.is-loading {
   font-size: var(--font-size-2xl);
 }
 
-/* Linked-Entity Pill: harmonisiert auf sm-Grundlinie (36px) & Progressive 3D (#810) */
+/* Linked-Entity Pill: harmonisiert auf sm-Grundlinie (36px) & initial 3D-erhaben (#871) */
 .btn--linked-entity {
-  @include control-physics-progressive;
+  @include control-physics-raised;
   @include touch-target($expand: true, $position: null);
   display: inline-flex;
   align-items: center;
@@ -725,6 +748,10 @@ a.btn.is-loading {
   font-weight: 500;
   line-height: var(--line-height-snug);
   text-decoration: none;
+}
+
+.btn--linked-entity:focus-visible {
+  box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control);
 }
 
 @include can-hover {
