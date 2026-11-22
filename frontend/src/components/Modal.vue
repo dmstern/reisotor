@@ -533,6 +533,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 .modal {
   position: relative;
   container-type: inline-size;
+  container-name: modal;
   background: var(--color-surface);
   --scroll-fade-bg: var(--color-surface);
   --tab-bar-fade-bg: var(--color-surface);
@@ -686,7 +687,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   flex: 1;
 }
 
-@include container-down('mobile-sm') {
+@include container-down('modal', 'mobile-sm') {
   .modal-body :slotted(form) .actions-row,
   .modal-body :slotted(*) .actions-row,
   .modal-body :slotted(.actions-row) {

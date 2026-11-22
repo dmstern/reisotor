@@ -248,7 +248,6 @@ function onRemoveCurrent() {
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
-  container-type: inline-size;
 }
 
 .preview-meta {
@@ -276,7 +275,7 @@ function onRemoveCurrent() {
     box-shadow var(--transition-fast);
 }
 
-@include container-down('mobile') {
+@include container-down('modal', 'mobile') {
   .preview-stage {
     position: relative;
   }
@@ -416,7 +415,7 @@ function onRemoveCurrent() {
   margin: 0;
 }
 
-@include container-down('mobile-sm') {
+@include container-down('modal', 'mobile-sm') {
   .unsupported-wrapper {
     padding: var(--space-xl) var(--space-lg);
     min-height: 180px;

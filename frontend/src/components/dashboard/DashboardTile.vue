@@ -120,8 +120,4 @@ const isLink = computed(() => !!props.to);
 .tile :deep(.meter-row) {
   margin-top: auto;
 }
-
-.tile :deep(.meter-row:last-child) {
-  padding-bottom: 0;
-}
 </style>

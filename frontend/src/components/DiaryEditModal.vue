@@ -276,7 +276,6 @@ function handleUploadClick() {
 
 <style scoped>
 .add-form {
-  container-type: inline-size;
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);

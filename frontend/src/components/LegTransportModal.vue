@@ -383,8 +383,6 @@ function onDelete() {
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
-  container-type: inline-size;
-  container-name: leg-modal;
 }
 
 .attachments-hint {

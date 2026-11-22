@@ -259,14 +259,10 @@ function fmt(value: number) {
 .meter-row {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-2) 0;
+  gap: var(--space-1-5);
+  padding: 0;
   min-width: 0;
   transition: transform 0.15s ease;
-}
-
-.meter-row.is-prominent {
-  padding: var(--space-1) 0;
 }
 
 .meter-row.is-prominent .label {
@@ -298,7 +294,7 @@ function fmt(value: number) {
   align-items: center;
   flex-wrap: wrap;
   row-gap: var(--space-2xs);
-  gap: var(--space-2);
+  gap: var(--space-sm);
   min-width: 0;
   font-size: var(--font-size-sm);
 }
@@ -347,7 +343,7 @@ function fmt(value: number) {
 .category-warning-icon {
   display: inline-flex;
   align-items: center;
-  margin-left: var(--space-1);
+  margin-left: var(--space-xs);
   color: var(--color-warning);
   vertical-align: middle;
   cursor: help;
@@ -452,7 +448,7 @@ function fmt(value: number) {
 .over-badge {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-xs);
   margin: 0;
   font-size: var(--font-size-xs);
   color: var(--color-danger);

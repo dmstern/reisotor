@@ -121,7 +121,7 @@ function toggle() {
 <style scoped lang="scss">
 .collapsible-fieldset {
   @include surface-sunken-box;
-  padding: var(--space-sm) var(--space-lg) var(--space-lg);
+  padding: var(--space-xs) var(--space-lg) var(--space-lg);
   margin: 0;
   min-inline-size: 0;
   max-inline-size: 100%;
