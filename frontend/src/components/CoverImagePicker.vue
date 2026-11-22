@@ -574,7 +574,6 @@ function handleModalClose(visible: boolean) {
             <!-- eslint-disable-next-line vuejs-accessibility/form-control-has-label -->
             <Input
               v-model="searchQuery"
-              size="sm"
               type="search"
               class="browse-search-input"
               placeholder="Suchbegriff für Bildersuche…"
@@ -586,7 +585,7 @@ function handleModalClose(visible: boolean) {
             <Button
               type="button"
               :variant="isSearchButtonPrimary ? 'primary' : 'secondary'"
-              size="sm"
+              size="md"
               :icon="isSearchingAction === 'query' ? undefined : ACTION_ICONS.search"
               :disabled="!searchQuery.trim() || isSearching || isUploading"
               title="Nach Bildern für diesen Suchbegriff suchen"

@@ -806,7 +806,7 @@ defineExpose({
   }
 }
 
-@container (max-width: 580px) {
+@include container-down('tablet-sm') {
   .polaroid-card {
     position: relative;
     top: auto;
@@ -816,7 +816,13 @@ defineExpose({
     max-width: 100%;
     max-height: none;
     overflow-y: visible;
-    box-shadow: none;
+    box-shadow: inset 0 1px 0 var(--shadow-control-highlight);
+  }
+
+  .polaroid-card.is-modified {
+    box-shadow:
+      inset 0 1px 0 var(--shadow-control-highlight),
+      0 0 0 1px var(--color-success);
   }
 
   .polaroid-media :deep(.form-image-banner--polaroid) {

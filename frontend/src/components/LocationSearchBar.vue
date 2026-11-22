@@ -79,7 +79,10 @@ function onDropdownScroll(e: Event) {
 </script>
 
 <template>
-  <div class="location-search-row location-search-floating">
+  <div
+    class="location-search-row location-search-floating"
+    :class="{ 'has-details': isDetailsVisible }"
+  >
     <div class="location-search-field">
       <div
         class="location-search-wrap"
@@ -645,5 +648,71 @@ function onDropdownScroll(e: Event) {
   flex-shrink: 0;
   margin-top: var(--space-2xs);
   color: var(--color-primary);
+}
+
+/* Auf schmalen Containern (<= tablet-sm) mit sichtbaren Details wird die Suchleiste über der Karte gestackt */
+/* statt darüber zu schweben — dann den normalen Eingabefeld-Look ohne Glas-Rahmen verwenden. */
+@include container-down('tablet-sm') {
+  .location-search-row.has-details {
+    .location-search-wrap {
+      background-color: var(--color-input-bg);
+      backdrop-filter: none;
+      border: 1.5px solid var(--color-search-field-border);
+      box-shadow: var(--shadow-search-field-inset);
+      padding: 0;
+      transition: var(--transition-control);
+
+      &:hover:not(.is-focused) {
+        background-color: var(--color-input-bg);
+        border-color: color-mix(
+          in srgb,
+          var(--color-primary) 35%,
+          var(--color-search-field-border)
+        );
+        box-shadow: var(--shadow-control-inset-hover);
+      }
+
+      &:focus-within:not(.is-focused) {
+        background-color: var(--color-input-bg);
+        outline: none;
+        box-shadow: var(--shadow-search-field-inset);
+
+        &:hover {
+          background-color: var(--color-input-bg);
+          border-color: color-mix(
+            in srgb,
+            var(--color-primary) 35%,
+            var(--color-search-field-border)
+          );
+          box-shadow: var(--shadow-control-inset-hover);
+        }
+      }
+
+      &.is-focused {
+        background-color: var(--color-input-bg);
+        border-color: var(--color-search-field-border);
+        outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+        outline-offset: var(--focus-ring-offset, 2px);
+        box-shadow:
+          var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
+      }
+    }
+
+    .location-search-inner {
+      border: none;
+
+      &::before {
+        display: none;
+      }
+    }
+
+    .location-search-wrap .location-search-inner :deep(.location-picker-input) {
+      min-height: calc(var(--input-height, 46px) - 3px);
+    }
+
+    .search-right-actions {
+      right: 6px;
+    }
+  }
 }
 </style>

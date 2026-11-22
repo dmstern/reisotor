@@ -74,8 +74,8 @@ defineEmits<{
             @click="$emit('nextPage')"
           />
         </div>
-        <Button size="sm" class="add-btn" @click="$emit('openAdd')">
-          <AppIcon :icon="ACTION_ICONS.calendarPlus" :size="14" group="actions" /> Neu
+        <Button size="md" class="add-btn" @click="$emit('openAdd')">
+          <AppIcon :icon="ACTION_ICONS.calendarPlus" :size="16" group="actions" /> Neu
         </Button>
       </div>
 

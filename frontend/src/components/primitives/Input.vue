@@ -146,7 +146,7 @@ defineExpose({
 
 .input--sm {
   padding: var(--space-1-5) 10px;
-  min-height: var(--input-height-sm, 38px);
+  min-height: var(--input-height-sm, 36px);
   font-size: var(--font-size-sm);
 
   /* iOS/WebKit Auto-Zoom-Prävention: Auf Mobilgeräten & Touchscreens mindestens 16px (1rem) */
@@ -201,7 +201,7 @@ defineExpose({
 .input--sm[type='datetime-local'],
 .input--sm[type='month'],
 .input--sm[type='week'] {
-  height: var(--input-height-sm, 38px);
+  height: var(--input-height-sm, 36px);
 }
 
 .input--lg[type='date'],

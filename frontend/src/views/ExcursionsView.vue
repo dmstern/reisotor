@@ -1639,7 +1639,7 @@ onUnmounted(() => {
             />
             <Button
               v-if="sheetState !== 'collapsed' && !isTourDetailOpen"
-              size="sm"
+              size="md"
               class="add-button"
               :class="{ recording: groupMode === 'tracks' && hasActiveRecording }"
               :variant="groupMode === 'tracks' && hasActiveRecording ? 'danger' : 'primary'"
@@ -1765,7 +1765,7 @@ onUnmounted(() => {
             </h2>
             <div class="header-actions">
               <Button
-                size="sm"
+                size="md"
                 class="add-button"
                 :class="{ recording: groupMode === 'tracks' && hasActiveRecording }"
                 :variant="groupMode === 'tracks' && hasActiveRecording ? 'danger' : 'primary'"

@@ -170,4 +170,18 @@ describe('LocationSearchBar - solid glass feeling (#759)', () => {
     expect(selectedPlace).toEqual(place);
     cleanUp();
   });
+
+  it('adds has-details class only when isDetailsVisible is true', () => {
+    const first = mountLocationSearchBar({ ...defaultProps, isDetailsVisible: false });
+    expect(
+      first.container.querySelector('.location-search-row')?.classList.contains('has-details')
+    ).toBe(false);
+    first.cleanUp();
+
+    const second = mountLocationSearchBar({ ...defaultProps, isDetailsVisible: true });
+    expect(
+      second.container.querySelector('.location-search-row')?.classList.contains('has-details')
+    ).toBe(true);
+    second.cleanUp();
+  });
 });
