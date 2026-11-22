@@ -13,7 +13,6 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import type { TransportCategory } from '../utils/legTransportConfig';
 import { useLegTransportForm } from '../composables/useLegTransportForm';
 import { useLegTransportMode } from '../composables/useLegTransportMode';
-import { useLegRoutingAccordion } from '../composables/useLegRoutingAccordion';
 import { useLegTimeSync } from '../composables/useLegTimeSync';
 import { useRouteCalculation } from '../composables/useRouteCalculation';
 
@@ -80,7 +79,6 @@ const {
   suggestedRouteIndex,
   routeDisplayMode,
   hasExactRoute,
-  hasCoordinates,
   isRoutable,
   calculateRoute,
   selectRoute,
@@ -108,13 +106,6 @@ const {
 } = useLegTransportMode({
   transportType: transportTypeRef,
 });
-
-const { isRoutingOpen, isRoutingDisabled, routingDisabledTitle, openRouting, closeRouting } =
-  useLegRoutingAccordion({
-    isRoutable,
-    hasCoordinates,
-    transportCategory,
-  });
 
 const activeDurationSeconds = computed<number | null>(() => {
   if (
@@ -167,15 +158,10 @@ const {
 function onCategorySelect(cat: string) {
   selectCategory(cat as TransportCategory, {
     onÖpnvSelected: () => {
-      closeRouting();
       clearRoute();
       clearLinkedTimes();
     },
-    onRoutableCategorySelected: () => {
-      if (hasCoordinates.value) {
-        openRouting();
-      }
-    },
+    onRoutableCategorySelected: () => {},
   });
 }
 
@@ -195,14 +181,7 @@ watch(
 
     if (props.leg) {
       populateFromLeg(props.leg);
-      const cat = initTransportMode(props.leg.transport_type);
-
-      if (cat === 'ÖPNV') {
-        closeRouting();
-      } else if (isRoutable.value) {
-        openRouting();
-      }
-
+      initTransportMode(props.leg.transport_type);
       initTimeState(props.leg.departure_time, props.leg.arrival_time, props.leg.duration_seconds);
       setInitialRoute(
         props.leg.route_geometry,
@@ -214,11 +193,6 @@ watch(
       resetForm();
       initTransportMode('zu Fuß');
       initTimeState(null, null, null);
-
-      if (isRoutable.value) {
-        openRouting();
-      }
-
       setInitialRoute(null, null, null, null);
     }
   },
@@ -283,11 +257,9 @@ function onDelete() {
       />
 
       <LegRouteSection
-        v-model:is-open="isRoutingOpen"
         v-model:route-preference="routePreference"
         v-model:route-display-mode="routeDisplayMode"
-        :is-disabled="isRoutingDisabled"
-        :disabled-title="routingDisabledTitle"
+        :is-disabled="!isRoutable"
         :is-calculating-route="isCalculatingRoute"
         :has-exact-route="hasExactRoute"
         :route-calculation-error="routeCalculationError"

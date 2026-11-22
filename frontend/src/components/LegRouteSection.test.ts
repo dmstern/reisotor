@@ -58,7 +58,6 @@ describe('LegRouteSection', () => {
   it('renders initial calculation controls when no exact route exists', async () => {
     let calcTriggered = false;
     const { cleanUp } = mountTestApp(LegRouteSection, {
-      isOpen: true,
       isDisabled: false,
       isCalculatingRoute: false,
       hasExactRoute: false,
@@ -97,7 +96,6 @@ describe('LegRouteSection', () => {
 
   it('renders loading badge when route calculation is running', async () => {
     const { cleanUp } = mountTestApp(LegRouteSection, {
-      isOpen: true,
       isDisabled: false,
       isCalculatingRoute: true,
       hasExactRoute: false,
@@ -126,7 +124,6 @@ describe('LegRouteSection', () => {
 
   it('renders mini map and floating card when route exists', async () => {
     const { cleanUp } = mountTestApp(LegRouteSection, {
-      isOpen: true,
       isDisabled: false,
       isCalculatingRoute: false,
       hasExactRoute: true,
@@ -164,7 +161,6 @@ describe('LegRouteSection', () => {
       render: () =>
         h('div', [
           h(LegRouteSection, {
-            isOpen: true,
             isDisabled: false,
             isCalculatingRoute: false,
             hasExactRoute: false,
