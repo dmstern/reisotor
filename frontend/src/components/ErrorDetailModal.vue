@@ -165,7 +165,7 @@ function openBugReport() {
   <Modal
     :model-value="isErrorModalOpen"
     title="Fehlerdetails"
-    size="md"
+    size="lg"
     @update:model-value="closeErrorModal"
   >
     <div v-if="activeError" class="error-detail-modal">

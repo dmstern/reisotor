@@ -154,7 +154,7 @@ function close() {
 </script>
 
 <template>
-  <Modal :model-value="modelValue" title="Feedback geben" @update:model-value="close">
+  <Modal :model-value="modelValue" title="Feedback geben" size="lg" @update:model-value="close">
     <div class="feedback-dialog">
       <template v-if="result">
         <p class="hint success">
@@ -164,7 +164,9 @@ function close() {
           >
           angelegt.
         </p>
-        <Button type="button" @click="close">Schließen</Button>
+        <div class="actions-row">
+          <Button type="button" @click="close">Schließen</Button>
+        </div>
       </template>
 
       <form v-else class="form" @submit.prevent="requestSubmit">
