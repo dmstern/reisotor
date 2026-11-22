@@ -119,7 +119,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     return db.prepare('SELECT id, username, avatar FROM users ORDER BY id').all();
   });
 
-  // Autocomplete für die Einladen-Suche (TripSwitcher.vue/TripMembersDialog.vue) – durchsucht ALLE
+  // Autocomplete für die Einladen-Suche (TripPermissionsSettings.vue) – durchsucht ALLE
   // registrierten Nutzer:innen (nicht nur Mitglieder des aktuellen Urlaubs, sonst ließe sich
   // niemand Neues finden/einladen) nach Benutzername oder E-Mail. `trip_id` blendet bereits
   // eingeladene Mitglieder aus dem Ergebnis aus, damit man sie nicht versehentlich doppelt

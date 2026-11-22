@@ -103,6 +103,20 @@ export interface UpdateAdminSettingsPayload {
   push?: Partial<AdminSettings['push']> & { vapidPrivateKey?: string; clearVapidKeys?: boolean };
 }
 
+export interface TripMemberSummary {
+  id: number;
+  username: string;
+  avatar: string;
+}
+
+export interface TripStats {
+  spots: number;
+  tours: number;
+  diary: number;
+  packing_packed: number;
+  packing_total: number;
+}
+
 export interface Trip {
   id: number;
   name: string;
@@ -118,10 +132,14 @@ export interface Trip {
   country_code?: string | null;
   country_name?: string | null;
   /** Ob alle Mitglieder des Urlaubs im eingeschränkten Modus sind (Issue #96, Sponsor-Prinzip) – steuert den
-   *  3-Mitglieder-Deckel in TripMembersDialog.vue. */
+   *  3-Mitglieder-Deckel in TripPermissionsSettings.vue. */
   owner_restricted?: boolean;
   /** Ob die aktuell eingeloggte Person diesen Urlaub selbst angelegt hat (für das 1-Urlaub-Limit im Basis-Konto). */
   created_by_me?: boolean;
+  /** Mitglieder (Mitreisende) dieses Urlaubs – von GET /trips & /trips/:id geliefert. */
+  members?: TripMemberSummary[];
+  /** Kompakte Übersichtszähler (Spots, Touren, Tagebuch, Packliste) – von GET /trips & /trips/:id geliefert. */
+  stats?: TripStats;
 }
 
 export interface ChangelogGroup {

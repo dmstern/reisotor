@@ -33,12 +33,53 @@ interface TripBody {
   create_default_entries?: boolean;
 }
 
+interface TripMemberSummary {
+  id: number;
+  username: string;
+  avatar: string;
+}
+
+interface TripStats {
+  spots: number;
+  tours: number;
+  diary: number;
+  packing_packed: number;
+  packing_total: number;
+}
+
 export const tripsRoutes: FastifyPluginAsync = async (app) => {
+  const tripMembersStmt = db.prepare(
+    `SELECT users.id, users.username, users.avatar FROM users
+     JOIN trip_members ON trip_members.user_id = users.id
+     WHERE trip_members.trip_id = ?
+     ORDER BY users.id`
+  );
+
+  const tripStatsStmt = db.prepare(
+    `SELECT
+       (SELECT COUNT(*) FROM spots WHERE trip_id = ? AND deleted_at IS NULL) AS spots,
+       (SELECT COUNT(*) FROM ideas WHERE trip_id = ? AND deleted_at IS NULL) AS tours,
+       (SELECT COUNT(*) FROM diary_entries WHERE trip_id = ? AND deleted_at IS NULL AND (is_draft = 0 OR author_id = ?)) AS diary,
+       (SELECT COALESCE(SUM(quantity), 0) FROM packing_items WHERE trip_id = ? AND deleted_at IS NULL) AS packing_total,
+       (SELECT COALESCE(SUM(MIN(packed_count, quantity)), 0) FROM packing_items WHERE trip_id = ? AND deleted_at IS NULL) AS packing_packed`
+  );
+
   function enrichTrip<T extends { id: number | string }>(trip: T, userId: number | undefined) {
+    const members = tripMembersStmt.all(trip.id) as TripMemberSummary[];
+    const stats = tripStatsStmt.get(
+      trip.id,
+      trip.id,
+      trip.id,
+      userId ?? -1,
+      trip.id,
+      trip.id
+    ) as TripStats;
     return {
       ...trip,
       owner_restricted: isTripOwnerRestricted(trip.id),
       created_by_me: isTripCreatedBy(trip.id, userId),
+      members,
+      stats,
     };
   }
 
@@ -54,7 +95,7 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
          ORDER BY trips.id`
       )
       .all(req.session.userId) as { id: number }[];
-    // owner_restricted steuert im Frontend (TripMembersDialog.vue), ob der 3-Mitglieder-Deckel
+    // owner_restricted steuert im Frontend (TripPermissionsSettings.vue), ob der 3-Mitglieder-Deckel
     // aus Issue #96 für diesen Urlaub greift – am Urlaub selbst hängend statt nur am eigenen
     // restricted-Status: Entfällt, sobald mindestens eine Person mit Vollzugriff Mitglied im
     // Urlaub ist (Sponsor-Prinzip).

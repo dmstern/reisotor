@@ -733,16 +733,6 @@ const DIALOGS: DialogSpec[] = [
     waitSelector: '.modal:has-text("Urlaub bearbeiten"), .trip-form',
   },
   {
-    slug: 'dialog-trip-members',
-    path: '/trips',
-    open: async (page) => {
-      const btn = page.locator('.trip-card').first().locator('[aria-label="Mitglieder verwalten"]');
-      await btn.scrollIntoViewIfNeeded();
-      await btn.click();
-    },
-    waitSelector: '.modal:has-text("Mitglieder"), .trip-members-dialog',
-  },
-  {
     slug: 'dialog-create-user',
     path: '/settings?tab=users',
     open: async (page) => {
