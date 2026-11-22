@@ -125,4 +125,25 @@ describe('TourDetailView', () => {
     expect(html).toContain('is-translucent');
     expect(html).toContain('test-stations-slot');
   });
+
+  it('rendert Uhrzeit-Spanne (Abfahrt/Ankunft) zusammen mit der Dauer in der Meta-Zeile', async () => {
+    const html = await mountComponent({
+      excursion: {
+        ...mockExcursion,
+        departure_time: '09:30',
+        arrival_time: '15:40',
+        legs: [{ departure_time: '09:30', arrival_time: '15:40', duration_seconds: 22200 }],
+      } as unknown as Excursion,
+      creatorLabel: 'Mia',
+      likeCount: 0,
+      liked: false,
+      comments: [],
+      stations: mockStations,
+      travelItems: [],
+    });
+
+    expect(html).toContain('tour-detail-time');
+    expect(html).toContain('09:30\u201315:40\u00A0Uhr');
+    expect(html).toContain('6\u00A0Std. 10\u00A0Min.');
+  });
 });

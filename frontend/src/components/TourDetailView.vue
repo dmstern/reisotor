@@ -55,7 +55,14 @@ const linkedDiaryEntries = computed(() =>
   )
 );
 
-const { resolvedStations, hasMappedStations, travelDuration, linkedTracks } = useExcursionStations({
+const {
+  resolvedStations,
+  hasMappedStations,
+  effectiveDepartureTime,
+  effectiveArrivalTime,
+  travelDuration,
+  linkedTracks,
+} = useExcursionStations({
   excursion: () => props.excursion,
   stations: () => props.stations,
   travelItems: () => props.travelItems,
@@ -66,8 +73,24 @@ const { weatherSummary } = useExcursionWeather({
   resolvedStations: () => resolvedStations.value,
 });
 
+const timeLabel = computed(() => {
+  if (effectiveDepartureTime.value) {
+    return effectiveArrivalTime.value
+      ? `${effectiveDepartureTime.value}\u2013${effectiveArrivalTime.value}\u00A0Uhr`
+      : `${effectiveDepartureTime.value}\u00A0Uhr`;
+  }
+
+  if (effectiveArrivalTime.value) {
+    return `Ankunft ${effectiveArrivalTime.value}\u00A0Uhr`;
+  }
+
+  return null;
+});
+
+const hasTimeOrDuration = computed(() => Boolean(timeLabel.value || travelDuration.value));
+
 const hasMeta = computed(() =>
-  Boolean(props.creatorLabel || travelDuration.value || weatherSummary.value)
+  Boolean(props.creatorLabel || hasTimeOrDuration.value || weatherSummary.value)
 );
 
 const weatherLabel = computed(() =>
@@ -104,10 +127,26 @@ const weatherLabel = computed(() =>
         </div>
 
         <div v-if="hasMeta" class="tour-detail-meta-row">
-          <div v-if="creatorLabel || travelDuration" class="tour-detail-meta">
+          <div v-if="creatorLabel || hasTimeOrDuration" class="tour-detail-meta">
             <span v-if="creatorLabel" class="tour-detail-author">Von {{ creatorLabel }}</span>
             <span
-              v-if="creatorLabel && travelDuration"
+              v-if="creatorLabel && hasTimeOrDuration"
+              class="tour-detail-meta-sep"
+              aria-hidden="true"
+            >
+              ·
+            </span>
+            <span v-if="timeLabel" class="tour-detail-time">
+              <AppIcon
+                :icon="FORM_FIELD_ICONS.time"
+                :size="13"
+                group="formFields"
+                aria-hidden="true"
+              />
+              <span class="tour-detail-meta-text">{{ timeLabel }}</span>
+            </span>
+            <span
+              v-if="timeLabel && travelDuration"
               class="tour-detail-meta-sep"
               aria-hidden="true"
             >
@@ -115,6 +154,7 @@ const weatherLabel = computed(() =>
             </span>
             <span v-if="travelDuration" class="tour-detail-duration">
               <AppIcon
+                v-if="!timeLabel"
                 :icon="FORM_FIELD_ICONS.time"
                 :size="13"
                 group="formFields"
@@ -302,6 +342,7 @@ const weatherLabel = computed(() =>
   flex-shrink: 0;
 }
 
+.tour-detail-time,
 .tour-detail-duration {
   display: inline-flex;
   align-items: safe center;
