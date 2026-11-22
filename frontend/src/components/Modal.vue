@@ -433,7 +433,9 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
           </div>
           <div class="modal-body-wrap">
             <div class="modal-body" ref="modalBodyRef">
-              <slot :close="close" />
+              <div class="modal-body-content">
+                <slot :close="close" />
+              </div>
             </div>
             <div
               ref="topFadeRef"
@@ -540,10 +542,10 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-lg-squircle);
   corner-shape: squircle;
-  /* Unten weniger Modal-Padding, dafür mehr Bottom-Padding in .modal-body (16px statt 6px),
-     damit Button-Schatten (--shadow-control / --shadow-control-hover) und Fokus-Ringe am Ende
-     des Scroll-Containers nicht vom overflow:hidden abgeschnitten werden. */
-  padding: var(--space-xl) var(--space-xl) var(--space-sm);
+  /* Ausreichend Außen-Padding unten (20px Desktop, 12px Mobile), damit der Scrollbereich
+     klar innerhalb der abgerundeten Squircle-Ecken von .modal bleibt; die verbleibenden 12px/16px
+     Abstand unter den Buttons liegen innerhalb von .modal-body für unbeschnittene Schatten. */
+  padding: var(--space-xl) var(--space-xl) var(--space-3-5);
   max-width: 480px;
   width: 100%;
   max-height: min(90vh, 100%);
@@ -568,7 +570,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   }
 
   .modal {
-    padding: var(--space-lg) var(--space-lg) var(--space-xs);
+    padding: var(--space-lg) var(--space-lg) var(--space-md);
   }
 }
 
@@ -610,16 +612,22 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   flex: 1;
   min-width: 0;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
+  display: block;
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
-  /* padding (6px oben/seitlich, 16px unten) reserviert Platz für den Fokus-Rahmen (outline-offset 2px +
-     outline-Breite 3px = 5px, siehe input:focus-visible in style.css) sowie unten zusätzlich für
-     Button-Schatten (--shadow-control / --shadow-control-hover), sonst schneidet overflow-y:auto
-     bzw. .modal-body-wrap (overflow:hidden) diese ab. */
+  /* 6px oben/seitlich für Fokus-Rahmen (5px); 16px unten zusätzlich für Button-Schatten
+     (--shadow-control: 7px, --shadow-control-hover: 11px) und Fokus-Rahmen am Ende des Inhalts.
+     display: block auf dem Scroll-Container stellt sicher, dass padding-bottom bei Überlauf
+     nicht von CSS-Flexbox ignoriert wird und Teil von scrollHeight bleibt. */
   padding: var(--space-1-5) var(--space-1-5) var(--space-lg);
+}
+
+.modal-body-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100%;
 }
 
 /* Sanfte Fade-Out-Verläufe in die Hintergrundfarbe (--color-surface) am oberen und unteren Rand,
@@ -656,15 +664,14 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 
 /* Slot-Inhalt gehört der aufrufenden View. Formulare füllen die verfügbare Höhe; zentrale
    Notiz-/Inhalts-Textfelder (z. B. RichTextEditor / textarea) wachsen mit. */
-.modal-body :slotted(form) {
+.modal-body-content :slotted(form) {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: 1 0 auto;
   min-width: 0;
-  min-height: 0;
 }
 
-.modal-body :slotted(textarea) {
+.modal-body-content :slotted(textarea) {
   flex: 1;
   min-height: 120px;
 }
@@ -672,9 +679,9 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
 /* Aktions-Leiste ("Speichern", "Löschen" etc.) am unteren Rand scrollbarer Dialog-Formulare:
    Sitzt im normalen Inhaltsfluss am Ende des Formulars und scrollt mit dem Inhalt mit,
    sodass bei längeren Formularen die volle Dialoghöhe für Eingaben nutzbar bleibt (#550). */
-.modal-body :slotted(form) .actions-row,
-.modal-body :slotted(*) .actions-row,
-.modal-body :slotted(.actions-row) {
+.modal-body-content :slotted(form) .actions-row,
+.modal-body-content :slotted(*) .actions-row,
+.modal-body-content :slotted(.actions-row) {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -686,32 +693,32 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   @include divider-engraved('top');
 }
 
-.modal-body :slotted(form) .actions-row .spacer,
-.modal-body :slotted(*) .actions-row .spacer,
-.modal-body :slotted(.actions-row) .spacer {
+.modal-body-content :slotted(form) .actions-row .spacer,
+.modal-body-content :slotted(*) .actions-row .spacer,
+.modal-body-content :slotted(.actions-row) .spacer {
   flex: 1;
 }
 
 @include container-down('modal', 'mobile-sm') {
-  .modal-body :slotted(form) .actions-row,
-  .modal-body :slotted(*) .actions-row,
-  .modal-body :slotted(.actions-row) {
+  .modal-body-content :slotted(form) .actions-row,
+  .modal-body-content :slotted(*) .actions-row,
+  .modal-body-content :slotted(.actions-row) {
     flex-direction: column-reverse !important;
     align-items: stretch !important;
   }
 
-  .modal-body :slotted(form) .actions-row .spacer,
-  .modal-body :slotted(*) .actions-row .spacer,
-  .modal-body :slotted(.actions-row) .spacer {
+  .modal-body-content :slotted(form) .actions-row .spacer,
+  .modal-body-content :slotted(*) .actions-row .spacer,
+  .modal-body-content :slotted(.actions-row) .spacer {
     display: none !important;
   }
 
-  .modal-body :slotted(form) .actions-row > :not(.spacer),
-  .modal-body :slotted(*) .actions-row > :not(.spacer),
-  .modal-body :slotted(.actions-row) > :not(.spacer),
-  .modal-body :slotted(form) .actions-row button,
-  .modal-body :slotted(*) .actions-row button,
-  .modal-body :slotted(.actions-row) button {
+  .modal-body-content :slotted(form) .actions-row > :not(.spacer),
+  .modal-body-content :slotted(*) .actions-row > :not(.spacer),
+  .modal-body-content :slotted(.actions-row) > :not(.spacer),
+  .modal-body-content :slotted(form) .actions-row button,
+  .modal-body-content :slotted(*) .actions-row button,
+  .modal-body-content :slotted(.actions-row) button {
     width: 100% !important;
     flex: initial !important;
     min-width: 0;
