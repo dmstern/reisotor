@@ -56,23 +56,23 @@
 
     &--modified,
     &.is-modified {
-      border-color: var(--color-accent);
+      border-color: var(--color-success);
       box-shadow:
-        0 0 0 1px var(--color-accent),
+        0 0 0 1px var(--color-success),
         var(--shadow-control-inset);
 
       &:hover:not(:disabled):not(:focus-within):not(.is-focused) {
-        border-color: var(--color-accent);
+        border-color: var(--color-success);
         box-shadow:
-          0 0 0 1px var(--color-accent),
+          0 0 0 1px var(--color-success),
           var(--shadow-control-inset-hover);
       }
 
       &:focus-within,
       &.is-focused {
         border-color: var(--input-border-color) !important;
-        outline: var(--focus-ring-width, 3px) solid var(--color-accent);
-        outline-color: var(--color-accent);
+        outline: var(--focus-ring-width, 3px) solid var(--color-success);
+        outline-color: var(--color-success);
         box-shadow:
           var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
       }
@@ -111,15 +111,15 @@
 
     &--modified,
     &.is-modified {
-      border-color: var(--color-accent);
+      border-color: var(--color-success);
       box-shadow:
-        0 0 0 1px var(--color-accent),
+        0 0 0 1px var(--color-success),
         var(--shadow-control-inset);
 
       &:hover:not(:disabled):not(:focus):not(:focus-visible) {
-        border-color: var(--color-accent);
+        border-color: var(--color-success);
         box-shadow:
-          0 0 0 1px var(--color-accent),
+          0 0 0 1px var(--color-success),
           var(--shadow-control-inset-hover);
       }
 
@@ -127,8 +127,8 @@
       &:focus-visible,
       &:active:not(:disabled) {
         border-color: var(--input-border-color) !important;
-        outline: var(--focus-ring-width, 3px) solid var(--color-accent);
-        outline-color: var(--color-accent);
+        outline: var(--focus-ring-width, 3px) solid var(--color-success);
+        outline-color: var(--color-success);
         box-shadow:
           var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
       }
@@ -322,14 +322,14 @@
 
   &--modified,
   &.is-modified {
-    border-color: var(--color-accent);
-    box-shadow: 0 0 0 1px var(--color-accent);
+    border-color: var(--color-success);
+    box-shadow: 0 0 0 1px var(--color-success);
 
     @include can-hover {
       &:hover:not(:disabled):not(:focus):not(:focus-visible) {
-        border-color: var(--color-accent);
+        border-color: var(--color-success);
         box-shadow:
-          0 0 0 1px var(--color-accent),
+          0 0 0 1px var(--color-success),
           var(--shadow-control-hover);
         --control-grad-top: var(--gradient-control-top);
         --control-grad-bottom: var(--gradient-control-bottom);
@@ -340,8 +340,8 @@
     &:focus-visible,
     #{$active-selector} {
       border-color: var(--input-border-color) !important;
-      outline: var(--focus-ring-width, 3px) solid var(--color-accent);
-      outline-color: var(--color-accent);
+      outline: var(--focus-ring-width, 3px) solid var(--color-success);
+      outline-color: var(--color-success);
       box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
     }
   }
