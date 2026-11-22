@@ -39,6 +39,14 @@ describe('TripsView', () => {
     lat: 41.9,
     lng: 12.5,
     owner_restricted: false,
+    members: [{ id: 1, username: 'tester', avatar: '🧪' }],
+    stats: {
+      spots: 3,
+      tours: 1,
+      diary: 2,
+      packing_packed: 5,
+      packing_total: 10,
+    },
   };
 
   function mountComponent(initialUser?: Partial<User>, trips: Trip[] = []) {
@@ -113,6 +121,29 @@ describe('TripsView', () => {
     button?.click();
 
     expect(isOpen.value).toBe(false);
+
+    cleanUp();
+  });
+
+  it('renders trip cards in a grid without the separate members dialog button and uses ghost edit button', async () => {
+    const { container, cleanUp } = mountComponent(undefined, [mockTrip]);
+    await nextTick();
+
+    expect(container.querySelector('.trip-grid')).not.toBeNull();
+    const card = container.querySelector('.trip-card');
+    expect(card).not.toBeNull();
+    expect(card?.textContent).toContain('Sommer 2026');
+    expect(card?.textContent).toContain('Italien');
+    expect(card?.textContent).toContain('3 Spots');
+    expect(card?.textContent).toContain('1 Tour');
+    expect(card?.textContent).toContain('2 Einträge');
+    expect(card?.textContent).toContain('5/10 gepackt');
+
+    expect(container.querySelector('button[aria-label="Mitglieder verwalten"]')).toBeNull();
+
+    const editBtn = container.querySelector<HTMLButtonElement>('button[aria-label="Bearbeiten"]');
+    expect(editBtn).not.toBeNull();
+    expect(editBtn?.classList.contains('btn--ghost')).toBe(true);
 
     cleanUp();
   });

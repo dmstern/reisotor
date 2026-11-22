@@ -1,33 +1,23 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTripStore } from '../stores/trip';
 import { useAuthStore } from '../stores/auth';
 import { useTripEditor } from '../composables/useTripEditor';
-import type { Trip } from '../api/types';
 import Modal from '../components/Modal.vue';
 import TripForm from '../components/TripForm.vue';
-import EditButton from '../components/EditButton.vue';
-import TripMembersDialog from '../components/TripMembersDialog.vue';
+import TripCard from '../components/TripCard.vue';
 import AppIcon from '../components/AppIcon.vue';
 import Button from '../components/primitives/Button.vue';
 import Card from '../components/primitives/Card.vue';
-import IconButton from '../components/primitives/IconButton.vue';
 import PremiumBadge from '../components/PremiumBadge.vue';
 import { useAccountTierModal } from '../composables/useAccountTierModal';
-import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { ACTION_ICONS } from '../utils/actionIcons';
+
+const CARD_STAGGER_DELAY_MS = 60;
 
 const router = useRouter();
 const tripStore = useTripStore();
 const auth = useAuthStore();
-const showMembers = ref(false);
-const membersTripId = ref<number | null>(null);
-const membersTrip = computed(() =>
-  membersTripId.value != null
-    ? (tripStore.trips.find((trip) => trip.id === membersTripId.value) ?? null)
-    : null
-);
 const {
   showForm,
   editingTrip,
@@ -57,11 +47,6 @@ function selectTrip(id: number) {
   tripStore.selectTrip(id);
   router.push(`/trip/${id}`);
 }
-
-function openMembers(trip: Trip) {
-  membersTripId.value = trip.id;
-  showMembers.value = true;
-}
 </script>
 
 <template>
@@ -78,27 +63,17 @@ function openMembers(trip: Trip) {
       </Button>
     </div>
 
-    <div v-if="tripStore.trips.length > 0" class="trip-list">
-      <Card
+    <div v-if="tripStore.trips.length > 0" class="trip-grid">
+      <TripCard
         v-for="(trip, index) in tripStore.trips"
         :key="trip.id"
-        class="trip-card animate-cascade"
-        :style="{ '--stagger-delay': `${index * 60}ms` }"
-      >
-        <button type="button" class="trip-select" @click="selectTrip(trip.id)">
-          {{ trip.name }}
-        </button>
-        <div class="row-actions">
-          <IconButton
-            size="md"
-            :icon="FORM_FIELD_ICONS.visibility"
-            title="Mitglieder verwalten"
-            aria-label="Mitglieder verwalten"
-            @click="openMembers(trip)"
-          />
-          <EditButton @click="openEdit(trip)" />
-        </div>
-      </Card>
+        :trip="trip"
+        :active="trip.id === tripStore.currentTripId"
+        class="animate-cascade"
+        :style="{ '--stagger-delay': `${index * CARD_STAGGER_DELAY_MS}ms` }"
+        @select="selectTrip"
+        @edit="openEdit"
+      />
     </div>
 
     <Card v-else class="empty-state">
@@ -106,9 +81,8 @@ function openMembers(trip: Trip) {
       <p class="empty">Du hast noch keinen Urlaub geplant.</p>
       <TripForm submit-label="Urlaub anlegen" @submit="onSubmit" />
       <p class="invite-hint">
-        Alternativ kann dich ein bestehendes Mitglied eines Urlaubs über die Mitglieder-Verwaltung
-        (Symbol <AppIcon :icon="FORM_FIELD_ICONS.visibility" :size="14" group="formFields" /> im
-        Urlaubs-Menü) per Nutzername einladen.
+        Alternativ kann dich ein bestehendes Mitglied eines Urlaubs über „Urlaub bearbeiten“ (Tab
+        „Zugriffsberechtigungen“) per Nutzername einladen.
       </p>
     </Card>
 
@@ -145,8 +119,6 @@ function openMembers(trip: Trip) {
         @navigate="closeForm()"
       />
     </Modal>
-
-    <TripMembersDialog v-model="showMembers" :trip="membersTrip" />
   </div>
 </template>
 
@@ -177,70 +149,11 @@ function openMembers(trip: Trip) {
   }
 }
 
-.restricted-hint {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  margin: 0;
-}
-
-.trip-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.trip-card {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.trip-card:hover {
-  border-color: var(--color-border-strong);
-}
-
-.trip-select {
-  flex: 1;
-  min-width: 0;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  text-align: left;
-  background: none;
-  border: none;
-  padding: var(--space-1-5);
-  margin: calc(-1 * var(--space-1-5));
-  border-radius: var(--radius-xs-squircle);
-  corner-shape: squircle;
-  font-size: var(--font-size-md);
-  font-weight: 600;
-  color: var(--color-text);
-  cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  transition: color 0.15s ease;
-}
-
-.trip-select:hover {
-  color: var(--color-primary);
-}
-
-.trip-select:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo);
-  border-radius: var(--radius-xs-squircle);
-}
-
-.row-actions {
-  display: flex;
-  gap: var(--space-1);
-  flex-shrink: 0;
+.trip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: var(--space-lg);
+  align-items: stretch;
 }
 
 .empty-state {

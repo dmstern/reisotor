@@ -5,11 +5,13 @@ import { buildTestApp } from '../helpers/buildTestApp.js';
 
 describe('trips routes', () => {
   let app: FastifyInstance;
+  let testDb: Awaited<ReturnType<typeof buildTestApp>>['db'];
   let cookie: string;
 
   beforeAll(async () => {
     const built = await buildTestApp();
     app = built.app;
+    testDb = built.db;
     built.db
       .prepare('INSERT INTO users (username, password_hash, avatar) VALUES (?, ?, ?)')
       .run('testuser', bcrypt.hashSync('correct-horse', 10), '🧪');
@@ -412,6 +414,130 @@ describe('trips routes', () => {
       });
       expect(secondRegionRes.statusCode).toBe(200);
       expect(secondRegionRes.json().countryName).toBe('Norwegen');
+    });
+  });
+
+  describe('enriched trip members & stats (Issue #858)', () => {
+    it('returns members and aggregated stats excluding soft-deleted records and private drafts', async () => {
+      const partnerResult = testDb
+        .prepare('INSERT INTO users (username, password_hash, avatar) VALUES (?, ?, ?)')
+        .run('partner', bcrypt.hashSync('correct-horse', 10), '🧭');
+      const partnerId = Number(partnerResult.lastInsertRowid);
+
+      const created = await app.inject({
+        method: 'POST',
+        url: '/api/trips',
+        headers: { cookie },
+        payload: {
+          name: 'Statistik-Testreise',
+          destination: 'Sizilien',
+          start_date: '2026-09-01',
+          end_date: '2026-09-10',
+          create_default_entries: false,
+        },
+      });
+      expect(created.statusCode).toBe(201);
+      const tripId = created.json().id as number;
+
+      await app.inject({
+        method: 'POST',
+        url: `/api/trips/${tripId}/members`,
+        headers: { cookie },
+        payload: { user_id: partnerId },
+      });
+
+      const spotRes = await app.inject({
+        method: 'POST',
+        url: '/api/spots',
+        headers: { cookie },
+        payload: { trip_id: tripId, title: 'Ätna', category: 'Aussichtspunkt' },
+      });
+      expect(spotRes.statusCode).toBe(201);
+
+      const deletedSpotRes = await app.inject({
+        method: 'POST',
+        url: '/api/spots',
+        headers: { cookie },
+        payload: { trip_id: tripId, title: 'Gelöschter Spot', category: 'Sonstiges' },
+      });
+      await app.inject({
+        method: 'DELETE',
+        url: `/api/spots/${deletedSpotRes.json().id}`,
+        headers: { cookie },
+      });
+
+      const tourRes = await app.inject({
+        method: 'POST',
+        url: '/api/ideas',
+        headers: { cookie },
+        payload: { trip_id: tripId, title: 'Küstentour' },
+      });
+      expect(tourRes.statusCode).toBe(201);
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/diary',
+        headers: { cookie },
+        payload: { trip_id: tripId, title: 'Tag 1', content: 'Angekommen', date: '2026-09-01' },
+      });
+
+      testDb
+        .prepare(
+          'INSERT INTO diary_entries (trip_id, author_id, title, content, date, created_at, is_draft) VALUES (?, ?, ?, ?, ?, ?, 1)'
+        )
+        .run(
+          tripId,
+          partnerId,
+          'Fremder Entwurf',
+          'Geheim',
+          '2026-09-02',
+          new Date().toISOString()
+        );
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/packing',
+        headers: { cookie },
+        payload: {
+          trip_id: tripId,
+          category: 'Kleidung',
+          label: 'T-Shirt',
+          quantity: 3,
+          packed_count: 2,
+        },
+      });
+      await app.inject({
+        method: 'POST',
+        url: '/api/packing',
+        headers: { cookie },
+        payload: {
+          trip_id: tripId,
+          category: 'Technik',
+          label: 'Kamera',
+          quantity: 1,
+          packed_count: 1,
+        },
+      });
+
+      const listRes = await app.inject({
+        method: 'GET',
+        url: '/api/trips',
+        headers: { cookie },
+      });
+      expect(listRes.statusCode).toBe(200);
+      const found = listRes.json().find((entry: { id: number }) => entry.id === tripId);
+      expect(found).toBeDefined();
+      expect(found.members).toEqual([
+        { id: 1, username: 'testuser', avatar: '🧪' },
+        { id: partnerId, username: 'partner', avatar: '🧭' },
+      ]);
+      expect(found.stats).toEqual({
+        spots: 1,
+        tours: 1,
+        diary: 1,
+        packing_packed: 3,
+        packing_total: 4,
+      });
     });
   });
 });
