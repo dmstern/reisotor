@@ -1522,7 +1522,7 @@ onUnmounted(() => {
                 </Badge>
               </button>
             </template>
-            <template v-else-if="isTourDetailOpen">
+            <template v-else-if="isSheetOverlayMode && isTourDetailOpen">
               <div
                 class="sheet-handle"
                 role="separator"
