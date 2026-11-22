@@ -552,8 +552,8 @@ label,
 }
 
 .location-box.is-modified {
-  border-color: var(--color-accent) !important;
-  box-shadow: 0 0 0 1px var(--color-accent);
+  border-color: var(--color-success) !important;
+  box-shadow: 0 0 0 1px var(--color-success);
 }
 
 .location-box .field-label {

@@ -503,11 +503,11 @@ defineExpose({
 }
 
 .polaroid-card.is-modified {
-  border-color: var(--color-accent);
+  border-color: var(--color-success);
   box-shadow:
     inset 0 1px 0 var(--shadow-control-highlight),
     var(--shadow-md),
-    0 0 0 1px var(--color-accent);
+    0 0 0 1px var(--color-success);
 }
 
 .polaroid-header-actions {
@@ -522,8 +522,8 @@ defineExpose({
 
 @include can-hover {
   .polaroid-reset-btn.btn--overlay:hover:not(:disabled):not(.is-disabled) {
-    color: var(--color-accent);
-    border-color: var(--color-accent);
+    color: var(--color-success);
+    border-color: var(--color-success);
   }
 }
 

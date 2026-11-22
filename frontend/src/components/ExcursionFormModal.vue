@@ -494,11 +494,11 @@ defineExpose({
 }
 
 .tour-done-field.is-modified {
-  border-color: var(--color-accent);
+  border-color: var(--color-success);
 }
 
 .tour-done-field.is-modified .tour-done-label {
-  color: var(--color-accent-dark, var(--color-accent));
+  color: var(--color-success-dark, var(--color-success));
 }
 
 .modified-dot {
@@ -506,7 +506,7 @@ defineExpose({
   width: 6px;
   height: 6px;
   border-radius: var(--radius-pill);
-  background: var(--color-accent-dark, var(--color-accent));
+  background: var(--color-success-dark, var(--color-success));
   flex-shrink: 0;
 }
 

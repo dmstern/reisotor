@@ -803,7 +803,7 @@ function handleOpenScheduledDate(date: string) {
 }
 
 .spot-region-field.is-modified .spot-region-label {
-  color: var(--color-accent-dark, var(--color-accent));
+  color: var(--color-success-dark, var(--color-success));
 }
 
 .spot-region-override-row {
@@ -1022,8 +1022,8 @@ button.assign-chip-action:focus-visible {
   display: inline-block;
   width: 6px;
   height: 6px;
-  border-radius: var(--radius-full);
-  background: var(--color-accent-dark, var(--color-accent));
+  border-radius: var(--radius-pill);
+  background: var(--color-success-dark, var(--color-success));
 }
 
 @media (prefers-reduced-motion: reduce) {

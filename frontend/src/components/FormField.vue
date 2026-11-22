@@ -127,15 +127,15 @@ const id = computed(() => props.id || autoId);
 }
 
 .form-field.is-modified .form-field-label {
-  color: var(--color-accent-dark, var(--color-accent));
+  color: var(--color-success-dark, var(--color-success));
 }
 
 .modified-dot {
   display: inline-block;
   width: 6px;
   height: 6px;
-  border-radius: 50%;
-  background-color: var(--color-accent);
+  border-radius: var(--radius-pill);
+  background-color: var(--color-success);
   margin-left: var(--space-1);
   flex-shrink: 0;
 }
@@ -147,7 +147,7 @@ const id = computed(() => props.id || autoId);
   :deep(input:not([type='checkbox']):not([type='radio']):not(:focus):not(:focus-visible)),
 .form-field.is-modified :deep(select:not(:focus):not(:focus-visible)),
 .form-field.is-modified :deep(textarea:not(:focus):not(:focus-visible)) {
-  border-color: var(--color-accent) !important;
-  box-shadow: 0 0 0 1px var(--color-accent);
+  border-color: var(--color-success) !important;
+  box-shadow: 0 0 0 1px var(--color-success);
 }
 </style>

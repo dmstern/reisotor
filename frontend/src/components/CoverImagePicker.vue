@@ -711,8 +711,8 @@ function handleModalClose(visible: boolean) {
 }
 
 .form-image-banner.is-modified {
-  border-color: var(--color-accent) !important;
-  box-shadow: 0 0 0 1px var(--color-accent);
+  border-color: var(--color-success) !important;
+  box-shadow: 0 0 0 1px var(--color-success);
 }
 
 .form-image-banner--polaroid {
@@ -830,7 +830,7 @@ function handleModalClose(visible: boolean) {
 }
 
 .banner-reset-btn {
-  color: var(--color-accent);
+  color: var(--color-success);
 }
 
 .image-submodal {
