@@ -35,7 +35,8 @@ describe('AttachmentPreviewModal', () => {
     await nextTick();
     const html = document.body.innerHTML;
     expect(html).toContain('Herunterladen');
-    expect(html).toContain('preview-actions');
+    expect(html).toContain('actions-row');
+    expect(html).not.toContain('preview-meta');
     expect(html).not.toContain('Löschen');
     cleanUp();
   });
@@ -51,7 +52,8 @@ describe('AttachmentPreviewModal', () => {
     expect(html).toContain('Löschen');
     expect(html).toContain('btn--danger');
     expect(html).toContain('Herunterladen');
-    expect(html).toContain('preview-actions-right');
+    expect(html).toContain('actions-row');
+    expect(html).toContain('spacer');
     cleanUp();
   });
 
