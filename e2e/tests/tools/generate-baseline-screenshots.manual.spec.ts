@@ -795,16 +795,9 @@ const DIALOGS: DialogSpec[] = [
     slug: 'dialog-tour',
     path: '/excursions?group=tours#excursion-3',
     open: async (page) => {
-      const card = page.locator('.tour-group-card').first();
-      await card.waitFor({ state: 'visible', timeout: 15000 });
-      await card.scrollIntoViewIfNeeded();
-      const editBtn = card.locator('.tour-edit-btn');
-
-      if (!(await editBtn.isVisible().catch(() => false))) {
-        await card.click();
-      }
-
-      await editBtn.waitFor({ state: 'visible', timeout: 5000 });
+      const editBtn = page.locator('.tour-edit-btn').first();
+      await editBtn.waitFor({ state: 'visible', timeout: 15000 });
+      await editBtn.scrollIntoViewIfNeeded();
       await editBtn.click();
     },
     waitSelector: '.modal:has-text("Tour bearbeiten")',
@@ -813,18 +806,8 @@ const DIALOGS: DialogSpec[] = [
     slug: 'dialog-leg',
     path: '/excursions?group=tours#excursion-3',
     open: async (page) => {
-      const card = page
-        .locator('.tour-group-card')
-        .filter({ hasText: 'Panoramatour Alfama & Belém' })
-        .first();
-      await card.waitFor({ state: 'visible', timeout: 15000 });
       const legPill = page.locator('.tour-leg-pill[aria-label*="Hotel Alfama"]').first();
-
-      if (!(await legPill.isVisible().catch(() => false))) {
-        await card.click();
-      }
-
-      await legPill.waitFor({ state: 'visible', timeout: 10000 });
+      await legPill.waitFor({ state: 'visible', timeout: 15000 });
       await legPill.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center' }));
       await page.waitForTimeout(200);
       await legPill.click({ force: true });
