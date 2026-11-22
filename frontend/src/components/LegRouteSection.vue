@@ -223,7 +223,12 @@ const routeHeadingIconDef: IconDef = {
   </CollapsibleFieldset>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+.route-calc-fieldset--has-route {
+  --route-legend-overhang: 14px;
+  --route-legend-clearance: 20px;
+}
+
 .route-calc-empty {
   display: flex;
   flex-direction: column;
@@ -262,21 +267,23 @@ const routeHeadingIconDef: IconDef = {
   justify-content: center;
 }
 
-.route-calc-fieldset--has-route {
+.route-calc-fieldset--has-route,
+.route-calc-fieldset--has-route.is-closed {
   position: relative;
   padding: 0;
   border-color: transparent;
   background: transparent;
-  margin: 14px 0 0;
+  /* Konstanter Abstand und Mindesthöhe: Die Legend hängt in offenem UND geschlossenem Zustand
+     identisch (absolut) über dem Kartenrand. Ein Moduswechsel der <legend> beim Zuklappen führte
+     in WebKit zu verlorenem Label und verschobenem Button (#868). */
+  margin: var(--route-legend-overhang) 0 0;
+  min-height: var(--route-legend-clearance);
+  transition: none;
 }
 
-.route-calc-fieldset--has-route.is-closed {
-  margin: 0;
-}
-
-.route-calc-fieldset--has-route:not(.is-closed) :deep(legend) {
+.route-calc-fieldset--has-route :deep(legend) {
   position: absolute;
-  top: -14px;
+  top: calc(-1 * var(--route-legend-overhang));
   left: 12px;
   z-index: var(--z-dropdown, 500);
   padding: 0;
@@ -363,16 +370,25 @@ const routeHeadingIconDef: IconDef = {
   z-index: var(--z-card-elevated, 5);
 }
 
-@container route-map (max-width: 400px) {
+/* Mobile: Card gestapelt über der (gesperrten) Karte statt schwebend – wie im Spot-Dialog. */
+@include container-down('route-map', 'tablet-sm') {
+  .route-calc-active.route-calc-map-wrap {
+    display: flex;
+    flex-direction: column;
+  }
+
   .route-floating-card {
-    position: absolute;
-    top: 22px;
-    left: 12px;
-    right: 12px;
-    width: auto;
+    position: static;
+    width: 100%;
     max-width: none;
-    max-height: calc(100% - 160px);
-    overflow-y: auto;
+    max-height: none;
+    overflow: visible;
+    border: none;
+    border-bottom: 1px solid var(--color-border);
+    border-radius: 0;
+    box-shadow: none;
+    /* Platz für die über den Rand ragende Legend des Collapsibles */
+    padding-top: calc(var(--space-2) + 18px);
   }
 }
 
@@ -487,12 +503,6 @@ const routeHeadingIconDef: IconDef = {
     width: 100%;
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .route-calc-body {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
   }
 
   .route-mode-toggle :deep(.segmented-option) {
