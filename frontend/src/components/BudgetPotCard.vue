@@ -446,7 +446,7 @@ function onTotalSectionClick(e: MouseEvent) {
 }
 
 .btn-spacer {
-  width: calc(var(--control-height-sm, 36px) - var(--space-md) - var(--border-width, 1px));
+  width: var(--control-height-sm, 36px);
   height: var(--control-height-sm, 36px);
   flex-shrink: 0;
 }
@@ -456,26 +456,8 @@ function onTotalSectionClick(e: MouseEvent) {
   min-width: 0;
 }
 
-.total-section.has-categories {
-  background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface));
-  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  padding: var(--space-sm) var(--space-md);
-}
-
 .total-section.is-collapsed {
   cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease;
-}
-
-@include can-hover {
-  .total-section.is-collapsed:hover {
-    background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
-    border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
-  }
 }
 
 .total-section.is-collapsed .category-edit {
