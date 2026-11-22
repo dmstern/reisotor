@@ -19,7 +19,7 @@ defineProps<{
   </section>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .cta-band {
   position: relative;
   overflow: hidden;
@@ -43,15 +43,29 @@ defineProps<{
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.2) 0%, transparent 60%);
+  background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.22) 0%, transparent 60%);
+  border-radius: inherit;
+  corner-shape: inherit;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+  pointer-events: none;
   z-index: 2;
 }
 :root[data-theme='dark'] .cta-band::before {
-  background: linear-gradient(135deg, #9336af, #35003f);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary) 72%, #1a0522),
+    color-mix(in srgb, var(--color-like) 35%, #120018)
+  );
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .cta-band::before {
-    background: linear-gradient(135deg, #9336af, #35003f);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-primary) 72%, #1a0522),
+      color-mix(in srgb, var(--color-like) 35%, #120018)
+    );
   }
 }
 
@@ -82,23 +96,51 @@ defineProps<{
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  background: white;
-  color: var(--color-primary);
+  background-color: #ffffff;
+  background-image: linear-gradient(180deg, #ffffff 0%, #f4eff8 100%);
+  color: var(--color-primary-dark);
   padding: var(--space-3) var(--space-5);
-  min-height: var(--input-default-height, 44px);
+  min-height: var(--control-height-lg);
   box-sizing: border-box;
   border-radius: var(--radius-pill);
   font-weight: 700;
   font-size: var(--font-size-lg);
   text-decoration: none;
-  box-shadow: var(--shadow-md);
-  transition:
-    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.2s ease;
+  box-shadow:
+    inset 0 1px 0 #ffffff,
+    inset 0 -1.5px 0 rgba(123, 55, 147, 0.14),
+    var(--shadow-md);
+  transition: var(--transition-control);
+
+  @include can-hover {
+    &:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow:
+        inset 0 1px 0 #ffffff,
+        inset 0 -1.5px 0 rgba(123, 55, 147, 0.18),
+        var(--shadow-lg);
+    }
+  }
+
+  &:active {
+    transform: translateY(1px) scale(0.985);
+    box-shadow: var(--shadow-control-active);
+  }
+
+  &:focus-visible {
+    outline: var(--focus-ring-width) solid #ffffff;
+    outline-offset: var(--focus-ring-offset);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.35);
+  }
 }
-.cta-btn:hover {
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: var(--shadow-lg);
+
+:root[data-theme='dark'] .cta-btn {
+  color: color-mix(in srgb, var(--color-primary-dark) 45%, #2b1136);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .cta-btn {
+    color: color-mix(in srgb, var(--color-primary-dark) 45%, #2b1136);
+  }
 }
 
 @container landing (max-width: 480px) {

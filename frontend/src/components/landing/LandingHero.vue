@@ -35,7 +35,7 @@ const { robotPhase, onPackingDone } = useLandingRobot();
   </header>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .hero {
   position: relative;
   width: 100%;
@@ -70,19 +70,19 @@ const { robotPhase, onPackingDone } = useLandingRobot();
   margin: 0;
   letter-spacing: -0.03em;
   background: linear-gradient(135deg, var(--color-primary), var(--color-like));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
 }
 :root[data-theme='dark'] .title {
-  background: linear-gradient(135deg, #f0abfc, #e879f9);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  background: linear-gradient(135deg, var(--color-like), var(--color-like-border));
+  background-clip: text;
+  color: transparent;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .title {
-    background: linear-gradient(135deg, #f0abfc, #e879f9);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    background: linear-gradient(135deg, var(--color-like), var(--color-like-border));
+    background-clip: text;
+    color: transparent;
   }
 }
 
@@ -111,36 +111,60 @@ const { robotPhase, onPackingDone } = useLandingRobot();
   justify-content: center;
   gap: var(--space-2);
   padding: var(--space-md) var(--space-4);
-  min-height: var(--input-default-height, 44px);
+  min-height: var(--control-height-md);
   box-sizing: border-box;
   border-radius: var(--radius-pill);
   font-weight: 600;
   font-size: var(--font-size-md);
   text-decoration: none;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: var(--transition-control);
+
+  &:focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-focus-ring);
+    outline-offset: var(--focus-ring-offset);
+    box-shadow: var(--focus-ring-halo);
+  }
 }
 
 .island-btn.primary {
-  background: var(--color-primary);
-  color: var(--color-primary-contrast, white);
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary) 40%, transparent);
+  background-color: var(--color-primary);
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-origin: border-box;
+  color: var(--color-primary-contrast, #ffffff);
+  border: 1px solid transparent;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 4px 12px color-mix(in srgb, var(--color-primary) 38%, transparent);
+
+  @include can-hover {
+    &:hover {
+      transform: translateY(-1px) scale(1.02);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.35),
+        0 6px 16px color-mix(in srgb, var(--color-primary) 52%, transparent);
+    }
+  }
+
+  &:active {
+    transform: translateY(1px) scale(0.985);
+    box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, 0.25);
+  }
 }
-.island-btn.primary:hover {
-  transform: scale(1.03);
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--color-primary) 60%, transparent);
-}
+
 .island-btn.secondary {
-  background: transparent;
   color: var(--color-text);
-}
-.island-btn.secondary:hover {
-  background: var(--color-hover);
+  @include control-glass-interactive('embedded');
 }
 
 .island-divider {
   width: 1px;
   height: var(--space-4);
-  background: var(--color-border-divider);
+  background: var(--color-divider-groove-glass);
+  box-shadow: 1px 0 0 var(--color-divider-highlight-glass);
   margin: 0 var(--space-2);
 }
 

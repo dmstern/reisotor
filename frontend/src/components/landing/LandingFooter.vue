@@ -29,11 +29,11 @@ const emit = defineEmits<{
   </footer>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .landing-footer {
   text-align: center;
   padding: var(--space-5) 0 var(--space-4) 0;
-  border-top: 1px solid var(--color-border-divider);
+  @include divider-engraved('top');
   margin-top: auto;
 }
 
@@ -47,7 +47,7 @@ const emit = defineEmits<{
   padding: 0 var(--space-3);
 }
 
-@media (max-width: 600px) {
+@include media-down('tablet-sm') {
   .hint-links {
     gap: var(--space-1) var(--space-2);
     margin-bottom: var(--space-2);
@@ -58,7 +58,7 @@ const emit = defineEmits<{
   color: var(--color-text-muted);
   text-decoration: none;
   font-weight: 500;
-  min-height: var(--input-default-height, 44px);
+  min-height: var(--control-height-md);
   display: inline-flex;
   align-items: center;
   padding: 0 var(--space-1);

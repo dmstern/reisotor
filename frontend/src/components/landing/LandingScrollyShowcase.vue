@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { IconLock } from '@tabler/icons-vue';
 import {
   getFeatureDistinctFrames,
   getHighlightScreenshot,
@@ -65,7 +66,7 @@ const activeFrameIndex = computed(() => {
             <span class="control-dot dot-expand"></span>
           </div>
           <div class="chrome-address-bar">
-            <span class="address-lock">🔒</span>
+            <IconLock :size="12" class="address-lock" />
             <span class="address-domain">reisotor.app/{{ features[effectiveStepIndex]?.id }}</span>
           </div>
           <div class="chrome-tag">
@@ -136,7 +137,7 @@ const activeFrameIndex = computed(() => {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .scrolly-visual-wrapper {
   position: sticky;
   top: 14vh;
@@ -157,12 +158,25 @@ const activeFrameIndex = computed(() => {
 .device-mockup {
   position: relative;
   z-index: 2;
-  background: var(--color-surface);
+  background-color: var(--color-surface);
+  background-image: var(--gradient-surface-3d);
+  background-origin: border-box;
   border-radius: var(--radius-xl-squircle);
   corner-shape: squircle;
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    border-radius: inherit;
+    corner-shape: inherit;
+    box-shadow: inset 0 1px 0 var(--shadow-control-highlight);
+  }
 }
 
 .mockup-chrome {
@@ -170,8 +184,9 @@ const activeFrameIndex = computed(() => {
   align-items: center;
   justify-content: space-between;
   padding: var(--space-2) var(--space-3);
-  background: var(--color-hover);
-  border-bottom: 1px solid var(--color-border-divider);
+  background-color: var(--color-hover);
+  background-image: var(--gradient-surface-3d);
+  @include divider-engraved('bottom');
 }
 
 .chrome-controls {
@@ -183,6 +198,9 @@ const activeFrameIndex = computed(() => {
   width: var(--radius-sm);
   height: var(--radius-sm);
   border-radius: var(--radius-full);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15);
 }
 
 .dot-close {
@@ -201,12 +219,18 @@ const activeFrameIndex = computed(() => {
   display: flex;
   align-items: center;
   gap: var(--space-1-5);
-  background: var(--color-surface);
+  background: var(--color-input-bg);
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-pill);
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  border: 1px solid var(--color-border-divider);
+  border: 1px solid var(--color-search-field-border);
+  box-shadow: var(--shadow-search-field-inset);
+}
+
+.address-lock {
+  flex-shrink: 0;
+  opacity: 0.75;
 }
 
 .chrome-tag {
@@ -288,11 +312,15 @@ const activeFrameIndex = computed(() => {
   min-width: 140px;
   max-width: 220px;
   aspect-ratio: 390 / 844;
-  background: var(--color-surface);
+  background-color: var(--color-surface);
+  background-image: var(--gradient-surface-3d);
+  background-origin: border-box;
   border-radius: calc(var(--radius-xl-squircle) * 0.8);
   corner-shape: squircle;
   border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-lg);
+  box-shadow:
+    inset 0 1px 0 var(--shadow-control-highlight),
+    var(--shadow-lg);
   overflow: hidden;
   padding: var(--space-1);
 }
