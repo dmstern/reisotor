@@ -118,6 +118,10 @@ updates:
         update-types:
           - 'minor'
           - 'patch'
+        # @playwright/test muss synchron mit dem Playwright-Docker-Image in .github/workflows/ci.yml
+        # aktualisiert werden und darf andere E2E-Updates nicht als Gruppen-PR blockieren.
+        exclude-patterns:
+          - '@playwright/test'
     ignore:
       # Für better-sqlite3 v13 fehlen im Playwright-CI-Container (Ubuntu Jammy / Node 22) vorkompilierte Binaries (prebuild-install),
       # wodurch node-gyp mangels installiertem 'make' abbricht. Ab v14.0.0 prüft Dependabot automatisch erneut.

@@ -256,16 +256,27 @@ test.describe('Icon-Stil: Emoji/Symbole', () => {
     await monochromeBtn.click();
     await expect.poll(async () => (await getIconSettings(page)).navColored).toBe(false);
 
+    const getIconSvgColor = (svg: Element) => {
+      const fill = svg.getAttribute('fill');
+
+      if (fill && fill !== 'none') {
+        return fill;
+      }
+
+      return svg.getAttribute('stroke') ?? svg.getAttribute('color');
+    };
+
     const dashboardIcon = () => page.locator('.navbar .link').first().locator('svg.icon');
     await page.goto('/');
-    await expect(dashboardIcon()).toHaveAttribute('color', 'currentColor');
+    await expect.poll(() => dashboardIcon().evaluate(getIconSvgColor)).toBe('currentColor');
 
     await page.goto('/settings?tab=app');
     await coloredBtn.click();
     await expect.poll(async () => (await getIconSettings(page)).navColored).toBe(true);
 
     await page.goto('/');
-    await expect(dashboardIcon()).not.toHaveAttribute('color', 'currentColor');
+    await expect.poll(() => dashboardIcon().evaluate(getIconSvgColor)).not.toBe('currentColor');
+    await expect.poll(() => dashboardIcon().evaluate(getIconSvgColor)).toBeTruthy();
 
     // Wenn Navigation auf Emoji umgestellt wird, ist der Farb-Toggle deaktiviert
     await page.goto('/settings?tab=app');
