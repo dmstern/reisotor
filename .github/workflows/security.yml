@@ -82,13 +82,13 @@ jobs:
         run: npm run install:all:ci
 
       - name: Run security auto-fix with cooldown
-        run: node scripts/security-check.mjs --fix --cooldown-days="${{ inputs.cooldown_days || '3' }}" --summary-file=security-summary.md
+        run: node scripts/security-check.mjs --fix --cooldown-days="${{ inputs.cooldown_days || '3' }}" --summary-file="$RUNNER_TEMP/security-summary.md"
 
       - name: Publish step summary
         if: always()
         run: |
-          if [ -f security-summary.md ]; then
-            cat security-summary.md >> "$GITHUB_STEP_SUMMARY"
+          if [ -f "$RUNNER_TEMP/security-summary.md" ]; then
+            cat "$RUNNER_TEMP/security-summary.md" >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Verify and create pull request if changes detected
@@ -109,10 +109,10 @@ jobs:
             PR_URL=$(gh pr list --head "$BRANCH" --base main --json url --jq '.[0].url' 2>/dev/null || true)
             if [ -n "$PR_URL" ]; then
               echo "Updating existing PR: $PR_URL"
-              gh pr edit "$PR_URL" --title "fix(security): automatische CVE-Behebung" --body-file security-summary.md
+              gh pr edit "$PR_URL" --title "fix(security): automatische CVE-Behebung" --body-file "$RUNNER_TEMP/security-summary.md"
             else
               echo "Creating new PR..."
-              gh pr create --base main --head "$BRANCH" --title "fix(security): automatische CVE-Behebung" --body-file security-summary.md
+              gh pr create --base main --head "$BRANCH" --title "fix(security): automatische CVE-Behebung" --body-file "$RUNNER_TEMP/security-summary.md"
             fi
           else
             echo "No security fixes needed. Lockfiles are clean."
