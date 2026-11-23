@@ -174,6 +174,10 @@ Aufgrund des hohen Kontext-Volumens bei iterativer Agentenarbeit gelten strikte 
        - **Empfehlung: Dringend neuer Chat empfohlen** (oder `/compact`).
        - Begründung: Das Kontextfenster ist voll; jeder Folge-Turn schickt den riesigen Verlauf mit, was Token-Kosten treibt und die Attention/Präzision des Modells schwächt.
        - _Beispiel:_ `💡 **Tipp zur Token-Ersparnis:** Dieser Chat ist mit ~X Schritten und umfangreichen Logs bereits stark gefüllt. Da alle Zwischenstände in Commit/PR gesichert sind, empfiehlt sich für die weiteren Arbeiten dringend ein **neuer Chat** (oder `/compact`), um Token-Ballast zu vermeiden und die Antworten präzise zu halten.`
+   - **Kopplung mit dem Model-Routing (keine Widersprüche):**
+     - Bei einem **Triage-Stopp** (Agent hält vor dem Code-Lesen für einen Modellwechsel an) entfällt der Kontext-Check komplett, da noch kein Meilenstein abgeschlossen ist.
+     - Bei einem **Phasenwechsel** (z. B. nach freigegebenem Plan bei `T4`) werden Kontext-Check („Im Chat bleiben vs. neuer Chat“) und Modell-Kompass in **einem gemeinsamen Handlungs-Block** zusammengeführt.
+     - Läuft bereits der **Orchestrator (`T3`)**, empfiehlt der Agent am Plan-Ende keinen manuellen Modellwechsel (der Split läuft automatisch).
 2. **Keine unfiltrierten Voll-Testsuiten im Chat:**
    - **NIEMALS** im Agenten-Chat `npm test`, `npm run test:all`, `npm run test:frontend` oder `npm run test:backend` ausführen, wenn nur einzelne Dateien oder Komponenten geändert wurden. Das flutet den Gesprächsverlauf mit hunderten Zeilen unnötigem Reporter-Output.
    - **Immer gezielt testen:** Ausschließlich die betroffene Datei mit `--bail 1` aufrufen: Backend: `npx -y vitest run <backend-pfad> --bail 1`, Frontend: `npm --prefix frontend test -- <frontend-pfad> --bail 1`.
@@ -194,58 +198,58 @@ Aufgrund des hohen Kontext-Volumens bei iterativer Agentenarbeit gelten strikte 
 
 ## Issue-Komplexität & Modell-/Thinking-Mapping
 
-GitHub-Issues werden über ein dreistufiges Ampel-System nach **fachlicher und technischer Komplexität** klassifiziert (`complexity:low`, `complexity:mid`, `complexity:high`). Das Label beschreibt die Eigenschaft der Aufgabe, aus der sich für Mensch und Agent die passende Modell- und Thinking-Stufe je Phase (Planung, Umsetzung, Review) ableitet:
+Alle neuen Aufgaben (mit und ohne GitHub-Issue) werden über ein vierstufiges System (`T1`–`T4`) mit 1:1-Zuordnung zu den GitHub-Labels (`🚦️ complexity:trivial`, `🚦️ complexity:low`, `🚦️ complexity:mid`, `🚦️ complexity:high`) klassifiziert. Daraus leiten sich Modell, Thinking-Level, Wechsel-Strategie und Review-Stufe ab:
 
 ### 1. Einstufung (Triage-Faustregeln)
 
-- 🟢 **`complexity:low`** _(Trivial / Lokal)_: 1–2 Dateien betroffen, klare Ursache/Anforderung, keine Architektur-Entscheidung (z. B. Copy-Änderung, kleiner CSS-/UI-Fix, lokales Refactoring, Dependency-Bump).
-- 🟡 **`complexity:mid`** _(Standard-Feature / Mehrteilig)_: Mehrere Dateien/Schichten (z. B. Backend-Route + Pinia-Store + Vue-View + Tests), Erweiterung bestehender Muster, überschaubare Edge-Cases.
-- 🔴 **`complexity:high`** _(Architektur / Kritisch / Unklar)_: Neues Subsystem, komplexe State-/Concurrency-/Offline-Sync-Logik, DB-Migrationen mit Backfill, Security/Auth-Änderungen, vage Anforderungen oder schwer reproduzierbare Bugs.
+- 🩵 **`T1` · `🚦️ complexity:trivial`** _(Trivial / Einzeiler)_: 1–2 Dateien, Typo, Copy-Änderung, kleiner CSS-/UI-Fix, einfacher Test, Dependency-/Config-Bump.
+- 🟢 **`T2` · `🚦️ complexity:low`** _(Klar & Lokal)_: 2–5 Dateien, bekanntes Muster, lokales Feature/Refactoring, klare Ursache, keine Architektur-Entscheidung.
+- 🟡 **`T3` · `🚦️ complexity:mid`** _(Standard-Feature / Mehrteilig, Default)_: Mehrere Schichten (z. B. Backend-Route + Pinia-Store + Vue-View + Tests), Erweiterung bestehender Muster, überschaubare Edge-Cases.
+- 🔴 **`T4` · `🚦️ complexity:high`** _(Architektur / Kritisch / Tief)_: Neues Subsystem, komplexe State-/Concurrency-/Offline-Sync-Logik, DB-Migrationen mit Backfill, Security/Auth-Änderungen, vage Anforderungen oder schwer reproduzierbare Root-Cause-Bugs.
 
-### 2. Mapping auf Phase, Modell & Thinking-Aufwand
+### 2. Mapping auf Modell, Thinking & Wechsel-Strategie
 
-| Issue-Label                         | 1. Planung (Spec / Design)                   | 2. Umsetzung (Coding)                                     | 3. Review (QA / Bugs)    |
-| :---------------------------------- | :------------------------------------------- | :-------------------------------------------------------- | :----------------------- |
-| 🟢 **`complexity:low`**             | _Optional / Inline_<br>**3.8 Flash** (`low`) | **3.8 Flash** (`low`)                                     | **3.8 Flash** (`medium`) |
-| 🟡 **`complexity:mid`** _(Default)_ | **4 Argon** (`medium`)                       | **3.8 Flash** (`medium`)                                  | **4 Argon** (`medium`)   |
-| 🔴 **`complexity:high`**            | **4 Argon** (`high`)                         | **4 Argon** (`medium`) _oder_<br>**3.8 Flash** (`high`)\* | **4 Argon** (`high`)     |
+| Stufe & Label                                 | Setup (Modell & Thinking)                                                                                    | Wechsel- & Phasen-Modus                                                                                                                                                                                              | Review                     |
+| :-------------------------------------------- | :----------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------- |
+| 🩵 **`T1`** · `🚦️ complexity:trivial`         | **Gemini 4 Hydrogen (`Low`)**                                                                                | **Kein Wechsel.** Direkt planen & umsetzen in einem Rutsch (Wechsel wäre teurer als Nutzen).                                                                                                                         | Inline (`4 Hydrogen Low`)  |
+| 🟢 **`T2`** · `🚦️ complexity:low`             | **Gemini 4 Hydrogen (`Medium`–`High`)**                                                                      | **Kein Wechsel.** Direkt umsetzen; dynamische Eskalation erst bei Blockade (nach 2 Fehlversuchen).                                                                                                                   | `4 Hydrogen (Medium/High)` |
+| 🟡 **`T3`** · `🚦️ complexity:mid` _(Default)_ | **Orchestrator (`Gemini 4 Neon Medium`)**                                                                    | **Automatischer Split im Chat** (Neon plant read-only, schnelles Modell setzt um – kein manuelles Umschalten, kein doppelter Kontext). _(Manueller Fallback: Plan `4 Neon Medium` → Code `4 Hydrogen Medium/High`.)_ | `4 Neon (Medium)`          |
+| 🔴 **`T4`** · `🚦️ complexity:high`            | **Plan:** `Gemini 4 Carbon (Medium/High)`<br>**Code:** `Gemini 4 Neon (Medium)` _oder_ `4 Hydrogen (High)`\* | **Bewusster 2-Phasen-Wechsel** nach freigegebenem Plan, damit Carbon nicht für Fleißarbeit verbrannt wird.                                                                                                           | `4 Carbon (Medium/High)`   |
 
-_\*Hinweis zu `complexity:high` in der Umsetzung:_ Ist der Plan aus Phase 1 bereits bis ins Detail ausformuliert (exakte Dateipfade, Signaturen, Schritt-für-Schritt-Vorgaben), reicht oft **Gemini 3.8 Flash (`high`)**. Müssen während des Codings noch komplexe algorithmische oder architektonische Entscheidungen getroffen werden, wird **Gemini 4 Argon (`medium`)** genutzt.
+_\*Hinweis zu `T4` in der Umsetzung:_ Ist der Plan bis ins Detail ausformuliert (exakte Dateipfade, Signaturen, Schritt-für-Schritt-Vorgaben), reicht oft **`4 Hydrogen (High)`**. Bei offenen algorithmischen oder architektonischen Details wird **`4 Neon (Medium)`** genutzt.
 
-### 3. Verbindlicher Session-Start-Check bei GitHub-Issues (Pflicht für Agenten)
+- **Quota-Fallback (falls Gemini-Kontingent knapp):** `Claude Sonnet 5.5 (Medium)` ≈ `T3` (`4 Neon`), `Claude Opus 5.5 (Medium)` ≈ `T4` (`4 Carbon`).
+- **Subagenten-Regel (orthogonal zur Stufe):** Normales 1-Feature-Coding läuft **ohne** Subagent (Plan/Execute übernimmt der Orchestrator). Subagenten (`research` / `self`) nur zur Kontext-Isolation bei breiter Codebase-Suche oder unabhängigen Multi-Team-Workflows (z. B. `Release Audit Auto`).
 
-Sobald es in einer Agent-Session um die Analyse, Planung, Umsetzung oder das Review eines **GitHub-Issues** geht (z. B. Nennung von `#123`, Issue-URL oder Branch mit Issue-Bezug), MUSS der Agent **ganz am Anfang der Session** folgenden Check durchführen:
+### 3. Verbindliches Zero-Code-Triage-Gate (Pflicht vor dem Start)
 
-1. **Issue & Labels abrufen:** Per `gh issue view <nr> --json number,title,body,labels` den aktuellen Stand und die gesetzten Labels prüfen.
-2. **Komplexitäts-Label prüfen oder ad-hoc ergänzen:**
-   - **Label vorhanden (`complexity:low`, `complexity:mid` oder `complexity:high`):** Einstufung übernehmen (falls sich bei der Analyse herausstellt, dass die Komplexität deutlich abweicht, kurz darauf hinweisen).
-   - **Kein `complexity:*`-Label vorhanden:**
-     1. Sofort anhand des Issue-Inhalts und der Faustregeln (Abschnitt 1) eine **Ad-hoc-Komplexitätsprüfung** durchführen.
-     2. Das ermittelte Label **direkt automatisch am GitHub-Ticket setzen**:
-        ```bash
-        gh issue edit <nr> --add-label "complexity:<low|mid|high>"
-        ```
-     3. Den Nutzer transparent informieren, dass das Label fehlte und nun automatisch ergänzt wurde.
-3. **Standardisierten Modell-Kompass ausgeben (Pflicht-Output zu Beginn & bei Phasenwechsel):**
-   Direkt zu Beginn der ersten Antwort (sowie beim Übergang in die nächste Phase, z. B. nach fertigem Plan oder vor dem Review) MUSS der Agent einen kompakten, sofort scannbaren Hinweis-Block ausgeben, damit die Bedienerin / der Bediener ohne Nachschlagen weiß, mit welchem Modell und Thinking-Aufwand jede Phase gefahren werden sollte:
+Sobald eine neue Aufgabe beginnt (mit oder ohne GitHub-Issue), MUSS der Agent **vor jeder Code-Analyse** folgendes Gate durchlaufen:
 
-   > **🧭 Issue-Komplexität & Modell-Kompass (`#<nr>`)**
+1. **Kein Code-Read vor der Triage (Strikt):** Bevor Komplexität und Modell geprüft sind, darf der Agent **keine Code-Dateien lesen, kein `grep` und keine Codebase-Analyse starten**. Einzige erlaubte Lese-Aktion bei genanntem GitHub-Issue ist `gh issue view <nr> --json number,title,body,labels`.
+2. **Issue-Label prüfen oder ergänzen (nur bei GitHub-Issue):**
+   - **Label vorhanden (`🚦️ complexity:trivial/low/mid/high`):** Einstufung übernehmen (bei deutlicher Abweichung kurz hinweisen).
+   - **Kein `🚦️ complexity:*`-Label vorhanden:** Ad-hoc einstufen, direkt per `gh issue edit <nr> --add-label "🚦️ complexity:<trivial|low|mid|high>"` setzen und den Nutzer transparent informieren.
+3. **Stopp-vs.-Go-Entscheidung & Kompass:**
+   - **Modell passt** (oder `Orchestrator` deckt `T3` ab): Kompakten Kompass ausgeben und **direkt loslegen**.
+   - **Modell passt nicht** (zu schwach, deutlicher Overkill wie `Carbon`/`Neon` für `T1`/`T2`, oder der Nutzer fragt explizit erst nach der Modell-Empfehlung): **Hart stoppen — keine Edits, kein `exit_plan_mode`, keine weitere Umsetzung!** Nur den Kompass inkl. Ziel-Modell und grob vermutetem Bereich ausgeben (**ohne** Kontext-Check) und auf Modellwechsel + kurzes „weiter“ warten:
+
+   > **🧭 Triage & Modell-Kompass** _(`#<nr>` oder Aufgabe)_
    >
-   > - **Einstufung:** 🟡 `complexity:mid` _(bereits gelabelt / ⚠️ fehlte am Ticket → nach Ad-hoc-Prüfung automatisch gesetzt)_
-   > - **Begründung (kurz):** _[1 Satz bei Ad-hoc-Einstufung, z. B. „Betrifft Backend-Route, Store und Dialog-Komponente ohne Schema-Neubau"]_
-   > - **Empfohlenes Setup nach Phase:**
-   >   1. **Planung:** `Gemini 4 Argon (medium)`
-   >   2. **Umsetzung:** `Gemini 3.8 Flash (medium)`
-   >   3. **Review:** `Gemini 4 Argon (medium)`
-   > - **👉 Aktueller Schritt:** _[z. B. „Wir sind in Phase 1 (Planung) → ideales Modell: **Gemini 4 Argon (medium)**"]_
+   > - **Stufe:** 🟡 `T3` · `🚦️ complexity:mid` _(bereits gelabelt / ⚠️ Ad-hoc gesetzt)_
+   > - **Empfohlenes Setup:** `Orchestrator (Gemini 4 Neon Medium)`
+   > - **Vermuteter Bereich:** _[z. B. Backend-Route + Store + Dialog-Komponente]_
+   > - **👉 Nächster Schritt:** _[„Setup passt – ich lege los“ ODER „Bitte auf **<Ziel-Modell>** wechseln und kurz ‚weiter‘ schreiben“]_
+
+4. **Kombinierter Phasenwechsel-Block (Anti-Widerspruchs-Regel):** Bei einem Phasenwechsel (insbesondere `T4`: Plan → Umsetzung) werden Kontext-Check („Im Chat bleiben vs. neuer Chat“) und Ziel-Modell in **einem einzigen Handlungs-Block** kombiniert (z. B. schlanker Chat → im Chat bleiben und auf `4 Neon (Medium)` umstellen; voller Chat → neuen Chat mit `4 Neon (Medium)` starten). Läuft bereits der `Orchestrator` (`T3`), wird **kein** manueller Modellwechsel empfohlen.
 
 ### 4. Leitprinzipien für den Workflow
 
-1. **Planung als größter Hebel:** Ein präziser Plan mit `4 Argon` löst Edge-Cases vorab auf, sodass `3.8 Flash` in der Umsetzung schnell und kosteneffizient ausführen kann.
-2. **Kein Overkill bei `low`:** Für triviale Aufgaben entfällt ein separater `4 Argon`-Planungsschritt; Planung und Umsetzung erfolgen direkt in einem Schritt mit `3.8 Flash (low)`.
-3. **Review mindestens auf Planungs-Niveau:** Das Review-Modell muss mindestens so stark sein wie das Planungs-Modell (`4 Argon medium/high` ab `mid`), um subtile Fehler (Race Conditions, Reaktivitäts-Fallen, Security, Architektur-Drift) zuverlässig zu erkennen.
-4. **Dynamische Eskalation statt weiterer Labels:** Wenn ein Modell in der Umsetzung nach 2 Versuchen einen Test nicht grün bekommt oder in einer Schleife hängt, wird für den konkreten Schritt dynamisch die Thinking-Stufe (`medium` → `high`) oder das Modell (`Flash` → `Argon`) erhöht – das Issue-Label selbst bleibt unverändert.
-5. **Neue Issues direkt klassifizieren:** Wenn ein Agent selbst ein neues GitHub-Issue anlegt (`gh issue create`), vergibt er immer direkt das passende `--label "complexity:<low|mid|high>"`.
+1. **Start-Low-and-Escalate:** Neue Chats im Alltag standardmäßig auf `4 Hydrogen (Low)` starten — bei `T1`/`T2` sofort ohne Wechsel loslegen, bei `T3`/`T4` erst nach dem Triage-Stopp (mit 0 gelesenen Code-Dateien) hochschalten.
+2. **Kein Wechsel-Overhead bei `T1`/`T2`:** Bei kleinen oder klaren Aufgaben bleibt man im selben Modell.
+3. **Orchestrator als Default für `T3`:** Der automatische Plan-Execute-Split spart manuelles Umschalten und doppelte Input-Tokens.
+4. **Review mindestens auf Planungs-Niveau:** Ab `T3` prüft mindestens `4 Neon (Medium)`, bei `T4` `4 Carbon`.
+5. **Dynamische Eskalation statt Label-Drift:** Hängt die Umsetzung nach 2 Versuchen, wird punktuell das Thinking-Level oder Modell erhöht – das Issue-Label selbst bleibt unverändert.
+6. **Neue Issues direkt klassifizieren:** Wenn ein Agent selbst ein neues GitHub-Issue anlegt (`gh issue create`), vergibt er immer direkt das passende `--label "🚦️ complexity:<trivial|low|mid|high>"`.
 
 ## PR-Workflow
 
