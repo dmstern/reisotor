@@ -231,7 +231,7 @@ Sobald eine neue Aufgabe beginnt (mit oder ohne GitHub-Issue), MUSS der Agent **
    - **Kein `🚦️ complexity:*`-Label vorhanden:** Ad-hoc einstufen, direkt per `gh issue edit <nr> --add-label "🚦️ complexity:<trivial|low|mid|high>"` setzen und den Nutzer transparent informieren.
 3. **Stopp-vs.-Go-Entscheidung & Kompass:**
    - **Modell passt** (oder `Orchestrator` deckt `T3` ab): Kompakten Kompass ausgeben und **direkt loslegen**.
-   - **Modell passt nicht** (zu schwach ODER deutlicher Overkill, z. B. `Carbon`/`Neon` für `T1`): **Hart stoppen!** Nur den Kompass inkl. Ziel-Modell und grob vermutetem Bereich ausgeben (**ohne** Kontext-Check) und auf Modellwechsel + kurzes „weiter“ warten:
+   - **Modell passt nicht** (zu schwach, deutlicher Overkill wie `Carbon`/`Neon` für `T1`/`T2`, oder der Nutzer fragt explizit erst nach der Modell-Empfehlung): **Hart stoppen — keine Edits, kein `exit_plan_mode`, keine weitere Umsetzung!** Nur den Kompass inkl. Ziel-Modell und grob vermutetem Bereich ausgeben (**ohne** Kontext-Check) und auf Modellwechsel + kurzes „weiter“ warten:
 
    > **🧭 Triage & Modell-Kompass** _(`#<nr>` oder Aufgabe)_
    >
