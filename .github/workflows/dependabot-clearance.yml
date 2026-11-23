@@ -43,4 +43,4 @@ jobs:
           if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.auto_merge }}" = "true" ]; then
             AUTO_MERGE_FLAG="--auto-merge"
           fi
-          node scripts/dependabot-clearance.mjs $AUTO_MERGE_FLAG --summary-file="$GITHUB_STEP_SUMMARY"
+          node scripts/dependabot-clearance.mjs $AUTO_MERGE_FLAG --manage-prs --summary-file="$GITHUB_STEP_SUMMARY"
