@@ -165,4 +165,34 @@ describe('ChangelogContent', () => {
 
     cleanUp();
   });
+
+  it('renders "Neuerungen aus v..." without "weiteren" when baseRelease has no highlight group', async () => {
+    const { cleanUp } = mount({
+      groups: [
+        {
+          title: 'Korrekturen',
+          notes: ['🐛 **Bugfix**: Schnellerer Datumswechsel'],
+        },
+      ],
+      baseRelease: {
+        version: '2.3.0',
+        date: '2026-11-22',
+        notes: ['Details der 2.3'],
+        groups: [
+          {
+            title: 'Reisen und Urlaube',
+            notes: ['📅 **Urlaube**: Neues Kartendesign'],
+          },
+        ],
+      },
+    });
+    await nextTick();
+
+    const collapsible = container.querySelector('.changelog-collapsible');
+    expect(collapsible).not.toBeNull();
+    expect(collapsible?.textContent).toContain('Neuerungen aus v2.3.0 anzeigen');
+    expect(collapsible?.textContent).not.toContain('Alle weiteren Neuerungen aus v2.3.0 anzeigen');
+
+    cleanUp();
+  });
 });

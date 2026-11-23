@@ -212,7 +212,11 @@ const changelogGithubUrl = computed(() => {
 
       <CollapsibleFieldset
         v-if="baseOtherGroups.length > 0"
-        :label="`Alle weiteren Neuerungen aus v${props.baseRelease.version} anzeigen`"
+        :label="
+          baseHighlightGroups.length > 0
+            ? `Alle weiteren Neuerungen aus v${props.baseRelease.version} anzeigen`
+            : `Neuerungen aus v${props.baseRelease.version} anzeigen`
+        "
         :open-initial="false"
         class="changelog-collapsible"
       >

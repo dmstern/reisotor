@@ -228,9 +228,10 @@ function readAllChangelogEntries() {
   return sections.map(parseChangelogSection).filter(Boolean);
 }
 
-// Findet bei Patch-Releases (z. B. 2.0.1) das zugehörige Basis-Release (z. B. 2.0.0),
-// damit wichtige Highlights der aktuellen Versionen-Serie nicht verloren gehen.
-function findBaseRelease(currentVersion, allEntries) {
+// Findet bei Patch-Releases (z. B. 2.0.1) bzw. bei unveröffentlichten Patch-Fragmenten in Dev/Staging
+// das zugehörige Basis-Release (z. B. 2.0.0), damit wichtige Highlights der aktuellen Versionen-Serie
+// nicht verloren gehen.
+function findBaseRelease(currentVersion, allEntries, options = {}) {
   const cleanMatch = currentVersion.match(/(\d+)\.(\d+)\.(\d+)/);
 
   if (!cleanMatch) {
@@ -241,8 +242,10 @@ function findBaseRelease(currentVersion, allEntries) {
   const minor = parseInt(cleanMatch[2], 10);
   const patch = parseInt(cleanMatch[3], 10);
 
-  // Nur wenn es sich um ein Patch-Release handelt (patch > 0)
-  if (patch === 0) {
+  // Normalerweise nur wenn es sich um ein echtes Patch-Release handelt (patch > 0).
+  // In Dev/Staging (allowZeroPatch) auch bei patch === 0, wenn bereits unveröffentlichte Fragmente
+  // über einer bestehenden Minor-Version angezeigt werden.
+  if (patch === 0 && !options.allowZeroPatch) {
     return null;
   }
 
@@ -275,11 +278,13 @@ function determineChangelog() {
   const allEntries = readAllChangelogEntries();
 
   let entry = null;
+  let isPendingDevView = false;
 
   if (env === 'staging' || env === 'development') {
     const pending = readPendingReleaseNotes();
 
     if (pending.notes.length > 0) {
+      isPendingDevView = true;
       entry = {
         version: computedVersion,
         date: new Date().toISOString().slice(0, 10),
@@ -300,7 +305,7 @@ function determineChangelog() {
     return null;
   }
 
-  const base = findBaseRelease(computedVersion, allEntries);
+  const base = findBaseRelease(computedVersion, allEntries, { allowZeroPatch: isPendingDevView });
 
   if (base && base.version !== entry.version) {
     entry.baseRelease = {
