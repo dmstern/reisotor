@@ -5,6 +5,9 @@ import type { CalendarEntry } from '../api/types';
 import { useTripStore } from '../stores/trip';
 import { useDrawersStore } from '../stores/drawers';
 import Card from '../components/primitives/Card.vue';
+import Button from '../components/primitives/Button.vue';
+import AppIcon from '../components/AppIcon.vue';
+import { ACTION_ICONS } from '../utils/actionIcons';
 import CalendarWeek from '../components/CalendarWeek.vue';
 import ViewLoadingState from '../components/ViewLoadingState.vue';
 import ScheduleToolbar from '../components/ScheduleToolbar.vue';
@@ -200,8 +203,13 @@ onMounted(async () => {
 
 <template>
   <div class="calendar-drawer-content" :class="{ standalone, page: standalone }" v-if="!loading">
-    <h1 v-if="standalone">Kalender</h1>
-    <h2 v-else>Kalender</h2>
+    <header class="calendar-header">
+      <h1 v-if="standalone">Kalender</h1>
+      <h2 v-else>Kalender</h2>
+      <Button size="md" class="add-btn" @click="openAddForm">
+        <AppIcon :icon="ACTION_ICONS.calendarPlus" :size="16" group="actions" /> Neu
+      </Button>
+    </header>
 
     <ScheduleToolbar
       :pending-schedule="drawers.pendingSchedule"
@@ -220,7 +228,6 @@ onMounted(async () => {
       @next-page="nextPage"
       @jump-to-today="jumpToToday"
       @go-to-trip-dates="goToTripDates"
-      @open-add="openAddForm"
     />
 
     <Card class="weeks">
@@ -305,18 +312,46 @@ onMounted(async () => {
   }
 }
 
-.calendar-drawer-content h1,
-.calendar-drawer-content h2 {
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.calendar-header h1,
+.calendar-header h2 {
   margin: 0;
+  min-width: 0;
   color: var(--color-primary-dark);
 }
 
-.calendar-drawer-content h2 {
+.calendar-header h2 {
   font-size: var(--font-size-lg);
 }
 
-.calendar-drawer-content:not(.standalone) h2 {
-  padding-right: 76px;
+.calendar-header .add-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.calendar-drawer-content:not(.standalone) .calendar-header {
+  padding-right: calc(var(--control-height-sm, 36px) * 2 + var(--space-xs) + var(--space-sm));
+}
+
+@include container-down('schedule-view', 'mobile-compact') {
+  .calendar-drawer-content:not(.standalone) .calendar-header {
+    gap: var(--space-xs);
+    padding-right: calc(
+      var(--control-height-sm, 36px) * 2 + var(--space-xs) * 2 + var(--space-lg) - var(--space-xl)
+    );
+  }
+
+  .calendar-drawer-content:not(.standalone) .calendar-header .add-btn {
+    padding-inline: var(--space-md);
+  }
 }
 
 .weeks {

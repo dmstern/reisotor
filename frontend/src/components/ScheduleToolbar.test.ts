@@ -27,12 +27,15 @@ describe('ScheduleToolbar', () => {
     return renderToString(app);
   }
 
-  it('rendert Datumsbereich und Standard-Aktionen', async () => {
+  it('rendert Datumsbereich und gebündelte Zeitraum-Aktionen', async () => {
     const html = await render();
     expect(html).toContain('Oktober 2026');
+    expect(html).toContain('role="group"');
+    expect(html).toContain('Zeitraum-Navigation');
+    expect(html).toContain('Vorheriger Monat');
+    expect(html).toContain('Nächster Monat');
     expect(html).toContain('Heute');
     expect(html).toContain('Urlaub');
-    expect(html).toContain('Neu');
   });
 
   it('blendet Urlaub-Button aus, wenn kein Reisebeginn vorhanden ist', async () => {
