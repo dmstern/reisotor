@@ -5,6 +5,16 @@ Format lose an [Keep a Changelog](https://keepachangelog.com/) angelehnt, Versio
 [Semantic Versioning](https://semver.org/). Neue Einträge werden beim Erstellen eines Releases
 (`.github/workflows/release.yml`) oben ergänzt.
 
+## [2.3.1] - 2026-11-23
+
+### Kalender und Planung
+
+- 💡 **Verbesserung**: Der Kopfbereich des Kalenders wurde aufgeräumt: Der Button zum Anlegen neuer Termine bleibt nun auch auf schmalen Bildschirmen stabil oben rechts, während die Pfeile zum Blättern sowie die Schaltflächen für Heute und den Reisezeitraum logisch zusammenstehen und beim Blättern nicht mehr springen.
+
+### Datenschutz und Sicherheit
+
+- 🛡️ **Feedback-Formular (E-Mail-Opt-in)**: Die eigene E-Mail-Adresse aus dem Benutzerkonto wird bei Feedback-Meldungen nicht mehr automatisch im öffentlichen GitHub-Issue veröffentlicht. Stattdessen gibt es jetzt eine standardmäßig deaktivierte Auswahl, mit der die vorausgefüllte oder eine eigene Kontakt-Adresse bewusst für Rückfragen freigegeben werden kann.
+
 ## [2.3.0] - 2026-11-22
 
 ### Highlights
