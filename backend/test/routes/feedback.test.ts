@@ -78,10 +78,18 @@ describe('feedback routes', () => {
     });
     expect(badScreenshotType.statusCode).toBe(400);
 
+    const badIncludeEmail = await app.inject({
+      method: 'POST',
+      url: '/api/feedback',
+      headers: { cookie },
+      payload: { type: 'bug', title: 'x', description: 'y', includeEmail: 'yes' },
+    });
+    expect(badIncludeEmail.statusCode).toBe(400);
+
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('creates a GitHub issue with type-based labels and reporter info, without a screenshot', async () => {
+  it('creates a GitHub issue without exposing the reporter profile email by default', async () => {
     const cookie = await register('feedback-user2', 'fb2@example.com');
     let sentBody: { title: string; body: string; labels: string[] } | undefined;
     vi.stubGlobal(
@@ -121,8 +129,66 @@ describe('feedback routes', () => {
     });
     expect(sentBody?.labels).toEqual([FEEDBACK_LABELS.feature.name, FEEDBACK_LABELS.fromApp.name]);
     expect(sentBody?.body).toContain('feedback-user2');
-    expect(sentBody?.body).toContain('fb2@example.com');
+    expect(sentBody?.body).not.toContain('fb2@example.com');
+    expect(sentBody?.body).not.toContain('()');
     expect(sentBody?.body).not.toContain('![Screenshot]');
+  });
+
+  it('includes email in direct mode only when opted in and drops it when includeEmail is false', async () => {
+    const cookie = await register('feedback-user-optin', 'profile@example.com');
+    const sentBodies: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string, init: RequestInit) => {
+        if (url.includes('/issues')) {
+          sentBodies.push((JSON.parse(init.body as string) as { body: string }).body);
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                number: 12,
+                html_url: 'https://github.com/someone/somerepo/issues/12',
+              }),
+          });
+        }
+
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ color: '1d76db' }) });
+      })
+    );
+
+    const optedOutRes = await app.inject({
+      method: 'POST',
+      url: '/api/feedback',
+      headers: { cookie },
+      payload: {
+        type: 'bug',
+        title: 'Kein Opt-in',
+        description: 'E-Mail darf nicht erscheinen.',
+        email: 'manual@example.com',
+        includeEmail: false,
+      },
+    });
+    expect(optedOutRes.statusCode).toBe(201);
+
+    const optedInRes = await app.inject({
+      method: 'POST',
+      url: '/api/feedback',
+      headers: { cookie },
+      payload: {
+        type: 'bug',
+        title: 'Mit Opt-in',
+        description: 'E-Mail soll erscheinen.',
+        email: 'manual@example.com',
+        includeEmail: true,
+      },
+    });
+    expect(optedInRes.statusCode).toBe(201);
+
+    expect(sentBodies).toHaveLength(2);
+    expect(sentBodies[0]).not.toContain('manual@example.com');
+    expect(sentBodies[0]).not.toContain('profile@example.com');
+    expect(sentBodies[1]).toContain('manual@example.com');
+    expect(sentBodies[1]).not.toContain('profile@example.com');
   });
 
   it('uploads an attached screenshot to the feedback-screenshots branch and embeds it as a raw.githubusercontent.com link', async () => {
@@ -280,6 +346,26 @@ describe('feedback routes', () => {
 
     try {
       const cookie = await register('feedback-user-forward', 'forward@example.com');
+      const resWithoutOptIn = await app.inject({
+        method: 'POST',
+        url: '/api/feedback',
+        headers: { cookie },
+        payload: {
+          type: 'feature',
+          title: 'Ohne Mail',
+          description: 'Profil-Mail darf nicht weitergeleitet werden',
+          includeEmail: false,
+          email: 'custom@example.com',
+        },
+      });
+      expect(resWithoutOptIn.statusCode).toBe(201);
+      expect(relayPayload).toMatchObject({
+        type: 'feature',
+        title: 'Ohne Mail',
+        description: 'Profil-Mail darf nicht weitergeleitet werden',
+      });
+      expect(relayPayload?.email).toBeUndefined();
+
       const res = await app.inject({
         method: 'POST',
         url: '/api/feedback',
@@ -288,6 +374,7 @@ describe('feedback routes', () => {
           type: 'feature',
           title: 'Tolle Idee',
           description: 'Mehr Sonne',
+          includeEmail: true,
           email: 'custom@example.com',
         },
       });

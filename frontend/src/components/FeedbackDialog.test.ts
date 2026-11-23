@@ -4,6 +4,7 @@ import { createApp, h, nextTick } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import FeedbackDialog from './FeedbackDialog.vue';
 import { api, ApiError } from '../api/client';
+import { useAuthStore } from '../stores/auth';
 import { useBuildInfoStore } from '../stores/buildInfo';
 
 describe('FeedbackDialog', () => {
@@ -171,6 +172,143 @@ describe('FeedbackDialog', () => {
     expect(directBtn?.href).toContain('https://github.com/dmstern/reisotor/issues/new');
     expect(directBtn?.href).toContain('Mein+Feedback');
     expect(directBtn?.href).toContain('Das+ist+mein+Text');
+
+    cleanUp();
+  });
+
+  it('does not include profile email by default when opt-in checkbox is unchecked', async () => {
+    const authStore = useAuthStore();
+    authStore.user = {
+      id: 1,
+      username: 'alice',
+      avatar: '🧳',
+      email: 'alice@example.com',
+    };
+
+    const postSpy = vi.spyOn(api, 'post').mockResolvedValue({
+      issue_number: 200,
+      issue_url: 'https://github.com/dmstern/reisotor/issues/200',
+    });
+
+    const { cleanUp } = mountDialog({
+      modelValue: true,
+      initialTitle: 'Kein Mail-Leak',
+      initialDescription: 'Beschreibung ohne Mail',
+    });
+    await nextTick();
+
+    const optInCheckbox = document.body.querySelector(
+      '#feedback-include-email'
+    ) as HTMLInputElement | null;
+    expect(optInCheckbox).toBeTruthy();
+    expect(optInCheckbox?.checked).toBe(false);
+    expect(document.body.querySelector('#feedback-contact-email')).toBeNull();
+
+    const directBtn = document.body.querySelector('.btn-github-direct') as HTMLAnchorElement | null;
+    expect(directBtn?.href).not.toContain('alice');
+    expect(directBtn?.href).not.toContain('Kontakt');
+
+    const form = document.body.querySelector('form');
+    form!.dispatchEvent(new Event('submit'));
+    await nextTick();
+
+    expect(document.body.innerHTML).toContain('Deine E-Mail-Adresse wird nicht mitgesendet.');
+
+    const confirmBtn = document.body.querySelector(
+      '.btn-confirm-publish'
+    ) as HTMLButtonElement | null;
+    confirmBtn!.click();
+    await nextTick();
+    await nextTick();
+
+    expect(postSpy).toHaveBeenCalledWith('/feedback', {
+      type: 'bug',
+      title: 'Kein Mail-Leak',
+      description: 'Beschreibung ohne Mail',
+      screenshot: undefined,
+      includeEmail: false,
+      email: undefined,
+    });
+
+    cleanUp();
+  });
+
+  it('prefills profile email when opt-in checkbox is checked, allows editing, and omits again when unchecked', async () => {
+    const authStore = useAuthStore();
+    authStore.user = {
+      id: 1,
+      username: 'alice',
+      avatar: '🧳',
+      email: 'alice@example.com',
+    };
+
+    const postSpy = vi.spyOn(api, 'post').mockResolvedValue({
+      issue_number: 201,
+      issue_url: 'https://github.com/dmstern/reisotor/issues/201',
+    });
+
+    const { cleanUp } = mountDialog({
+      modelValue: true,
+      initialTitle: 'Mit Mail-Opt-in',
+      initialDescription: 'Rückfragen erwünscht',
+    });
+    await nextTick();
+
+    const optInCheckbox = document.body.querySelector(
+      '#feedback-include-email'
+    ) as HTMLInputElement;
+    optInCheckbox.checked = true;
+    optInCheckbox.dispatchEvent(new Event('change'));
+    await nextTick();
+
+    const emailInput = document.body.querySelector('#feedback-contact-email') as HTMLInputElement;
+    expect(emailInput).toBeTruthy();
+    expect(emailInput.value).toBe('alice@example.com');
+
+    const directBtn = document.body.querySelector('.btn-github-direct') as HTMLAnchorElement | null;
+    expect(directBtn?.href).toContain('alice%40example.com');
+
+    // Nutzer passt die vorausgefüllte E-Mail-Adresse an
+    emailInput.value = 'custom-feedback@example.com';
+    emailInput.dispatchEvent(new Event('input'));
+    await nextTick();
+
+    expect(directBtn?.href).toContain('custom-feedback%40example.com');
+
+    // Einmal abwählen -> darf E-Mail wieder nicht mitgesendet werden
+    optInCheckbox.checked = false;
+    optInCheckbox.dispatchEvent(new Event('change'));
+    await nextTick();
+
+    expect(document.body.querySelector('#feedback-contact-email')).toBeNull();
+    expect(directBtn?.href).not.toContain('custom-feedback');
+
+    // Erneut anhaken -> angepasste Adresse bleibt im Dialog und wird gesendet
+    optInCheckbox.checked = true;
+    optInCheckbox.dispatchEvent(new Event('change'));
+    await nextTick();
+
+    const form = document.body.querySelector('form');
+    form!.dispatchEvent(new Event('submit'));
+    await nextTick();
+
+    expect(document.body.innerHTML).toContain('custom-feedback@example.com');
+
+    const confirmBtn = document.body.querySelector(
+      '.btn-confirm-publish'
+    ) as HTMLButtonElement | null;
+    confirmBtn!.click();
+    await nextTick();
+    await nextTick();
+
+    expect(postSpy).toHaveBeenCalledWith('/feedback', {
+      type: 'bug',
+      title: 'Mit Mail-Opt-in',
+      description: 'Rückfragen erwünscht',
+      screenshot: undefined,
+      includeEmail: true,
+      email: 'custom-feedback@example.com',
+    });
 
     cleanUp();
   });
