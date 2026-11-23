@@ -27,7 +27,16 @@ interface FeedbackBody {
   description: string;
   screenshot?: string; // data:<mime>;base64,<...>
   email?: string;
+  includeEmail?: boolean;
   version?: string;
+}
+
+function resolveOptedInContactEmail(email?: string, includeEmail?: boolean): string | undefined {
+  if (includeEmail === false) {
+    return undefined;
+  }
+
+  return email?.trim() || undefined;
 }
 
 const MAX_TITLE_LENGTH = 200;
@@ -136,7 +145,7 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
       });
     }
 
-    const { type, title, description, screenshot, email, version } = req.body ?? {};
+    const { type, title, description, screenshot, email, includeEmail, version } = req.body ?? {};
 
     if (type !== 'bug' && type !== 'feature') {
       return reply.code(400).send({ error: 'Ungültiger Meldungstyp' });
@@ -148,6 +157,10 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
 
     if (title.length > MAX_TITLE_LENGTH || description.length > MAX_DESCRIPTION_LENGTH) {
       return reply.code(400).send({ error: 'Titel oder Beschreibung ist zu lang' });
+    }
+
+    if (includeEmail !== undefined && typeof includeEmail !== 'boolean') {
+      return reply.code(400).send({ error: 'Ungültige E-Mail-Opt-in-Angabe' });
     }
 
     if (email && (typeof email !== 'string' || email.length > MAX_EMAIL_LENGTH)) {
@@ -172,10 +185,12 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
       screenshotError = uploadRes.screenshotError;
     }
 
+    const contactEmail = resolveOptedInContactEmail(email, includeEmail);
+
     const metaParts = [
       'Instanz: Externe Community-Instanz',
       version?.trim() ? `Version: \`${version.trim()}\`` : null,
-      email?.trim() ? `Kontakt: ${email.trim()}` : null,
+      contactEmail ? `Kontakt: ${contactEmail}` : null,
     ].filter(Boolean);
 
     const bodyParts = [
@@ -215,7 +230,7 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
     '/feedback',
     { preHandler: [requireAuth] },
     async (req, reply) => {
-      const { type, title, description, screenshot, email } = req.body ?? {};
+      const { type, title, description, screenshot, email, includeEmail } = req.body ?? {};
 
       if (type !== 'bug' && type !== 'feature') {
         return reply.code(400).send({ error: 'Ungültiger Meldungstyp' });
@@ -229,13 +244,19 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(400).send({ error: 'Titel oder Beschreibung ist zu lang' });
       }
 
+      if (includeEmail !== undefined && typeof includeEmail !== 'boolean') {
+        return reply.code(400).send({ error: 'Ungültige E-Mail-Opt-in-Angabe' });
+      }
+
       if (email && (typeof email !== 'string' || email.length > MAX_EMAIL_LENGTH)) {
         return reply.code(400).send({ error: 'Ungültige E-Mail-Adresse' });
       }
 
       const reporter = db
-        .prepare('SELECT username, email FROM users WHERE id = ?')
-        .get(req.session.userId) as { username: string; email: string | null } | undefined;
+        .prepare('SELECT username FROM users WHERE id = ?')
+        .get(req.session.userId) as { username: string } | undefined;
+
+      const contactEmail = resolveOptedInContactEmail(email, includeEmail);
 
       // Wenn kein lokales GITHUB_TOKEN konfiguriert ist, transparent an den Relay weiterleiten (#526)
       const githubToken = getEffectiveSetting('github_token', 'GITHUB_TOKEN').trim();
@@ -251,7 +272,6 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
 
         const buildInfo = readBuildInfo();
         const appVersion = buildInfo.version ?? undefined;
-        const contactEmail = email?.trim() || reporter?.email || undefined;
 
         try {
           const relayRes = await fetch(relayUrl, {
@@ -309,7 +329,6 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
         screenshotError = uploadRes.screenshotError;
       }
 
-      const contactEmail = email?.trim() || reporter?.email;
       const bodyParts = [
         description.trim(),
         imageUrl ? `\n![Screenshot](${imageUrl})` : '',

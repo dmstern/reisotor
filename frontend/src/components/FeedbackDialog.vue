@@ -2,6 +2,7 @@
 import Alert from './primitives/Alert.vue';
 import Button from './primitives/Button.vue';
 import ButtonGroup from './primitives/ButtonGroup.vue';
+import CheckboxCard from './primitives/CheckboxCard.vue';
 import Input from './primitives/Input.vue';
 import Select from './primitives/Select.vue';
 import Textarea from './primitives/Textarea.vue';
@@ -12,6 +13,7 @@ import Modal from './Modal.vue';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { renderRichText } from '../utils/richText';
+import { useAuthStore } from '../stores/auth';
 import { useBuildInfoStore } from '../stores/buildInfo';
 
 const props = defineProps<{
@@ -28,20 +30,30 @@ interface FeedbackResult {
   issue_url: string;
 }
 
+const authStore = useAuthStore();
 const buildInfoStore = useBuildInfoStore();
+
+function getDefaultContactEmail(): string {
+  return authStore.user?.email?.trim() ?? '';
+}
 
 const form = ref<{ type: FeedbackType; title: string; description: string }>({
   type: props.initialType ?? 'bug',
   title: props.initialTitle ?? '',
   description: props.initialDescription ?? '',
 });
-const contactEmail = ref('');
+const includeEmail = ref(false);
+const contactEmail = ref(getDefaultContactEmail());
 const screenshot = ref<string | null>(null);
 const screenshotName = ref('');
 const submitting = ref(false);
 const showPublishConfirm = ref(false);
 const error = ref('');
 const result = ref<FeedbackResult | null>(null);
+
+const optedInEmail = computed(() =>
+  includeEmail.value ? contactEmail.value.trim() || undefined : undefined
+);
 
 const gitHubIssueUrl = computed(() => {
   const baseUrl = buildInfoStore.buildInfo?.repoUrl ?? 'https://github.com/dmstern/reisotor';
@@ -53,8 +65,8 @@ const gitHubIssueUrl = computed(() => {
 
   let body = form.value.description.trim();
 
-  if (contactEmail.value.trim()) {
-    body += `\n\n---\nKontakt: ${contactEmail.value.trim()}`;
+  if (optedInEmail.value) {
+    body += `\n\n---\nKontakt: ${optedInEmail.value}`;
   }
 
   if (body) {
@@ -80,7 +92,8 @@ watch(
       title: props.initialTitle ?? '',
       description: props.initialDescription ?? '',
     };
-    contactEmail.value = '';
+    includeEmail.value = false;
+    contactEmail.value = getDefaultContactEmail();
     screenshot.value = null;
     screenshotName.value = '';
     showPublishConfirm.value = false;
@@ -139,7 +152,8 @@ async function confirmAndSubmit() {
       title: form.value.title.trim(),
       description: form.value.description.trim(),
       screenshot: screenshot.value ?? undefined,
-      email: contactEmail.value.trim() || undefined,
+      includeEmail: includeEmail.value,
+      email: optedInEmail.value,
     });
   } catch (err) {
     error.value = err instanceof ApiError ? err.message : 'Meldung konnte nicht gesendet werden.';
@@ -212,16 +226,41 @@ function close() {
           />
         </label>
 
-        <label for="feedback-contact-email">
-          <span class="label-text"> E-Mail für Rückfragen (optional) </span>
-          <Input
-            id="feedback-contact-email"
-            v-model="contactEmail"
-            type="email"
-            :maxlength="200"
-            placeholder="deine-adresse@beispiel.de"
+        <div class="email-opt-in-group">
+          <CheckboxCard
+            id="feedback-include-email"
+            v-model="includeEmail"
+            :icon="ACTION_ICONS.mail"
+            variant="muted"
+            class="email-opt-in-card"
+            label="E-Mail-Adresse für Rückfragen öffentlich im Issue anzeigen"
+            description="Standardmäßig wird keine E-Mail-Adresse mitgesendet. Bei Aktivierung wird deine Profil-Adresse vorausgefüllt und kann angepasst werden."
           />
-        </label>
+
+          <label v-if="includeEmail" for="feedback-contact-email" class="email-input-field">
+            <span class="label-text">
+              E-Mail-Adresse <span class="required-indicator" aria-hidden="true">*</span>
+            </span>
+            <Input
+              id="feedback-contact-email"
+              v-model="contactEmail"
+              name="contactEmail"
+              type="email"
+              autocomplete="email"
+              inputmode="email"
+              autocorrect="off"
+              autocapitalize="none"
+              spellcheck="false"
+              aria-describedby="feedback-contact-email-hint"
+              required
+              :maxlength="200"
+              placeholder="deine-adresse@beispiel.de"
+            />
+            <span id="feedback-contact-email-hint" class="field-hint">
+              Wird öffentlich auf GitHub sichtbar im Issue angezeigt.
+            </span>
+          </label>
+        </div>
 
         <label for="auto-id-1788301175436-6" v-if="!screenshot" class="upload-label">
           <input
@@ -303,6 +342,13 @@ function close() {
         <strong>Beschreibung</strong>, im <strong>Screenshot</strong> noch in der optionalen
         <strong>E-Mail-Adresse</strong> private oder sensible Daten enthalten sind.
       </p>
+      <p class="publish-confirm-text publish-confirm-email-status">
+        <template v-if="optedInEmail">
+          Deine E-Mail-Adresse <strong>{{ optedInEmail }}</strong> wird wie ausgewählt öffentlich im
+          GitHub-Issue angezeigt.
+        </template>
+        <template v-else>Deine E-Mail-Adresse wird nicht mitgesendet.</template>
+      </p>
       <ButtonGroup>
         <Button type="button" variant="secondary" class="btn-cancel" @click="cancelPublishConfirm">
           Zurück &amp; prüfen
@@ -347,12 +393,32 @@ function close() {
   gap: var(--space-3);
 }
 
-label {
+label:not(.checkbox-card) {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
   font-weight: 600;
   font-size: var(--font-size-sm);
+}
+
+.email-opt-in-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.email-opt-in-card {
+  margin: 0;
+}
+
+.field-hint {
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.publish-confirm-email-status {
+  color: var(--color-text-muted);
 }
 
 .label-text {
