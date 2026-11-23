@@ -7,6 +7,13 @@ Format lose an [Keep a Changelog](https://keepachangelog.com/) angelehnt, Versio
 
 ## [2.3.0] - 2026-11-22
 
+### Highlights
+
+- ✨ **Urlaubsübersicht im modernen Karten-Design**: Die Urlaubsverwaltung zeigt Urlaube jetzt als übersichtliche Karten-Sammlung mit Titelbild, Zeitraum und Reisedauer, Reiseziel, Mitreisenden sowie kompakten Statistiken.
+- ✨ **Übersichtlichere Touren mit eigener Detailansicht**: Statt langer aufklappbarer Karten öffnet ein Tipp auf eine Tour nun eine ruhige Detailansicht mit summierter Reisedauer, Kilometer-Zusammenfassung und Wetter-Anzeige.
+- 🥾 **Tour-Aufzeichnungen direkt auf der Karte abspielen**: Verknüpfte Aufzeichnungen lassen sich über den neu gestalteten, touch-freundlichen Player mit breiter Zeitleiste direkt auf der Karte abspielen.
+- ✨ **Liquid-Glass-Optik & 3D-Bedienelemente**: Schwebende mobile Listen, transparente Glas-Elemente sowie hintergrundadaptive 3D-Buttons und Menüs sorgen app-weit für ein aufgeräumtes, luftiges Layout.
+
 ### Reisen und Urlaube
 
 - ✨ **Urlaubsübersicht im modernen Karten-Design**: Die Urlaubsverwaltung zeigt Urlaube jetzt als übersichtliche Karten-Sammlung mit Titelbild, Zeitraum und Reisedauer, Reiseziel, Mitreisenden sowie kompakten Statistiken zu Spots, Touren, Tagebucheinträgen und Packlisten-Fortschritt. Die Mitglieder-Verwaltung ist einheitlich im Bearbeiten-Dialog gebündelt.

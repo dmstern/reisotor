@@ -78,7 +78,7 @@ describe('generate-build-info changelog helpers', () => {
     }
   });
 
-  it('returns null for findBaseRelease when version is a major or minor release (patch === 0)', () => {
+  it('returns null for findBaseRelease when version is a major or minor release (patch === 0) unless allowZeroPatch is true', () => {
     const entries = [
       { version: '2.0.0', date: '2026-11-01', notes: [] },
       { version: '1.3.0', date: '2026-08-22', notes: [] },
@@ -87,6 +87,7 @@ describe('generate-build-info changelog helpers', () => {
     expect(findBaseRelease('2.0.0', entries)).toBeNull();
     expect(findBaseRelease('2.0.0-dev', entries)).toBeNull();
     expect(findBaseRelease('2.1.0-staging', entries)).toBeNull();
+    expect(findBaseRelease('2.0.0-dev', entries, { allowZeroPatch: true })).toEqual(entries[0]);
   });
 
   it('finds exact base release X.Y.0 when current version is a patch release (patch > 0)', () => {
