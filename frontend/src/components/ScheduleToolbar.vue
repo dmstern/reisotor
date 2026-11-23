@@ -34,7 +34,6 @@ defineEmits<{
   (e: 'nextPage'): void;
   (e: 'jumpToToday'): void;
   (e: 'goToTripDates'): void;
-  (e: 'openAdd'): void;
 }>();
 </script>
 
@@ -56,30 +55,64 @@ defineEmits<{
     </div>
 
     <div class="calendar-toolbar">
-      <div class="toolbar-nav-row">
-        <div class="pager">
-          <PagerButton
-            direction="prev"
-            :disabled="!canGoPrev"
-            :aria-label="prevPageLabel"
-            :title="prevPageLabel"
-            @click="$emit('prevPage')"
-          />
-          <span class="range-label">{{ visibleRangeLabel }}</span>
-          <PagerButton
-            direction="next"
-            :disabled="!canGoNext"
-            :aria-label="nextPageLabel"
-            :title="nextPageLabel"
-            @click="$emit('nextPage')"
-          />
+      <div class="toolbar-timeframe-row">
+        <span class="range-label">{{ visibleRangeLabel }}</span>
+        <div class="timeframe-actions" role="group" aria-label="Zeitraum-Navigation">
+          <div class="pager">
+            <PagerButton
+              direction="prev"
+              variant="secondary"
+              :disabled="!canGoPrev"
+              :aria-label="prevPageLabel"
+              :title="prevPageLabel"
+              @click="$emit('prevPage')"
+            />
+            <PagerButton
+              direction="next"
+              variant="secondary"
+              :disabled="!canGoNext"
+              :aria-label="nextPageLabel"
+              :title="nextPageLabel"
+              @click="$emit('nextPage')"
+            />
+          </div>
+          <div class="jump-row">
+            <Button
+              variant="secondary"
+              size="sm"
+              :active="isTodayActive"
+              title="Zum heutigen Datum springen"
+              @click="$emit('jumpToToday')"
+            >
+              <AppIcon
+                :icon="ACTION_ICONS.today"
+                :size="14"
+                group="actions"
+                :active="isTodayActive"
+              />
+              Heute
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              v-if="hasTripStartDate"
+              :active="isTripActive"
+              title="Zum Reisezeitraum springen"
+              @click="$emit('goToTripDates')"
+            >
+              <AppIcon
+                :icon="ACTION_ICONS.vacation"
+                :size="14"
+                group="actions"
+                :active="isTripActive"
+              />
+              Urlaub
+            </Button>
+          </div>
         </div>
-        <Button size="md" class="add-btn" @click="$emit('openAdd')">
-          <AppIcon :icon="ACTION_ICONS.calendarPlus" :size="16" group="actions" /> Neu
-        </Button>
       </div>
 
-      <div class="toolbar-actions-row">
+      <div class="toolbar-view-row">
         <div class="granularity-wrap">
           <SegmentedToggle
             v-model="granularity"
@@ -89,39 +122,6 @@ defineEmits<{
               { value: 'month', label: 'Monat' },
             ]"
           />
-        </div>
-        <div class="jump-row">
-          <Button
-            variant="secondary"
-            size="sm"
-            :active="isTodayActive"
-            title="Zum heutigen Datum springen"
-            @click="$emit('jumpToToday')"
-          >
-            <AppIcon
-              :icon="ACTION_ICONS.today"
-              :size="14"
-              group="actions"
-              :active="isTodayActive"
-            />
-            Heute
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            v-if="hasTripStartDate"
-            :active="isTripActive"
-            title="Zum Reisezeitraum springen"
-            @click="$emit('goToTripDates')"
-          >
-            <AppIcon
-              :icon="ACTION_ICONS.vacation"
-              :size="14"
-              group="actions"
-              :active="isTripActive"
-            />
-            Urlaub
-          </Button>
         </div>
       </div>
     </div>
@@ -169,54 +169,35 @@ defineEmits<{
   min-width: 0;
 }
 
-.toolbar-nav-row {
+.toolbar-timeframe-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-sm);
-  flex-wrap: wrap;
+  gap: var(--space-md);
   min-width: 0;
 }
 
-.granularity-wrap {
+.range-label {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: var(--color-text);
+  min-width: 0;
+}
+
+.timeframe-actions {
   display: flex;
-  justify-content: flex-start;
-  max-width: 100%;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-inline-start: auto;
+  flex-shrink: 0;
   min-width: 0;
 }
 
 .pager {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-xs);
-  max-width: 100%;
-  min-width: 0;
-}
-
-.add-btn {
-  flex-shrink: 0;
-}
-
-.range-label {
-  flex: 0 1 11.5rem;
-  width: 11.5rem;
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  color: var(--color-text);
-  min-width: 0;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.toolbar-actions-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: var(--space-sm);
-  flex-wrap: wrap;
-  min-width: 0;
+  flex-shrink: 0;
 }
 
 .jump-row {
@@ -227,22 +208,42 @@ defineEmits<{
   min-width: 0;
 }
 
-@container schedule-view (max-width: 330px) {
-  .toolbar-nav-row {
-    justify-content: center;
+.toolbar-view-row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.granularity-wrap {
+  display: flex;
+  justify-content: flex-start;
+  max-width: 100%;
+  min-width: 0;
+}
+
+@include container-down('schedule-view', 'mobile') {
+  .toolbar-timeframe-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-sm);
+  }
+
+  .timeframe-actions {
+    margin-inline-start: 0;
+    flex-shrink: 1;
+    flex-wrap: wrap;
   }
 
   .granularity-wrap {
     width: 100%;
-    justify-content: center;
   }
 
-  .toolbar-actions-row {
-    justify-content: center;
+  .granularity-wrap :deep(.segmented-toggle) {
+    width: 100%;
   }
 }
 
-@container schedule-view (max-width: 300px) {
+@include container-down('schedule-view', 'mobile-compact') {
   :deep(.segmented-option) {
     padding: var(--space-xs) var(--space-1-5);
     font-size: var(--font-size-xs);

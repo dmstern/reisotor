@@ -8,8 +8,8 @@ withDefaults(
     direction: 'prev' | 'next';
     /** Größe: 'sm' (36px, Standard für Leisten/Toolbars/Banner) oder 'md' (46px, für Vollbild-/Lightbox-Navigation). */
     size?: 'sm' | 'md';
-    /** Variante: 'ghost' (Standard) oder 'overlay' (Frosted Glass über Fotos). */
-    variant?: 'ghost' | 'overlay';
+    /** Variante: 'ghost' (Standard), 'overlay' (Frosted Glass über Fotos) oder 'secondary' (erhobene Toolbar-Buttons). */
+    variant?: 'ghost' | 'overlay' | 'secondary';
     /** Deaktiviert-Zustand. */
     disabled?: boolean;
     /** Zugänglichkeits-Beschriftung. */

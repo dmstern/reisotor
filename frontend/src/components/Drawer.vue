@@ -503,6 +503,14 @@ onBeforeUnmount(() => {
     align-items: stretch;
   }
 
+  .drawer-header-actions {
+    top: calc(
+      var(--space-xl) + (var(--control-height-md, 46px) - var(--control-height-sm, 36px)) / 2
+    );
+    right: var(--space-lg);
+    gap: var(--space-xs);
+  }
+
   .drawer-backdrop {
     display: none;
   }
