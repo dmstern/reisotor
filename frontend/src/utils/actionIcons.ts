@@ -87,6 +87,7 @@ import {
   IconEye,
   IconEyeFilled,
   IconEyeOff,
+  IconListCheck,
   IconListNumbers,
   IconBrandApple,
   IconBrandGoogleMaps,
@@ -264,6 +265,7 @@ export type ActionIconKey =
   | 'photoPlus'
   | 'copy'
   | 'check'
+  | 'checklist'
   | 'shieldCheck'
   | 'mail'
   | 'externalLink';
@@ -533,6 +535,11 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
     id: 'check',
     emoji: '✓',
     outline: IconCheck,
+  },
+  checklist: {
+    id: 'list-check',
+    emoji: '☑️',
+    outline: IconListCheck,
   },
   mail: {
     id: 'mail',

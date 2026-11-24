@@ -9,6 +9,7 @@ import RichTextEditor from '../components/RichTextEditor.vue';
 import FormField from '../components/FormField.vue';
 import RichTextDisplay from '../components/RichTextDisplay.vue';
 import { isEmptyRichText } from '../utils/richText';
+import { createLatestWinsSaveQueue } from '../utils/richTextChecklist';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import SocialRow from '../components/SocialRow.vue';
@@ -176,6 +177,45 @@ function toggleComments(noteId: number) {
   } else {
     openComments.value.add(noteId);
   }
+}
+
+const noteSaveQueue = createLatestWinsSaveQueue<Note>();
+
+function replaceNote(updated: Note) {
+  const idx = notes.value.findIndex((item) => item.id === updated.id);
+
+  if (idx !== -1) {
+    notes.value[idx] = updated;
+  }
+}
+
+async function updateNoteContent(note: Note, html: string) {
+  const snapshot: Note = { ...note };
+  note.content = html;
+  note.content_format = 'html';
+
+  await noteSaveQueue.enqueue(String(note.id), {
+    captureSnapshot: () => snapshot,
+    persist: () =>
+      api.put<Note>(`/notes/${note.id}`, {
+        title: note.title ?? '',
+        content: html,
+        content_format: 'html',
+        is_draft: Boolean(note.is_draft),
+      }),
+    onCommitted: (updated) => {
+      replaceNote(updated);
+    },
+    onRollback: (confirmed) => {
+      note.content = confirmed.content;
+      note.content_format = confirmed.content_format;
+      replaceNote(confirmed);
+      showToast({
+        message: 'Checklisten-Status konnte nicht gespeichert werden.',
+        type: 'error',
+      });
+    },
+  });
 }
 
 async function toggleLike(noteId: number) {
@@ -424,7 +464,13 @@ async function remove(id: number) {
               <EditButton small @click="startEdit(note)" />
             </div>
           </div>
-          <RichTextDisplay class="content" :content="note.content" :format="note.content_format" />
+          <RichTextDisplay
+            class="content"
+            :content="note.content"
+            :format="note.content_format"
+            interactive
+            @update:content="(html) => updateNoteContent(note, html)"
+          />
           <FileAttachments domain="notes" :entity-id="note.id" :editable="false" />
           <div class="note-footer">
             <p class="meta">

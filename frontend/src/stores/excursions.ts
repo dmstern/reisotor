@@ -6,6 +6,7 @@ import { useTripStore } from './trip';
 import { useLiveSyncStore } from './liveSync';
 import { useToast } from '../composables/useToast';
 import { restoreTrashItem } from '../api/trash';
+import { createLatestWinsSaveQueue } from '../utils/richTextChecklist';
 export interface ExcursionFormData {
   trip_id?: number;
   title: string;
@@ -153,6 +154,70 @@ export const useExcursionsStore = defineStore('excursions', () => {
     excursions.value = next;
   }
 
+  const noteSaveQueue = createLatestWinsSaveQueue<Excursion>();
+
+  function replaceExcursion(updated: Excursion) {
+    const idx = excursions.value.findIndex((excursion) => excursion.id === updated.id);
+
+    if (idx === -1) {
+      return;
+    }
+
+    const next = [...excursions.value];
+    next[idx] = updated;
+    excursions.value = next;
+  }
+
+  /** Aktualisiert nur die Notiz (z. B. direktes Abhaken von Checklisten in TourDetailView /
+   *  TravelDetailDialog) optimistisch und bewahrt alle übrigen Felder bei PUT /ideas. */
+  async function updateNote(id: number, note: string) {
+    const idx = excursions.value.findIndex((excursion) => excursion.id === id);
+
+    if (idx === -1) {
+      return;
+    }
+
+    const existing = excursions.value[idx];
+    const next = [...excursions.value];
+    next[idx] = { ...existing, note, note_format: 'html' };
+    excursions.value = next;
+
+    await noteSaveQueue.enqueue(String(id), {
+      captureSnapshot: () => existing,
+      persist: () =>
+        api.put<Excursion>(`/ideas/${id}`, {
+          title: existing.title,
+          image_url: existing.image_url ?? undefined,
+          note,
+          note_format: 'html',
+          date: existing.date ?? undefined,
+          spot_ids: existing.spot_ids,
+          legs: existing.legs,
+          role: existing.role,
+          transport_type: existing.transport_type,
+          departure_time: existing.departure_time,
+          arrival_time: existing.arrival_time,
+          checkin_info: existing.checkin_info,
+          amount: existing.amount,
+          paid_by_user_id: existing.paid_by_user_id,
+          luggage: existing.luggage,
+          seat: existing.seat,
+          ticket_link: existing.ticket_link,
+        }),
+      onCommitted: (updated) => {
+        replaceExcursion(updated);
+      },
+      onRollback: (snapshot) => {
+        replaceExcursion(snapshot);
+        const { showToast } = useToast();
+        showToast({
+          message: 'Checklisten-Status konnte nicht gespeichert werden.',
+          type: 'error',
+        });
+      },
+    });
+  }
+
   return {
     excursions,
     loaded,
@@ -163,5 +228,6 @@ export const useExcursionsStore = defineStore('excursions', () => {
     remove,
     setDate,
     setDone,
+    updateNote,
   };
 });

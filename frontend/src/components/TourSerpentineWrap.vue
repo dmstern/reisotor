@@ -48,6 +48,7 @@ const emit = defineEmits<{
   (e: 'showSpotOnMap', spot: Spot): void;
   (e: 'addSpotToTour', spotId: number): void;
   (e: 'createSpotForTour'): void;
+  (e: 'updateSpotNote', payload: { spotId: number; note: string }): void;
 }>();
 
 const auth = useAuthStore();
@@ -205,6 +206,9 @@ function creatorLabel(userId: number | null | undefined): string | null {
                 @open="(spot, el) => emit('openSpot', spot, el)"
                 @close="emit('closeSpot')"
                 @show-on-map="emit('showSpotOnMap', cell.spot)"
+                @update-note="
+                  (html) => emit('updateSpotNote', { spotId: cell.spot.id, note: html })
+                "
               />
             </div>
 

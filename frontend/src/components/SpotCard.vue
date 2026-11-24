@@ -81,6 +81,7 @@ const emit = defineEmits<{
   (e: 'open', spot: Spot, el?: HTMLElement | null): void;
   (e: 'close'): void;
   (e: 'show-on-map'): void;
+  (e: 'update-note', note: string): void;
 }>();
 
 const showComments = ref(false);
@@ -164,6 +165,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
       :creator-label="creatorLabel"
       :is-accommodation="isAccommodation"
       :heading-tag="headingTag"
+      @update-note="(html) => emit('update-note', html)"
     />
 
     <div class="body">

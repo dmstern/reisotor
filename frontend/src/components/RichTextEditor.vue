@@ -3,9 +3,10 @@ import { computed, nextTick, ref, watch } from 'vue';
 import { useEditor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
-import DOMPurify from 'dompurify';
+import { TaskItem, TaskList } from '@tiptap/extension-list';
 import AppIcon from './AppIcon.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
+import { sanitizeRichTextHtml } from '../utils/richTextChecklist';
 
 // Ersetzt die bisherigen <textarea>+renderRichText()-Vorschau-Formularfelder (Notizen, Tagebuch,
 // Reise-/Ausflugs-/Spot-Notizen) durch einen echten WYSIWYG-Editor - Formatierung wird direkt beim
@@ -98,6 +99,8 @@ const editor = useEditor({
   extensions: [
     StarterKit,
     Link.configure({ autolink: true, openOnClick: false, linkOnPaste: true }),
+    TaskList,
+    TaskItem.configure({ nested: true }),
   ],
   editorProps: {
     attributes: { class: 'richtext-content richtext' },
@@ -120,7 +123,7 @@ const editor = useEditor({
   },
   onUpdate: ({ editor }) => {
     syncingFromEditor = true;
-    emit('update:modelValue', DOMPurify.sanitize(editor.getHTML()));
+    emit('update:modelValue', sanitizeRichTextHtml(editor.getHTML()));
   },
 });
 
@@ -263,6 +266,18 @@ defineExpose({
           <button
             type="button"
             class="toolbar-btn"
+            :class="{ active: isActive('taskList') }"
+            title="Checkliste"
+            aria-label="Checkliste"
+            :disabled="!editor"
+            @mousedown.prevent
+            @click="editor?.chain().focus().toggleTaskList().run()"
+          >
+            <AppIcon :icon="ACTION_ICONS.checklist" :size="15" group="actions" />
+          </button>
+          <button
+            type="button"
+            class="toolbar-btn"
             :class="{ active: isActive('blockquote') }"
             title="Zitat"
             aria-label="Zitat"
@@ -298,6 +313,8 @@ defineExpose({
 </template>
 
 <style scoped lang="scss">
+@use '../styles/_richtextTaskList.scss' as *;
+
 /* display:flex + flex-shrink:0 + max-height (statt einfach nur overflow:hidden ohne Höhenangabe):
    innerhalb eines full-height-Modal-Formulars (Modal.vue, :slotted(form) { flex:1; overflow-y:auto })
    ist dieser Editor sonst selbst ein schrumpfbares Flex-Item - durch overflow:hidden bekommt es lt.
@@ -375,6 +392,9 @@ defineExpose({
 }
 
 .toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 28px;
   height: 28px;
   padding: 0 var(--space-1-5);
@@ -461,6 +481,10 @@ defineExpose({
 .richtext-editor :deep(.richtext-content ol) {
   margin: var(--space-xs) 0;
   padding-left: 1.3em;
+}
+
+.richtext-editor :deep(.richtext-content) {
+  @include richtext-task-list;
 }
 
 .richtext-editor :deep(.richtext-content h1),

@@ -84,6 +84,7 @@ const emit = defineEmits<{
   (e: 'removeComment', commentId: number): void;
   (e: 'updateComment', commentId: number, content: string): void;
   (e: 'toggleCommentLike', commentId: number): void;
+  (e: 'updateContent', entry: DiaryEntry, content: string): void;
 }>();
 
 const drawers = useDrawersStore();
@@ -148,7 +149,13 @@ function excursionTooltip(ex: Excursion): string {
 
     <h3 v-if="entry.title">{{ entry.title }}</h3>
     <DraftBadge v-if="entry.is_draft" />
-    <RichTextDisplay class="content" :content="entry.content" :format="entry.content_format" />
+    <RichTextDisplay
+      class="content"
+      :content="entry.content"
+      :format="entry.content_format"
+      interactive
+      @update:content="(html) => emit('updateContent', entry, html)"
+    />
 
     <div class="diary-polaroid-wrap" v-if="validImages.length">
       <PolaroidStack

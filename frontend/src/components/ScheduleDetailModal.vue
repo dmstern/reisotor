@@ -9,11 +9,14 @@ import RichTextDisplay from './RichTextDisplay.vue';
 import FileAttachments from './FileAttachments.vue';
 import MapsAppPicker from './MapsAppPicker.vue';
 import CalendarExportDropdown from './CalendarExportDropdown.vue';
+import { useScheduleStore } from '../stores/schedule';
 import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { formatDate } from '../utils/dateFormat';
 import { isEmptyRichText } from '../utils/richText';
 
-defineProps<{
+const scheduleStore = useScheduleStore();
+
+const props = defineProps<{
   modelValue: boolean;
   detail: ReturnType<typeof useScheduleItemDetail>;
 }>();
@@ -21,6 +24,16 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
 }>();
+
+function onUpdateNote(html: string) {
+  const item = props.detail.viewingItem.value;
+
+  if (!item) {
+    return;
+  }
+
+  scheduleStore.updateNote(item.id, html);
+}
 </script>
 
 <template>
@@ -122,7 +135,9 @@ const emit = defineEmits<{
       v-if="detail.viewingItem.value?.note && !isEmptyRichText(detail.viewingItem.value.note)"
       :content="detail.viewingItem.value.note"
       format="html"
+      interactive
       class="detail-row note"
+      @update:content="onUpdateNote"
     />
 
     <FileAttachments

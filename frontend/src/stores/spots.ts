@@ -7,6 +7,7 @@ import { useLiveSyncStore } from './liveSync';
 import { useToast } from '../composables/useToast';
 import { restoreTrashItem } from '../api/trash';
 import { useTripCategoriesStore } from './tripCategories';
+import { createLatestWinsSaveQueue } from '../utils/richTextChecklist';
 export interface SpotFormData {
   trip_id: number;
   title: string;
@@ -289,6 +290,74 @@ export const useSpotsStore = defineStore('spots', () => {
     spots.value = next;
   }
 
+  function buildSpotNotePayload(existing: Spot, note: string): SpotFormData {
+    return {
+      trip_id: existing.trip_id,
+      title: existing.title,
+      image_url: existing.image_url ?? undefined,
+      category: existing.category ?? undefined,
+      note,
+      note_format: 'html',
+      maps_link: existing.maps_link ?? undefined,
+      lat: existing.lat ?? undefined,
+      lng: existing.lng ?? undefined,
+      is_home: Boolean(existing.is_home),
+      address: existing.address ?? undefined,
+      start_date: existing.start_date ?? undefined,
+      end_date: existing.end_date ?? undefined,
+      checkin: existing.checkin ?? undefined,
+      checkout: existing.checkout ?? undefined,
+      contact: existing.contact ?? undefined,
+      amount: existing.amount ?? undefined,
+      paid_by_user_id: existing.paid_by_user_id ?? undefined,
+      dates: existing.dates?.map((entry) => ({ date: entry.date, done: entry.done })),
+      done: Boolean(existing.done),
+    };
+  }
+
+  const noteSaveQueue = createLatestWinsSaveQueue<Spot>();
+
+  function replaceSpot(updated: Spot) {
+    const idx = spots.value.findIndex((spot) => spot.id === updated.id);
+
+    if (idx === -1) {
+      return;
+    }
+
+    const next = [...spots.value];
+    next[idx] = updated;
+    spots.value = next;
+  }
+
+  async function updateNote(id: number, note: string) {
+    const idx = spots.value.findIndex((spot) => spot.id === id);
+
+    if (idx === -1) {
+      return;
+    }
+
+    const existing = spots.value[idx];
+    const next = [...spots.value];
+    next[idx] = { ...existing, note, note_format: 'html' };
+    spots.value = next;
+
+    await noteSaveQueue.enqueue(String(id), {
+      captureSnapshot: () => existing,
+      persist: () => api.put<Spot>(`/spots/${id}`, buildSpotNotePayload(existing, note)),
+      onCommitted: (updated) => {
+        replaceSpot(updated);
+      },
+      onRollback: (snapshot) => {
+        replaceSpot(snapshot);
+        const { showToast } = useToast();
+        showToast({
+          message: 'Checklisten-Status konnte nicht gespeichert werden.',
+          type: 'error',
+        });
+      },
+    });
+  }
+
   return {
     spots,
     spotLikes,
@@ -301,6 +370,7 @@ export const useSpotsStore = defineStore('spots', () => {
     commentsFor,
     create,
     update,
+    updateNote,
     remove,
     toggleLike,
     submitComment,

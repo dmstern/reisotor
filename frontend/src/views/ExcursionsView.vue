@@ -1980,6 +1980,7 @@ onUnmounted(() => {
                   @update-comment="updateExcursionComment"
                   @toggle-comment-like="toggleExcursionCommentLike"
                   @show-on-map="onExcursionShowOnMap(selectedExcursion.id)"
+                  @update-note="(html) => excursionsStore.updateNote(selectedExcursion!.id, html)"
                 >
                   <template #stations>
                     <TourSerpentineWrap
@@ -2018,6 +2019,7 @@ onUnmounted(() => {
                         (spotId) => onAddExistingSpotToTour(selectedExcursion!, spotId)
                       "
                       @create-spot-for-tour="onCreateSpotForTourCard(selectedExcursion!)"
+                      @update-spot-note="({ spotId, note }) => spotsStore.updateNote(spotId, note)"
                     />
                     <div v-else class="empty tour-empty-group">
                       <p class="tour-empty-text">
@@ -2110,6 +2112,7 @@ onUnmounted(() => {
                           @open="(spot, el) => onSpotCardOpen(spot, el)"
                           @close="onSpotCardClose"
                           @show-on-map="onSpotShowOnMap(item.spot)"
+                          @update-note="(html) => spotsStore.updateNote(item.spot.id, html)"
                         />
                       </template>
                     </TransitionGroup>
