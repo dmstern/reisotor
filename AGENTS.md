@@ -67,6 +67,8 @@ Jede Änderung an `backend/src/db/index.ts` braucht diesen Check:
 
 ## Issue-Komplexität & Modell-/Thinking-Mapping
 
+Vollständiges Ablaufdiagramm (`🔍️ needs-triage` → `⚠️ needs-refinement` / `✅️ dev-ready` → `🚦️ complexity:*`): [`docs/ISSUE_WORKFLOW_GUIDE.md`](docs/ISSUE_WORKFLOW_GUIDE.md).
+
 Alle Aufgaben (mit/ohne Issue) werden in `T1`–`T4` (`🚦️ complexity:trivial/low/mid/high`) klassifiziert:
 
 - 🩵 **`T1` · `trivial`**: 1–2 Dateien, Typo, Copy, kleiner CSS-Fix, einfacher Test, Config-Bump.
@@ -111,7 +113,8 @@ Vor jedem Commit/PR (insbesondere bei `T3`-Execution ohne separates Review) zwin
 
 ### PR-Erstellung, Screenshots & Release-Notes
 
-- **Automatische PR-Erstellung:** Neuer Branch/Worktree ohne PR (`gh pr view 2>/dev/null`) → pushen und automatisch `gh pr create` mit Link-Ausgabe (Issue-Referenz mit `Fixes #...`). Bei bestehendem PR nur pushen und ggf. `gh pr edit`. PRs **niemals automatisch mergen**.
+- **Automatische PR-Erstellung:** Neuer Branch/Worktree ohne PR (`gh pr view 2>/dev/null`) → pushen und automatisch `gh pr create` (bei Nicht-Draft-PRs direkt mit `--label "👀️ review:needed"`) mit Link-Ausgabe (Issue-Referenz mit `Fixes #...`). Bei bestehendem PR nur pushen und ggf. `gh pr edit` (nach gepushten Review-Fixes wieder `👀️ review:needed` setzen). PRs **niemals automatisch mergen**.
+- **PR-Review & Label-System ([`docs/PR_REVIEW_GUIDE.md`](docs/PR_REVIEW_GUIDE.md) & [`.agent/skills/pr-review/SKILL.md`](.agent/skills/pr-review/SKILL.md)):** Offene Nicht-Draft-PRs nutzen orthogonale `review:*`-Labels (`👀️ review:needed` | `🛠️ review:needs-polish` | `👍️ review:reviewed`, `🧪️ review:needs-manual-test` | `✅️ review:manually-tested`, `💬️ review:discussed`, `🚀️ review:ready-to-merge`). Für Reviews, Status-Updates und das PR-Board den Skill `pr-review` nutzen (`node .agent/skills/pr-review/scripts/pr-labels.mjs`).
 - **Screenshots:** Strikte On-Demand-Pflicht (nie automatisch, kein `view_file` auf Bilder). Details zu Baseline (`docs/screenshots/`), HTML-Diff-Report und Scratch-Screenshots: [`docs/PR_AND_RELEASE_NOTES.md`](docs/PR_AND_RELEASE_NOTES.md).
 - **Release-Notes:** 1 Fragment pro PR unter `release-notes/pending/<slug>.md` (keine für reine Internas). Erlaubte `### `-Kategorien: `Reisen und Urlaube`, `Karte und Navigation`, `Spots, Touren und Unterkünfte`, `Budget und Kasse`, `Kalender und Planung`, `Listen, Notizen und Tagebuch`, `Wetter`, `Verwaltung und Benutzerkonten`, `Design und Bedienung`, `Datenschutz und Sicherheit`, `Einstellungen, Benachrichtigungen und Synchronisation`, `Demo und Feedback`, `Weitere Verbesserungen und Fehlerbehebungen`. Endnutzer-Deutsch **ohne** Backticks, CSS-Variablen, Dateinamen oder Issue-/PR-Nummern; prüfen mit `npm run check:release-notes`. Upgrade-Entscheidungsbaum: [`docs/PR_AND_RELEASE_NOTES.md`](docs/PR_AND_RELEASE_NOTES.md).
 - **Semantische Commits:** Nie fachfremde Themen in einen Riesen-Commit bündeln (`feat:`, `fix:`, `feat!:`, `chore:`, `refactor:`, `docs:`). Jeder Commit muss formatiert, typgeprüft und lauffähig sein.
