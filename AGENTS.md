@@ -1,316 +1,118 @@
 # AGENTS.md
 
-This file provides guidance to AI Coding Agents (Antigravity, Claude Code, Cursor AI, GitHub Copilot, etc.) when working with code in this repository.
-
-Reisotor ist eine Vue 3 + Fastify-Web-App zur gemeinsamen Reiseplanung, ursprünglich für zwei
-Personen pro Haushalt gebaut. Registrierung ist offen (E-Mail-Adresse, `routes/auth.ts`), Zugriff
-auf einen Urlaub ist aber zusätzlich per Mitgliedschaft (`trip_members`) beschränkt — wer einen
-Urlaub anlegt, ist zunächst allein darauf, weitere Personen müssen erst per Autocomplete-Suche
-eingeladen werden. Siehe `README.md` für Features und lokale Setup-Schritte sowie `DEPLOYMENT.md` für
-Server-Deployment und Umgebungsvariablen; **`ARCHITECTURE.md`** für die vollständige Architektur-Beschreibung (Backend,
-Datenbank, Auth-Details, Frontend, Realtime/Offline, Deployment) **und eine Code-Map** (welche
-Route/welcher Store/welche View zu welcher Domäne gehört) — diese Dateien werden nicht automatisch
-geladen, bei Bedarf gezielt lesen statt den Code selbst zu explorieren/zu grep'en. Diese Datei hält
-nur fest, was Claude Code bei **jeder** Session parat haben soll: Befehle und verbindliche
-Arbeits-/Workflow-Konventionen.
+Guidance für AI Coding Agents in diesem Repository. Reisotor ist eine Vue 3 + Fastify-Web-App zur gemeinsamen Reiseplanung. Registrierung ist offen (`routes/auth.ts`), Trip-Zugriff erfolgt per Mitgliedschaft (`trip_members`). Siehe `README.md` (Features/Setup), `DEPLOYMENT.md` (Server/Env-Vars) und **`ARCHITECTURE.md`** (vollständige Architektur + **Code-Map**: vor blindem Explorieren gezielt lesen).
 
 ## Setup & Befehle
 
-Alle Workflows laufen zentral als Convenience-Skripte über die Root-[`package.json`](package.json) (`npm run dev`, `test`, `build`, `typecheck`, `lint`, `format`, `seed` etc.). Bei Bedarf direkt in `package.json` nachschlagen.
+Alle Skripte liegen zentral in [`package.json`](package.json) (`npm run dev`, `test`, `build`, `typecheck`, `lint`, `format`, `seed` etc.). Voraussetzungen: Node.js 24+ und `make`/`gcc`/`python3` (`better-sqlite3`, `bcrypt`).
 
-- **Einzelne Tests ausführen (strikte Pflicht für Agenten):** Backend: `npx -y vitest run backend/test/<pfad> --bail 1` bzw. `npx -y vitest run -t "<name>" --bail 1`; Frontend: `npm --prefix frontend test -- <pfad> --bail 1`; E2E: `npx -y playwright test <pfad-zur-spec>`. Niemals gesamte Test-Suiten im Chat ausführen.
-- **Voraussetzungen:** Node.js 24+ sowie `make`/`gcc`/`python3` für native Module (`better-sqlite3`, `bcrypt`). Volle Setup-/Deploy-/Env-Var-Details: `README.md` und `DEPLOYMENT.md`.
+- **Einzelne Tests (strikte Pflicht):** Backend: `npx -y vitest run backend/test/<pfad> --bail 1` bzw. `npx -y vitest run -t "<name>" --bail 1`; Frontend: `npm --prefix frontend test -- <pfad> --bail 1`; E2E: `npx -y playwright test <spec>`. **Niemals** ganze Test-Suiten im Chat ausführen.
 
-## Parallele Sessions & Worktree-Disziplin (Konfliktvermeidung & Clean Exit)
+## Parallele Sessions & Worktree-Disziplin
 
-Wenn mehrere Agent-Sessions parallel laufen oder nacheinander im Repository arbeiten, gelten strikte Regeln zur Vermeidung von Konflikten, Race Conditions und unnötigem Token-Verbrauch:
-
-- **Pre-Flight-Check vor Code-Änderungen (Pflicht):**
-  - Vor dem Anlegen oder Editieren von Dateien MUSS der Agent zuerst prüfen, ob der Worktree sauber ist: `git status --porcelain`.
-  - **Wenn uncommittete Änderungen oder fremde Dateien vorhanden sind:**
-    - **Niemals blind überschreiben:** Fremde oder unfertige Arbeitsstände (aus anderen parallelen Sessions oder von der Nutzerin / dem Nutzer) dürfen unter keinen Umständen überschrieben, zurückgesetzt (`git restore` / `git checkout`) oder ungefragt mit in den eigenen Commit gemischt werden.
-    - **Kein teures LLM-Polling:** Der Agent darf **nicht** in einer Schleife (z. B. wiederholtes Aufwachen per Timer oder Bash-Sleeps) im Chat auf das Fertigwerden einer anderen Session warten (massiver Token-Verbrauch).
-    - **Transparenter Stopp:** Bei uncommitteten Fremdänderungen sofort stoppen und den Nutzer kurz und sachlich informieren (z. B. welche Dateien modifiziert sind) und fragen, ob gewartet, gestasht oder in einem separaten Worktree gearbeitet werden soll.
-- **Empfehlung für echte Parallelität (Git Worktrees):**
-  - Sollen mehrere Aufgaben gleichzeitig bearbeitet werden, ist die Nutzung separater Git Worktrees der verbindliche Best-Practice-Weg (in Antigravity direkt per UI-Dropdown **„New Worktree“** / `Ctrl+.` unter dem Chat-Eingabefeld, alternativ per CLI `git worktree add ../reisotor-<task> -b <task-branch>`). Dies verhindert Lock-Konflikte (`.git/index.lock`), Dateikollisionen und Wartezeiten vollständig.
-  - **Schneller Worktree-Start:** Nach dem Auschecken eines Worktrees genügt `npm run dev:fresh` (oder `npm run setup:worktree`), um `node_modules` per Symlink aus dem Hauptordner zu teilen, `.env` zu synchronisieren, die Test-DB mit Demo-Daten anzulegen und den Server direkt zu starten.
-- **Clean Exit, Commit- & PR-Pflicht:**
-  - **Niemals direkt auf `main` committen:** Steht das Repository zu Beginn einer Session auf `main`, MUSS vor dem ersten Commit (am besten direkt nach dem Pre-Flight-Check) ein eigener semantischer Branch angelegt werden (`git checkout -b <type>/<kurzer-slug>`).
-  - Jede Session MUSS nach erfolgreicher Arbeit, Prüfung der Release-Notes (siehe Abschnitt unten), Formatierung (`npx -y prettier --write <dateien>`), Typecheck und fokussierten Tests die eigenen Änderungen **stets sauber und semantisch committen** (`git commit -m "feat/fix/chore: ..."`).
-  - Existiert für den Branch noch kein PR (`gh pr view 2>/dev/null`), MUSS der Branch gepusht (`git push -u origin <branch>`) und **automatisch ein Pull Request angelegt** werden (`gh pr create`).
-  - Der Worktree darf am Ende einer Session NIEMALS mit uncommitteten Änderungen, ungetrackten Testdateien oder unformatiertem Code hinterlassen werden, damit nachfolgende Sessions sofort eine saubere Ausgangsbasis vorfinden.
+- **Pre-Flight-Check (Pflicht vor Edits):** `git status --porcelain` prüfen. Bei uncommitteten Fremdänderungen **niemals** blind überschreiben, zurücksetzen (`git restore`/`checkout`) oder in eigenem Commit mischen — und **kein** LLM-Polling (Timer/Sleeps). Sofort stoppen, modifizierte Dateien nennen und Nutzer fragen.
+- **Git Worktrees (Best Practice für Parallelität):** Separaten Worktree nutzen (`git worktree add ../reisotor-<task> -b <branch>` bzw. UI **„New Worktree“** / `Ctrl+.`), danach `npm run dev:fresh` (oder `npm run setup:worktree`).
+- **Branch- & Clean-Exit-Pflicht:** **Niemals direkt auf `main` committen** (vorab `git checkout -b <type>/<slug>`). Am Ende immer formatieren, prüfen, semantisch committen, pushen und bei fehlendem PR (`gh pr view 2>/dev/null`) automatisch `gh pr create` ausführen. Worktree sauber hinterlassen.
 
 ## UI-Audits & Layout-Testing
 
-**Befehle für UI-Audits (Nur bei dedizierten Audits oder expliziter Aufforderung):**
+Details und vollständige Prompts: [`docs/UI_AUDIT_GUIDE.md`](docs/UI_AUDIT_GUIDE.md) und [`docs/AUDIT_PROMPTS.md`](docs/AUDIT_PROMPTS.md).
 
-- `npm run test:audit` - Adversarial UI-Layout-Audit mit Viewport- & Drawer-Matrix
-- Bei gezielten UI-Audits: Route ermitteln und `AUDIT_ROUTE=<route> npm run test:audit` ausführen. **Nicht** bei normalen Bugfixes oder kleineren UI-Änderungen im Chat ausführen (erzeugt massive Test-Logs; für Standard-Änderungen reichen fokussierte Unit-Tests).
-- **Vollständige Details:** `docs/UI_AUDIT_GUIDE.md` (Trigger-Phrasen, 3-Viewport-Regel, Adversarial Testing)
-- **Prompt-Vorlagen & modulares Refactoring (Phasen 0 bis 4):** `docs/AUDIT_PROMPTS.md` (Triage & Zielbild, Script/State, Template/Primitives, Style/Layout-Audit sowie Konsolidierung & Meta-Review) sowie `docs/UI_AUDIT_GUIDE.md` (Pre-Release-Stabilitäts-Gate).
-  - **Kurz-Trigger für Pre-Release-Stabilitäts-Gate (`docs/UI_AUDIT_GUIDE.md`):**
-    - **`Release Audit Auto` / _„Mach ein Pre-Release Audit“_ (Standard: Vollautomatischer Orchestrator mit sequenziellen Subagenten in 1 Chat):**
-      - Der Haupt-Agent im Chat bleibt ein schlanker **Orchestrator** (liest selbst keinen Komponenten-Code, um sein eigenes Kontextfenster minimal zu halten).
-      - Er ermittelt per `git log` / `gh pr view`, welche der Teams 1–6 seit dem letzten Release-Tag betroffen bzw. im aktuellen Audit-PR noch offen sind.
-      - Für jedes zu prüfende Team spawnt er **strikt nacheinander (sequenziell – niemals parallel wegen Playwright-Ports und Git-Locks!)** einen eigenen `self`-Subagenten (`invoke_subagent`, `TypeName: "self"`, `Workspace: "inherit"`).
-      - Jeder Subagent arbeitet in seinem eigenen, frischen Kontextfenster sein Team komplett ab (Inspektion der 5 Prüf-Dimensionen + `test:audit` → chirurgische CSS-/Token-/Container-Fixes ohne Architektur-Umbauten → `typecheck` & `eslint` → eigener semantischer Commit) und liefert nur eine kompakte Befund-/Fix-Tabelle an den Orchestrator zurück.
-      - Nach Abschluss aller Teams führt der Orchestrator einmalig das **Finale Release-Gate** (`npm run check`, `npm run test:a11y`) aus, aktualisiert den PR (`gh pr edit`), pusht den Branch und präsentiert am Ende den konsolidierten Gesamtbericht.
-    - _(Optionale Einzel-Trigger bei Bedarf: `Release Audit: <Team | Route>` für ein einzelnes Team ohne Subagent, `Release Audit Assess/Fix/Review: <Team>` für Einzelschritte, `Release Audit Gate` für das isolierte Abschluss-Gate)._
-  - **Kurz-Trigger für Refactoring-Sessions (#446):**
-    - `Refactor Assess: <datei>` (Phase 0: Triage & Zielbild vorab – prüft Sinnhaftigkeit, analysiert Orchestrator vs. God-Component, schützt vor Over-Modularization/Prop-Drilling und bestimmt den maßgeschneiderten Phasen-Pfad)
-    - `Refactor Phase 1: <datei>` (Logik & Composables)
-    - `Refactor Phase 2: <datei>` (Template & Subkomponenten – nur falls in Phase 0 empfohlen)
-    - `Refactor Phase 3: <datei>` (Styles, Tokens & Enge-Audit)
-    - `Refactor Phase 4: <datei>` / `Refactor Review: <datei>` (Review & Synergien)
-  - **Refactoring-Workflow (1 PR & 1 Worktree, Frischer Chat pro Phase):**
-    - Für das gesamte Refactoring einer Komponente wird **ein gemeinsamer Branch/Worktree** und **ein einziger PR** genutzt.
-    - Zur Schonung des Kontextfensters und Vermeidung von Fehlern läuft **jede Phase in einem separaten, frischen Chat**.
-    - **Single Source of Truth im PR (Cross-Session-Gedächtnis):**
-      - **Phase 0 initialisiert den PR:** Phase 0 committet die Triage (z. B. `git commit --allow-empty -m "refactor(<scope>): phase 0 - triage & target architecture assessment"`) und legt sofort per `gh pr create --draft` den zentralen PR an. Die PR-Beschreibung enthält die maßgeschneiderte Checkliste (geplante vs. übersprungene Phasen) und das Zielbild.
-      - **Pre-Flight für Folgesessions (`gh pr view` Pflicht):** Jeder Folge-Agent (Phase 1 bis 4) MUSS zu Beginn zwingend `gh pr view` ausführen, um die Triage-Vorgaben und den festgelegten Phasen-Pfad einzulesen.
-      - **Skip-Guard in Phase 2:** Wurde Phase 2 in Phase 0 als übersprungen deklariert (z. B. wegen hoher SVG-/Scoped-CSS-Kopplung), bricht Phase 2 sofort defensiv ab und verweist auf Phase 3.
-      - **Handoff-Intelligenz:** Ist die Folgephase laut PR übersprungen, empfiehlt der Agent im Handoff-Trigger direkt die nächste aktive Phase (z. B. Phase 3 statt Phase 2).
-    - **Pflicht nach jeder Phase:**
-      1. Semantischer Commit für die Phase.
-      2. PR-Beschreibung aktualisieren (`gh pr edit` mit Checkliste, Vorher/Nachher-Zeilen und Zwischenstand).
-      3. Im Chat zwingend den **nächsten aktiven Kurz-Trigger** prominent ausgeben (z. B. `👉 Nächster Schritt im frischen Chat: Refactor Phase 3: <datei>`).
+- **Adversarial Audit:** `npm run test:audit` bzw. `AUDIT_ROUTE=<route> npm run test:audit` (nur bei dedizierten Audits oder expliziter Aufforderung, nicht bei Standard-Bugfixes).
+- **`Release Audit Auto` / _„Mach ein Pre-Release Audit“_:** Haupt-Agent bleibt schlanker **Orchestrator** (liest keinen Komponenten-Code), ermittelt offene Teams 1–6 via `git log`/`gh pr view` und spawnt **strikt sequenziell (niemals parallel wegen Playwright-Ports & Git-Locks!)** je einen `self`-Subagenten (`TypeName: "self"`, `Workspace: "inherit"`). Danach einmalig `npm run check` + `npm run test:a11y`, `gh pr edit`, `git push` und konsolidierter Gesamtbericht.
+- **Refactoring-Workflow (#446):** 1 gemeinsamer Branch/PR, frischer Chat pro Phase (`Refactor Assess: <datei>` [Phase 0 legt Draft-PR + Checkliste an] → `Refactor Phase 1–4: <datei>`). Folge-Chats MÜSSEN zuerst `gh pr view` lesen, Phase 2 bricht bei Skip-Marker sofort ab, nach jeder Phase: Commit + `gh pr edit` + nächsten aktiven Trigger ausgeben.
 
 ## Typecheck, Linting & Formatting
 
-Vor dem Commit gezielt prüfen (am Ende der Aufgabe, nicht nach jedem Zwischenschritt):
+- Vor Commit gezielt prüfen: `npm run typecheck` (nie rohes `npx vue-tsc`; bei `vue-tsc` not found zuerst `cd frontend && npm install`) und `npx -y eslint <geänderte-datei>`.
+- **Pflicht-Formatierung vor Commit:** `npx -y prettier --write <dateien>` (`npm run format` nur bei repo-weiten Änderungen).
+- **Niemals `npx` ohne `-y` / `--yes`** (sonst Hänger ohne TTY).
 
-```bash
-npm run typecheck    # Typecheck (Frontend)
-npx -y eslint <geänderte-datei>  # Gezielt nur geänderte Dateien linten statt gesamtes Repo
-```
+## Clean Code, Software-Design & Konsistenz
 
-**Wichtig für AI-Agenten:**
-
-- **Zwingende Formatierung vor jedem Commit:** Da die CI-Pipeline bei Code-Style-Abweichungen (Prettier) fehlschlägt, MUSS vor jedem `git commit` zwingend der Code formatiert werden. Um hunderte Zeilen unnötigen Terminal-Output im Chat zu vermeiden, formatiere gezielt nur die geänderten Dateien: `npx -y prettier --write <pfad-zur-datei>`. Das Root-Skript `npm run format` (über 600 Dateien) nur nutzen, wenn viele Dateien über das Repo verteilt geändert wurden.
-- **Saubere, semantische Commits:** Niemals fachfremde oder voneinander unabhängige Änderungen gesammelt in einem riesigen "Alles-in-einem-Rutsch"-Commit am Ende zusammenfassen. Ein zusammenhängendes Feature (inklusive benötigtem Backend, Store, UI und zugehörigen Tests) darf und soll zusammenhängend committet werden. Verschiedene fachliche Themen, Refactorings, Agent-Konfigurationen oder unabhängige Features (z. B. Budgets, Karten-Fix, Listen) müssen jedoch zwingend in separaten, semantischen Commits isoliert werden, damit die Git-Historie nachvollziehbar bleibt und Features bei Bedarf sauber einzeln revertiert werden können.
-- Immer `npm run typecheck` oder `npm --prefix frontend run typecheck` bzw. `npm run build` nutzen statt Roh-Aufrufen von `npx vue-tsc`.
-- **Niemals interaktive `npx`-Aufrufe ohne `-y` / `--yes` starten!** Falls `npx` Pakete nachinstallieren will, fordert es eine interaktive Bestätigung an (`Need to install the following packages: ... Ok to proceed? (y)`), was in Hintergrundprozessen/Subagenten ohne TTY zum dauerhaften Aufhängen führt.
-- Falls `npm run build` abbricht mit `vue-tsc: Kommando nicht gefunden`, zuerst `cd frontend && npm install` ausführen.
-- Falls `npx` zwingend für Befehle genutzt werden muss, immer die Option `-y` mitgeben (`npx -y ...`).
-
-## Clean Code, Software-Design & Konsistenz (SoC, SRP, DRY, KISS)
-
-Für alle Änderungen gelten folgende Software-Design-Prinzipien als verbindliche Richtschnur:
-
-- **Clean Code**: Selbsterklärend, leicht lesbar, intentionsklar. Aussagekräftige Namen, keine magischen Zahlen/Strings, kleine fokussierte Funktionen, kein toter Code.
-- **Separation of Concerns (SoC)**: Views → Darstellung/Layout; Pinia-Stores → globaler Zustand; Composables/Utils → fachliche Logik; Primitives → generische UI-Bausteine; Backend → Request-Handling/DB.
-- **SRP**: Jede Komponente/Funktion hat genau eine Aufgabe.
-- **KISS & YAGNI**: Einfachste Lösung wählen, kein Über-Engineering, bestehende App-Muster nutzen.
-- **DRY**: Keine redundanten Kopien. Wiederverwendbare Logik → Composable/Utility/Primitiv-Komponente.
-
-**Konsistenz-Check bei Änderungen:**
-
-- **Fokus wahren (Kein ungefragter Scope-Creep):** Nur die für die konkrete Aufgabe notwendigen Dateien anpassen. Keine eigenmächtigen Umbauten in weiteren Komponenten starten, nur weil dort ein ähnliches Muster existiert.
-- Bei Unklarheit, ob eine Folgeanpassung gewollt ist → nachfragen statt eigenmächtig den Scope aufblähen.
-- **Keine CSS-Kopien zwischen Views** → Primitiv-Komponenten verwenden/extrahieren
-- **`style.css` nur für globale Basis-Styles** → Komponenten-Styles gehören in die jeweilige `.vue`-Datei
-- **Neue UI-Bausteine** → `DESIGN.md` konsultieren; Storybook-Stories (`*.stories.ts`) **nur anlegen, wenn explizit im Prompt gefordert**.
-- **Standard-CSS** statt manueller Webkit-Präfixe (LightningCSS macht Autoprefixing)
-- **Border-Radius für Badges/Pillen/Kreise:** Niemals `border-radius: 50%` für Badges oder Rechtecke verwenden (verzieht Elemente zu einem ovalen Ei). Stattdessen immer `--radius-pill` (`9999px`) nutzen. 9999px skaliert bei Rechtecken zur perfekten Pillen-Form und bei 1:1-Quadraten zum perfekten Kreis.
-- **Tabler-Icons statt Emojis in der Benutzeroberfläche (Strikter Standard):**
-  - Für Icons in Buttons, Badges, Tabellen, Menüs, Statusanzeigen oder Dialogen dürfen **NIEMALS rohe Unicode-Emojis** verwendet werden.
-  - Verwende stattdessen immer das standardisierte Tabler-Icon über `<AppIcon :icon="..." />` (definiert in `utils/actionIcons.ts`, `utils/formFieldIcons.ts` etc.).
-  - **Einzige Ausnahme:** Bereiche, in denen die Nutzerin / der Nutzer in den Einstellungen explizit zwischen Symbol und Emoji umschalten kann (wie Wetter- und Kategorie-Icons via `stores/iconStyle.ts`), sowie benutzerdefinierte Nutzer-Avatare (`user.avatar`).
-- **Responsive Breakpoints & Container Queries (Issue #575):**
-  - **Niemals willkürliche neue Pixel-Breakpoints ausdenken!**
-  - Für SCSS/CSS immer die zentralen Breakpoint-Mixins aus `src/styles/_breakpoints.scss` (automatisch per Vite verfügbar) nutzen (`@include media-up(...)`, `@include media-down(...)`, `@include container-down(...)`, `@include container-app-main-down(...)` etc.).
-  - Für TS/JS-Laufzeitabfragen (`window.matchMedia` etc.) immer `BREAKPOINTS` aus `src/tokens/breakpoints.ts` importieren.
-  - Standard-Breakpoints: `mobile-compact` (360px), `mobile-sm` (420px), `mobile` (480px), `tablet-sm` (600px), `tablet` (700px), `desktop-sm` (800px), `desktop-md` (900px), `desktop` (1024px), `page-max` (1400px), `wqhd` (2200px), `4k` (3200px). Siehe `DESIGN.md`.
-- **Code-Style-Richtlinien (Issues #712 & #714):**
-  - **Keine Magic Numbers:** Numerische Werte mit fachlicher Bedeutung (Schwellenwerte, Timeouts, Statuscodes, Berechnungsfaktoren etc.) immer als benannte `const`-Konstanten deklarieren (z. B. `const DEFAULT_DEBOUNCE_MS = 300`). Ausnahmen: Standard-Indizes (`-1, 0, 1, 2`) und offensichtliche Basisfaktoren. Lint-Regel: `@typescript-eslint/no-magic-numbers` (Warnung, in Tests deaktiviert).
-  - **Keine kryptischen Ein-Zeichen-Abkürzungen:** Variablennamen müssen absolut intentionsklar sein (z. B. `comment` statt `c`, `user` statt `u`, `file` statt `f`, `note` statt `n`). Standardausnahmen: `_` für ungenutzte Parameter, `i`/`j` für Zählschleifen, `e` für Event/Error, `x`/`y` für 2D-Koordinaten. Lint-Regel: `id-length` (Warnung, `properties: 'never'`).
-  - **Keine einzeiligen `if`-Statements:** Jeder Kontrollfluss (`if`, `else`, `for`, `while`) MUSS geschweifte Klammern (`{ ... }`) haben. Einzeiler wie `if (condition) return;` sind unzulässig. Lint-Regel: `curly: ['error', 'all']`.
-  - **Leerzeilen vor und nach Blöcken:** Zur optischen Lesbarkeit gehört vor und nach Blöcken (`if`, `for`, `try`, Funktionen etc.) eine Leerzeile — außer der Block steht direkt am Anfang eines übergeordneten Blocks. Lint-Regel: `padding-line-between-statements` (Fehler, autofixbar).
-  - **Keine zu tiefe Verschachtelung (max-depth: 4):** Verschachtelungstiefe von Kontrollstrukturen auf maximal 4 Ebenen beschränken. Tiefere Logik in Hilfsfunktionen oder Composables auslagern. Lint-Regel: `max-depth: ['warn', 4]` (in Tests deaktiviert).
-  - **Early Exit / Guard Clauses bevorzugen:** Anstelle von ausladenden `if`-Blöcken, die den gesamten Rest einer Funktion umhüllen, sollen Guard Clauses mit frühem `return`/`throw` verwendet werden. Keine unnötigen `else`-Blöcke nach `return`/`throw`. Lint-Regeln: `no-else-return: ['error', { allowElseIf: false }]` (Fehler, autofixbar), `readability/prefer-early-return: ['warn', { minStatements: 3 }]` (in Tests deaktiviert).
-  - **Kein verschachteltes `if` in `else` (no-lonely-if):** Wenn ein `if` die einzige Anweisung in einem `else`-Block ist, muss `else if` verwendet werden, um unnötige Einrückungen zu vermeiden. Lint-Regel: `no-lonely-if: 'error'` (Fehler, autofixbar).
-  - **Keine verschachtelten ternären Operatoren:** Konstrukte wie `a ? b : c ? d : e` sind schwer lesbar und fehleranfällig; stattdessen klare `if`/`switch`-Verzweigungen nutzen. Lint-Regel: `no-nested-ternary: 'warn'`.
-  - **Keine redundanten Ternaries / Returns:** `foo ? true : false` vermeiden und durch `Boolean(foo)` ersetzen. Überflüssige `return;`-Statements am Funktionsende entfernen. Lint-Regeln: `no-unneeded-ternary: 'error'`, `no-useless-return: 'error'` (beide Fehler, autofixbar).
-  - **Parameteranzahl & Komplexität begrenzen:** Maximal 4 Parameter pro Funktion (`max-params: ['warn', 4]`), darüber Konfigurations-/Options-Objekt nutzen. Zyklomatische Komplexität (`complexity: ['warn', 15]`) flach halten (in Tests deaktiviert).
+- **Prinzipien:** SoC (Views → Darstellung, Pinia → globaler State, Composables/Utils → Logik, Primitives → generische UI, Backend → HTTP/DB), SRP, KISS, YAGNI, DRY.
+- **Fokus:** Nur für die Aufgabe nötige Dateien anfassen, kein ungefragter Scope-Creep.
+- **UI & Styling:** Keine CSS-Kopien zwischen Views (Primitives nutzen); `style.css` nur global; `DESIGN.md` beachten; Storybook (`*.stories.ts`) nur auf expliziten Wunsch; Standard-CSS statt Webkit-Präfixe (LightningCSS); für Badges/Pillen/Kreise immer `--radius-pill` (`9999px`) statt `border-radius: 50%`.
+- **Tabler-Icons statt Emojis (strikt):** Für UI-Icons immer `<AppIcon :icon="..." />` (`utils/actionIcons.ts`, `utils/formFieldIcons.ts`) statt Unicode-Emojis. Ausnahmen nur: benutzerkonfigurierbare Wetter-/Kategorie-Icons (`stores/iconStyle.ts`) und `user.avatar`.
+- **Breakpoints:** Keine willkürlichen Pixelwerte — immer Mixins aus `src/styles/_breakpoints.scss` (`media-up`/`down`, `container-down`, `container-app-main-down`) bzw. `BREAKPOINTS` aus `src/tokens/breakpoints.ts` (`mobile-compact` 360, `mobile-sm` 420, `mobile` 480, `tablet-sm` 600, `tablet` 700, `desktop-sm` 800, `desktop-md` 900, `desktop` 1024, `page-max` 1400, `wqhd` 2200, `4k` 3200).
+- **ESLint-Code-Style (#712/#714):** Benannte `const`-Konstanten statt Magic Numbers; sprechende Variablennamen (keine 1-Buchstaben-Kürzel außer `_`, `i`/`j`, `e`, `x`/`y`); immer geschweifte Klammern (`curly: all`), Leerzeilen vor/nach Blöcken, `max-depth: 4`, `max-params: 4`, Early Exit / Guard Clauses statt tiefem `else`, kein `else { if }`, keine verschachtelten/redundanten Ternaries.
 
 ## Datenmodell-Änderungen (DB-Migrationen)
 
 Jede Änderung an `backend/src/db/index.ts` braucht diesen Check:
 
-1. **Ist das schon in Prod live?** `git merge-base` gegen letzten Release-Tag prüfen
-2. **Rein additiv bleiben:** `ensureColumn` (nullable/DEFAULT), `CREATE TABLE IF NOT EXISTS`
-3. **Vor `dropColumnIfExists`: Backfill** falls Spalte echte Werte haben könnte
-4. **Reihenfolge beachten:** Migrationen laufen gegen tatsächlichen DB-Zustand
-5. **Migrationstest ergänzen** analog zu `backend/test/unit/dbMigration.test.ts`
-
-Der Rollout-Mechanismus existiert: Backend führt `db/index.ts` bei jedem Start aus, wendet additive Migrationen automatisch an.
+1. **Prod-Status prüfen:** `git merge-base` gegen letzten Release-Tag.
+2. **Rein additiv:** `ensureColumn` (nullable/DEFAULT), `CREATE TABLE IF NOT EXISTS`.
+3. **Vor `dropColumnIfExists`:** Backfill falls Spalte echte Werte haben könnte.
+4. **Reihenfolge:** Gegen tatsächlichen DB-Zustand testen.
+5. **Migrationstest ergänzen** analog `backend/test/unit/dbMigration.test.ts`.
 
 ## Unit-Tests & E2E-Tests
 
-**Unit-Tests:** Vitest (Backend: `:memory:` SQLite pro Datei; Frontend: isoliert). Laufen in CI vor Build. Regressionsnetz für echte Logik, keine Vollabdeckung.
+- **Unit (Vitest):** Backend (`:memory:` SQLite), Frontend (isoliert). Bestehende Tests bei Änderungen immer mit anpassen; neue persistente Tests nur vorschlagen, nicht unaufgefordert schreiben.
+- **E2E (Playwright):** Ports 3100/5273, Axe via `npm run test:a11y`. Keine Pixel-Diff-Tests (`toHaveScreenshot()`) in der Haupt-Suite. Scratch-Specs vor `page.goto(...)` mit `forceFontDisplayBlock(page)` und Daten aus `e2e/fixtures/seeded-data.json`.
 
-**E2E-Tests:** Playwright mit Auto-Server-Start. Eigene Ports (3100/5273), isolierte Test-DB, committet. Accessibility-Tests via Axe (`npm run test:a11y`). Token-sparend nur gezielt nutzen:
+## Token-Effizienz & Kontext-Disziplin
 
-- `npx -y playwright test <spec>` für einzelne Tests
-- Bei CI-Fehlschlag lokal reproduzieren
-- Scratch-Specs für Ad-hoc-Checks/PR-Screenshots
-
-**Bestehende Tests bei Änderungen immer mit anpassen!** Neue persistente Tests nur vorschlagen, nicht unaufgefordert schreiben. Keine Pixel-Diff-Tests (`toHaveScreenshot()`) in die Haupt-Suite — stattdessen Interaktion + funktionale Assertions. Scratch-Specs vor `page.goto(...)` immer `forceFontDisplayBlock(page)` aufrufen (sonst Fallback-Font statt Fira Sans). Datums-Annahmen aus `e2e/fixtures/seeded-data.json` lesen, nicht hartcodieren.
-
-## Token-Effizienz & Kontext-Disziplin (Verbindlich)
-
-Aufgrund des hohen Kontext-Volumens bei iterativer Agentenarbeit gelten strikte Regeln zur Minimierung von Token-Verbrauch und Context-Größe:
-
-1. **Thread-Hygiene & Intelligente Chat-Fortsetzungs-Empfehlung:**
-   - Ein Chat sollte sich auf **genau eine fachlich zusammenhängende Aufgabe** (Feature, Bugfix, Refactoring) beschränken (Richtwert: maximal 30–50 Schritte).
-   - **Kontext-Check statt starrer Pauschalhinweis:** Sobald ein Meilenstein (Planung, Feature, Bugfix, PR oder Review) abgeschlossen ist, darf der Agent **keine stumpfe Copy-Paste-Meldung** absetzen. Stattdessen schätzt er kurz den aktuellen Chat-Umfang (Schrittanzahl, Tool-Logs, verbleibendes Kontextfenster) und die geplante Fortsetzung ein und gibt eine **situationsbezogene, ehrliche Empfehlung**:
-     - **Schlanker Chat (< ~20 Schritte, wenig Tool-Output / kleine Diffs):**
-       - _Wenn die direkte Umsetzung / der nächste Schritt folgt_ (z. B. Plan steht, jetzt Code schreiben; oder Bug behoben, kleiner Folgefeinschliff): **Empfehlung: Im Chat bleiben!** Begründung: Der Kontext ist frisch, alle getroffenen Entscheidungen sind präsent und das erneute Einlesen von Architektur/Dateien in einem neuen Chat würde unnötig Start-Tokens und Zeit kosten.
-       - _Wenn ein völlig neues, unabhängiges Thema beginnt:_ Kurzer Hinweis, dass der Chat zwar noch schlank ist, für eine saubere Trennung bei einem neuen Thema aber auch ein neuer Chat/Worktree gestartet werden kann.
-       - _Beispiel:_ `💡 **Kontext-Check:** Der Chat ist mit nur ~X Schritten noch sehr schlank und alle Absprachen liegen frisch im Kontext. Für die direkte Umsetzung empfiehlt es sich, gleich **hier im Chat weiterzumachen**. Erst bei einem komplett neuen Thema lohnt sich ein neuer Chat.`
-     - **Fortgeschrittener Chat (~20–35 Schritte):**
-       - Kurze Abwägung: Für die unmittelbare Fertigstellung/den letzten Feinschliff des Themas kann man im Chat bleiben; vor einem größeren nächsten Arbeitsschritt oder neuem Thema wird ein neuer Chat empfohlen.
-     - **Langer / schwerer Chat (> ~35–50 Schritte oder nach massiven Test-Logs / großen Diffs):**
-       - **Empfehlung: Dringend neuer Chat empfohlen** (oder `/compact`).
-       - Begründung: Das Kontextfenster ist voll; jeder Folge-Turn schickt den riesigen Verlauf mit, was Token-Kosten treibt und die Attention/Präzision des Modells schwächt.
-       - _Beispiel:_ `💡 **Tipp zur Token-Ersparnis:** Dieser Chat ist mit ~X Schritten und umfangreichen Logs bereits stark gefüllt. Da alle Zwischenstände in Commit/PR gesichert sind, empfiehlt sich für die weiteren Arbeiten dringend ein **neuer Chat** (oder `/compact`), um Token-Ballast zu vermeiden und die Antworten präzise zu halten.`
-   - **Kopplung mit dem Model-Routing (keine Widersprüche):**
-     - Bei einem **Triage-Stopp** (Agent hält vor dem Code-Lesen für einen Modellwechsel an) entfällt der Kontext-Check komplett, da noch kein Meilenstein abgeschlossen ist.
-     - Bei einem **Phasenwechsel** (z. B. nach freigegebenem Plan bei `T4`) werden Kontext-Check („Im Chat bleiben vs. neuer Chat“) und Modell-Kompass in **einem gemeinsamen Handlungs-Block** zusammengeführt.
-     - Läuft bereits der **Orchestrator (`T3`)**, empfiehlt der Agent am Plan-Ende keinen manuellen Modellwechsel (der Split läuft automatisch).
-2. **Keine unfiltrierten Voll-Testsuiten im Chat:**
-   - **NIEMALS** im Agenten-Chat `npm test`, `npm run test:all`, `npm run test:frontend` oder `npm run test:backend` ausführen, wenn nur einzelne Dateien oder Komponenten geändert wurden. Das flutet den Gesprächsverlauf mit hunderten Zeilen unnötigem Reporter-Output.
-   - **Immer gezielt testen:** Ausschließlich die betroffene Datei mit `--bail 1` aufrufen: Backend: `npx -y vitest run <backend-pfad> --bail 1`, Frontend: `npm --prefix frontend test -- <frontend-pfad> --bail 1`.
-   - Bei E2E: Ausschließlich die konkrete Spec ansteuern: `npx -y playwright test <spec>`.
-3. **Kompakte Terminal-Outputs & Paging-Vermeidung:**
-   - Diffs immer zuerst mit `git diff --stat` prüfen statt riesige Diffs in voller Länge in den Chat zu kippen.
-   - Shell-Befehle mit potenziell langen Listen (`find`, `grep`, `cat`, Logfiles) immer begrenzen (`| head -n 30`) oder dedizierte Tools (`grep_search`, `find_by_name`) mit Parametern nutzen.
-4. **Gezielte Recherche statt explorativer Endlos-Loops:**
-   - Vor blindem Durchsuchen des Codes immer zuerst `ARCHITECTURE.md` und die Code-Map konsultieren statt 10-mal blind per `list_dir` / `grep` das Repo abzusuchen.
-   - Wenn ein Problem nach 2–3 Versuchen nicht gelöst ist: Innehalten, Hypothese formulieren oder gezielte Rückfrage an den Nutzer stellen, statt in einer Schleife 20 weitere Werkzeugaufrufe zu probieren.
-5. **Gezielter Einsatz von Subagenten (Kontext-Isolation statt Overhead):**
-   - Keine unbeschränkten autonomen Endlos-Schleifen ohne klare Abbruchbedingung starten.
-   - Bei einfachen, klar umrissenen Einzel-Änderungen direkt `grep_search`/`read_file`/`edit_file` im Hauptchat nutzen statt Subagenten zu spawnen.
-   - **Ausnahme Multi-Phasen-/Multi-Team-Workflows (z. B. `Release Audit Auto`):** Hier sind sequenzielle `self`-Subagenten ausdrücklich der Best-Practice-Weg, damit jedes Team ein eigenes, frisches Kontextfenster erhält, ohne dass die Nutzerin / der Nutzer manuell neue Chats öffnen und Prompts kopieren muss.
-6. **Keine unaufgeforderten Screenshots (Massiver Token-Treiber):**
-   - Screenshots (Scratch-Specs, Baseline-Updates) dürfen **niemals automatisch oder unaufgefordert** angefertigt werden, sondern ausschließlich auf expliziten Nutzer-Wunsch.
-   - Bilddateien dürfen vom Agenten **niemals mit `view_file` geöffnet werden** (spült ~4.000 multimodale Tokens pro Bild in den Kontext). Bilder nur erzeugen, ablegen und im Chat/Walkthrough per Markdown verlinken.
+1. **Thread-Hygiene & situationsbezogener Kontext-Check:** Pro Chat 1 zusammenhängende Aufgabe (~30–50 Schritte). Nach Meilensteinen kurze, ehrliche Empfehlung geben:
+   - **Schlank (`< ~20` Schritte):** Bei direkter Fortsetzung **im Chat bleiben**; bei neuem Thema optional neuer Chat.
+   - **Fortgeschritten (`~20–35` Schritte):** Für letzten Feinschliff bleiben, vor großem nächstem Block neuer Chat.
+   - **Schwer (`> ~35–50` Schritte / große Logs):** Dringend **neuer Chat** (oder `/compact`).
+   - **Kopplung mit Model-Routing:** Bei Triage-Stopp **kein** Kontext-Check; bei `T4`-Phasenwechsel Kontext-Check + Ziel-Modell in **einem** Block; bei laufendem `T3`-Orchestrator **kein** manueller Modellwechsel.
+2. **Keine Voll-Testsuiten:** Immer gezielte Einzeldateien mit `--bail 1`.
+3. **Kompakte Outputs:** Erst `git diff --stat`; lange Listen mit `| head -n 30` begrenzen.
+4. **Gezielte Recherche:** Erst `ARCHITECTURE.md` konsultieren; nach 2–3 Fehlversuchen innehalten/fragen statt Endlos-Loop.
+5. **Subagenten:** Normale Einzel-Features direkt ohne Subagent; Ausnahme Multi-Team-Workflows wie `Release Audit Auto`.
+6. **Keine unaufgeforderten Screenshots & kein `view_file` auf Bilder** (~4.000 Tokens/Bild).
 
 ## Issue-Komplexität & Modell-/Thinking-Mapping
 
-Alle neuen Aufgaben (mit und ohne GitHub-Issue) werden über ein vierstufiges System (`T1`–`T4`) mit 1:1-Zuordnung zu den GitHub-Labels (`🚦️ complexity:trivial`, `🚦️ complexity:low`, `🚦️ complexity:mid`, `🚦️ complexity:high`) klassifiziert. Daraus leiten sich Modell, Thinking-Level, Wechsel-Strategie und Review-Stufe ab:
+Alle Aufgaben (mit/ohne Issue) werden in `T1`–`T4` (`🚦️ complexity:trivial/low/mid/high`) klassifiziert:
 
-### 1. Einstufung (Triage-Faustregeln)
+- 🩵 **`T1` · `trivial`**: 1–2 Dateien, Typo, Copy, kleiner CSS-Fix, einfacher Test, Config-Bump.
+- 🟢 **`T2` · `low`**: 2–5 Dateien, bekanntes Muster, lokales Feature/Refactoring, klare Ursache.
+- 🟡 **`T3` · `mid` _(Default)_**: Mehrere Schichten (API + Store + UI + Tests), überschaubare Edge-Cases.
+- 🔴 **`T4` · `high`**: Neues Subsystem, komplexe State-/Concurrency-/Offline-Sync-Logik, DB-Migration mit Backfill, Security/Auth, vage Anforderungen/Root-Cause.
 
-- 🩵 **`T1` · `🚦️ complexity:trivial`** _(Trivial / Einzeiler)_: 1–2 Dateien, Typo, Copy-Änderung, kleiner CSS-/UI-Fix, einfacher Test, Dependency-/Config-Bump.
-- 🟢 **`T2` · `🚦️ complexity:low`** _(Klar & Lokal)_: 2–5 Dateien, bekanntes Muster, lokales Feature/Refactoring, klare Ursache, keine Architektur-Entscheidung.
-- 🟡 **`T3` · `🚦️ complexity:mid`** _(Standard-Feature / Mehrteilig, Default)_: Mehrere Schichten (z. B. Backend-Route + Pinia-Store + Vue-View + Tests), Erweiterung bestehender Muster, überschaubare Edge-Cases.
-- 🔴 **`T4` · `🚦️ complexity:high`** _(Architektur / Kritisch / Tief)_: Neues Subsystem, komplexe State-/Concurrency-/Offline-Sync-Logik, DB-Migrationen mit Backfill, Security/Auth-Änderungen, vage Anforderungen oder schwer reproduzierbare Root-Cause-Bugs.
+| Stufe & Label                              | Setup (Modell & Thinking)                                                                | Wechsel- & Phasen-Modus                                                              | 2.-Agent-Review (Quota-bewusst)                                                             |
+| :----------------------------------------- | :--------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------ |
+| 🩵 **`T1`** · `complexity:trivial`         | **Gemini 4 Hydrogen (`Low`)**                                                            | Kein Wechsel. Direkt in einem Rutsch.                                                | **Kein 2. Chat** (CI + kurzer Nutzer-Diff-Blick).                                           |
+| 🟢 **`T2`** · `complexity:low`             | **Gemini 4 Hydrogen (`Medium`–`High`)**                                                  | Kein Wechsel; Eskalation erst nach 2 Fehlversuchen.                                  | **Kein 2. Chat** (Ausnahme: Eskalation oder Scope-Sprung > 5 Dateien).                      |
+| 🟡 **`T3`** · `complexity:mid` _(Default)_ | **Orchestrator (`Gemini 4 Neon Medium`)**                                                | Automatischer Plan-Execute-Split im Chat (**kein automatisches Abschluss-Review!**). | **Selektiv in frischem Diff-Chat (`4 Neon Medium`)** nur bei Risiko-Signalen (siehe unten). |
+| 🔴 **`T4`** · `complexity:high`            | **Plan:** `4 Carbon (Medium/High)` · **Code:** `4 Neon (Medium)` / `4 Hydrogen (High)`\* | Bewusster 2-Phasen-Wechsel nach freigegebenem Plan.                                  | **Immer** frischer Review-Chat auf Planungsniveau (`4 Carbon` / `4 Neon High`).             |
 
-### 2. Mapping auf Modell, Thinking & Wechsel-Strategie
+_\*`T4`-Umsetzung:_ Bei vollständig ausformuliertem Plan reicht `4 Hydrogen (High)`, sonst `4 Neon (Medium)`. Quota-Fallback: `Claude Sonnet 5.5 (Medium)` ≈ `T3`, `Claude Opus 5.5 (Medium)` ≈ `T4`.
 
-| Stufe & Label                                 | Setup (Modell & Thinking)                                                                                    | Wechsel- & Phasen-Modus                                                                                                                                                                                              | Review                     |
-| :-------------------------------------------- | :----------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------- |
-| 🩵 **`T1`** · `🚦️ complexity:trivial`         | **Gemini 4 Hydrogen (`Low`)**                                                                                | **Kein Wechsel.** Direkt planen & umsetzen in einem Rutsch (Wechsel wäre teurer als Nutzen).                                                                                                                         | Inline (`4 Hydrogen Low`)  |
-| 🟢 **`T2`** · `🚦️ complexity:low`             | **Gemini 4 Hydrogen (`Medium`–`High`)**                                                                      | **Kein Wechsel.** Direkt umsetzen; dynamische Eskalation erst bei Blockade (nach 2 Fehlversuchen).                                                                                                                   | `4 Hydrogen (Medium/High)` |
-| 🟡 **`T3`** · `🚦️ complexity:mid` _(Default)_ | **Orchestrator (`Gemini 4 Neon Medium`)**                                                                    | **Automatischer Split im Chat** (Neon plant read-only, schnelles Modell setzt um – kein manuelles Umschalten, kein doppelter Kontext). _(Manueller Fallback: Plan `4 Neon Medium` → Code `4 Hydrogen Medium/High`.)_ | `4 Neon (Medium)`          |
-| 🔴 **`T4`** · `🚦️ complexity:high`            | **Plan:** `Gemini 4 Carbon (Medium/High)`<br>**Code:** `Gemini 4 Neon (Medium)` _oder_ `4 Hydrogen (High)`\* | **Bewusster 2-Phasen-Wechsel** nach freigegebenem Plan, damit Carbon nicht für Fleißarbeit verbrannt wird.                                                                                                           | `4 Carbon (Medium/High)`   |
+- **Risiko-Signale für selektives `T3`-Diff-Review** (kurzer, frischer Chat auf `gh pr diff <nr>` statt Review im aufgeblähten Bau-Chat):
+  - Großer Scope (`> ~8–10` geänderte Dateien oder `> ~300` Zeilen Diff), **oder**
+  - Mindestens ein kritischer Bereich: **Security / Auth / HTML-Sanitizing**, **Optimistic UI / Concurrency / Offline-Sync**, **DB-Migration / Backfill**.
 
-_\*Hinweis zu `T4` in der Umsetzung:_ Ist der Plan bis ins Detail ausformuliert (exakte Dateipfade, Signaturen, Schritt-für-Schritt-Vorgaben), reicht oft **`4 Hydrogen (High)`**. Bei offenen algorithmischen oder architektonischen Details wird **`4 Neon (Medium)`** genutzt.
+### Verbindliches Zero-Code-Triage-Gate (Pflicht vor dem Start)
 
-- **Quota-Fallback (falls Gemini-Kontingent knapp):** `Claude Sonnet 5.5 (Medium)` ≈ `T3` (`4 Neon`), `Claude Opus 5.5 (Medium)` ≈ `T4` (`4 Carbon`).
-- **Subagenten-Regel (orthogonal zur Stufe):** Normales 1-Feature-Coding läuft **ohne** Subagent (Plan/Execute übernimmt der Orchestrator). Subagenten (`research` / `self`) nur zur Kontext-Isolation bei breiter Codebase-Suche oder unabhängigen Multi-Team-Workflows (z. B. `Release Audit Auto`).
-
-### 3. Verbindliches Zero-Code-Triage-Gate (Pflicht vor dem Start)
-
-Sobald eine neue Aufgabe beginnt (mit oder ohne GitHub-Issue), MUSS der Agent **vor jeder Code-Analyse** folgendes Gate durchlaufen:
-
-1. **Kein Code-Read vor der Triage (Strikt):** Bevor Komplexität und Modell geprüft sind, darf der Agent **keine Code-Dateien lesen, kein `grep` und keine Codebase-Analyse starten**. Einzige erlaubte Lese-Aktion bei genanntem GitHub-Issue ist `gh issue view <nr> --json number,title,body,labels`.
-2. **Issue-Label prüfen oder ergänzen (nur bei GitHub-Issue):**
-   - **Label vorhanden (`🚦️ complexity:trivial/low/mid/high`):** Einstufung übernehmen (bei deutlicher Abweichung kurz hinweisen).
-   - **Kein `🚦️ complexity:*`-Label vorhanden:** Ad-hoc einstufen, direkt per `gh issue edit <nr> --add-label "🚦️ complexity:<trivial|low|mid|high>"` setzen und den Nutzer transparent informieren.
-3. **Stopp-vs.-Go-Entscheidung & Kompass:**
-   - **Modell passt** (oder `Orchestrator` deckt `T3` ab): Kompakten Kompass ausgeben und **direkt loslegen**.
-   - **Modell passt nicht** (zu schwach, deutlicher Overkill wie `Carbon`/`Neon` für `T1`/`T2`, oder der Nutzer fragt explizit erst nach der Modell-Empfehlung): **Hart stoppen — keine Edits, kein `exit_plan_mode`, keine weitere Umsetzung!** Nur den Kompass inkl. Ziel-Modell und grob vermutetem Bereich ausgeben (**ohne** Kontext-Check) und auf Modellwechsel + kurzes „weiter“ warten:
-
+1. **Zero-Code-Read:** Vor der Einstufung **keine** Code-Dateien lesen und **kein** `grep`/Code-Search starten. Einzige erlaubte Lese-Aktion bei genanntem Issue: `gh issue view <nr> --json number,title,body,labels`.
+2. **Label prüfen/setzen:** Fehlt `🚦️ complexity:*` beim Issue, direkt ad-hoc per `gh issue edit <nr> --add-label "🚦️ complexity:<trivial|low|mid|high>"` setzen.
+3. **Stopp vs. Go:** Passt das Modell (oder `Orchestrator` für `T3`), Kompass ausgeben und loslegen. Passt es nicht (zu schwach, deutlicher Overkill wie `Carbon`/`Neon` für `T1`/`T2`, oder Nutzer fragt nach Modell), **hart stoppen** (keine Edits, kein `exit_plan_mode`, kein Kontext-Check), Kompass ausgeben und auf Modellwechsel + „weiter“ warten:
    > **🧭 Triage & Modell-Kompass** _(`#<nr>` oder Aufgabe)_
    >
-   > - **Stufe:** 🟡 `T3` · `🚦️ complexity:mid` _(bereits gelabelt / ⚠️ Ad-hoc gesetzt)_
-   > - **Empfohlenes Setup:** `Orchestrator (Gemini 4 Neon Medium)`
-   > - **Vermuteter Bereich:** _[z. B. Backend-Route + Store + Dialog-Komponente]_
+   > - **Stufe:** _[Stufe & Label]_ | **Setup:** _[Modell + Thinking]_ | **Bereich:** _[1 Zeile]_
    > - **👉 Nächster Schritt:** _[„Setup passt – ich lege los“ ODER „Bitte auf **<Ziel-Modell>** wechseln und kurz ‚weiter‘ schreiben“]_
-
-4. **Kombinierter Phasenwechsel-Block (Anti-Widerspruchs-Regel):** Bei einem Phasenwechsel (insbesondere `T4`: Plan → Umsetzung) werden Kontext-Check („Im Chat bleiben vs. neuer Chat“) und Ziel-Modell in **einem einzigen Handlungs-Block** kombiniert (z. B. schlanker Chat → im Chat bleiben und auf `4 Neon (Medium)` umstellen; voller Chat → neuen Chat mit `4 Neon (Medium)` starten). Läuft bereits der `Orchestrator` (`T3`), wird **kein** manueller Modellwechsel empfohlen.
-
-### 4. Leitprinzipien für den Workflow
-
-1. **Start-Low-and-Escalate:** Neue Chats im Alltag standardmäßig auf `4 Hydrogen (Low)` starten — bei `T1`/`T2` sofort ohne Wechsel loslegen, bei `T3`/`T4` erst nach dem Triage-Stopp (mit 0 gelesenen Code-Dateien) hochschalten.
-2. **Kein Wechsel-Overhead bei `T1`/`T2`:** Bei kleinen oder klaren Aufgaben bleibt man im selben Modell.
-3. **Orchestrator als Default für `T3`:** Der automatische Plan-Execute-Split spart manuelles Umschalten und doppelte Input-Tokens.
-4. **Review mindestens auf Planungs-Niveau:** Ab `T3` prüft mindestens `4 Neon (Medium)`, bei `T4` `4 Carbon`.
-5. **Dynamische Eskalation statt Label-Drift:** Hängt die Umsetzung nach 2 Versuchen, wird punktuell das Thinking-Level oder Modell erhöht – das Issue-Label selbst bleibt unverändert.
-6. **Neue Issues direkt klassifizieren:** Wenn ein Agent selbst ein neues GitHub-Issue anlegt (`gh issue create`), vergibt er immer direkt das passende `--label "🚦️ complexity:<trivial|low|mid|high>"`.
+4. **Leitprinzipien:** Start-Low-and-Escalate (`4 Hydrogen Low`); kein Wechsel bei `T1`/`T2`; dynamische Eskalation nach 2 Fehlversuchen ohne Label-Drift; neue selbst erstellte Issues immer mit `--label "🚦️ complexity:<...>"`.
 
 ## PR-Workflow
 
-- **Automatische PR-Erstellung bei neuen Branches / Worktrees:**
-  - Wurde für eine Aufgabe ein neuer Branch / Worktree angelegt und existiert noch kein PR (Prüfung: `gh pr view 2>/dev/null`), MUSS der Agent am Ende der Aufgabe nach Formatierung, Tests und Commit den Branch pushen (`git push -u origin <branch>`) und **automatisch unaufgefordert einen Pull Request via `gh pr create` erstellen** (mit treffendem Titel, prägnanter Beschreibung, ggf. Issue-Referenzen wie `Fixes #...` sowie `--label "👀️ review:needed"` bei Nicht-Draft-PRs).
-  - Der Link zum erstellten PR wird am Ende der Nachricht für die Nutzerin / den Nutzer ausgegeben.
-  - **Bestehende Branches / Folge-Chats:** Existiert für den Branch bereits ein PR (z. B. bei Folge-Chats im selben Worktree oder Multi-Phasen-Refactorings), wird **kein** zweiter PR angelegt, sondern der bestehende Branch gepusht und bei Bedarf die PR-Beschreibung aktualisiert (`gh pr edit`). Wurden Review-Fixes gepusht, Status per `pr-review`-Skill wieder auf `👀️ review:needed` setzen.
-- **Systematisches PR-Review & Label-System (`docs/PR_REVIEW_GUIDE.md` & `.agent/skills/pr-review/SKILL.md`):**
-  - Offene Nicht-Draft-PRs nutzen orthogonale `review:*`-Labels: Code-Review (`👀️ review:needed` | `🛠️ review:needs-polish` | `👍️ review:reviewed`), manueller Test (`🧪️ review:needs-manual-test` | `✅️ review:manually-tested`), Gesprächs-Flag (`💬️ review:discussed`) und Merge-Freigabe (`🚀️ review:ready-to-merge`).
-  - Für Reviews, Status-Updates und das PR-Übersichtsboard den Workspace-Skill `pr-review` nutzen (`node .agent/skills/pr-review/scripts/pr-labels.mjs`).
-- **PR-Merge-Regel:** PRs **nicht automatisch mergen** sobald CI grün ist — auf Review/Freigabe des Nutzers warten (visueller Check anhand Screenshots).
+### Pre-PR-Self-Checkliste (Pflicht vor Commit & PR)
 
-**Issues schließen:** `Fixes #101`, `Closes #102` etc. (englische Keywords vor jeder Issue-Nummer wiederholen).
+Vor jedem Commit/PR (insbesondere bei `T3`-Execution ohne separates Review) zwingend gegen `git diff --stat` prüfen:
 
-**Screenshots & visuelle Verifikation im PR (Strikte On-Demand-Pflicht):**
+1. **Release-Notes:** Sichtbare Endnutzer-Änderung gegenüber dem letzten Release-Tag (`$LAST_TAG`)? → Fragment unter `release-notes/pending/<slug>.md` anlegen und `npm run check:release-notes` ausführen.
+2. **Lockfile-Sync:** Wurde eine `package.json` (Root, `frontend/`, `backend/`, `e2e/`) geändert? → Zugehörige `package-lock.json` mit aktualisieren (`npm install --package-lock-only` im jeweiligen Paket), niemals desynchronisiert committen.
+3. **Optimistic UI & Concurrency:** Werden wiederholte schnelle Nutzer-Aktionen (z. B. Checklisten-Toggles, Likes, Sortierung) optimistisch gespeichert? → Parallele Requests pro Entität serialisieren / coalescen, damit ältere Antworten keinen neueren State überschreiben und Fehler-Rollbacks keinen Folge-Klick vernichten.
+4. **Vollständige Verdrahtung & Cleanup:** Alle Caller/Varianten der geänderten Komponente bzw. Props geprüft, keine verwaisten Referenzen, gezielte Formatierung (`npx -y prettier --write <dateien>`), `npm run typecheck`, `npx -y eslint <dateien>` und fokussierte Tests grün.
 
-- **Keine automatischen Screenshots im Standard-Workflow (Token-Schutz):**
-  - Der Agent darf Screenshots (weder Baseline-Updates noch Scratch-Screenshots) **NIEMALS automatisch oder unaufgefordert** anfertigen.
-  - Screenshots werden **ausschließlich auf explizite Aufforderung der Nutzerin / des Nutzers** erstellt (z. B. _"Erstelle bitte Vorher-/Nachher-Screenshots"_ oder _"Aktualisiere die Screenshots"_).
-  - **Kein Selbst-Inspizieren per `view_file`:** Wenn der Nutzer Screenshots anfordert, erzeugt der Agent diese, legt sie ab und verlinkt sie per Markdown (`![Label](URL)`) im Chat oder Walkthrough zur Ansicht. Der Agent ruft **niemals `view_file` auf Bilddateien auf**, da jedes Bild ~4.000 multimodale Tokens in den permanenten Kontext spült. Die visuelle Prüfung erfolgt rein durch das menschliche Auge in der Benutzeroberfläche.
-- **Baseline-Images (`docs/screenshots/`):** Bilden den aktuellen Stand aller relevanten Ansichten der gesamten App im Git-Repo ab (`<view>-desktop-light.png` etc.). Werden nur bei expliziter Aufforderung aktualisiert (per `npm run generate:screenshots`, wird nicht mehr automatisch in der CI erzwungen). **Niemals willkürliche neue Dateinamen erfinden oder blind dort ablegen.** Im PR per Markdown verlinken (GitHub bietet so automatischen Vorher-/Nachher-Bildvergleich im Diff; **Syntax-Falle:** `![Label](URL)` ohne Backticks um die URL).
-  - **Interaktiver HTML-Diff-Report (`e2e/.tmp/screenshot-diffs/index.html`):** Nach jedem Lauf von `npm run generate:screenshots` wird automatisch ein lokaler visueller Diff-Report generiert und der klickbare `file://`-Pfad im Terminal ausgegeben. Er zeigt eine 3-Spalten-Gegenüberstellung (Vorher | Diff mit roten Pixelmatch-Markierungen | Nachher) inklusive Pixelanzahl und Prozentabweichung.
-  - **Differenzierte Schwellwerte:** UI-Seiten nutzen feine Schwellen (~0.6% Desktop, ~0.3% Mobile für Text/Layout), während Leaflet-Kartenflächen dynamisch erkannt werden und mit 2.0% Toleranz vor OSM-Kachel- und Canvas-Anti-Aliasing-Rauschen geschützt sind.
-  - **Git-HEAD-Fallback:** Wurden Screenshots auf der Festplatte vorab gelöscht, holt der Generator das Referenzbild automatisch per `git show HEAD:<pfad>` aus der Git-Datenbank, sodass der Diff-Report immer einen vollständigen Vorher/Nachher-Vergleich liefern kann.
-  - **Diff erzwingen:** Mit `FORCE_SCREENSHOTS=1 npm run generate:screenshots` werden alle Abweichungen (> 0 px) bedingungslos als neue Baseline gespeichert.
-- **Scratch-Screenshots für Detail-/Sonderfälle (nur bei expliziter Aufforderung):** Ist eine sichtbare UI-Änderung nicht durch die regulären Baseline-Images abgedeckt (z. B. ein einzelner Dialog, Teilkomponente, Hover-/Fehlerzustand) und der Nutzer wünscht explizit Screenshots:
-  - Vorher- und Nachher-Screenshot anfertigen und **direkt im Chat/Walkthrough verlinken**, damit der Nutzer das Ergebnis prüfen und freigeben kann (ohne dass der Agent sie selbst per `view_file` liest).
-  - Diese temporären Scratch-Screenshots gehören _nicht_ in `docs/screenshots/`, sondern können per GitHub-CLI (`gh`) als Attachment an den PR angehängt werden.
+### PR-Erstellung, Screenshots & Release-Notes
 
-**Release-Notes:** Bei Endnutzer-relevanten Änderungen Fragment unter `release-notes/pending/<slug>.md` anlegen. Keine Fragmente für rein interne Änderungen (Tests, CI, Demo-Daten, Refactorings ohne sichtbare Verhaltensänderung).
-
-- **1 Fragment-Datei pro PR/Feature (Schutz vor Merge-Konflikten):**
-  - Jeder PR bzw. jedes unabhängige Feature legt eine eigene Datei `release-notes/pending/<feature-slug>.md` an, damit parallele Branches und Worktrees niemals dieselbe Sammeldatei editieren und keine Git-Merge-Konflikte entstehen.
-  - Wird im selben Branch/Folge-PR an einem bereits in `release-notes/pending/` beschriebenen unveröffentlichten Feature weitergearbeitet, wird dessen bestehende Fragment-Datei aktualisiert statt einen zweiten Korrektur-Eintrag anzulegen.
-- **Feste Kanon-Kategorien für `### `-Überschriften (Verbot eigener Überschriften!):**
-  Beim Build (`generate-build-info.mjs`) und Release (`release.yml`) werden alle Fragment-Dateien automatisch anhand ihrer `### `-Überschrift geclustert, zusammengeführt und nach Priorität sortiert. Eine Fragment-Datei kann auch mehrere `### `-Abschnitte enthalten, falls ein PR mehrere Bereiche berührt.
-  Als `### `-Überschrift dürfen im laufenden Entwicklungsbetrieb **ausschließlich** die folgenden 13 Fachkategorien verwendet werden (eigene Kreationen werden von `npm run check:release-notes` blockiert):
-  - `### Reisen und Urlaube`
-  - `### Karte und Navigation`
-  - `### Spots, Touren und Unterkünfte`
-  - `### Budget und Kasse`
-  - `### Kalender und Planung`
-  - `### Listen, Notizen und Tagebuch`
-  - `### Wetter`
-  - `### Verwaltung und Benutzerkonten`
-  - `### Design und Bedienung`
-  - `### Datenschutz und Sicherheit`
-  - `### Einstellungen, Benachrichtigungen und Synchronisation`
-  - `### Demo und Feedback`
-  - `### Weitere Verbesserungen und Fehlerbehebungen`
-  - _(Sonderkategorie `### Highlights`: Ist technisch als 14. Kategorie erlaubt, wird aber **nicht** von einzelnen PR-Agenten vergeben, sondern erst kurz vor dem Release im Rahmen der Release-Kuratierung ausgewählt, da erst im Gesamtbild feststeht, welche Neuerungen herausstechen und `### Highlights` im UI alle übrigen Kategorien in ein `<CollapsibleFieldset>` einklappt.)_
-- **Entscheidungskriterien (Upgrade-Perspektive der Endnutzer:innen gegenüber dem letzten Release `$LAST_TAG`):**
-  Vor dem Anlegen oder Bearbeiten eines Eintrags kurz prüfen, ob die betroffene Funktion im letzten Release (`LAST_TAG=$(git describe --tags --abbrev=0 --match "v*" 2>/dev/null || echo "v1.0.0")`) überhaupt schon existierte (z. B. per `git log $LAST_TAG -- <pfad>` oder `git grep <begriff> $LAST_TAG`):
-  1. **Feature gab es im letzten Release noch NICHT:**
-     - **Wird im aktuellen PR neu eingeführt:** -> **Eintrag MUSS angelegt werden** (als einheitliche Neuerung beschrieben: `- ✨ **Neues Feature**: ...`).
-     - **Wurde bereits nach dem letzten Release auf `main` eingeführt und wird jetzt nur nachgebessert/verfeinert:** -> **KEIN neuer Eintrag** (höchstens das existierende Fragment in `pending/` präzisieren; keine fragmentierten Pseudo-Korrekturen für unveröffentlichte Zwischenstände anhäufen).
-  2. **Feature gab es BEREITS im letzten Release:**
-     - **Wurde jetzt verbessert, erweitert oder ein Fehler behoben:** -> **Eintrag MUSS angelegt werden** (als Verbesserung, Erweiterung oder Bugfix: `- 💡 **Verbesserung**: ...` bzw. `- 🐛 **Bugfix**: ...`), da Endnutzer:innen beim Upgrade von der Vorversion genau diesen Unterschied erleben.
-- **Format & Sprach-Hygiene (Endnutzer-Perspektive):** Datei beginnt mit einer der kanonischen `### <Kategorie-Überschrift>`en, gefolgt von `- 🎯 **Schlagwort**: Beschreibung` pro Punkt (Deutsch, verständlich für nicht-technische Endnutzer:innen). Striktes Verbot von Code-Backticks (`` `...` ``), CSS-Variablen (`--color-...`), Dateinamen/Komponenten-Namen (`FormField`, `.vue`) und Issue-/PR-Nummern (`#123`).
-- **Validierung:** Vor jedem Commit mit Release-Notes `npm run check:release-notes` ausführen.
-
-**Saubere, semantische Commits:** Änderungen dürfen **niemals** am Ende über verschiedene Themen hinweg in einem einzigen riesigen Commit ("alles in einem Rutsch") zusammengefasst werden. Stattdessen immer semantisch zusammenhängend committen: Ein Feature oder Bugfix darf und soll Backend-, Store-, UI- und Test-Änderungen in einem gemeinsamen Commit bündeln, sofern sie direkt zusammengehören. Unabhängige Features, unterschiedliche Domänen (z. B. Budgets, Karte, Listen) oder interne Aufgaben (Agent-Konfigurationen, Tooling, Docs) müssen jedoch in getrennten Commits festgehalten werden, um eine saubere, Feature für Feature nachvollzieh- und revertierbare Git-Historie zu gewährleisten. Jeder Commit muss für sich formatiert (`npm run format`), typgeprüft und lauffähig sein.
-
-**Commit-Konvention:** `feat:`, `fix:`, `feat!:` für funktionale Änderungen. `chore:`, `refactor:`, `docs:` für interne Änderungen.
+- **Automatische PR-Erstellung:** Neuer Branch/Worktree ohne PR (`gh pr view 2>/dev/null`) → pushen und automatisch `gh pr create` (bei Nicht-Draft-PRs direkt mit `--label "👀️ review:needed"`) mit Link-Ausgabe (Issue-Referenz mit `Fixes #...`). Bei bestehendem PR nur pushen und ggf. `gh pr edit` (nach gepushten Review-Fixes wieder `👀️ review:needed` setzen). PRs **niemals automatisch mergen**.
+- **PR-Review & Label-System ([`docs/PR_REVIEW_GUIDE.md`](docs/PR_REVIEW_GUIDE.md) & [`.agent/skills/pr-review/SKILL.md`](.agent/skills/pr-review/SKILL.md)):** Offene Nicht-Draft-PRs nutzen orthogonale `review:*`-Labels (`👀️ review:needed` | `🛠️ review:needs-polish` | `👍️ review:reviewed`, `🧪️ review:needs-manual-test` | `✅️ review:manually-tested`, `💬️ review:discussed`, `🚀️ review:ready-to-merge`). Für Reviews, Status-Updates und das PR-Board den Skill `pr-review` nutzen (`node .agent/skills/pr-review/scripts/pr-labels.mjs`).
+- **Screenshots:** Strikte On-Demand-Pflicht (nie automatisch, kein `view_file` auf Bilder). Details zu Baseline (`docs/screenshots/`), HTML-Diff-Report und Scratch-Screenshots: [`docs/PR_AND_RELEASE_NOTES.md`](docs/PR_AND_RELEASE_NOTES.md).
+- **Release-Notes:** 1 Fragment pro PR unter `release-notes/pending/<slug>.md` (keine für reine Internas). Erlaubte `### `-Kategorien: `Reisen und Urlaube`, `Karte und Navigation`, `Spots, Touren und Unterkünfte`, `Budget und Kasse`, `Kalender und Planung`, `Listen, Notizen und Tagebuch`, `Wetter`, `Verwaltung und Benutzerkonten`, `Design und Bedienung`, `Datenschutz und Sicherheit`, `Einstellungen, Benachrichtigungen und Synchronisation`, `Demo und Feedback`, `Weitere Verbesserungen und Fehlerbehebungen`. Endnutzer-Deutsch **ohne** Backticks, CSS-Variablen, Dateinamen oder Issue-/PR-Nummern; prüfen mit `npm run check:release-notes`. Upgrade-Entscheidungsbaum: [`docs/PR_AND_RELEASE_NOTES.md`](docs/PR_AND_RELEASE_NOTES.md).
+- **Semantische Commits:** Nie fachfremde Themen in einen Riesen-Commit bündeln (`feat:`, `fix:`, `feat!:`, `chore:`, `refactor:`, `docs:`). Jeder Commit muss formatiert, typgeprüft und lauffähig sein.
