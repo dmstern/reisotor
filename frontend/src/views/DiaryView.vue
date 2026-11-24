@@ -2,9 +2,11 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { DiaryEntry } from '../api/types';
+import { api } from '../api/client';
 import { useAuthStore } from '../stores/auth';
 import { useTripStore } from '../stores/trip';
 import { useDiaryStore } from '../stores/diary';
+import { useToast } from '../composables/useToast';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { hashHighlightId } from '../utils/hashHighlight';
 
@@ -197,6 +199,35 @@ function onEntryUpdated(updated: DiaryEntry) {
   diaryStore.setEntries(entries.value);
 }
 
+async function updateEntryContent(entry: DiaryEntry, html: string) {
+  const previousContent = entry.content;
+  const previousFormat = entry.content_format;
+  entry.content = html;
+  entry.content_format = 'html';
+
+  try {
+    const updated = await api.put<DiaryEntry>(`/diary/${entry.id}`, {
+      title: entry.title ?? undefined,
+      content: html,
+      content_format: 'html',
+      images: Array.isArray(entry.images) ? entry.images : [],
+      excursion_ids: Array.isArray(entry.excursion_ids) ? entry.excursion_ids : [],
+      spot_ids: Array.isArray(entry.spot_ids) ? entry.spot_ids : [],
+      date: entry.date,
+      is_draft: Boolean(entry.is_draft),
+    });
+    onEntryUpdated(updated);
+  } catch {
+    entry.content = previousContent;
+    entry.content_format = previousFormat;
+    const { showToast } = useToast();
+    showToast({
+      message: 'Checklisten-Status konnte nicht gespeichert werden.',
+      type: 'error',
+    });
+  }
+}
+
 onMounted(() => {
   weather.loadDiaryWeather();
 });
@@ -246,6 +277,7 @@ onMounted(() => {
         @remove-comment="removeComment"
         @update-comment="updateComment"
         @toggle-comment-like="toggleCommentLike"
+        @update-content="updateEntryContent"
       />
     </TransitionGroup>
 

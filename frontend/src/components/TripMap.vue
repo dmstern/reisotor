@@ -681,6 +681,7 @@ watch(trackPlaybackProgress, () => leafletTripMap.updateTrackPlaybackMarker());
       @edit="editOpenTravel"
       @show-on-map-from="travelDialogOpen = false"
       @show-on-map-to="travelDialogOpen = false"
+      @update-note="(html) => excursionsStore.updateNote(openTravel!.id, html)"
     />
 
     <AttachmentPreviewModal

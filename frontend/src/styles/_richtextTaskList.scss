@@ -1,0 +1,68 @@
+// Gemeinsame Styles für Tiptap-Checklisten (TaskList / TaskItem) in RichTextEditor & RichTextDisplay.
+@use './_touch.scss' as *;
+
+@mixin richtext-task-list {
+  ul[data-type='taskList'] {
+    list-style: none;
+    padding-left: 0;
+    margin: var(--space-xs) 0;
+  }
+
+  ul[data-type='taskList'] ul[data-type='taskList'] {
+    padding-left: 1.5em;
+    margin-top: var(--space-2xs);
+  }
+
+  li[data-type='taskItem'] {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    margin: var(--space-2xs) 0;
+  }
+
+  li[data-type='taskItem'] > label {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    margin-top: 0.2em;
+    user-select: none;
+  }
+
+  li[data-type='taskItem'] > label input[type='checkbox'] {
+    @include touch-target($pseudo: 'before');
+    position: relative;
+    width: 17px;
+    height: 17px;
+    margin: 0;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  li[data-type='taskItem'] > label input[type='checkbox']:focus-visible {
+    outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+    outline-offset: var(--focus-ring-offset, 2px);
+    box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
+  }
+
+  li[data-type='taskItem'] > label input[type='checkbox']:disabled {
+    opacity: 1;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  li[data-type='taskItem'] > div {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  li[data-type='taskItem'] > div > p {
+    margin: 0;
+  }
+
+  li[data-type='taskItem'][data-checked='true'] > div > p,
+  li[data-type='taskItem'][data-checked='true'] > div > :not(ul) {
+    text-decoration: line-through;
+    color: var(--color-text-muted);
+  }
+}

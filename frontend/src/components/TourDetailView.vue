@@ -48,6 +48,7 @@ const emit = defineEmits<{
   (e: 'update-comment', id: number, content: string): void;
   (e: 'toggle-comment-like', id: number): void;
   (e: 'show-on-map'): void;
+  (e: 'update-note', note: string): void;
 }>();
 
 const diaryStore = useDiaryStore();
@@ -248,6 +249,8 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
         class="tour-detail-note"
         :content="excursion.note"
         :format="excursion.note_format"
+        interactive
+        @update:content="(html) => emit('update-note', html)"
       />
     </div>
 

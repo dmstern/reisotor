@@ -1,37 +1,99 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import DOMPurify from 'dompurify';
+import { computed, ref } from 'vue';
 import { renderRichText } from '../utils/richText';
+import {
+  prepareChecklistHtmlForDisplay,
+  sanitizeRichTextHtml,
+  toggleTaskItemInHtml,
+} from '../utils/richTextChecklist';
 
 // Zeigt ein Freitext-/Notizfeld an, das entweder schon (sanitiztes) HTML vom neuen WYSIWYG-Editor
 // enthält (format === 'html', siehe RichTextEditor.vue/content_format-Spalten) oder noch im alten
 // Markdown-ähnlichen Klartext vorliegt (format 'legacy'/fehlend, ältere Zeilen von vor dieser
 // Umstellung) - für Letztere bleibt renderRichText() (utils/richText.ts) der Anzeige-Weg, kein
-// Content-Sniffing nötig, das Format-Flag entscheidet eindeutig. Erneutes DOMPurify.sanitize() hier
+// Content-Sniffing nötig, das Format-Flag entscheidet eindeutig. Erneutes Sanitizing hier
 // zusätzlich zum bereits serverseitig sanitizten Wert - günstige zweite Absicherung direkt vorm
 // v-html, kostet nichts an einer einzelnen Stelle statt X Views einzeln absichern zu müssen.
-const props = defineProps<{ content: string; format?: string | null }>();
+const props = withDefaults(
+  defineProps<{ content: string; format?: string | null; interactive?: boolean }>(),
+  { format: null, interactive: false }
+);
+const emit = defineEmits<{
+  (e: 'update:content', value: string): void;
+}>();
 
-// Wenn format='html', direkt durch DOMPurify sanitizen und als HTML rendern.
+const containerRef = ref<HTMLElement | null>(null);
+
+// Wenn format='html', direkt durch sanitizeRichTextHtml() sanitizen und als HTML rendern.
 // Fallback: Wenn das Format nicht explizit 'html' ist, aber der Inhalt offensichtlich HTML ist
 // (beginnt mit '<'), wird Content-Sniffing als letzter Ausweg angewendet - das tritt auf, wenn
 // Notizen im WYSIWYG-Editor geschrieben wurden, bevor note_format-Tracking für Touren eingeführt
 // wurde (DB-Default war 'legacy'). Ohne diesen Fallback würden die <p>-Tags als Rohtext angezeigt.
 const html = computed(() => {
   if (props.format === 'html' || props.content.trimStart().startsWith('<')) {
-    return DOMPurify.sanitize(props.content);
+    return prepareChecklistHtmlForDisplay(sanitizeRichTextHtml(props.content), props.interactive);
   }
 
   return renderRichText(props.content);
 });
+
+function onContainerClick(event: MouseEvent) {
+  if (!props.interactive) {
+    return;
+  }
+
+  const target = event.target as HTMLElement | null;
+
+  if (target?.closest('li[data-type="taskItem"] > label')) {
+    event.stopPropagation();
+  }
+}
+
+function onContainerChange(event: Event) {
+  if (!props.interactive || !containerRef.value) {
+    return;
+  }
+
+  const target = event.target as HTMLInputElement | null;
+
+  if (!target || target.tagName !== 'INPUT' || target.type !== 'checkbox') {
+    return;
+  }
+
+  const taskItem = target.closest('li[data-type="taskItem"]');
+
+  if (!taskItem) {
+    return;
+  }
+
+  const allItems = Array.from(containerRef.value.querySelectorAll('li[data-type="taskItem"]'));
+  const taskIndex = allItems.indexOf(taskItem);
+
+  if (taskIndex === -1) {
+    return;
+  }
+
+  const nextHtml = toggleTaskItemInHtml(props.content, taskIndex, target.checked);
+  emit('update:content', nextHtml);
+}
 </script>
 
 <template>
-  <!-- eslint-disable-next-line vue/no-v-html -->
-  <div class="richtext" v-html="html"></div>
+  <!-- eslint-disable vue/no-v-html, vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
+  <div
+    ref="containerRef"
+    class="richtext"
+    :class="{ 'is-interactive': interactive }"
+    @click="onContainerClick"
+    @change="onContainerChange"
+    v-html="html"
+  ></div>
+  <!-- eslint-enable vue/no-v-html, vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
 </template>
 
 <style lang="scss" scoped>
+@use '../styles/_richtextTaskList.scss' as *;
+
 .richtext :deep(> :first-child) {
   margin-top: 0;
 }
@@ -40,6 +102,10 @@ const html = computed(() => {
 .richtext :deep(ol) {
   margin: var(--space-xs) 0;
   padding-left: 1.3em;
+}
+
+.richtext :deep() {
+  @include richtext-task-list;
 }
 
 .richtext :deep(h1),

@@ -178,6 +178,34 @@ function toggleComments(noteId: number) {
   }
 }
 
+async function updateNoteContent(note: Note, html: string) {
+  const previousContent = note.content;
+  const previousFormat = note.content_format;
+  note.content = html;
+  note.content_format = 'html';
+
+  try {
+    const updated = await api.put<Note>(`/notes/${note.id}`, {
+      title: note.title ?? '',
+      content: html,
+      content_format: 'html',
+      is_draft: Boolean(note.is_draft),
+    });
+    const idx = notes.value.findIndex((item) => item.id === note.id);
+
+    if (idx !== -1) {
+      notes.value[idx] = updated;
+    }
+  } catch {
+    note.content = previousContent;
+    note.content_format = previousFormat;
+    showToast({
+      message: 'Checklisten-Status konnte nicht gespeichert werden.',
+      type: 'error',
+    });
+  }
+}
+
 async function toggleLike(noteId: number) {
   const result = await api.post<{ liked: boolean }>(`/notes/${noteId}/like`);
 
@@ -424,7 +452,13 @@ async function remove(id: number) {
               <EditButton small @click="startEdit(note)" />
             </div>
           </div>
-          <RichTextDisplay class="content" :content="note.content" :format="note.content_format" />
+          <RichTextDisplay
+            class="content"
+            :content="note.content"
+            :format="note.content_format"
+            interactive
+            @update:content="(html) => updateNoteContent(note, html)"
+          />
           <FileAttachments domain="notes" :entity-id="note.id" :editable="false" />
           <div class="note-footer">
             <p class="meta">

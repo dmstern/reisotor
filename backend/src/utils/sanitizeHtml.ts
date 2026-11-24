@@ -11,8 +11,9 @@ import sanitize from 'sanitize-html';
 // String-Parser ohne DOM-Abhängigkeit, funktioniert also auf jeder Node-Version.
 //
 // Allowlist entspricht genau dem, was RichTextEditor.vue's Tiptap-Toolbar erzeugen kann (StarterKit
-// + Link-Extension): Absätze, Fett/Kursiv/Durchgestrichen, Überschriften, Listen, Zitat, Code
-// (inline + Block), Trennlinie, Zeilenumbruch, Links.
+// + Link-Extension + TaskList/TaskItem für Checklisten): Absätze, Fett/Kursiv/Durchgestrichen,
+// Überschriften, Listen (inkl. interaktiver Task-Listen), Zitat, Code (inline + Block),
+// Trennlinie, Zeilenumbruch, Links.
 const ALLOWED_TAGS = [
   'p',
   'br',
@@ -33,12 +34,25 @@ const ALLOWED_TAGS = [
   'blockquote',
   'hr',
   'a',
+  'label',
+  'input',
+  'span',
+  'div',
 ];
 
 export function sanitizeHtml(html: string): string {
   return sanitize(html, {
     allowedTags: ALLOWED_TAGS,
-    allowedAttributes: { a: ['href', 'target', 'rel'] },
+    allowedAttributes: {
+      a: ['href', 'target', 'rel'],
+      ul: [{ name: 'data-type', values: ['taskList'] }],
+      li: [
+        { name: 'data-type', values: ['taskItem'] },
+        { name: 'data-checked', values: ['true', 'false'] },
+      ],
+      input: [{ name: 'type', values: ['checkbox'] }, 'checked', 'disabled'],
+    },
     allowedSchemes: ['http', 'https', 'mailto'],
+    exclusiveFilter: (frame) => frame.tag === 'input' && frame.attribs.type !== 'checkbox',
   });
 }
