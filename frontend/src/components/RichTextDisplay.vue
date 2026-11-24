@@ -162,6 +162,7 @@ function onContainerChange(event: Event) {
 .richtext.is-compact :deep(tr),
 .richtext.is-compact :deep(th),
 .richtext.is-compact :deep(td),
+.richtext.is-compact :deep(p),
 .richtext.is-compact :deep(h1),
 .richtext.is-compact :deep(h2),
 .richtext.is-compact :deep(h3),
@@ -191,26 +192,16 @@ function onContainerChange(event: Event) {
   font-weight: 600;
 }
 
-.richtext.is-compact :deep(th > p),
-.richtext.is-compact :deep(td > p) {
-  display: inline;
-  margin: 0;
-}
-
 .richtext.is-compact :deep(th + th::before),
 .richtext.is-compact :deep(td + td::before),
 .richtext.is-compact :deep(th + td::before),
 .richtext.is-compact :deep(td + th::before),
 .richtext.is-compact :deep(tr + tr::before),
 .richtext.is-compact :deep(thead + tbody > tr:first-child::before),
-.richtext.is-compact :deep(h1 + p::before),
-.richtext.is-compact :deep(h2 + p::before),
-.richtext.is-compact :deep(h3 + p::before),
-.richtext.is-compact :deep(p + h1::before),
-.richtext.is-compact :deep(p + h2::before),
-.richtext.is-compact :deep(p + h3::before),
-.richtext.is-compact :deep(table + p::before),
-.richtext.is-compact :deep(p + table::before) {
+.richtext.is-compact :deep(tbody + tfoot > tr:first-child::before),
+.richtext.is-compact :deep(thead + tfoot > tr:first-child::before),
+.richtext.is-compact
+  :deep(:is(p, h1, h2, h3, h4, h5, h6, table) + :is(p, h1, h2, h3, h4, h5, h6, table)::before) {
   content: ' · ';
   color: var(--color-text-muted);
   font-weight: 400;

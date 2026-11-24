@@ -25,7 +25,6 @@ interface TextStyleOption {
   id: 'h1' | 'h2' | 'h3' | 'p';
   label: string;
   level: HeadingLevel | null;
-  shortLabel: string;
   previewClass: string;
 }
 
@@ -34,24 +33,21 @@ const TEXT_STYLE_OPTIONS: readonly TextStyleOption[] = [
     id: 'h1',
     label: 'Titel',
     level: HEADING_LEVEL_1,
-    shortLabel: 'H1',
     previewClass: 'heading-preview--h1',
   },
   {
     id: 'h2',
     label: 'Überschrift',
     level: HEADING_LEVEL_2,
-    shortLabel: 'H2',
     previewClass: 'heading-preview--h2',
   },
   {
     id: 'h3',
     label: 'Unterüberschrift',
     level: HEADING_LEVEL_3,
-    shortLabel: 'H3',
     previewClass: 'heading-preview--h3',
   },
-  { id: 'p', label: 'Text', level: null, shortLabel: 'H', previewClass: 'heading-preview--p' },
+  { id: 'p', label: 'Text', level: null, previewClass: 'heading-preview--p' },
 ];
 
 // Ersetzt die bisherigen <textarea>+renderRichText()-Vorschau-Formularfelder (Notizen, Tagebuch,
@@ -467,6 +463,7 @@ defineExpose({
               @close="closeHeadingMenu"
               @mousedown.prevent
               @keydown="onHeadingMenuKeydown"
+              @focusout="onFocusOut"
             >
               <DropdownMenuItem
                 v-for="option in TEXT_STYLE_OPTIONS"
