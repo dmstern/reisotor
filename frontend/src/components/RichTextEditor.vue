@@ -902,7 +902,7 @@ defineExpose({
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
-  overflow-y: auto;
+  overflow: auto;
 }
 
 .richtext-editor :deep(.richtext-content) {

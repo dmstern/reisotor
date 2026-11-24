@@ -54,11 +54,16 @@
     border-collapse: separate;
     border-spacing: 0;
     width: 100%;
-    margin: 0;
+    margin: var(--space-sm) 0;
     border: 1px solid var(--color-border-strong);
     border-radius: var(--radius-xs-squircle);
     corner-shape: squircle;
     overflow: hidden;
+  }
+
+  .richtext-table-wrapper > table,
+  .tableWrapper > table {
+    margin: 0;
   }
 
   th,
