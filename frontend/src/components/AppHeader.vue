@@ -196,7 +196,7 @@ const profileTitle = computed(() => {
             :title="profileTitle"
           >
             <div class="avatar-wrapper">
-              <LoadingSpinner v-if="isOpeningSettings" size="sm" class="avatar-spinner" />
+              <LoadingSpinner v-if="isOpeningSettings" size="sm" />
               <span v-else class="avatar">{{ auth.user?.avatar || '👤' }}</span>
               <div
                 v-if="!isOpeningSettings && !connectivity.isOnline"
@@ -700,11 +700,6 @@ const profileTitle = computed(() => {
 .profile-link.is-navigating {
   cursor: wait;
   pointer-events: none;
-}
-
-.avatar-spinner {
-  width: 18px;
-  height: 18px;
 }
 
 .offline-badge {
