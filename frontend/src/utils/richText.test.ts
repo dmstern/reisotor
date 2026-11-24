@@ -156,3 +156,11 @@ describe('formatInline', () => {
     expect(formatInline('**wichtig**')).toBe('<strong>wichtig</strong>');
   });
 });
+
+describe('stripHtml', () => {
+  it('separates adjacent table cells and rows with spaces', () => {
+    expect(
+      stripHtml('<table><tr><th>Tag</th><th>Ziel</th></tr><tr><td>Mo</td><td>Rom</td></tr></table>')
+    ).toBe('Tag Ziel Mo Rom');
+  });
+});

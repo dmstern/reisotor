@@ -11,11 +11,11 @@ Dieses Dokument beschreibt das systematische Code-Review- und Status-System für
 
 ### Code-Review-Stand (exklusiv: maximal 1 Label)
 
-| Label                    | Bedeutung                    | Wann wird es gesetzt?                                                                               |
-| :----------------------- | :--------------------------- | :-------------------------------------------------------------------------------------------------- |
-| `👀️ review:needed`       | Wartet auf Code-Review       | Bei PR-Erstellung (Nicht-Draft) oder nach gepushten Fixes auf `needs-polish`.                       |
-| `🛠️ review:needs-polish` | Fixes / Feinschliff nötig    | Code-Review hat Blocker, fehlende Tests/Checks oder Polish-Bedarf gefunden.                         |
-| `👍️ review:reviewed`     | Code-Review erfolgt & sauber | Code-Review ist bestanden (bleibt sichtbar, auch wenn manueller Test oder Gespräch noch ausstehen). |
+| Label                    | Bedeutung                    | Wann wird es gesetzt?                                                                                                                                               |
+| :----------------------- | :--------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `👀️ review:needed`       | Wartet auf Code-Review       | Bei PR-Erstellung (Nicht-Draft) oder nach externen/separaten Fixes auf `needs-polish`.                                                                              |
+| `🛠️ review:needs-polish` | Fixes / Feinschliff nötig    | Code-Review hat Blocker, fehlende Tests/Checks oder Polish-Bedarf gefunden.                                                                                         |
+| `👍️ review:reviewed`     | Code-Review erfolgt & sauber | Code-Review ist bestanden – auch nach direkter Behebung & Verifikation der Polish-Befunde durch den Reviewer (unabhängig von offenem manuellem Test oder Gespräch). |
 
 ### Manueller Test (exklusiv untereinander; entfällt wenn Test n/a)
 
@@ -48,6 +48,7 @@ flowchart TD
 - **`👍️ review:reviewed` vs. `🚀️ review:ready-to-merge`:** `👍️ review:reviewed` bedeutet ausdrücklich _„Code-Review sauber erfolgt“_ — nicht automatisch mergefertig, solange z. B. noch `🧪️ review:needs-manual-test` offen ist oder erst noch gesprochen werden soll.
 - **`💬️ review:discussed`** kann zu jedem Zeitpunkt ergänzt werden, sobald ein Gespräch über den PR stattgefunden hat.
 - **`✅️ review:manually-tested`** bleibt bei kleineren Polish-Fixes erhalten; nur nach größeren funktionalen Umbauten wird es bewusst wieder entfernt (`--manual-test needed`), damit erneut getestet wird.
+- **Quota-Regel bei Reviewer-Fixes:** Behebt der Review-Agent seine gemeldeten Polish-Punkte auf Nutzerwunsch direkt selbst und verifiziert sie, geht der PR nach dem Push direkt auf `👍️ review:reviewed` statt erneut auf `👀️ review:needed`.
 
 ## 3. Antigravity-Skill & CLI-Helfer
 
