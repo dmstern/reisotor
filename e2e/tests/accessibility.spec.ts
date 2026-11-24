@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { mockOsmTiles, mockWeatherAndRegionInfo } from './helpers/externalMocks';
 
 /**
  * Automated Accessibility (a11y) Tests using Axe.
@@ -67,6 +68,11 @@ test.describe('Accessibility (a11y)', () => {
   });
 
   test.describe('authenticated views', () => {
+    test.beforeEach(async ({ page }) => {
+      await mockOsmTiles(page);
+      await mockWeatherAndRegionInfo(page);
+    });
+
     test('dashboard page accessibility scan', async ({ page }) => {
       await page.goto('/');
       await expect(page.locator('.tile-btn', { hasText: 'Kalender' })).toBeVisible();
