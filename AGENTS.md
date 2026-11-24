@@ -254,9 +254,12 @@ Sobald eine neue Aufgabe beginnt (mit oder ohne GitHub-Issue), MUSS der Agent **
 ## PR-Workflow
 
 - **Automatische PR-Erstellung bei neuen Branches / Worktrees:**
-  - Wurde für eine Aufgabe ein neuer Branch / Worktree angelegt und existiert noch kein PR (Prüfung: `gh pr view 2>/dev/null`), MUSS der Agent am Ende der Aufgabe nach Formatierung, Tests und Commit den Branch pushen (`git push -u origin <branch>`) und **automatisch unaufgefordert einen Pull Request via `gh pr create` erstellen** (mit treffendem Titel, prägnanter Beschreibung und ggf. Issue-Referenzen wie `Fixes #...`).
+  - Wurde für eine Aufgabe ein neuer Branch / Worktree angelegt und existiert noch kein PR (Prüfung: `gh pr view 2>/dev/null`), MUSS der Agent am Ende der Aufgabe nach Formatierung, Tests und Commit den Branch pushen (`git push -u origin <branch>`) und **automatisch unaufgefordert einen Pull Request via `gh pr create` erstellen** (mit treffendem Titel, prägnanter Beschreibung, ggf. Issue-Referenzen wie `Fixes #...` sowie `--label "👀️ review:needed"` bei Nicht-Draft-PRs).
   - Der Link zum erstellten PR wird am Ende der Nachricht für die Nutzerin / den Nutzer ausgegeben.
-  - **Bestehende Branches / Folge-Chats:** Existiert für den Branch bereits ein PR (z. B. bei Folge-Chats im selben Worktree oder Multi-Phasen-Refactorings), wird **kein** zweiter PR angelegt, sondern der bestehende Branch gepusht und bei Bedarf die PR-Beschreibung aktualisiert (`gh pr edit`).
+  - **Bestehende Branches / Folge-Chats:** Existiert für den Branch bereits ein PR (z. B. bei Folge-Chats im selben Worktree oder Multi-Phasen-Refactorings), wird **kein** zweiter PR angelegt, sondern der bestehende Branch gepusht und bei Bedarf die PR-Beschreibung aktualisiert (`gh pr edit`). Wurden Review-Fixes gepusht, Status per `pr-review`-Skill wieder auf `👀️ review:needed` setzen.
+- **Systematisches PR-Review & Label-System (`docs/PR_REVIEW_GUIDE.md` & `.agent/skills/pr-review/SKILL.md`):**
+  - Offene Nicht-Draft-PRs tragen genau ein exklusives Status-Label (`👀️ review:needed`, `🛠️ review:needs-polish`, `🧪️ review:needs-manual-test`, `🚀️ review:ready-to-merge`) sowie optional die orthogonalen Flags `💬️ review:discussed` und `✅️ review:manually-tested`.
+  - Für Reviews, Status-Updates und das PR-Übersichtsboard den Workspace-Skill `pr-review` nutzen (`node .agent/skills/pr-review/scripts/pr-labels.mjs`).
 - **PR-Merge-Regel:** PRs **nicht automatisch mergen** sobald CI grün ist — auf Review/Freigabe des Nutzers warten (visueller Check anhand Screenshots).
 
 **Issues schließen:** `Fixes #101`, `Closes #102` etc. (englische Keywords vor jeder Issue-Nummer wiederholen).
