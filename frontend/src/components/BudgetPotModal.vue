@@ -35,6 +35,12 @@ const form = ref({
   target_amount: '',
 });
 
+const initialSnapshot = ref<{
+  name: string;
+  kind: 'shared' | 'personal';
+  target_amount: string;
+} | null>(null);
+
 const isEdit = computed(() => Boolean(props.budget));
 const modalTitle = computed(() => (isEdit.value ? 'Budget bearbeiten' : 'Budget anlegen'));
 
@@ -43,20 +49,37 @@ watch(
   ([isOpen, budget]) => {
     if (isOpen) {
       if (budget) {
-        form.value = {
+        const initial = {
           name:
             budget.name === 'Gemeinsames Budget' && budgetStore.users.length <= 1
               ? 'Hauptbudget'
               : budget.name,
-          kind: budget.owner_id != null ? 'personal' : 'shared',
+          kind: (budget.owner_id != null ? 'personal' : 'shared') as 'shared' | 'personal',
           target_amount: budget.target_amount != null ? String(budget.target_amount) : '',
         };
+        form.value = { ...initial };
+        initialSnapshot.value = initial;
       } else {
         form.value = { name: '', kind: 'shared', target_amount: '' };
+        initialSnapshot.value = null;
       }
+    } else {
+      initialSnapshot.value = null;
     }
   },
   { immediate: true }
+);
+
+const isNameModified = computed(
+  () => initialSnapshot.value !== null && form.value.name !== initialSnapshot.value.name
+);
+const isKindModified = computed(
+  () => initialSnapshot.value !== null && form.value.kind !== initialSnapshot.value.kind
+);
+const isTargetAmountModified = computed(
+  () =>
+    initialSnapshot.value !== null &&
+    String(form.value.target_amount) !== String(initialSnapshot.value.target_amount)
 );
 
 function handleClose() {
@@ -110,13 +133,20 @@ async function handleDelete() {
     @update:model-value="(v) => !v && handleClose()"
   >
     <form class="edit-form add-form new-budget-form" @submit.prevent="handleSubmit">
-      <FormField icon="title" label="Name" required v-slot="{ id }">
+      <FormField
+        icon="title"
+        label="Name"
+        required
+        :modified="isNameModified"
+        v-slot="{ id, modified }"
+      >
         <Input
           :id="id"
           v-model="form.name"
           type="text"
           placeholder="Name (z. B. Souvenirs)"
           required
+          :modified="modified"
         />
       </FormField>
 
@@ -124,15 +154,21 @@ async function handleDelete() {
         v-if="budgetStore.users.length > 1"
         icon="visibility"
         label="Sichtbarkeit"
-        v-slot="{ id }"
+        :modified="isKindModified"
+        v-slot="{ id, modified }"
       >
-        <Select :id="id" v-model="form.kind">
+        <Select :id="id" v-model="form.kind" :modified="modified">
           <option value="shared">Geteilt (für alle im Urlaub sichtbar)</option>
           <option value="personal">Privat (nur für mich sichtbar)</option>
         </Select>
       </FormField>
 
-      <FormField icon="amount" label="Gesamtziel" v-slot="{ id }">
+      <FormField
+        icon="amount"
+        label="Gesamtziel"
+        :modified="isTargetAmountModified"
+        v-slot="{ id, modified }"
+      >
         <Input
           :id="id"
           v-model="form.target_amount"
@@ -140,6 +176,7 @@ async function handleDelete() {
           inputmode="decimal"
           step="0.01"
           placeholder="Gesamtziel €"
+          :modified="modified"
         />
       </FormField>
 

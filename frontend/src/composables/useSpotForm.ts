@@ -199,6 +199,30 @@ export function useSpotForm(options: UseSpotFormOptions) {
   const editSpotManualPin = ref<{ lat: number; lng: number } | null>(null);
   const editSpotLocationError = ref(false);
 
+  const isEditSpotTitleModified = computed(() => {
+    if (!editingSpot.value) {
+      return false;
+    }
+
+    return (editSpotForm.value.title || '').trim() !== (editingSpot.value.title || '').trim();
+  });
+
+  const isEditSpotCategoryModified = computed(() => {
+    if (!editingSpot.value) {
+      return false;
+    }
+
+    return (editSpotForm.value.category || '').trim() !== (editingSpot.value.category || '').trim();
+  });
+
+  const isEditSpotAddressModified = computed(() => {
+    if (!editingSpot.value) {
+      return false;
+    }
+
+    return (editSpotForm.value.address || '').trim() !== (editingSpot.value.address || '').trim();
+  });
+
   const isEditSpotLocationModified = computed(() => {
     if (!editingSpot.value) {
       return false;
@@ -210,15 +234,15 @@ export function useSpotForm(options: UseSpotFormOptions) {
         : null;
     const currentPin = editSpotManualPin.value;
     const pinChanged = !areCoordsEqual(currentPin, initialPin);
-    const addressChanged =
-      (editSpotForm.value.address || '').trim() !== (editingSpot.value.address || '').trim();
-    const titleChanged =
-      (editSpotForm.value.title || '').trim() !== (editingSpot.value.title || '').trim();
     const mapsLinkChanged =
       (editSpotForm.value.maps_link || '').trim() !== (editingSpot.value.maps_link || '').trim();
-    const categoryChanged =
-      (editSpotForm.value.category || '').trim() !== (editingSpot.value.category || '').trim();
-    return pinChanged || addressChanged || titleChanged || mapsLinkChanged || categoryChanged;
+    return (
+      pinChanged ||
+      mapsLinkChanged ||
+      isEditSpotAddressModified.value ||
+      isEditSpotTitleModified.value ||
+      isEditSpotCategoryModified.value
+    );
   });
 
   const isEditSpotSideModified = computed(() => {
@@ -1385,6 +1409,9 @@ export function useSpotForm(options: UseSpotFormOptions) {
     resetEditSpotLocation,
     isEditSpotDirty,
     isEditSpotLocationModified,
+    isEditSpotTitleModified,
+    isEditSpotCategoryModified,
+    isEditSpotAddressModified,
     isEditSpotSideModified,
     isEditSpotImageModified,
     isEditSpotNoteModified,

@@ -16,6 +16,7 @@ const props = withDefaults(
     trueValue?: boolean | string | number;
     falseValue?: boolean | string | number;
     disabled?: boolean;
+    modified?: boolean;
     id?: string;
     name?: string;
     ariaLabel?: string;
@@ -38,6 +39,7 @@ const props = withDefaults(
     trueValue: true,
     falseValue: false,
     disabled: false,
+    modified: false,
     label: '',
     description: '',
     icon: undefined,
@@ -83,6 +85,7 @@ function onChange(event: Event) {
       {
         'is-checked': isChecked,
         'is-disabled': disabled,
+        'is-modified': modified,
       },
     ]"
   >
@@ -107,6 +110,7 @@ function onChange(event: Event) {
         <span class="checkbox-card__label">
           <slot name="label">{{ label }}</slot>
         </span>
+        <span v-if="modified" class="modified-dot" title="Geändert" aria-label="Geändert" />
       </div>
       <p v-if="description || $slots.description" class="checkbox-card__description">
         <slot name="description">{{ description }}</slot>
@@ -293,6 +297,35 @@ function onChange(event: Event) {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
   outline-offset: var(--focus-ring-offset, 2px);
   box-shadow: var(--focus-ring-halo);
+}
+
+.checkbox-card.is-modified {
+  @include control-modified-outline;
+
+  &:hover:not(.is-disabled) {
+    border-color: transparent;
+  }
+
+  &:focus-visible,
+  &:has(:focus-visible) {
+    border-color: var(--input-border-color);
+    outline: var(--focus-ring-width, 3px) solid var(--color-success);
+    outline-offset: var(--focus-ring-offset, 2px);
+    box-shadow: var(--focus-ring-halo);
+  }
+}
+
+.checkbox-card.is-modified .checkbox-card__label {
+  color: var(--color-success-dark, var(--color-success));
+}
+
+.modified-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-success);
+  flex-shrink: 0;
 }
 
 /* Deaktivierter Zustand */

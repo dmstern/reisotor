@@ -115,6 +115,9 @@ const {
   onSpotLocationClear,
   resetEditSpotLocation,
   isEditSpotLocationModified,
+  isEditSpotTitleModified,
+  isEditSpotCategoryModified,
+  isEditSpotAddressModified,
   isEditSpotSideModified,
   isEditSpotImageModified,
   isEditSpotNoteModified,
@@ -274,6 +277,11 @@ function handleOpenScheduledDate(date: string) {
           :title-required="true"
           :title-invalid="showSpotTitleError"
           :modified="isEditSpotLocationModified"
+          :modified-fields="{
+            title: isEditSpotTitleModified,
+            category: isEditSpotCategoryModified,
+            address: isEditSpotAddressModified,
+          }"
           @update:address="activeSpotForm.address = $event"
           @update:maps-link="onSpotMapsLinkUpdate"
           @select="onSpotLocationSelect"
@@ -489,8 +497,14 @@ function handleOpenScheduledDate(date: string) {
         />
       </FormField>
 
-      <FormField icon="note" label="Notiz" :modified="isEditSpotNoteModified">
-        <RichTextEditor v-model="activeSpotForm.note" placeholder="Notiz" compact expandable />
+      <FormField icon="note" label="Notiz" :modified="isEditSpotNoteModified" v-slot="{ modified }">
+        <RichTextEditor
+          v-model="activeSpotForm.note"
+          placeholder="Notiz"
+          compact
+          expandable
+          :modified="modified"
+        />
       </FormField>
 
       <!-- Kombiniertes "Einplanen"-Fieldset: Touren zuordnen + Datum einplanen in einem Bereich -->
@@ -802,6 +816,10 @@ function handleOpenScheduledDate(date: string) {
   flex-shrink: 0;
 }
 
+.spot-region-field.is-modified {
+  @include control-modified-outline;
+}
+
 .spot-region-field.is-modified .spot-region-label {
   color: var(--color-success-dark, var(--color-success));
 }
@@ -1023,7 +1041,7 @@ button.assign-chip-action:focus-visible {
   width: 6px;
   height: 6px;
   border-radius: var(--radius-pill);
-  background: var(--color-success-dark, var(--color-success));
+  background-color: var(--color-success);
 }
 
 @media (prefers-reduced-motion: reduce) {

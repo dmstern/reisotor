@@ -326,6 +326,7 @@ async function deleteEditingTrack() {
           <div class="track-tour-assign-field">
             <TourAssignDropdown
               :tours="trackTourAssignments"
+              :modified="isEditTrackTourModified"
               @toggle-tour="onToggleTrackTour"
               @create-tour="onCreateTourFromTrack"
             />
@@ -348,7 +349,11 @@ async function deleteEditingTrack() {
       </div>
 
       <div v-show="activeTrackEditTab === 'permissions'" class="tab-content permissions-tab">
-        <ItemVisibilitySettings v-model="editTrackVisibility" item-label="Aufzeichnung" />
+        <ItemVisibilitySettings
+          v-model="editTrackVisibility"
+          item-label="Aufzeichnung"
+          :modified="isEditTrackVisibilityModified"
+        />
       </div>
 
       <div class="actions-row">
@@ -379,7 +384,7 @@ async function deleteEditingTrack() {
   />
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .edit-form {
   display: flex;
   flex-direction: column;

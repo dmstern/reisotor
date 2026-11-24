@@ -25,11 +25,13 @@ const props = withDefaults(
     itemLabel?: string;
     disabled?: boolean;
     showHint?: boolean;
+    modified?: boolean;
   }>(),
   {
     itemLabel: 'Aufzeichnung',
     disabled: false,
     showHint: true,
+    modified: false,
   }
 );
 
@@ -72,9 +74,17 @@ function onSelect(val: unknown) {
 </script>
 
 <template>
-  <div class="visibility-settings" role="radiogroup" aria-label="Sichtbarkeit auswählen">
+  <div
+    class="visibility-settings"
+    :class="{ 'is-modified': modified }"
+    role="radiogroup"
+    aria-label="Sichtbarkeit auswählen"
+  >
     <div class="visibility-intro">
-      <span class="visibility-intro-title">Sichtbarkeit in der Reisegruppe</span>
+      <span class="visibility-intro-title">
+        Sichtbarkeit in der Reisegruppe
+        <span v-if="modified" class="modified-dot" title="Geändert" aria-label="Geändert" />
+      </span>
       <p class="visibility-intro-desc">
         Lege fest, wer in deiner Reisegruppe Zugriff auf diese {{ itemLabel }} hat.
       </p>
@@ -91,6 +101,7 @@ function onSelect(val: unknown) {
         :description="opt.description"
         :icon="opt.icon"
         :disabled="disabled"
+        :modified="modified && modelValue === opt.value"
         variant="card"
         radio-position="right"
         radio-size="sm"
@@ -131,9 +142,25 @@ function onSelect(val: unknown) {
 }
 
 .visibility-intro-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text);
+}
+
+.visibility-settings.is-modified .visibility-intro-title {
+  color: var(--color-success-dark, var(--color-success));
+}
+
+.modified-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-success);
+  flex-shrink: 0;
 }
 
 .visibility-intro-desc {

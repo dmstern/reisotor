@@ -53,6 +53,8 @@ const _props = withDefaults(
     surface?: 'transparent' | 'opaque';
     /** Ob der Button als aktiv/ausgewählt markiert ist (z. B. ausgewählter Avatar). */
     active?: boolean;
+    /** Ob der Button-Wert gegenüber dem Ausgangszustand geändert wurde (Dirty-Indikator). */
+    modified?: boolean;
     /** Gestrichelte Umrandung für leere/optionale Hinzufügen-Slots (z. B. Tour-Weg-Verbinder). */
     dashed?: boolean;
     /** Native Button-Type (Standard: 'button'). */
@@ -82,6 +84,7 @@ const _props = withDefaults(
     shape: 'squircle',
     surface: 'transparent',
     active: false,
+    modified: false,
     dashed: false,
     type: 'button',
     disabled: false,
@@ -107,6 +110,7 @@ const btnClasses = computed(() => [
     'is-disabled': _props.disabled,
     'is-loading': _props.loading,
     'is-active': _props.active,
+    'btn--modified': _props.modified,
     'btn--flat': _props.flat,
     'btn--dashed': _props.dashed,
     'btn--icon-only':
@@ -372,6 +376,23 @@ a.btn.is-loading {
 
 .btn--secondary:active:not(:disabled):not(.is-disabled) {
   background-color: var(--color-hover);
+}
+
+.btn--modified {
+  @include control-modified-outline;
+
+  @include can-hover {
+    &:hover:not(:disabled):not(.is-disabled) {
+      border-color: transparent;
+    }
+  }
+
+  &:focus-visible {
+    border-color: var(--input-border-color);
+    outline: var(--focus-ring-width, 3px) solid var(--color-success);
+    outline-offset: var(--focus-ring-offset, 2px);
+    box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
+  }
 }
 
 /* Explizit flache Sekundär-Buttons (z. B. CollapsibleFieldset) & gestrichelte Leer-Slots (#871) */

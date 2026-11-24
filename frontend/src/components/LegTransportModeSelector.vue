@@ -19,9 +19,13 @@ const props = withDefaults(
     category: TransportCategory;
     transitType: string;
     transitOptions?: readonly string[];
+    categoryModified?: boolean;
+    transitModified?: boolean;
   }>(),
   {
     transitOptions: () => DEFAULT_TRANSIT_OPTIONS,
+    categoryModified: false,
+    transitModified: false,
   }
 );
 
@@ -78,6 +82,7 @@ function onKeyDown(event: KeyboardEvent) {
       class="transport-toggle"
       :model-value="category"
       :options="TRANSPORT_MODE_OPTIONS"
+      :modified="categoryModified"
       aria-label="Fortbewegungsart"
       @update:model-value="(val) => emit('selectCategory', val as TransportCategory)"
     />
@@ -89,7 +94,7 @@ function onKeyDown(event: KeyboardEvent) {
       :inert="category !== 'ÖPNV' ? true : undefined"
     >
       <div class="transit-dropdown-inner">
-        <FormField icon="category" label="Verkehrsmittel">
+        <FormField icon="category" label="Verkehrsmittel" :modified="transitModified">
           <div class="transit-picker-wrap">
             <DropdownMenu
               block
@@ -97,6 +102,7 @@ function onKeyDown(event: KeyboardEvent) {
               aria-label="Verkehrsmittel auswählen"
               aria-haspopup="listbox"
               trigger-class="transit-trigger"
+              :modified="transitModified"
               @toggle="toggle"
               @keydown="onKeyDown"
             >
@@ -161,7 +167,7 @@ function onKeyDown(event: KeyboardEvent) {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .leg-transport-mode-selector {
   display: flex;
   flex-direction: column;

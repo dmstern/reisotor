@@ -51,6 +51,7 @@ const {
   showIconPicker,
   createForm,
   editForm,
+  editModifiedFields,
   usageItems,
   isLoadingUsageItems,
   currentPickerIconId,
@@ -227,6 +228,7 @@ watch([() => filteredCategories.value.length, activeType], () => {
           :active-type="activeType"
           :input-name-id="editNameId"
           :show-preview="false"
+          :modified-fields="editModifiedFields"
           @open-icon-picker="openIconPicker('edit')"
           @submit="saveEdit"
         />

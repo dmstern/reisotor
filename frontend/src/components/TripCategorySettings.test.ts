@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { renderToString } from 'vue/server-renderer';
 import TripCategorySettings from './TripCategorySettings.vue';
 import { useTripCategoriesStore } from '../stores/tripCategories';
+import { useTripCategorySettings } from '../composables/useTripCategorySettings';
 
 describe('TripCategorySettings', () => {
   let pinia: ReturnType<typeof createPinia>;
@@ -137,5 +138,34 @@ describe('TripCategorySettings', () => {
     // Der alte Standardname "Flughafen" darf NICHT als eigenes separates Chip/Row existieren
     const flughafenMatches = html.match(/>Flughafen</g) || [];
     expect(flughafenMatches).toHaveLength(0);
+  });
+
+  it('startet im Bearbeitungsmodus ohne geänderte Felder und markiert nur geänderte Felder', () => {
+    const settings = useTripCategorySettings(() => 10);
+
+    settings.startEdit({
+      id: 1,
+      name: 'Tauchkurs',
+      icon: 'swimming',
+      emoji: '🤿',
+      color: '#0ea5e9',
+      usageCount: 0,
+      isCustom: true,
+      isHidden: false,
+    });
+
+    expect(settings.editModifiedFields.value).toEqual({
+      name: false,
+      icon: false,
+      color: false,
+    });
+
+    settings.editForm.value.name = 'Schnorchelkurs';
+
+    expect(settings.editModifiedFields.value).toEqual({
+      name: true,
+      icon: false,
+      color: false,
+    });
   });
 });

@@ -58,7 +58,12 @@ const id = computed(() => props.id || autoId);
         />
         {{ displayLabel
         }}<span v-if="isRequired" class="required-indicator" aria-hidden="true">*</span>
-        <span v-if="modified" class="modified-dot" title="Geändert" aria-label="Geändert" />
+        <span
+          v-if="modified && !error && !invalid"
+          class="modified-dot"
+          title="Geändert"
+          aria-label="Geändert"
+        />
       </label>
       <slot name="extra" />
     </div>
@@ -70,7 +75,7 @@ const id = computed(() => props.id || autoId);
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .form-field {
   display: flex;
   flex-direction: column;
@@ -126,7 +131,7 @@ const id = computed(() => props.id || autoId);
   font-weight: 500;
 }
 
-.form-field.is-modified .form-field-label {
+.form-field.is-modified:not(.has-error) .form-field-label {
   color: var(--color-success-dark, var(--color-success));
 }
 
@@ -140,14 +145,16 @@ const id = computed(() => props.id || autoId);
   flex-shrink: 0;
 }
 
-.form-field.is-modified :deep(.input:not(:focus):not(:focus-visible)),
-.form-field.is-modified :deep(.select:not(:focus):not(:focus-visible)),
-.form-field.is-modified :deep(.textarea:not(:focus):not(:focus-visible)),
-.form-field.is-modified
+.form-field.is-modified:not(.has-error) :deep(.input:not(:focus):not(:focus-visible)),
+.form-field.is-modified:not(.has-error) :deep(.select:not(:focus):not(:focus-visible)),
+.form-field.is-modified:not(.has-error) :deep(.textarea:not(:focus):not(:focus-visible)),
+.form-field.is-modified:not(.has-error) :deep(.richtext-editor:not(:focus-within):not(.is-focused)),
+.form-field.is-modified:not(.has-error) :deep(.collapsed-trigger:not(:focus):not(:focus-visible)),
+.form-field.is-modified:not(.has-error) :deep(.segmented-toggle:not(:focus-within)),
+.form-field.is-modified:not(.has-error)
   :deep(input:not([type='checkbox']):not([type='radio']):not(:focus):not(:focus-visible)),
-.form-field.is-modified :deep(select:not(:focus):not(:focus-visible)),
-.form-field.is-modified :deep(textarea:not(:focus):not(:focus-visible)) {
-  border-color: var(--color-success) !important;
-  box-shadow: 0 0 0 1px var(--color-success);
+.form-field.is-modified:not(.has-error) :deep(select:not(:focus):not(:focus-visible)),
+.form-field.is-modified:not(.has-error) :deep(textarea:not(:focus):not(:focus-visible)) {
+  @include control-modified-outline(true);
 }
 </style>

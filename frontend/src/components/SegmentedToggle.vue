@@ -13,6 +13,7 @@ const props = withDefaults(
   defineProps<{
     modelValue: string;
     disabled?: boolean;
+    modified?: boolean;
     // dot: optionaler roter "neu"-Punkt je Option (z. B. Spots/Touren-Umschalter in
     // ExcursionsView.vue), gleiches Aussehen wie NavBar.vue's .unseen-dot. Optional, bestehende
     // Verwendungsstellen ohne dot bleiben unverändert.
@@ -35,6 +36,7 @@ const props = withDefaults(
   }>(),
   {
     disabled: false,
+    modified: false,
   }
 );
 const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>();
@@ -126,7 +128,7 @@ watch(
   <div
     ref="toggleEl"
     class="segmented-toggle"
-    :class="{ 'is-disabled': disabled }"
+    :class="{ 'is-disabled': disabled, 'is-modified': modified }"
     :style="{ '--count': options.length, '--active-index': Math.max(0, activeIndex) }"
   >
     <span
@@ -177,7 +179,7 @@ watch(
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 /* Voll rund (border-radius:999px) statt Squircle - ein Segmented-Control ist konzeptionell näher an
    den anderen "vollständig runden" Pillen/Chips (siehe DESIGN.md, Abschnitt "Eckenrundung") als an
    einer Card/einem Button. --shadow-inset + --texture-grain (siehe DESIGN.md, Abschnitt "Weiches
@@ -198,6 +200,10 @@ watch(
   box-shadow:
     var(--shadow-inset),
     0 1px 0 var(--shadow-control-highlight);
+}
+
+.segmented-toggle.is-modified {
+  @include control-modified-outline;
 }
 
 /* Gleitet per transform zum aktiven Button. Durch Messung von offsetLeft/offsetWidth (analog NavBar.vue/

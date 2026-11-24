@@ -25,12 +25,14 @@ const props = withDefaults(
     compact?: boolean;
     expandable?: boolean;
     invalid?: boolean;
+    modified?: boolean;
   }>(),
   {
     placeholder: '',
     compact: false,
     expandable: false,
     invalid: false,
+    modified: false,
   }
 );
 const emit = defineEmits<{
@@ -164,6 +166,7 @@ defineExpose({
   <div
     v-if="expandable && !isExpanded && !hasContent"
     class="collapsed-trigger"
+    :class="{ 'is-modified': modified }"
     role="button"
     tabindex="0"
     @click="expandAndFocus"
@@ -176,7 +179,7 @@ defineExpose({
     v-else
     ref="editorContainerRef"
     class="richtext-editor"
-    :class="{ compact, 'is-focused': isFocused, 'is-invalid': invalid }"
+    :class="{ compact, 'is-focused': isFocused, 'is-invalid': invalid, 'is-modified': modified }"
     :aria-invalid="invalid || undefined"
     @focusin="onFocusIn"
     @focusout="onFocusOut"
@@ -574,6 +577,17 @@ defineExpose({
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
   outline-offset: var(--focus-ring-offset, 2px);
   box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
+}
+
+.collapsed-trigger.is-modified {
+  @include control-modified-outline;
+
+  &:focus-visible {
+    border-color: var(--input-border-color) !important;
+    outline: var(--focus-ring-width, 3px) solid var(--color-success);
+    outline-offset: var(--focus-ring-offset, 2px);
+    box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
+  }
 }
 
 .collapsed-placeholder {

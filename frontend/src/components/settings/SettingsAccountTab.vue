@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import Card from '../primitives/Card.vue';
 import Button from '../primitives/Button.vue';
 import Badge from '../primitives/Badge.vue';
@@ -70,6 +70,11 @@ watch(
     initEmail();
   }
 );
+
+const isUsernameModified = computed(
+  () => usernameForm.value.username !== (auth.user?.username ?? '')
+);
+const isEmailModified = computed(() => emailForm.value.email !== (auth.user?.email ?? ''));
 </script>
 
 <template>
@@ -181,13 +186,25 @@ watch(
       <Divider spacing="lg" />
 
       <form class="form username-form" @submit.prevent="changeUsername">
-        <div class="field">
+        <div class="field" :class="{ 'is-modified': isUsernameModified }">
           <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
           <label for="profile-username">
             Benutzername
             <span class="required-indicator" aria-hidden="true">*</span>
+            <span
+              v-if="isUsernameModified"
+              class="modified-dot"
+              title="Geändert"
+              aria-label="Geändert"
+            />
           </label>
-          <Input id="profile-username" v-model="usernameForm.username" type="text" required />
+          <Input
+            id="profile-username"
+            v-model="usernameForm.username"
+            type="text"
+            required
+            :modified="isUsernameModified"
+          />
         </div>
         <p v-if="usernameError" class="hint error">{{ usernameError }}</p>
         <p v-if="usernameSaved" class="hint success">
@@ -201,13 +218,19 @@ watch(
       <Divider spacing="lg" />
 
       <form class="form email-form" @submit.prevent="changeEmail">
-        <div class="field">
+        <div class="field" :class="{ 'is-modified': isEmailModified }">
           <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
           <label for="profile-email">
             <span class="label-row">
               <span>
                 E-Mail-Adresse
                 <span class="required-indicator" aria-hidden="true">*</span>
+                <span
+                  v-if="isEmailModified"
+                  class="modified-dot"
+                  title="Geändert"
+                  aria-label="Geändert"
+                />
               </span>
               <Badge
                 v-if="auth.user?.email && auth.user?.is_email_verified"
@@ -235,6 +258,7 @@ watch(
             autocomplete="email"
             placeholder="name@example.com"
             required
+            :modified="isEmailModified"
           />
         </div>
 
@@ -607,6 +631,20 @@ watch(
   align-items: center;
   flex-direction: row;
   gap: var(--space-xs);
+}
+
+.field.is-modified label {
+  color: var(--color-success-dark, var(--color-success));
+}
+
+.modified-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-success);
+  margin-left: var(--space-1);
+  flex-shrink: 0;
 }
 
 .required-indicator {

@@ -16,6 +16,7 @@ const props = withDefaults(
     icon?: IconDef;
     disabled?: boolean;
     open?: boolean;
+    modified?: boolean;
     size?: 'sm' | 'md' | 'lg';
     block?: boolean;
     ariaLabel?: string;
@@ -29,6 +30,7 @@ const props = withDefaults(
     icon: undefined,
     disabled: false,
     open: false,
+    modified: false,
     size: 'md',
     block: false,
     ariaLabel: undefined,
@@ -171,7 +173,14 @@ defineExpose({
         variant="secondary"
         :size="size"
         class="dropdown__button dropdown__field"
-        :class="[{ 'dropdown__button--active': open, 'btn--block': block }, triggerClass]"
+        :class="[
+          {
+            'dropdown__button--active': open,
+            'dropdown__button--modified': modified,
+            'btn--block': block,
+          },
+          triggerClass,
+        ]"
         :disabled="disabled"
         :aria-expanded="open"
         :aria-label="ariaLabel"

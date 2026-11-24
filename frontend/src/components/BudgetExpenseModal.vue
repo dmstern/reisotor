@@ -109,6 +109,17 @@ const detailsCount = computed(() => {
   return count > 0 ? count : undefined;
 });
 
+const initialSnapshot = ref<{
+  type: 'expense' | 'income';
+  title: string;
+  category: string;
+  amount: string;
+  paid_by_user_id: string;
+  date: string;
+  note: string;
+  budget_id: string;
+} | null>(null);
+
 watch(
   () => [props.modelValue, props.expense] as const,
   ([isOpen, exp]) => {
@@ -123,8 +134,8 @@ watch(
           initialPaidBy = String(b.owner_id);
         }
 
-        form.value = {
-          type: income ? 'income' : 'expense',
+        const initial = {
+          type: (income ? 'income' : 'expense') as 'expense' | 'income',
           title: exp.title,
           category: exp.category ?? '',
           amount: String(Math.abs(exp.amount)),
@@ -133,6 +144,8 @@ watch(
           note: exp.note ?? '',
           budget_id: exp.budget_id != null ? String(exp.budget_id) : '',
         };
+        form.value = { ...initial };
+        initialSnapshot.value = initial;
         showDetails.value = Boolean(exp.budget_id || exp.note);
       } else {
         const isInitialIncome = (props.initialType ?? 'expense') === 'income';
@@ -153,11 +166,43 @@ watch(
           note: '',
           budget_id: '',
         };
+        initialSnapshot.value = null;
         showDetails.value = false;
       }
+    } else {
+      initialSnapshot.value = null;
     }
   },
   { immediate: true }
+);
+
+const isTypeModified = computed(
+  () => initialSnapshot.value !== null && form.value.type !== initialSnapshot.value.type
+);
+const isTitleModified = computed(
+  () => initialSnapshot.value !== null && form.value.title !== initialSnapshot.value.title
+);
+const isAmountModified = computed(
+  () =>
+    initialSnapshot.value !== null &&
+    String(form.value.amount) !== String(initialSnapshot.value.amount)
+);
+const isCategoryModified = computed(
+  () => initialSnapshot.value !== null && form.value.category !== initialSnapshot.value.category
+);
+const isPaidByModified = computed(
+  () =>
+    initialSnapshot.value !== null &&
+    form.value.paid_by_user_id !== initialSnapshot.value.paid_by_user_id
+);
+const isDateModified = computed(
+  () => initialSnapshot.value !== null && form.value.date !== initialSnapshot.value.date
+);
+const isBudgetIdModified = computed(
+  () => initialSnapshot.value !== null && form.value.budget_id !== initialSnapshot.value.budget_id
+);
+const isNoteModified = computed(
+  () => initialSnapshot.value !== null && form.value.note !== initialSnapshot.value.note
 );
 
 const draft = useDraftAutosave(
@@ -345,10 +390,21 @@ async function handleDelete() {
   >
     <form class="edit-form add-form" @submit.prevent="handleSubmit">
       <div class="type-toggle-wrapper">
-        <SegmentedToggle v-model="form.type" :options="TYPE_OPTIONS" class="type-toggle" />
+        <SegmentedToggle
+          v-model="form.type"
+          :options="TYPE_OPTIONS"
+          :modified="isTypeModified"
+          class="type-toggle"
+        />
       </div>
 
-      <FormField icon="title" label="Titel" required v-slot="{ id }">
+      <FormField
+        icon="title"
+        label="Titel"
+        required
+        :modified="isTitleModified"
+        v-slot="{ id, modified }"
+      >
         <Input
           :id="id"
           v-model="form.title"
@@ -359,11 +415,18 @@ async function handleDelete() {
               : 'Titel (z. B. Restaurant, Tickets)'
           "
           required
+          :modified="modified"
         />
       </FormField>
 
       <div class="row">
-        <FormField icon="amount" label="Betrag" required v-slot="{ id }">
+        <FormField
+          icon="amount"
+          label="Betrag"
+          required
+          :modified="isAmountModified"
+          v-slot="{ id, modified }"
+        >
           <Input
             :id="id"
             v-model="form.amount"
@@ -373,14 +436,21 @@ async function handleDelete() {
             min="0.01"
             placeholder="Betrag €"
             required
+            :modified="modified"
           />
         </FormField>
-        <FormField icon="category" label="Kategorie" v-slot="{ id }">
+        <FormField
+          icon="category"
+          label="Kategorie"
+          :modified="isCategoryModified"
+          v-slot="{ id, modified }"
+        >
           <CategoryCombobox
             :id="id"
             v-model="form.category"
             type="expense"
             placeholder="Kategorie"
+            :modified="modified"
           />
         </FormField>
       </div>
@@ -390,12 +460,14 @@ async function handleDelete() {
           v-if="budgetStore.users.length > 1"
           icon="shared"
           :label="isIncome ? 'Eingegangen bei' : 'Bezahlt von'"
-          v-slot="{ id }"
+          :modified="isPaidByModified"
+          v-slot="{ id, modified }"
         >
           <Select
             :id="id"
             v-model="form.paid_by_user_id"
             :disabled="isPrivateBudget"
+            :modified="modified"
             :title="
               isPrivateBudget ? 'Bei privaten Töpfen fest dem Besitzer zugeordnet' : undefined
             "
@@ -423,8 +495,8 @@ async function handleDelete() {
             </option>
           </Select>
         </FormField>
-        <FormField icon="date" label="Datum" v-slot="{ id }">
-          <Input :id="id" v-model="form.date" type="date" />
+        <FormField icon="date" label="Datum" :modified="isDateModified" v-slot="{ id, modified }">
+          <Input :id="id" v-model="form.date" type="date" :modified="modified" />
         </FormField>
       </div>
 
@@ -435,16 +507,27 @@ async function handleDelete() {
         :icon="FORM_FIELD_ICONS.pot"
         icon-group="formFields"
       >
-        <FormField icon="pot" label="Budget-Topf" v-slot="{ id }">
-          <Select :id="id" v-model="form.budget_id">
+        <FormField
+          icon="pot"
+          label="Budget-Topf"
+          :modified="isBudgetIdModified"
+          v-slot="{ id, modified }"
+        >
+          <Select :id="id" v-model="form.budget_id" :modified="modified">
             <option value="">Kein Budget</option>
             <option v-for="b in budgetStore.budgets" :key="b.id" :value="String(b.id)">
               {{ b.name }} ({{ budgetStore.budgetLabel(b) }})
             </option>
           </Select>
         </FormField>
-        <FormField icon="note" label="Notiz" v-slot="{ id }">
-          <Input :id="id" v-model="form.note" type="text" placeholder="Notiz" />
+        <FormField icon="note" label="Notiz" :modified="isNoteModified" v-slot="{ id, modified }">
+          <Input
+            :id="id"
+            v-model="form.note"
+            type="text"
+            placeholder="Notiz"
+            :modified="modified"
+          />
         </FormField>
       </CollapsibleFieldset>
 

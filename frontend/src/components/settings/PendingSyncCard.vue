@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import Card from '../primitives/Card.vue';
 import Badge from '../primitives/Badge.vue';
 import Button from '../primitives/Button.vue';
@@ -38,7 +38,15 @@ const migrating = ref(false);
 const editingEntry = ref<OutboxEntry | null>(null);
 const editPath = ref('');
 const editBodyJson = ref('');
+const initialEditBodyJson = ref('');
 const editJsonError = ref<string | null>(null);
+
+const isEditPathModified = computed(
+  () => editingEntry.value !== null && editPath.value !== editingEntry.value.path
+);
+const isEditBodyModified = computed(
+  () => editingEntry.value !== null && editBodyJson.value !== initialEditBodyJson.value
+);
 
 function refreshOutbox() {
   outboxEntries.value = getOutbox();
@@ -281,9 +289,11 @@ function discardAll() {
 }
 
 function openEditModal(entry: OutboxEntry) {
+  const formattedBody = entry.body ? JSON.stringify(entry.body, null, 2) : '';
   editingEntry.value = entry;
   editPath.value = entry.path;
-  editBodyJson.value = entry.body ? JSON.stringify(entry.body, null, 2) : '';
+  editBodyJson.value = formattedBody;
+  initialEditBodyJson.value = formattedBody;
   editJsonError.value = null;
 }
 
@@ -291,6 +301,7 @@ function closeEditModal() {
   editingEntry.value = null;
   editPath.value = '';
   editBodyJson.value = '';
+  initialEditBodyJson.value = '';
   editJsonError.value = null;
 }
 
@@ -536,16 +547,37 @@ function handleMigrateData() {
           API-Struktur geändert hat.
         </p>
 
-        <div class="field">
+        <div class="field" :class="{ 'is-modified': isEditPathModified }">
           <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-          <label for="edit-entry-path">API-Pfad</label>
-          <Input id="edit-entry-path" v-model="editPath" required />
+          <label for="edit-entry-path">
+            API-Pfad
+            <span
+              v-if="isEditPathModified"
+              class="modified-dot"
+              title="Geändert"
+              aria-label="Geändert"
+            />
+          </label>
+          <Input id="edit-entry-path" v-model="editPath" required :modified="isEditPathModified" />
         </div>
 
-        <div class="field">
+        <div class="field" :class="{ 'is-modified': isEditBodyModified }">
           <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-          <label for="edit-entry-body">Nutzdaten (JSON)</label>
-          <Textarea id="edit-entry-body" v-model="editBodyJson" :rows="8" />
+          <label for="edit-entry-body">
+            Nutzdaten (JSON)
+            <span
+              v-if="isEditBodyModified"
+              class="modified-dot"
+              title="Geändert"
+              aria-label="Geändert"
+            />
+          </label>
+          <Textarea
+            id="edit-entry-body"
+            v-model="editBodyJson"
+            :rows="8"
+            :modified="isEditBodyModified"
+          />
           <p v-if="editJsonError" class="hint error">{{ editJsonError }}</p>
         </div>
 
@@ -732,6 +764,20 @@ function handleMigrateData() {
   justify-content: flex-end;
   gap: var(--space-sm);
   margin-top: var(--space-sm);
+}
+
+.field.is-modified label {
+  color: var(--color-success-dark, var(--color-success));
+}
+
+.modified-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-success);
+  margin-left: var(--space-1);
+  flex-shrink: 0;
 }
 
 .hint.error {

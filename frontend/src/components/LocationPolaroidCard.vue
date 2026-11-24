@@ -17,6 +17,11 @@ const props = withDefaults(
   defineProps<{
     modelValue: { lat: number; lng: number } | null;
     modified?: boolean;
+    modifiedFields?: {
+      title?: boolean;
+      category?: boolean;
+      address?: boolean;
+    };
     hasLocation?: boolean;
     title?: string;
     titleRequired?: boolean;
@@ -53,6 +58,7 @@ const props = withDefaults(
   {
     context: 'spot',
     modified: false,
+    modifiedFields: undefined,
     hasLocation: false,
     title: undefined,
     titleRequired: false,
@@ -172,7 +178,9 @@ defineExpose({
           label-class="polaroid-field-label"
           :required="titleRequired"
           :invalid="titleInvalid"
+          :modified="modifiedFields?.title"
           class="polaroid-field status-title-row"
+          v-slot="{ modified: isFieldModified }"
         >
           <div class="field-input-wrap">
             <div class="inline-title-input-wrap" :class="{ 'is-searching': isSearchingTitle }">
@@ -198,6 +206,7 @@ defineExpose({
                 "
                 :required="titleRequired"
                 :invalid="titleInvalid"
+                :modified="isFieldModified"
                 @update:model-value="emit('update:editTitleInput', $event)"
                 @input="emit('titleInput', $event)"
                 @focus="emit('titleFocus', $event)"
@@ -263,7 +272,9 @@ defineExpose({
           icon="category"
           label="Kategorie"
           label-class="polaroid-field-label"
+          :modified="modifiedFields?.category"
           class="polaroid-field status-category-row"
+          v-slot="{ modified: isFieldModified }"
         >
           <div class="field-input-wrap">
             <div class="inline-category-combobox" :class="{ 'has-sparkle': showCategorySparkle }">
@@ -274,6 +285,7 @@ defineExpose({
                 :options="categoryOptions"
                 size="sm"
                 placeholder="Kategorie wählen..."
+                :modified="isFieldModified"
                 @update:model-value="emit('update:editCategoryInput', $event)"
                 @select="emit('saveCategory', $event)"
                 @blur="emit('categoryBlur', $event)"
@@ -299,6 +311,7 @@ defineExpose({
           icon="location"
           :label="context === 'trip' ? 'Reiseziel' : 'Adresse'"
           label-class="polaroid-field-label"
+          :modified="modifiedFields?.address"
           class="polaroid-field status-address-row"
         >
           <template #extra>
@@ -357,105 +370,114 @@ defineExpose({
             </div>
           </template>
 
-          <div class="field-input-wrap">
-            <div
-              class="inline-address-input-wrap"
-              :class="{
-                'has-sparkle': showAddressSparkle,
-                'is-searching': isSearchingAddress,
-              }"
-            >
-              <Input
-                :id="addressInputId"
-                :model-value="editAddressInput"
-                size="sm"
-                class="polaroid-field-input inline-edit-input"
-                :name="context === 'trip' ? 'destination' : 'spot-address'"
-                :data-testid="context === 'trip' ? 'trip-destination-input' : 'spot-address-input'"
-                :placeholder="
-                  context === 'trip'
-                    ? 'Reiseziel oder Stadt eingeben...'
-                    : 'Adresse oder Ort eingeben...'
-                "
-                autocomplete="off"
-                data-protonpass-ignore="true"
-                data-1p-ignore="true"
-                role="combobox"
-                :aria-expanded="addressSearchOpen && addressSearchResults.length > 0"
-                aria-autocomplete="list"
-                :aria-controls="addressDropdownId"
-                :aria-activedescendant="
-                  addressSearchActiveIndex >= 0
-                    ? `${addressDropdownId}-opt-${addressSearchActiveIndex}`
-                    : undefined
-                "
-                @update:model-value="emit('update:editAddressInput', $event)"
-                @input="emit('addressInput', $event)"
-                @focus="emit('addressFocus', $event)"
-                @blur="emit('addressBlur', $event)"
-                @keydown="emit('addressKeydown', $event)"
-              />
-              <div v-if="isSearchingAddress" class="address-input-spinner-wrap" aria-hidden="true">
-                <LoadingSpinner size="sm" decorative class="address-input-spinner" />
-              </div>
-              <SparkleButton
-                v-if="showAddressSparkle"
-                variant="address"
-                class="address-sparkle-btn"
-                :loading="isFetchingAddressSuggestion"
-                :title="addressSparkleTitle"
-                data-testid="spot-address-sparkle-btn"
-                @click="emit('cycleAddressSuggestion')"
-              />
-
-              <!-- Autocomplete-Dropdown für Adressvorschläge -->
-              <Transition name="dropdown-unfold">
-                <ul
-                  v-if="addressSearchOpen && addressSearchResults.length > 0"
-                  :id="addressDropdownId"
-                  class="location-dropdown address-autocomplete-dropdown options"
-                  role="listbox"
-                  aria-label="Adressvorschläge"
+          <template #default="{ modified: isFieldModified }">
+            <div class="field-input-wrap">
+              <div
+                class="inline-address-input-wrap"
+                :class="{
+                  'has-sparkle': showAddressSparkle,
+                  'is-searching': isSearchingAddress,
+                }"
+              >
+                <Input
+                  :id="addressInputId"
+                  :model-value="editAddressInput"
+                  size="sm"
+                  class="polaroid-field-input inline-edit-input"
+                  :name="context === 'trip' ? 'destination' : 'spot-address'"
+                  :data-testid="
+                    context === 'trip' ? 'trip-destination-input' : 'spot-address-input'
+                  "
+                  :placeholder="
+                    context === 'trip'
+                      ? 'Reiseziel oder Stadt eingeben...'
+                      : 'Adresse oder Ort eingeben...'
+                  "
+                  autocomplete="off"
+                  data-protonpass-ignore="true"
+                  data-1p-ignore="true"
+                  role="combobox"
+                  :aria-expanded="addressSearchOpen && addressSearchResults.length > 0"
+                  aria-autocomplete="list"
+                  :aria-controls="addressDropdownId"
+                  :aria-activedescendant="
+                    addressSearchActiveIndex >= 0
+                      ? `${addressDropdownId}-opt-${addressSearchActiveIndex}`
+                      : undefined
+                  "
+                  :modified="isFieldModified"
+                  @update:model-value="emit('update:editAddressInput', $event)"
+                  @input="emit('addressInput', $event)"
+                  @focus="emit('addressFocus', $event)"
+                  @blur="emit('addressBlur', $event)"
+                  @keydown="emit('addressKeydown', $event)"
+                />
+                <div
+                  v-if="isSearchingAddress"
+                  class="address-input-spinner-wrap"
+                  aria-hidden="true"
                 >
-                  <li
-                    v-for="(place, index) in addressSearchResults"
-                    :id="`${addressDropdownId}-opt-${index}`"
-                    :key="place.id || `${place.lat}-${place.lng}-${index}`"
-                    role="option"
-                    tabindex="-1"
-                    class="location-result-item"
-                    :class="{ 'is-active': index === addressSearchActiveIndex }"
-                    :aria-selected="index === addressSearchActiveIndex"
-                    @mousedown.prevent="emit('selectAddressPlace', place)"
-                    @click="emit('selectAddressPlace', place)"
-                    @keydown.enter.prevent="emit('selectAddressPlace', place)"
+                  <LoadingSpinner size="sm" decorative class="address-input-spinner" />
+                </div>
+                <SparkleButton
+                  v-if="showAddressSparkle"
+                  variant="address"
+                  class="address-sparkle-btn"
+                  :loading="isFetchingAddressSuggestion"
+                  :title="addressSparkleTitle"
+                  data-testid="spot-address-sparkle-btn"
+                  @click="emit('cycleAddressSuggestion')"
+                />
+
+                <!-- Autocomplete-Dropdown für Adressvorschläge -->
+                <Transition name="dropdown-unfold">
+                  <ul
+                    v-if="addressSearchOpen && addressSearchResults.length > 0"
+                    :id="addressDropdownId"
+                    class="location-dropdown address-autocomplete-dropdown options"
+                    role="listbox"
+                    aria-label="Adressvorschläge"
                   >
-                    <AppIcon
-                      :icon="FORM_FIELD_ICONS.location"
-                      :size="14"
-                      group="formFields"
-                      class="item-icon"
-                    />
-                    <div class="location-item-content">
-                      <span class="location-item-name">{{
-                        place.formatted_address || place.address || place.name
-                      }}</span>
-                      <span
-                        v-if="
-                          place.formatted_address &&
-                          place.name &&
-                          place.formatted_address !== place.name
-                        "
-                        class="location-item-address"
-                      >
-                        {{ place.name }}
-                      </span>
-                    </div>
-                  </li>
-                </ul>
-              </Transition>
+                    <li
+                      v-for="(place, index) in addressSearchResults"
+                      :id="`${addressDropdownId}-opt-${index}`"
+                      :key="place.id || `${place.lat}-${place.lng}-${index}`"
+                      role="option"
+                      tabindex="-1"
+                      class="location-result-item"
+                      :class="{ 'is-active': index === addressSearchActiveIndex }"
+                      :aria-selected="index === addressSearchActiveIndex"
+                      @mousedown.prevent="emit('selectAddressPlace', place)"
+                      @click="emit('selectAddressPlace', place)"
+                      @keydown.enter.prevent="emit('selectAddressPlace', place)"
+                    >
+                      <AppIcon
+                        :icon="FORM_FIELD_ICONS.location"
+                        :size="14"
+                        group="formFields"
+                        class="item-icon"
+                      />
+                      <div class="location-item-content">
+                        <span class="location-item-name">{{
+                          place.formatted_address || place.address || place.name
+                        }}</span>
+                        <span
+                          v-if="
+                            place.formatted_address &&
+                            place.name &&
+                            place.formatted_address !== place.name
+                          "
+                          class="location-item-address"
+                        >
+                          {{ place.name }}
+                        </span>
+                      </div>
+                    </li>
+                  </ul>
+                </Transition>
+              </div>
             </div>
-          </div>
+          </template>
         </FormField>
       </div>
     </div>
@@ -498,11 +520,10 @@ defineExpose({
 }
 
 .polaroid-card.is-modified {
-  border-color: var(--color-success);
+  @include control-modified-outline;
   box-shadow:
     inset 0 1px 0 var(--shadow-control-highlight),
-    var(--shadow-md),
-    0 0 0 1px var(--color-success);
+    var(--shadow-md);
 }
 
 .polaroid-header-actions {
@@ -815,9 +836,7 @@ defineExpose({
   }
 
   .polaroid-card.is-modified {
-    box-shadow:
-      inset 0 1px 0 var(--shadow-control-highlight),
-      0 0 0 1px var(--color-success);
+    box-shadow: inset 0 1px 0 var(--shadow-control-highlight);
   }
 
   .polaroid-media :deep(.form-image-banner--polaroid) {

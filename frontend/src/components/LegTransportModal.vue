@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, toRef, watch } from 'vue';
+import { computed, ref, toRef, watch } from 'vue';
 import type { ExcursionLeg, Spot, User } from '../api/types';
 import Modal from './Modal.vue';
 import Button from './primitives/Button.vue';
@@ -169,10 +169,25 @@ function onTransitSelect(val: string) {
   selectTransit(val);
 }
 
+const initialSnapshot = ref<{
+  category: TransportCategory;
+  transitType: string;
+  departure_time: string;
+  arrival_time: string;
+  checkin_info: string;
+  seat: string;
+  luggage: string;
+  ticket_link: string;
+  amount: string;
+  paid_by_user_id: string;
+  note: string;
+} | null>(null);
+
 watch(
   () => props.modelValue,
   (open) => {
     if (!open) {
+      initialSnapshot.value = null;
       return;
     }
 
@@ -189,15 +204,64 @@ watch(
         props.leg.duration_seconds,
         props.leg.routing_profile
       );
+      initialSnapshot.value = {
+        category: transportCategory.value,
+        transitType: selectedTransitType.value,
+        departure_time: form.value.departure_time,
+        arrival_time: form.value.arrival_time,
+        checkin_info: form.value.checkin_info,
+        seat: form.value.seat,
+        luggage: form.value.luggage,
+        ticket_link: form.value.ticket_link,
+        amount: form.value.amount,
+        paid_by_user_id: form.value.paid_by_user_id,
+        note: form.value.note,
+      };
     } else {
       resetForm();
       initTransportMode('zu Fuß');
       initTimeState(null, null, null);
       setInitialRoute(null, null, null, null);
+      initialSnapshot.value = null;
     }
   },
   { immediate: true }
 );
+
+const isCategoryModified = computed(
+  () => initialSnapshot.value !== null && transportCategory.value !== initialSnapshot.value.category
+);
+const isTransitModified = computed(
+  () =>
+    initialSnapshot.value !== null &&
+    selectedTransitType.value !== initialSnapshot.value.transitType
+);
+const isDepartureModified = computed(
+  () =>
+    initialSnapshot.value !== null &&
+    form.value.departure_time !== initialSnapshot.value.departure_time
+);
+const isArrivalModified = computed(
+  () =>
+    initialSnapshot.value !== null && form.value.arrival_time !== initialSnapshot.value.arrival_time
+);
+const extendedModifiedFields = computed(() => {
+  const snap = initialSnapshot.value;
+
+  if (!snap) {
+    return undefined;
+  }
+
+  return {
+    checkin_info: form.value.checkin_info !== snap.checkin_info,
+    seat: form.value.seat !== snap.seat,
+    luggage: form.value.luggage !== snap.luggage,
+    ticket_link: form.value.ticket_link !== snap.ticket_link,
+    amount: String(form.value.amount) !== String(snap.amount),
+    paid_by_user_id: form.value.paid_by_user_id !== snap.paid_by_user_id,
+    note: form.value.note !== snap.note,
+  };
+});
 
 const modalTitle = computed(() => {
   const fromName = props.fromSpot?.title || 'Start';
@@ -252,6 +316,8 @@ function onDelete() {
         :category="transportCategory"
         :transit-type="selectedTransitType"
         :transit-options="transitOptions"
+        :category-modified="isCategoryModified"
+        :transit-modified="isTransitModified"
         @select-category="onCategorySelect"
         @select-transit="onTransitSelect"
       />
@@ -288,6 +354,8 @@ function onDelete() {
         :time-duration-info="timeDurationInfo"
         :time-duration-status="timeDurationStatus"
         :active-duration-seconds="activeDurationSeconds"
+        :departure-modified="isDepartureModified"
+        :arrival-modified="isArrivalModified"
         @departure-input="onDepartureInput"
         @arrival-input="onArrivalInput"
         @toggle-time-link="toggleTimeLink"
@@ -307,6 +375,7 @@ function onDelete() {
         :shows-seat-field="showsSeatField"
         :users="users"
         :has-extended-data="hasExtendedData"
+        :modified-fields="extendedModifiedFields"
       />
 
       <FileAttachments
