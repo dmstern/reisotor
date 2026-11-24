@@ -33,17 +33,16 @@ Dieses Dokument beschreibt das systematische Code-Review- und Status-System für
 
 ## 2. Typischer Lebenszyklus
 
-```text
-PR erstellt ──▶ 👀️ review:needed (+ ggf. 🧪️ review:needs-manual-test bei UI-Änderungen)
-                    │
-        ┌───────────┴───────────┐
-        ▼                       ▼
- 🛠️ review:needs-polish   👍️ review:reviewed (+ 🧪️ review:needs-manual-test falls UI/App)
-        │                       │
-  Fixes gepusht           Manuell getestet (oder Test n/a)
-        │                       │
-        ▼                       ▼
- 👀️ review:needed        👍️ review:reviewed + ✅️ review:manually-tested + 🚀️ review:ready-to-merge
+```mermaid
+flowchart TD
+    Start["PR erstellt (Nicht-Draft)"] --> Needed["👀️ review:needed"]
+    Needed -->|"Befunde / Polish nötig"| Polish["🛠️ review:needs-polish"]
+    Polish -->|"Fixes gepusht"| Needed
+    Needed -->|"Code-Review sauber"| Reviewed["👍️ review:reviewed"]
+    Reviewed -->|"UI-/App-Änderung"| Manual["🧪️ review:needs-manual-test"]
+    Manual -->|"Manuell getestet"| Tested["✅️ review:manually-tested"]
+    Tested --> Ready["🚀️ review:ready-to-merge"]
+    Reviewed -->|"Kein manueller Test nötig"| Ready
 ```
 
 - **`👍️ review:reviewed` vs. `🚀️ review:ready-to-merge`:** `👍️ review:reviewed` bedeutet ausdrücklich _„Code-Review sauber erfolgt“_ — nicht automatisch mergefertig, solange z. B. noch `🧪️ review:needs-manual-test` offen ist oder erst noch gesprochen werden soll.
