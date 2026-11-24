@@ -113,7 +113,7 @@ function onDropdownScroll(e: Event) {
           />
           <div class="search-right-actions">
             <div v-if="isSearching" class="input-spinner-wrap" aria-hidden="true">
-              <LoadingSpinner size="sm" variant="search" decorative class="input-spinner" />
+              <LoadingSpinner size="sm" decorative class="input-spinner" />
             </div>
             <InfoPopover
               title="Suchtipps, Maps- & Buchungs-Links"
@@ -223,13 +223,7 @@ function onDropdownScroll(e: Event) {
             @keydown.enter.prevent="emit('loadMore')"
             @keydown.space.prevent="emit('loadMore')"
           >
-            <LoadingSpinner
-              v-if="isLoadingMore"
-              size="sm"
-              variant="search"
-              decorative
-              class="load-more-spinner"
-            />
+            <LoadingSpinner v-if="isLoadingMore" size="sm" decorative class="load-more-spinner" />
             <AppIcon
               v-else
               :icon="ACTION_ICONS.search"
