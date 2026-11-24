@@ -177,13 +177,14 @@ test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in
     await newTourModal.locator('.collapsible-toggle', { hasText: 'Stationen & Route' }).click();
 
     // Start UND Ende an derselben Station (Spot A), dazwischen Spot B: Klick fügt IMMER eine
-    // weitere Station hinzu (kein Checkbox-Verhalten) - der Reihenfolge-Editor ist seit dem
-    // Zurückbau des früheren "erweiterten Touren-Modus" immer verfügbar, kein Umschalten mehr nötig.
+    // weitere Station hinzu (kein Checkbox-Verhalten) über das einheitliche Spot-Popover.
+    await newTourModal.locator('.tour-add-spot-trigger').click();
     const addableRow = (title: string) =>
-      newTourModal.locator('.spot-picker-option', { hasText: title });
+      page.locator('.tour-spot-assign-popup .spot-assign-option', { hasText: title });
     await addableRow(spotATitle).click();
     await addableRow(spotBTitle).click();
     await addableRow(spotATitle).click();
+    await page.keyboard.press('Escape');
 
     const plannedTitles = newTourModal.locator('.planned-row .spot-title');
     await expect(plannedTitles).toHaveText([

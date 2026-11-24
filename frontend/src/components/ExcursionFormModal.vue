@@ -327,7 +327,6 @@ defineExpose({
           v-model="activeExcursionForm.spot_ids"
           v-model:legs="activeExcursionForm.legs"
           :spots="spotsStore.spots"
-          :users="users"
           @create-spot="emit('create-spot')"
         />
       </CollapsibleFieldset>

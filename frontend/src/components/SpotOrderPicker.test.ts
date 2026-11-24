@@ -49,62 +49,80 @@ describe('SpotOrderPicker', () => {
     };
   }
 
-  it('renders create-spot button and emits create-spot on click', async () => {
+  it('renders without nested fieldsets, shows empty hint, and emits create-spot from popover', async () => {
     let created = false;
     const { container, app } = mountComponent({
       modelValue: [],
-      spots: [makeSpot(1, 'Aussichtspunkt')],
+      spots: [],
       onCreateSpot: () => {
         created = true;
       },
-    });
-
-    const createBtn = container.querySelector('.spot-picker-create-btn') as HTMLButtonElement;
-    expect(createBtn).not.toBeNull();
-    expect(createBtn.textContent).toContain('Neuen Spot erstellen');
-
-    createBtn.click();
-    await nextTick();
-    expect(created).toBe(true);
-    app.unmount();
-  });
-
-  it('renders without nested fieldsets and shows empty hint when no spots exist', async () => {
-    const { container, app } = mountComponent({
-      modelValue: [],
-      spots: [],
     });
 
     expect(container.querySelectorAll('fieldset').length).toBe(0);
 
     const emptyHint = container.querySelector('.spot-picker-empty');
     expect(emptyHint).not.toBeNull();
-    expect(emptyHint?.textContent).toContain('Noch keine Spots angelegt.');
+    expect(emptyHint?.textContent).toContain('Noch keine Stationen zugeordnet.');
 
-    const createBtn = container.querySelector('.spot-picker-create-btn');
+    const trigger = container.querySelector('.tour-add-spot-trigger') as HTMLButtonElement;
+    expect(trigger).not.toBeNull();
+    trigger.click();
+    await nextTick();
+
+    const createBtn = document.querySelector('.create-spot-btn') as HTMLButtonElement;
     expect(createBtn).not.toBeNull();
+    createBtn.click();
+    await nextTick();
+
+    expect(created).toBe(true);
     app.unmount();
   });
 
-  it('sorts spots alphabetically A-Z, uses DropdownMenuItem, and shows usage badge', async () => {
+  it('opens unified popover sorted A-Z with highlight + usage badge and keeps popover open on select', async () => {
     const spots = [makeSpot(1, 'Zentrum'), makeSpot(2, 'Altstadt'), makeSpot(3, 'Bergblick')];
-    const { container, app } = mountComponent({
-      modelValue: [1, 3, 1],
-      spots,
-    });
+    const selected = ref<number[]>([1, 3, 1]);
+    const container = document.createElement('div');
+    document.body.appendChild(container);
 
-    const options = Array.from(container.querySelectorAll('.spot-picker-option'));
+    const app = createApp({
+      render: () =>
+        h(SpotOrderPicker, {
+          modelValue: selected.value,
+          spots,
+          'onUpdate:modelValue': (next: number[]) => {
+            selected.value = next;
+          },
+        }),
+    });
+    app.use(createPinia());
+    app.mount(container);
+
+    const trigger = container.querySelector('.tour-add-spot-trigger') as HTMLButtonElement;
+    trigger.click();
+    await nextTick();
+
+    const options = Array.from(document.querySelectorAll('.spot-assign-option'));
     expect(options.length).toBe(3);
-    expect(options.every((el) => el.classList.contains('dropdown-item'))).toBe(true);
 
     const labels = options.map((el) =>
       el.querySelector('.dropdown-item-label')?.textContent?.trim()
     );
     expect(labels).toEqual(['Altstadt', 'Bergblick', 'Zentrum']);
 
+    expect(options[0].classList.contains('is-active')).toBe(false);
     expect(options[0].querySelector('.spot-usage-badge')).toBeNull();
+    expect(options[1].classList.contains('is-active')).toBe(true);
     expect(options[1].querySelector('.spot-usage-badge')?.textContent?.trim()).toBe('1×');
+    expect(options[2].classList.contains('is-active')).toBe(true);
     expect(options[2].querySelector('.spot-usage-badge')?.textContent?.trim()).toBe('2×');
+
+    (options[0] as HTMLButtonElement).click();
+    await nextTick();
+
+    expect(selected.value).toEqual([1, 3, 1, 2]);
+    expect(document.querySelector('.tour-spot-assign-popup')).not.toBeNull();
+    expect(container.querySelectorAll('.planned-row').length).toBe(4);
     app.unmount();
   });
 
@@ -145,29 +163,5 @@ describe('SpotOrderPicker', () => {
     ).map((el) => el.textContent?.trim());
     expect(updatedTitles).toEqual(['Zweiter', 'Erster']);
     app.unmount();
-  });
-
-  it('shows search input only when >= 8 spots exist and shows empty search message', async () => {
-    const fewSpots = Array.from({ length: 7 }, (_, i) => makeSpot(i + 1, `Spot ${i + 1}`));
-    const fewMount = mountComponent({ modelValue: [], spots: fewSpots });
-    expect(fewMount.container.querySelector('.spot-picker-search')).toBeNull();
-    fewMount.app.unmount();
-
-    const manySpots = Array.from({ length: 8 }, (_, i) => makeSpot(i + 1, `Spot ${i + 1}`));
-    const manyMount = mountComponent({ modelValue: [], spots: manySpots });
-    const searchInput = manyMount.container.querySelector(
-      '.spot-picker-search'
-    ) as HTMLInputElement | null;
-    expect(searchInput).not.toBeNull();
-
-    searchInput!.value = 'NichtVorhanden';
-    searchInput!.dispatchEvent(new Event('input'));
-    await nextTick();
-
-    expect(manyMount.container.querySelectorAll('.spot-picker-option').length).toBe(0);
-    expect(manyMount.container.querySelector('.spot-picker-empty')?.textContent).toContain(
-      'Keine passenden Spots gefunden.'
-    );
-    manyMount.app.unmount();
   });
 });
