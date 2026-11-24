@@ -50,9 +50,8 @@
         --splash-primary: var(--color-primary, #9141ac);
         --splash-primary-light: color-mix(in srgb, var(--splash-primary) 62%, white);
         --splash-accent: #1e96d1;
-        --splash-disc: color-mix(in srgb, var(--splash-primary) 10%, #ffffff);
-        --splash-track: color-mix(in srgb, var(--splash-primary) 18%, transparent);
-        --splash-lens-core: color-mix(in srgb, var(--splash-primary) 30%, black);
+        --splash-visor-bg: color-mix(in srgb, var(--splash-primary) 10%, #ffffff);
+        --splash-spark: white;
         position: fixed;
         inset: 0;
         z-index: 9999;
@@ -70,8 +69,8 @@
         animation: splash-bob 3.2s ease-in-out infinite;
       }
       #splash .splash-spinner {
-        width: 24px;
-        height: 24px;
+        width: 30px;
+        height: 19px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -83,33 +82,26 @@
         height: 100%;
         overflow: visible;
       }
-      #splash .splash-spinner-disc {
-        fill: var(--splash-disc);
+      #splash .splash-spinner-visor {
+        fill: var(--splash-visor-bg);
       }
-      #splash .splash-spinner-track {
-        stroke: var(--splash-track);
-      }
-      #splash .splash-spinner-arc-outer {
-        transform-origin: 16px 16px;
-        animation: splash-spin 1.25s cubic-bezier(0.52, 0.14, 0.48, 0.86) infinite;
-      }
-      #splash .splash-spinner-arc-inner {
+      #splash .splash-spinner-scan-rail {
         stroke: var(--splash-accent);
-        opacity: 0.65;
-        transform-origin: 16px 16px;
-        animation: splash-spin-rev 1.8s linear infinite;
+        stroke-opacity: 0.22;
+        stroke-width: 2;
       }
-      #splash .splash-spinner-lens-core {
-        fill: var(--splash-lens-core);
-        transform-origin: 16px 16px;
-        animation: splash-breathe 1.6s ease-in-out infinite;
-      }
-      #splash .splash-spinner-glint-orbit {
-        transform-origin: 16px 16px;
-        animation: splash-spin-rev 2.5s linear infinite;
-      }
-      #splash .splash-spinner-glint {
+      #splash .splash-spinner-scan-glow {
         fill: var(--splash-accent);
+        opacity: 0.28;
+        animation: splash-scan 1.35s cubic-bezier(0.45, 0.05, 0.55, 0.95) 0.06s infinite backwards;
+      }
+      #splash .splash-spinner-scan-dot {
+        fill: var(--splash-accent);
+        animation: splash-scan 1.35s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+      }
+      #splash .splash-spinner-scan-spark {
+        fill: var(--splash-spark);
+        animation: splash-scan 1.35s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
       }
       #splash.splash-hide {
         opacity: 0;
@@ -124,39 +116,28 @@
           transform: translateY(-8px) rotate(0.6deg);
         }
       }
-      @keyframes splash-spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-      @keyframes splash-spin-rev {
-        to {
-          transform: rotate(-360deg);
-        }
-      }
-      @keyframes splash-breathe {
+      @keyframes splash-scan {
         0%,
         100% {
-          transform: scale(0.86);
+          transform: translateX(-6px);
         }
         50% {
-          transform: scale(1.1);
+          transform: translateX(6px);
         }
       }
       @media (prefers-color-scheme: dark) {
         #splash {
           --splash-primary: var(--color-primary, #cf77dd);
           --splash-accent: #52b8ea;
-          --splash-disc: color-mix(in srgb, var(--splash-primary) 18%, #22201d);
+          --splash-visor-bg: color-mix(in srgb, var(--splash-primary) 18%, #22201d);
           background: linear-gradient(160deg, #352538, #181715 60%);
         }
       }
       @media (prefers-reduced-motion: reduce) {
         #splash img,
-        #splash .splash-spinner-arc-outer,
-        #splash .splash-spinner-arc-inner,
-        #splash .splash-spinner-lens-core,
-        #splash .splash-spinner-glint-orbit {
+        #splash .splash-spinner-scan-glow,
+        #splash .splash-spinner-scan-dot,
+        #splash .splash-spinner-scan-spark {
           animation: none;
         }
       }
@@ -166,40 +147,34 @@
     <div id="splash">
       <img src="/reisotor-icon-blank.svg" alt="" width="140" height="140" />
       <span class="splash-spinner" aria-hidden="true">
-        <svg viewBox="0 0 32 32" fill="none">
+        <svg viewBox="0 0 32 20" fill="none">
           <defs>
             <linearGradient id="splash-spinner-grad" x1="10%" y1="95%" x2="90%" y2="5%">
               <stop offset="0%" stop-color="var(--splash-primary)" />
               <stop offset="100%" stop-color="var(--splash-primary-light)" />
             </linearGradient>
           </defs>
-          <circle cx="16" cy="16" r="13.5" class="splash-spinner-disc" />
-          <circle cx="16" cy="16" r="12" class="splash-spinner-track" stroke-width="2.3" />
-          <circle
-            class="splash-spinner-arc-outer"
-            cx="16"
-            cy="16"
-            r="12"
-            pathLength="100"
+          <rect
+            x="2"
+            y="2.5"
+            width="28"
+            height="15"
+            rx="7.5"
+            class="splash-spinner-visor"
             stroke="url(#splash-spinner-grad)"
-            stroke-width="2.6"
-            stroke-dasharray="34 66"
+            stroke-width="2.2"
+          />
+          <line
+            x1="8.5"
+            y1="10"
+            x2="23.5"
+            y2="10"
+            class="splash-spinner-scan-rail"
             stroke-linecap="round"
           />
-          <circle
-            class="splash-spinner-arc-inner"
-            cx="16"
-            cy="16"
-            r="8.1"
-            pathLength="100"
-            stroke-width="2"
-            stroke-dasharray="28 72"
-            stroke-linecap="round"
-          />
-          <circle class="splash-spinner-lens-core" cx="16" cy="16" r="4.6" />
-          <g class="splash-spinner-glint-orbit">
-            <circle class="splash-spinner-glint" cx="17.6" cy="14.3" r="1.25" />
-          </g>
+          <circle class="splash-spinner-scan-glow" cx="16" cy="10" r="3.8" />
+          <circle class="splash-spinner-scan-dot" cx="16" cy="10" r="2.6" />
+          <circle class="splash-spinner-scan-spark" cx="16" cy="10" r="1.05" />
         </svg>
       </span>
     </div>

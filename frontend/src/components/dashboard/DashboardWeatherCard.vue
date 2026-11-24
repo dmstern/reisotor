@@ -96,7 +96,7 @@ onMounted(() => {
           role="status"
           aria-live="polite"
         >
-          <LoadingSpinner variant="radar" size="sm" decorative />
+          <LoadingSpinner size="sm" decorative />
           <span>Lädt …</span>
         </p>
         <Alert

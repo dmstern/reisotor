@@ -10,10 +10,6 @@ const meta: Meta<typeof LoadingSpinner> = {
       control: 'select',
       options: ['sm', 'md', 'lg'],
     },
-    variant: {
-      control: 'select',
-      options: ['default', 'search', 'radar'],
-    },
     inverted: {
       control: 'boolean',
     },
@@ -26,7 +22,6 @@ const meta: Meta<typeof LoadingSpinner> = {
   },
   args: {
     size: 'md',
-    variant: 'default',
     inverted: false,
     decorative: false,
   },
@@ -52,19 +47,5 @@ export const Medium: Story = {
 export const Large: Story = {
   args: {
     size: 'lg',
-  },
-};
-
-export const Search: Story = {
-  args: {
-    variant: 'search',
-    size: 'md',
-  },
-};
-
-export const Radar: Story = {
-  args: {
-    variant: 'radar',
-    size: 'md',
   },
 };

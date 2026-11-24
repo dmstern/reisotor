@@ -576,7 +576,7 @@ function formatDate(dateStr: string) {
               role="status"
               aria-live="polite"
             >
-              <LoadingSpinner variant="radar" size="sm" decorative />
+              <LoadingSpinner size="sm" decorative />
               <span>Lade Verlauf…</span>
             </Badge>
           </Transition>

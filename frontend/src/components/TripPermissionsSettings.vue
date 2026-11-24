@@ -234,7 +234,7 @@ async function removeMember(user: User) {
     <p v-if="error" class="error">{{ error }}</p>
 
     <div v-if="searching" class="search-status" role="status" aria-live="polite">
-      <LoadingSpinner size="sm" variant="search" decorative /> Suche läuft…
+      <LoadingSpinner size="sm" decorative /> Suche läuft…
     </div>
 
     <TransitionGroup v-else-if="results.length" tag="ul" name="list" class="search-results">
