@@ -36,6 +36,7 @@ const emit = defineEmits<{
   (e: 'delete'): void;
   (e: 'show-on-map-from'): void;
   (e: 'show-on-map-to'): void;
+  (e: 'update-note', note: string): void;
 }>();
 
 const excursionsStore = useExcursionsStore();
@@ -117,6 +118,8 @@ function travelDuration(item: TravelItem) {
       class="detail-row note"
       :content="item.note"
       :format="item.note_format"
+      interactive
+      @update:content="(html) => emit('update-note', html)"
     />
     <FileAttachments domain="ideas" :entity-id="item.id" :editable="false" />
     <div class="detail-actions">

@@ -4,6 +4,8 @@ import { api } from '../api/client';
 import type { ScheduleItem } from '../api/types';
 import { useTripStore } from './trip';
 import { useLiveSyncStore } from './liveSync';
+import { useToast } from '../composables/useToast';
+import { createLatestWinsSaveQueue } from '../utils/richTextChecklist';
 export interface ScheduleFormData {
   trip_id: number;
   date: string;
@@ -95,6 +97,71 @@ export const useScheduleStore = defineStore('schedule', () => {
     selectedItemId.value = null;
   }
 
+  function buildScheduleNotePayload(existing: ScheduleItem, note: string): ScheduleFormData {
+    return {
+      trip_id: existing.trip_id,
+      date: existing.date,
+      end_date: existing.end_date ?? null,
+      time: existing.time ?? undefined,
+      end_time: existing.end_time ?? undefined,
+      title: existing.title,
+      note,
+      location: existing.location ?? undefined,
+      maps_link: existing.maps_link ?? undefined,
+      lat: existing.lat ?? undefined,
+      lng: existing.lng ?? undefined,
+      spot_id: existing.spot_id ?? null,
+      idea_id: existing.idea_id ?? null,
+      auto_created: existing.auto_created ?? null,
+      user_modified: existing.user_modified ?? null,
+      done: existing.done ?? null,
+    };
+  }
+
+  const noteSaveQueue = createLatestWinsSaveQueue<ScheduleItem>();
+
+  function replaceScheduleItem(updated: ScheduleItem) {
+    const idx = items.value.findIndex((item) => item.id === updated.id);
+
+    if (idx === -1) {
+      return;
+    }
+
+    const next = [...items.value];
+    next[idx] = updated;
+    items.value = next;
+  }
+
+  async function updateNote(id: number, note: string) {
+    const idx = items.value.findIndex((item) => item.id === id);
+
+    if (idx === -1) {
+      return;
+    }
+
+    const existing = items.value[idx];
+    const next = [...items.value];
+    next[idx] = { ...existing, note };
+    items.value = next;
+
+    await noteSaveQueue.enqueue(String(id), {
+      captureSnapshot: () => existing,
+      persist: () =>
+        api.put<ScheduleItem>(`/schedule/${id}`, buildScheduleNotePayload(existing, note)),
+      onCommitted: (updated) => {
+        replaceScheduleItem(updated);
+      },
+      onRollback: (snapshot) => {
+        replaceScheduleItem(snapshot);
+        const { showToast } = useToast();
+        showToast({
+          message: 'Checklisten-Status konnte nicht gespeichert werden.',
+          type: 'error',
+        });
+      },
+    });
+  }
+
   return {
     items,
     loaded,
@@ -104,6 +171,7 @@ export const useScheduleStore = defineStore('schedule', () => {
     update,
     remove,
     setDone,
+    updateNote,
     openDetail,
     closeDetail,
   };

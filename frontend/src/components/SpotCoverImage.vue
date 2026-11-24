@@ -20,6 +20,10 @@ withDefaults(
   }
 );
 
+const emit = defineEmits<{
+  (e: 'update-note', note: string): void;
+}>();
+
 function formatAccommodationDate(dateStr: string | null) {
   if (!dateStr) {
     return null;
@@ -74,6 +78,8 @@ function formatAccommodationDate(dateStr: string | null) {
                   class="note is-banner"
                   :content="spot.note"
                   :format="spot.note_format"
+                  interactive
+                  @update:content="(html) => emit('update-note', html)"
                 />
               </div>
             </div>

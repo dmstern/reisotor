@@ -214,7 +214,7 @@ defineExpose({
                 @keydown="emit('titleKeydown', $event)"
               />
               <div v-if="isSearchingTitle" class="title-input-spinner-wrap" aria-hidden="true">
-                <LoadingSpinner size="sm" variant="search" decorative class="title-input-spinner" />
+                <LoadingSpinner size="sm" decorative class="title-input-spinner" />
               </div>
 
               <!-- Autocomplete-Dropdown für Namensvorschläge / Ortssuche -->
@@ -417,12 +417,7 @@ defineExpose({
                   class="address-input-spinner-wrap"
                   aria-hidden="true"
                 >
-                  <LoadingSpinner
-                    size="sm"
-                    variant="search"
-                    decorative
-                    class="address-input-spinner"
-                  />
+                  <LoadingSpinner size="sm" decorative class="address-input-spinner" />
                 </div>
                 <SparkleButton
                   v-if="showAddressSparkle"
