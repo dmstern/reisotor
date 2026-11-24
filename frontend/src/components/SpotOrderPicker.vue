@@ -85,6 +85,7 @@ const plannedStations = computed(() =>
       return spot
         ? {
             id: spotId,
+            modelIndex: index,
             entryKey: rowKeys.value[index] ?? `${spotId}-${index}`,
             spot,
             title: spot.title,
@@ -98,6 +99,7 @@ const plannedStations = computed(() =>
         station
       ): station is {
         id: number;
+        modelIndex: number;
         entryKey: string;
         spot: Spot;
         title: string;
@@ -125,32 +127,39 @@ function cleanupLegsForSpots(newSpotIds: number[]) {
   emit('update:legs', updated);
 }
 
-function removeSpotAt(index: number) {
-  const nextKeys = [...rowKeys.value];
-  nextKeys.splice(index, 1);
-  rowKeys.value = nextKeys;
+function removeSpotAt(stationIndex: number) {
+  const station = plannedStations.value[stationIndex];
 
-  const next = [...selected.value];
-  next.splice(index, 1);
-  selected.value = next;
-  cleanupLegsForSpots(next);
-}
-
-function moveSpot(index: number, delta: -1 | 1) {
-  const targetIndex = index + delta;
-
-  if (targetIndex < 0 || targetIndex >= selected.value.length) {
+  if (!station) {
     return;
   }
 
   const nextKeys = [...rowKeys.value];
-  const [movedKey] = nextKeys.splice(index, 1);
-  nextKeys.splice(targetIndex, 0, movedKey);
+  nextKeys.splice(station.modelIndex, 1);
   rowKeys.value = nextKeys;
 
   const next = [...selected.value];
-  const [moved] = next.splice(index, 1);
-  next.splice(targetIndex, 0, moved);
+  next.splice(station.modelIndex, 1);
+  selected.value = next;
+  cleanupLegsForSpots(next);
+}
+
+function moveSpot(stationIndex: number, delta: -1 | 1) {
+  const fromStation = plannedStations.value[stationIndex];
+  const toStation = plannedStations.value[stationIndex + delta];
+
+  if (!fromStation || !toStation) {
+    return;
+  }
+
+  const nextKeys = [...rowKeys.value];
+  const [movedKey] = nextKeys.splice(fromStation.modelIndex, 1);
+  nextKeys.splice(toStation.modelIndex, 0, movedKey);
+  rowKeys.value = nextKeys;
+
+  const next = [...selected.value];
+  const [moved] = next.splice(fromStation.modelIndex, 1);
+  next.splice(toStation.modelIndex, 0, moved);
   selected.value = next;
   cleanupLegsForSpots(next);
 }
@@ -224,25 +233,30 @@ function onDrop() {
     return;
   }
 
-  let targetIndex = dropIndicatorIndex.value;
+  let targetStationIndex = dropIndicatorIndex.value;
 
   // Ziel-Index bezieht sich auf das Array VOR dem Entfernen des gezogenen Eintrags – liegt die
   // Zeile davor, verschiebt das Herausnehmen alle nachfolgenden Indizes um eins nach vorn.
-  if (draggedIndex.value < targetIndex) {
-    targetIndex--;
+  if (draggedIndex.value < targetStationIndex) {
+    targetStationIndex--;
   }
 
-  if (targetIndex !== draggedIndex.value) {
-    const nextKeys = [...rowKeys.value];
-    const [movedKey] = nextKeys.splice(draggedIndex.value, 1);
-    nextKeys.splice(targetIndex, 0, movedKey);
-    rowKeys.value = nextKeys;
+  if (targetStationIndex !== draggedIndex.value) {
+    const fromStation = plannedStations.value[draggedIndex.value];
+    const toStation = plannedStations.value[targetStationIndex];
 
-    const next = [...selected.value];
-    const [moved] = next.splice(draggedIndex.value, 1);
-    next.splice(targetIndex, 0, moved);
-    selected.value = next;
-    cleanupLegsForSpots(next);
+    if (fromStation && toStation) {
+      const nextKeys = [...rowKeys.value];
+      const [movedKey] = nextKeys.splice(fromStation.modelIndex, 1);
+      nextKeys.splice(toStation.modelIndex, 0, movedKey);
+      rowKeys.value = nextKeys;
+
+      const next = [...selected.value];
+      const [moved] = next.splice(fromStation.modelIndex, 1);
+      next.splice(toStation.modelIndex, 0, moved);
+      selected.value = next;
+      cleanupLegsForSpots(next);
+    }
   }
 
   draggedIndex.value = null;

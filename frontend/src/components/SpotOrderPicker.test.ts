@@ -223,4 +223,80 @@ describe('SpotOrderPicker', () => {
     expect(selected.value).toEqual([2, 3, 1]);
     app.unmount();
   });
+
+  it('reorders and removes visible stations accurately when modelValue contains unresolvable spot IDs', async () => {
+    const spots = [makeSpot(1, 'Erster'), makeSpot(2, 'Zweiter'), makeSpot(3, 'Dritter')];
+    const selected = ref<number[]>([999, 1, 2, 3]);
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    const app = createApp({
+      render: () =>
+        h(SpotOrderPicker, {
+          modelValue: selected.value,
+          spots,
+          'onUpdate:modelValue': (next: number[]) => {
+            selected.value = next;
+          },
+        }),
+    });
+    app.use(createPinia());
+    app.mount(container);
+
+    const visibleTitles = () =>
+      Array.from(container.querySelectorAll('.planned-row .spot-title-text')).map((el) =>
+        el.textContent?.trim()
+      );
+
+    expect(visibleTitles()).toEqual(['Erster', 'Zweiter', 'Dritter']);
+
+    // Click move-down on visible row 0 twice in a row
+    (container.querySelectorAll('.move-down-btn')[0] as HTMLButtonElement).click();
+    await nextTick();
+    expect(visibleTitles()).toEqual(['Zweiter', 'Erster', 'Dritter']);
+
+    (container.querySelectorAll('.move-down-btn')[1] as HTMLButtonElement).click();
+    await nextTick();
+    expect(visibleTitles()).toEqual(['Zweiter', 'Dritter', 'Erster']);
+
+    // Drag & drop visible row 2 back to index 0
+    const rows = Array.from(container.querySelectorAll('.planned-row')) as HTMLElement[];
+    rows.forEach((row, index) => {
+      row.getBoundingClientRect = () =>
+        ({
+          top: index * 50,
+          height: 44,
+          bottom: index * 50 + 44,
+          left: 0,
+          right: 300,
+          width: 300,
+          x: 0,
+          y: index * 50,
+          toJSON: () => ({}),
+        }) as DOMRect;
+    });
+
+    const dropzone = container.querySelector('.planned-list-dropzone') as HTMLElement;
+    rows[2].dispatchEvent(new Event('dragstart', { bubbles: true }));
+    await nextTick();
+
+    dropzone.dispatchEvent(
+      Object.assign(new Event('dragover', { bubbles: true, cancelable: true }), {
+        clientY: 10,
+      })
+    );
+    await nextTick();
+
+    dropzone.dispatchEvent(new Event('drop', { bubbles: true, cancelable: true }));
+    await nextTick();
+
+    expect(visibleTitles()).toEqual(['Erster', 'Zweiter', 'Dritter']);
+
+    // Remove visible row 1 ('Zweiter')
+    (container.querySelectorAll('.remove-btn')[1] as HTMLButtonElement).click();
+    await nextTick();
+    expect(selected.value).toEqual([999, 1, 3]);
+
+    app.unmount();
+  });
 });
