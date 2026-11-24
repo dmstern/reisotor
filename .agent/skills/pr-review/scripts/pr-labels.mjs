@@ -4,14 +4,14 @@
  * Helper CLI for managing Reisotor's systematic GitHub PR review labels.
  *
  * Commands:
- *   sync                           Ensure all 6 `review:*` labels exist in the repo.
- *   set <pr> [options]             Update exclusive status and orthogonal check flags.
+ *   sync                           Ensure all 7 `review:*` labels exist in the repo.
+ *   set <pr> [options]             Update code-review, manual-test, discussion, and ready state.
  *   board                          Print a grouped Markdown overview of open PRs.
  */
 
 import { execFileSync } from 'node:child_process';
 
-const STATUS_LABELS = {
+const CODE_REVIEW_LABELS = {
   needed: {
     name: '👀️ review:needed',
     color: 'fbca04',
@@ -22,15 +22,23 @@ const STATUS_LABELS = {
     color: 'd93f0b',
     description: 'Review abgeschlossen: Fixes, Tests oder Feinschliff vor dem Merge nötig',
   },
-  'needs-manual-test': {
+  reviewed: {
+    name: '👍️ review:reviewed',
+    color: '0e8a16',
+    description: 'Code-Review erfolgt und sauber (unabhängig von manuellem Test oder Gespräch)',
+  },
+};
+
+const MANUAL_TEST_LABELS = {
+  needed: {
     name: '🧪️ review:needs-manual-test',
     color: '0284c7',
-    description: 'Code-Review sauber – wartet auf manuellen Test / visuellen Check',
+    description: 'Manueller Test / visueller Check in UI oder App steht noch aus',
   },
-  'ready-to-merge': {
-    name: '🚀️ review:ready-to-merge',
-    color: '1fbd48',
-    description: 'Review grün, abgestimmt und getestet (oder Test n/a) – bereit für Merge',
+  done: {
+    name: '✅️ review:manually-tested',
+    color: '10b981',
+    description: 'Manueller Test / visueller Check wurde erfolgreich durchgeführt',
   },
 };
 
@@ -40,14 +48,21 @@ const FLAG_LABELS = {
     color: '7057ff',
     description: 'PR/Ansatz wurde bereits gemeinsam besprochen und abgestimmt',
   },
-  'manually-tested': {
-    name: '✅️ review:manually-tested',
-    color: '10b981',
-    description: 'Manueller Test / visueller Check wurde erfolgreich durchgeführt',
+  ready: {
+    name: '🚀️ review:ready-to-merge',
+    color: '1fbd48',
+    description: 'Review grün, abgestimmt und getestet (oder Test n/a) – bereit für Merge',
   },
 };
 
-const STATUS_ORDER = ['ready-to-merge', 'needs-manual-test', 'needs-polish', 'needed'];
+const BOARD_PRIORITY_ORDER = [
+  'ready',
+  'manual-pending',
+  'needs-polish',
+  'reviewed-only',
+  'needed',
+  'unlabeled',
+];
 const MAX_BOARD_PRS = 50;
 const HELP_EXIT_CODE = 0;
 const ERROR_EXIT_CODE = 1;
@@ -82,30 +97,40 @@ function runGhJson(args) {
 function resolveRepoReviewLabels() {
   const existing =
     runGhJson(['label', 'list', '--search', 'review:', '--limit', '50', '--json', 'name']) ?? [];
-  const namesByKey = {};
 
-  for (const [key, definition] of Object.entries(STATUS_LABELS)) {
-    const suffix = `review:${key}`;
+  const resolveBySuffix = (suffix, fallbackName) => {
     const match = existing.find((label) => label.name.endsWith(suffix));
 
-    namesByKey[key] = match ? match.name : definition.name;
-  }
+    return match ? match.name : fallbackName;
+  };
 
-  for (const [key, definition] of Object.entries(FLAG_LABELS)) {
-    const suffix = `review:${key}`;
-    const match = existing.find((label) => label.name.endsWith(suffix));
-
-    namesByKey[key] = match ? match.name : definition.name;
-  }
-
-  return namesByKey;
+  return {
+    review: {
+      needed: resolveBySuffix('review:needed', CODE_REVIEW_LABELS.needed.name),
+      'needs-polish': resolveBySuffix(
+        'review:needs-polish',
+        CODE_REVIEW_LABELS['needs-polish'].name
+      ),
+      reviewed: resolveBySuffix('review:reviewed', CODE_REVIEW_LABELS.reviewed.name),
+    },
+    manualTest: {
+      needed: resolveBySuffix('review:needs-manual-test', MANUAL_TEST_LABELS.needed.name),
+      done: resolveBySuffix('review:manually-tested', MANUAL_TEST_LABELS.done.name),
+    },
+    discussed: resolveBySuffix('review:discussed', FLAG_LABELS.discussed.name),
+    ready: resolveBySuffix('review:ready-to-merge', FLAG_LABELS.ready.name),
+  };
 }
 
 /**
- * Idempotently create or update all 6 `review:*` labels in the GitHub repository.
+ * Idempotently create or update all 7 `review:*` labels in the GitHub repository.
  */
 function syncLabels() {
-  const allDefinitions = [...Object.values(STATUS_LABELS), ...Object.values(FLAG_LABELS)];
+  const allDefinitions = [
+    ...Object.values(CODE_REVIEW_LABELS),
+    ...Object.values(MANUAL_TEST_LABELS),
+    ...Object.values(FLAG_LABELS),
+  ];
 
   for (const definition of allDefinitions) {
     runGh([
@@ -145,15 +170,16 @@ function parseSetArguments(args) {
 
   if (!prNumber || prNumber.startsWith('--')) {
     throw new Error(
-      'Missing PR number. Usage: set <pr> [--status ...] [--discussed true|false] [--manually-tested true|false]'
+      'Missing PR number. Usage: set <pr> [--review needed|needs-polish|reviewed] [--manual-test needed|done|none] [--discussed true|false] [--ready true|false]'
     );
   }
 
   const options = {
     prNumber: prNumber.replace(/^#/, ''),
-    status: null,
+    review: null,
+    manualTest: null,
     discussed: null,
-    manuallyTested: null,
+    ready: null,
     dryRun: false,
   };
 
@@ -171,14 +197,24 @@ function parseSetArguments(args) {
       throw new Error(`Missing value after option "${token}".`);
     }
 
-    if (token === '--status') {
-      if (!Object.hasOwn(STATUS_LABELS, nextValue)) {
+    if (token === '--review') {
+      if (!Object.hasOwn(CODE_REVIEW_LABELS, nextValue)) {
         throw new Error(
-          `Unknown status "${nextValue}". Allowed: ${Object.keys(STATUS_LABELS).join(', ')}`
+          `Unknown review state "${nextValue}". Allowed: ${Object.keys(CODE_REVIEW_LABELS).join(', ')}`
         );
       }
 
-      options.status = nextValue;
+      options.review = nextValue;
+      i++;
+      continue;
+    }
+
+    if (token === '--manual-test') {
+      if (!['needed', 'done', 'none'].includes(nextValue)) {
+        throw new Error(`Unknown manual-test state "${nextValue}". Allowed: needed, done, none`);
+      }
+
+      options.manualTest = nextValue;
       i++;
       continue;
     }
@@ -189,8 +225,8 @@ function parseSetArguments(args) {
       continue;
     }
 
-    if (token === '--manually-tested') {
-      options.manuallyTested = parseBooleanOption(nextValue, '--manually-tested');
+    if (token === '--ready') {
+      options.ready = parseBooleanOption(nextValue, '--ready');
       i++;
       continue;
     }
@@ -199,6 +235,45 @@ function parseSetArguments(args) {
   }
 
   return options;
+}
+
+/**
+ * Stage exclusive selection changes within a group of mutually exclusive labels.
+ */
+function applyExclusiveGroup({ currentNames, groupMap, selectedKey, toAdd, toRemove }) {
+  if (selectedKey === null) {
+    return;
+  }
+
+  const targetName = selectedKey === 'none' ? null : groupMap[selectedKey];
+
+  for (const candidateName of Object.values(groupMap)) {
+    if (candidateName !== targetName && currentNames.has(candidateName)) {
+      toRemove.push(candidateName);
+    }
+  }
+
+  if (targetName && !currentNames.has(targetName)) {
+    toAdd.push(targetName);
+  }
+}
+
+/**
+ * Stage additions or removals for a single boolean flag label.
+ */
+function applyFlagDiff({ currentNames, labelName, desiredState, toAdd, toRemove }) {
+  if (desiredState === null) {
+    return;
+  }
+
+  if (desiredState && !currentNames.has(labelName)) {
+    toAdd.push(labelName);
+    return;
+  }
+
+  if (!desiredState && currentNames.has(labelName)) {
+    toRemove.push(labelName);
+  }
 }
 
 /**
@@ -213,21 +288,21 @@ function setPrLabels(args) {
   const toAdd = [];
   const toRemove = [];
 
-  if (options.status !== null) {
-    const targetStatusName = labelMap[options.status];
+  applyExclusiveGroup({
+    currentNames,
+    groupMap: labelMap.review,
+    selectedKey: options.review,
+    toAdd,
+    toRemove,
+  });
 
-    for (const statusKey of Object.keys(STATUS_LABELS)) {
-      const candidateName = labelMap[statusKey];
-
-      if (candidateName !== targetStatusName && currentNames.has(candidateName)) {
-        toRemove.push(candidateName);
-      }
-    }
-
-    if (!currentNames.has(targetStatusName)) {
-      toAdd.push(targetStatusName);
-    }
-  }
+  applyExclusiveGroup({
+    currentNames,
+    groupMap: labelMap.manualTest,
+    selectedKey: options.manualTest,
+    toAdd,
+    toRemove,
+  });
 
   applyFlagDiff({
     currentNames,
@@ -236,13 +311,22 @@ function setPrLabels(args) {
     toAdd,
     toRemove,
   });
+
   applyFlagDiff({
     currentNames,
-    labelName: labelMap['manually-tested'],
-    desiredState: options.manuallyTested,
+    labelName: labelMap.ready,
+    desiredState: options.ready,
     toAdd,
     toRemove,
   });
+
+  if (
+    options.ready === true &&
+    currentNames.has(labelMap.manualTest.needed) &&
+    !toRemove.includes(labelMap.manualTest.needed)
+  ) {
+    toRemove.push(labelMap.manualTest.needed);
+  }
 
   if (toAdd.length === 0 && toRemove.length === 0) {
     console.log(
@@ -273,35 +357,44 @@ function setPrLabels(args) {
 }
 
 /**
- * Stage additions or removals for a single orthogonal boolean flag label.
- */
-function applyFlagDiff({ currentNames, labelName, desiredState, toAdd, toRemove }) {
-  if (desiredState === null) {
-    return;
-  }
-
-  if (desiredState && !currentNames.has(labelName)) {
-    toAdd.push(labelName);
-    return;
-  }
-
-  if (!desiredState && currentNames.has(labelName)) {
-    toRemove.push(labelName);
-  }
-}
-
-/**
- * Classify a PR into its primary review status bucket and flag booleans.
+ * Classify a PR across all 4 review workflow dimensions.
  */
 function classifyPr(prItem, labelMap) {
   const names = new Set((prItem.labels ?? []).map((label) => label.name));
-  let matchedStatus = 'unlabeled';
 
-  for (const statusKey of STATUS_ORDER) {
-    if (names.has(labelMap[statusKey])) {
-      matchedStatus = statusKey;
-      break;
-    }
+  let reviewState = '—';
+
+  if (names.has(labelMap.review.reviewed)) {
+    reviewState = labelMap.review.reviewed;
+  } else if (names.has(labelMap.review['needs-polish'])) {
+    reviewState = labelMap.review['needs-polish'];
+  } else if (names.has(labelMap.review.needed)) {
+    reviewState = labelMap.review.needed;
+  }
+
+  let manualTestState = '—';
+
+  if (names.has(labelMap.manualTest.done)) {
+    manualTestState = labelMap.manualTest.done;
+  } else if (names.has(labelMap.manualTest.needed)) {
+    manualTestState = labelMap.manualTest.needed;
+  }
+
+  const isReady = names.has(labelMap.ready);
+  const isDiscussed = names.has(labelMap.discussed);
+
+  let priorityBucket = 'unlabeled';
+
+  if (isReady) {
+    priorityBucket = 'ready';
+  } else if (names.has(labelMap.review['needs-polish'])) {
+    priorityBucket = 'needs-polish';
+  } else if (names.has(labelMap.manualTest.needed)) {
+    priorityBucket = 'manual-pending';
+  } else if (names.has(labelMap.review.reviewed)) {
+    priorityBucket = 'reviewed-only';
+  } else if (names.has(labelMap.review.needed)) {
+    priorityBucket = 'needed';
   }
 
   return {
@@ -309,10 +402,11 @@ function classifyPr(prItem, labelMap) {
     title: prItem.title,
     isDraft: Boolean(prItem.isDraft),
     headRefName: prItem.headRefName,
-    statusKey: matchedStatus,
-    statusLabel: matchedStatus === 'unlabeled' ? '— (ohne Review-Label)' : labelMap[matchedStatus],
-    discussed: names.has(labelMap.discussed),
-    manuallyTested: names.has(labelMap['manually-tested']),
+    reviewState,
+    manualTestState,
+    isDiscussed,
+    isReady,
+    priorityBucket,
   };
 }
 
@@ -337,10 +431,11 @@ function printBoard() {
   }
 
   const classified = pullRequests.map((prItem) => classifyPr(prItem, labelMap));
-  const sortOrder = [...STATUS_ORDER, 'unlabeled'];
 
   classified.sort((first, second) => {
-    const rankDiff = sortOrder.indexOf(first.statusKey) - sortOrder.indexOf(second.statusKey);
+    const rankDiff =
+      BOARD_PRIORITY_ORDER.indexOf(first.priorityBucket) -
+      BOARD_PRIORITY_ORDER.indexOf(second.priorityBucket);
 
     if (rankDiff !== 0) {
       return rankDiff;
@@ -349,17 +444,17 @@ function printBoard() {
     return second.number - first.number;
   });
 
-  console.log('| PR | Titel | Status | Besprochen | Manuell getestet | Branch |');
-  console.log('| :--- | :--- | :--- | :---: | :---: | :--- |');
+  console.log('| PR | Titel | Code-Review | Manueller Test | Besprochen | Merge | Branch |');
+  console.log('| :--- | :--- | :--- | :--- | :---: | :---: | :--- |');
 
   for (const row of classified) {
     const draftPrefix = row.isDraft ? '[Draft] ' : '';
     const escapedTitle = row.title.replaceAll('|', '\\|');
-    const discussedCell = row.discussed ? '💬️ Ja' : '—';
-    const testedCell = row.manuallyTested ? '✅️ Ja' : '—';
+    const discussedCell = row.isDiscussed ? '💬️ Ja' : '—';
+    const readyCell = row.isReady ? '🚀️ Bereit' : '—';
 
     console.log(
-      `| #${row.number} | ${draftPrefix}${escapedTitle} | ${row.statusLabel} | ${discussedCell} | ${testedCell} | \`${row.headRefName}\` |`
+      `| #${row.number} | ${draftPrefix}${escapedTitle} | ${row.reviewState} | ${row.manualTestState} | ${discussedCell} | ${readyCell} | \`${row.headRefName}\` |`
     );
   }
 }
@@ -372,14 +467,15 @@ function printHelp() {
 
 Commands:
   sync
-      Create or update all 6 review:* labels in the GitHub repository.
+      Create or update all 7 review:* labels in the GitHub repository.
 
-  set <pr> [--status needed|needs-polish|needs-manual-test|ready-to-merge]
-           [--discussed true|false] [--manually-tested true|false] [--dry-run]
-      Update exclusive review status and/or orthogonal flags on a PR.
+  set <pr> [--review needed|needs-polish|reviewed]
+           [--manual-test needed|done|none]
+           [--discussed true|false] [--ready true|false] [--dry-run]
+      Update code-review, manual-test, discussion, and ready labels on a PR.
 
   board
-      Print a Markdown table of all open PRs grouped by review status.`);
+      Print a Markdown table of all open PRs across all review dimensions.`);
 }
 
 function main() {

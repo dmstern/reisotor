@@ -2,8 +2,8 @@
 name: pr-review
 description: >-
   Systematic GitHub Pull Request review, status overview, and label management
-  using the repository's review:* label system (needed, needs-polish,
-  needs-manual-test, ready-to-merge, discussed, manually-tested). Use when the
+  using the repository's review:* label system (needed, needs-polish, reviewed,
+  needs-manual-test, manually-tested, discussed, ready-to-merge). Use when the
   user asks to review a PR, update PR review/test/discussion labels, or get an
   overview of open pull requests.
 ---
@@ -16,21 +16,29 @@ Helper-Skript für alle Label-Operationen und das PR-Board: [pr-labels.mjs](./sc
 
 ## Das Label-System (`review:*`)
 
-### A) Exklusiver Pipeline-Status (genau 1 Label pro offenem Nicht-Draft-PR)
+Das System bildet die vier Fragen bei parallelen PRs orthogonal ab:
 
-| Label                         | Bedeutung                                 | Wann setzen?                                                                                    |
-| :---------------------------- | :---------------------------------------- | :---------------------------------------------------------------------------------------------- |
-| `👀️ review:needed`            | Wartet auf Code-Review                    | Bei neuer PR-Erstellung oder nach gepushten Fixes auf `needs-polish`.                           |
-| `🛠️ review:needs-polish`      | Fixes / Feinschliff nötig                 | Review hat Blocker, fehlende Tests/Checks oder konkreten Polish-Bedarf gefunden.                |
-| `🧪️ review:needs-manual-test` | Code-Review sauber – manueller Test offen | Review ist komplett grün, aber UI/UX/API-Verhalten muss noch manuell geprüft werden.            |
-| `🚀️ review:ready-to-merge`    | Bereit zum Mergen                         | Review grün, abgestimmt und manuell getestet (oder Test n/a, z. B. reine Doku/CI/Agent-Config). |
+### 1. Code-Review-Stand (exklusiv: maximal 1 Label)
 
-### B) Orthogonale Merk-Flags (bleiben über Statuswechsel hinweg erhalten)
+| Label                    | Bedeutung                    | Wann setzen?                                                                              |
+| :----------------------- | :--------------------------- | :---------------------------------------------------------------------------------------- |
+| `👀️ review:needed`       | Wartet auf Code-Review       | Bei neuer PR-Erstellung oder nach gepushten Fixes auf `needs-polish`.                     |
+| `🛠️ review:needs-polish` | Fixes / Feinschliff nötig    | Review fand Blocker, fehlende Tests/Checks oder konkreten Polish-Bedarf.                  |
+| `👍️ review:reviewed`     | Code-Review erfolgt & sauber | Das Code-Review ist bestanden (auch wenn manueller Test oder Abstimmung noch offen sind). |
 
-| Label                       | Bedeutung            | Wann setzen?                                                                                                                                    |
-| :-------------------------- | :------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `💬️ review:discussed`       | Gemeinsam besprochen | Nur wenn Mensch & Agent/Team den PR-Stand bereits besprochen haben (nicht bei rein asynchronem Review).                                         |
-| `✅️ review:manually-tested` | Manuell getestet     | Nur wenn ein manueller/visueller Test bestätigt wurde. Bei größeren funktionalen Umbauten bewusst wieder entfernen (`--manually-tested false`). |
+### 2. Manueller Test (exklusiv untereinander, entfällt wenn Test n/a)
+
+| Label                         | Bedeutung            | Wann setzen?                                                                                 |
+| :---------------------------- | :------------------- | :------------------------------------------------------------------------------------------- |
+| `🧪️ review:needs-manual-test` | Manueller Test offen | Bei sichtbaren UI-/UX-/API-/Verhaltensänderungen, solange noch nicht manuell getestet wurde. |
+| `✅️ review:manually-tested`   | Manuell getestet     | Sobald ein manueller/visueller Test erfolgreich bestätigt wurde.                             |
+
+### 3. Abstimmung & Merge-Freigabe (Merk-Flags)
+
+| Label                      | Bedeutung            | Wann setzen?                                                                                             |
+| :------------------------- | :------------------- | :------------------------------------------------------------------------------------------------------- |
+| `💬️ review:discussed`      | Gemeinsam besprochen | Nur wenn Mensch & Agent/Team den PR-Stand bereits besprochen haben (nicht bei rein asynchronem Review).  |
+| `🚀️ review:ready-to-merge` | Bereit zum Mergen    | Wenn Code-Review grün (`👍️`), kein Polish offen und manueller Test erledigt (`✅️`) oder nicht nötig ist. |
 
 Falls die Labels in einem neuen Klon/Fork fehlen, einmalig synchronisieren:
 
@@ -48,7 +56,7 @@ Wenn der Nutzer nach dem Überblick über offene PRs fragt:
 node .agent/skills/pr-review/scripts/pr-labels.mjs board
 ```
 
-Gib die erzeugte Tabelle direkt im Chat aus und fasse kurz zusammen, welche PRs auf Review, Gespräch, manuellen Test oder Merge warten.
+Gib die erzeugte Tabelle direkt im Chat aus und fasse kurz zusammen, welche PRs auf Code-Review, Gespräch, manuellen Test oder Merge warten.
 
 ### Modus 2: Schnelles Label-Update auf Zuruf
 
@@ -56,12 +64,13 @@ Wenn der Nutzer nur Status/Test/Gespräch markiert (z. B. _„PR #901 manuell ge
 
 ```bash
 node .agent/skills/pr-review/scripts/pr-labels.mjs set <pr-nr> \
-  [--status needed|needs-polish|needs-manual-test|ready-to-merge] \
+  [--review needed|needs-polish|reviewed] \
+  [--manual-test needed|done|none] \
   [--discussed true|false] \
-  [--manually-tested true|false]
+  [--ready true|false]
 ```
 
-**Übergangs-Regel:** Meldet der Nutzer _„manuell getestet, passt“_ auf einem PR mit `🧪️ review:needs-manual-test`, setze gleichzeitig `--manually-tested true --status ready-to-merge`.
+**Übergangs-Regel:** Meldet der Nutzer _„manuell getestet, passt“_ auf einem PR mit `👍️ review:reviewed` + `🧪️ review:needs-manual-test`, setze `--manual-test done --ready true` (entfernt `needs-manual-test` automatisch und behält `👍️ review:reviewed`).
 
 ### Modus 3: Systematisches Code Review (Vollablauf)
 
@@ -82,20 +91,20 @@ node .agent/skills/pr-review/scripts/pr-labels.mjs set <pr-nr> \
      4. **Clean Code & Design-System (`AGENTS.md` / `DESIGN.md`):** SoC/DRY/KISS, `<AppIcon>` statt roher Unicode-Emojis im UI, `--radius-pill`, zentrale SCSS-Breakpoints, keine Magic Numbers, geschweifte Klammern bei `if`/`for`, frühe Returns.
      5. **Tests, CI & Release-Notes:** Passende Unit-/E2E-Tests vorhanden? `statusCheckRollup` grün? Bei Endnutzer-Änderungen genau 1 valides Fragment in `release-notes/pending/<slug>.md` (keines bei rein internen Änderungen).
 
-3. **Review-Ergebnis & Ziel-Status bestimmen:**
-   - **Blocker oder Nachbesserungen (`🔴` / `🟡`):** Status → `needs-polish`.
-   - **Review sauber (`✅`):**
-     - Manueller Test bereits bestätigt (`✅️ review:manually-tested` vorhanden) **oder** nicht anwendbar (reine Doku, CI/Workflow, Agent-Config, Tests-only, grüner Dependabot-PR) → Status → `ready-to-merge`.
-     - Sonst (sichtbare UI-, UX-, API- oder Verhaltensänderung) → Status → `needs-manual-test`.
-   - Setze das Ergebnis direkt per [pr-labels.mjs](./scripts/pr-labels.mjs) (exklusives Status-Label wird sauber getauscht, bestehende Flags bleiben unangetastet).
+3. **Review-Ergebnis & Ziel-Labels bestimmen:**
+   - **Blocker oder Nachbesserungen (`🔴` / `🟡`):** `--review needs-polish --ready false` (falls ein manueller UI-Test ohnehin nötig ist, kann `--manual-test needed` bereits gesetzt oder beibehalten werden).
+   - **Review sauber (`✅`):** `--review reviewed`, und zusätzlich:
+     - **Manueller Test erforderlich** (sichtbare UI-/UX-/API-Änderung) und noch kein `✅️ review:manually-tested`: `--manual-test needed --ready false`.
+     - **Manueller Test bereits erledigt (`✅️`) oder n/a** (reine Doku, CI/Workflow, Agent-Config, Tests-only, grüner Dependabot-PR): `--ready true` (oder wenn erst noch besprochen werden soll, nur `--review reviewed` ohne `--ready true`).
+   - Setze das Ergebnis direkt per [pr-labels.mjs](./scripts/pr-labels.mjs).
 
 4. **Übersichtlichen Review-Kommentar im PR posten:**
    Nutze `gh pr comment <nr> --body-file - <<'EOF'` (ohne temporäre Dateien im Worktree abzulegen) nach folgendem Schema:
 
    ```markdown
-   ## 🔍 Code Review — <Status-Urteil, z. B. "Bereit für manuellen Test" / "Polish nötig" / "Ready to Merge">
+   ## 🔍 Code Review — <Status-Urteil, z. B. "Review erfolgt · manueller Test offen" / "Polish nötig" / "Ready to Merge">
 
-   **Geprüfter Stand:** `<kurzer-commit-sha>` · **Gesetzte Labels:** `<status-label>` _(+ ggf. bestehende Flags)_
+   **Geprüfter Stand:** `<kurzer-commit-sha>` · **Gesetzte Labels:** `<aktuelle review-labels>`
 
    <2–3 Sätze Kurzfazit zu Qualität, Risiko und Gesamteindruck.>
 
@@ -112,7 +121,7 @@ node .agent/skills/pr-review/scripts/pr-labels.mjs set <pr-nr> \
    ### Befunde
 
    - 🔴 **Blocker:** _(falls vorhanden, sonst weglassen)_ `pfad/zur/datei.ts:42` — Konkretes Problem & Lösung.
-   - 🟡 **Polish:** _(falls vorhanden)_ `pfad/zur/datei.vue:88` — Konkrete Verbesserung.
+   - 🟡 **Polish:** _(falls vorhanden)_ `pfad/zur/datei.vue:88` — Konkretes Problem & Verbesserung.
    - 💡 **Optional / Nit:** _(falls vorhanden)_ ...
      _(Falls alles sauber: „Keine Blocker oder offenen Polish-Punkte gefunden.“)_
 
