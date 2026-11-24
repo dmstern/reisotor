@@ -67,6 +67,8 @@ Jede Änderung an `backend/src/db/index.ts` braucht diesen Check:
 
 ## Issue-Komplexität & Modell-/Thinking-Mapping
 
+Vollständiges Ablaufdiagramm (`🔍️ needs-triage` → `⚠️ needs-refinement` / `✅️ dev-ready` → `🚦️ complexity:*`): [`docs/ISSUE_WORKFLOW_GUIDE.md`](docs/ISSUE_WORKFLOW_GUIDE.md).
+
 Alle Aufgaben (mit/ohne Issue) werden in `T1`–`T4` (`🚦️ complexity:trivial/low/mid/high`) klassifiziert:
 
 - 🩵 **`T1` · `trivial`**: 1–2 Dateien, Typo, Copy, kleiner CSS-Fix, einfacher Test, Config-Bump.
