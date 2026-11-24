@@ -51,6 +51,7 @@ const {
   showIconPicker,
   createForm,
   editForm,
+  editModifiedFields,
   usageItems,
   isLoadingUsageItems,
   currentPickerIconId,
@@ -109,20 +110,6 @@ const afterCategoryMeta = computed(() => {
     icon: emojiVal,
     color: editForm.value.color,
     tabler: getCategoryIconDef(iconId, emojiVal),
-  };
-});
-
-const editModifiedFields = computed(() => {
-  if (!editingCategory.value || !beforeCategoryMeta.value) {
-    return undefined;
-  }
-
-  return {
-    name: editForm.value.name !== editingCategory.value.name,
-    icon:
-      editForm.value.icon !== beforeCategoryMeta.value.tabler.id ||
-      editForm.value.emoji !== beforeCategoryMeta.value.icon,
-    color: editForm.value.color !== beforeCategoryMeta.value.color,
   };
 });
 

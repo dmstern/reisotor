@@ -27,9 +27,11 @@ withDefaults(
   defineProps<{
     tours: TourItem[];
     compact?: boolean;
+    modified?: boolean;
   }>(),
   {
     compact: false,
+    modified: false,
   }
 );
 
@@ -139,6 +141,7 @@ onUnmounted(() => {
       variant="secondary"
       size="sm"
       :active="open"
+      :modified="modified"
       :icon-only="compact"
       class="tour-assign-btn"
       :class="{ 'is-open': open, 'is-compact': compact }"

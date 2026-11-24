@@ -73,6 +73,27 @@ export function useTripCategorySettings(
     usage_count: 0,
   });
 
+  const initialEditSnapshot = ref<{
+    name: string;
+    icon: string;
+    emoji: string;
+    color: string;
+  } | null>(null);
+
+  const editModifiedFields = computed(() => {
+    const snap = initialEditSnapshot.value;
+
+    if (!snap) {
+      return undefined;
+    }
+
+    return {
+      name: editForm.value.name !== snap.name,
+      icon: editForm.value.icon !== snap.icon || editForm.value.emoji !== snap.emoji,
+      color: editForm.value.color !== snap.color,
+    };
+  });
+
   const usageItems = ref<CategoryUsageItem[]>([]);
   const isLoadingUsageItems = ref(false);
 
@@ -264,6 +285,12 @@ export function useTripCategorySettings(
       color: cat.color ?? meta.color ?? CATEGORY_COLOR_PALETTE[0],
       usage_count: cat.usageCount,
     };
+    initialEditSnapshot.value = {
+      name: editForm.value.name,
+      icon: editForm.value.icon,
+      emoji: editForm.value.emoji,
+      color: editForm.value.color,
+    };
     editingCategory.value = cat;
 
     if (cat.usageCount > 0) {
@@ -276,6 +303,7 @@ export function useTripCategorySettings(
 
   function cancelEdit() {
     editingCategory.value = null;
+    initialEditSnapshot.value = null;
     usageItems.value = [];
     isLoadingUsageItems.value = false;
   }
@@ -343,6 +371,7 @@ export function useTripCategorySettings(
     await refreshDependentStores();
 
     editingCategory.value = null;
+    initialEditSnapshot.value = null;
     usageItems.value = [];
     isLoadingUsageItems.value = false;
   }
@@ -473,6 +502,7 @@ export function useTripCategorySettings(
     iconPickerTarget,
     createForm,
     editForm,
+    editModifiedFields,
     usageItems,
     isLoadingUsageItems,
     currentPickerIconId,

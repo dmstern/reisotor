@@ -13,6 +13,7 @@ const props = withDefaults(
     checked?: unknown;
     value?: unknown;
     disabled?: boolean;
+    modified?: boolean;
     id?: string;
     name?: string;
     ariaLabel?: string;
@@ -36,6 +37,7 @@ const props = withDefaults(
   }>(),
   {
     disabled: false,
+    modified: false,
     label: '',
     description: '',
     icon: undefined,
@@ -84,6 +86,7 @@ function onChange(event: Event) {
       {
         'is-checked': isChecked,
         'is-disabled': disabled,
+        'is-modified': modified,
       },
     ]"
   >
@@ -307,6 +310,22 @@ function onChange(event: Event) {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
   outline-offset: var(--focus-ring-offset, 2px);
   box-shadow: var(--focus-ring-halo);
+}
+
+.radio-card.is-modified {
+  @include control-modified-outline;
+
+  &:hover:not(.is-disabled) {
+    border-color: transparent;
+  }
+
+  &:focus-visible,
+  &:has(:focus-visible) {
+    border-color: var(--input-border-color);
+    outline: var(--focus-ring-width, 3px) solid var(--color-success);
+    outline-offset: var(--focus-ring-offset, 2px);
+    box-shadow: var(--focus-ring-halo);
+  }
 }
 
 .radio-card.is-disabled {

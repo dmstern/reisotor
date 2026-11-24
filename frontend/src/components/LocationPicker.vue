@@ -52,8 +52,14 @@ const props = withDefaults(
     categoryOptions?: string[];
     /** Ob der Status-Header (Haken & Entfernen) ausgeblendet werden soll (z. B. wenn im Fieldset-Legend platziert). */
     hideStatusHeader?: boolean;
-    /** Ob der Standort gegenüber dem gespeicherten Zustand geändert wurde (orange Hervorhebung). */
+    /** Ob der Standort gegenüber dem gespeicherten Zustand geändert wurde (grüne Hervorhebung). */
     modified?: boolean;
+    /** Einzelne Feld-Dirty-Flags für Titel, Kategorie und Adresse innerhalb der Polaroid-Card. */
+    modifiedFields?: {
+      title?: boolean;
+      category?: boolean;
+      address?: boolean;
+    };
     /** Verwendungskontext des Pickers: 'spot' (Default) oder 'trip'. */
     context?: 'spot' | 'trip';
   }>(),
@@ -72,6 +78,7 @@ const props = withDefaults(
     referencePoints: () => [],
     hideStatusHeader: false,
     modified: false,
+    modifiedFields: undefined,
     context: 'spot',
   }
 );
@@ -581,6 +588,7 @@ defineExpose({
           :context="context"
           :model-value="modelValue"
           :modified="modified"
+          :modified-fields="modifiedFields"
           :has-location="hasLocation"
           :title="title"
           :title-required="titleRequired"

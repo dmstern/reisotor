@@ -512,7 +512,7 @@ defineExpose({
   width: 6px;
   height: 6px;
   border-radius: var(--radius-pill);
-  background: var(--color-success-dark, var(--color-success));
+  background-color: var(--color-success);
   flex-shrink: 0;
 }
 

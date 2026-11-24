@@ -159,6 +159,25 @@ const isWeatherModelModified = computed(() => {
   return (form.value.weather_model || '') !== (props.initial.weather_model || '');
 });
 
+const isDestinationModified = computed(() => {
+  if (!props.initial) {
+    return false;
+  }
+
+  return (form.value.destination || '').trim() !== (props.initial.destination || '').trim();
+});
+
+const isPackingCategoryRequiredModified = computed(() => {
+  if (!props.initial) {
+    return false;
+  }
+
+  return (
+    Boolean(form.value.packing_category_required) !==
+    Boolean(props.initial.packing_category_required)
+  );
+});
+
 watch(
   () => props.initial,
   (initial) => {
@@ -371,6 +390,7 @@ function onSubmit() {
           context="trip"
           placeholder="Reiseziel, Stadt oder Maps-Link eingeben..."
           :modified="isLocationModified"
+          :modified-fields="{ address: isDestinationModified }"
           @update:address="form.destination = $event"
           @update:maps-link="form.maps_link = $event"
           @select="onLocationSelect"
@@ -434,6 +454,7 @@ function onSubmit() {
         id="trip-packing-category-required"
         v-model="form.packing_category_required"
         :icon="SECTION_ICON_DEFS.packing"
+        :modified="isPackingCategoryRequiredModified"
         label="Kategorie in der Packliste ist Pflichtfeld"
         description="Beim Anlegen neuer Packlisten-Einträge muss eine Kategorie ausgewählt werden"
       />
@@ -605,9 +626,12 @@ label.is-modified .label-text,
 }
 
 .location-box.is-modified {
-  border-color: transparent !important;
-  outline: var(--focus-ring-width, 3px) solid var(--color-success);
-  outline-offset: 0;
+  @include control-modified-outline(true);
+}
+
+.location-box.is-modified :deep(.polaroid-card.is-modified) {
+  outline: none;
+  border-color: var(--color-border);
 }
 
 .location-box .field-label {

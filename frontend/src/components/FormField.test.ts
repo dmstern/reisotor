@@ -74,6 +74,22 @@ describe('FormField component', () => {
     expect(html).toContain('modified-dot');
   });
 
+  it('prioritizes error state over modified-dot when both modified and invalid/error are true', async () => {
+    const app = createApp({
+      render: () =>
+        h(FormField, {
+          label: 'Titel',
+          modified: true,
+          invalid: true,
+          error: 'Dieses Feld ist erforderlich',
+        }),
+    });
+    app.use(createPinia());
+    const html = await renderToString(app);
+    expect(html).toContain('has-error');
+    expect(html).not.toContain('modified-dot');
+  });
+
   it('renders custom labelClass when provided', async () => {
     const app = createApp({
       render: () => h(FormField, { label: 'Titel', labelClass: 'custom-label-cls' }),

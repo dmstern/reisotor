@@ -102,7 +102,7 @@ function updateField<K extends keyof CategoryFormData>(field: K, val: CategoryFo
           variant="secondary"
           size="md"
           class="icon-selector-btn"
-          :class="{ 'is-modified': modifiedFields?.icon }"
+          :modified="modifiedFields?.icon"
           title="Icon auswählen"
           aria-label="Icon auswählen"
           @click="$emit('open-icon-picker')"
@@ -195,10 +195,6 @@ function updateField<K extends keyof CategoryFormData>(field: K, val: CategoryFo
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-}
-
-.icon-selector-btn.is-modified {
-  @include control-modified-outline;
 }
 
 .color-swatch-wrap {

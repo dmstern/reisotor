@@ -111,6 +111,7 @@ function formatCommentDate(dateStr?: string): string {
             type="text"
             size="sm"
             class="comment-edit-input"
+            :modified="editDraft !== c.content"
             @keydown.escape="cancelEdit"
           />
           <div class="comment-edit-actions">

@@ -298,4 +298,40 @@ describe('TripForm', () => {
     expect(checkbox).toBeNull();
     cleanUp();
   });
+
+  it('marks name label and input as modified when name is edited', async () => {
+    const { container, cleanUp } = mountForm({ initial: sampleInitial, tripId: 1 });
+    const nameInput = container.querySelector('input[type="text"]') as HTMLInputElement;
+    const nameLabel = nameInput.closest('label');
+
+    expect(nameLabel?.classList.contains('is-modified')).toBe(false);
+    expect(nameInput.classList.contains('input--modified')).toBe(false);
+
+    nameInput.value = 'Italien 2027';
+    nameInput.dispatchEvent(new Event('input'));
+    await nextTick();
+
+    expect(nameLabel?.classList.contains('is-modified')).toBe(true);
+    expect(nameInput.classList.contains('input--modified')).toBe(true);
+    cleanUp();
+  });
+
+  it('marks packing_category_required CheckboxCard as modified when toggled', async () => {
+    const { container, cleanUp } = mountForm({
+      initial: { ...sampleInitial, packing_category_required: true },
+      initialTab: 'settings',
+      tripId: 1,
+    });
+    const checkbox = container.querySelector('#trip-packing-category-required') as HTMLInputElement;
+    const card = checkbox.closest('.checkbox-card');
+
+    expect(card?.classList.contains('is-modified')).toBe(false);
+
+    checkbox.checked = false;
+    checkbox.dispatchEvent(new Event('change'));
+    await nextTick();
+
+    expect(card?.classList.contains('is-modified')).toBe(true);
+    cleanUp();
+  });
 });

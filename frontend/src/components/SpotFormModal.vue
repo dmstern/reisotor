@@ -115,6 +115,9 @@ const {
   onSpotLocationClear,
   resetEditSpotLocation,
   isEditSpotLocationModified,
+  isEditSpotTitleModified,
+  isEditSpotCategoryModified,
+  isEditSpotAddressModified,
   isEditSpotSideModified,
   isEditSpotImageModified,
   isEditSpotNoteModified,
@@ -274,6 +277,11 @@ function handleOpenScheduledDate(date: string) {
           :title-required="true"
           :title-invalid="showSpotTitleError"
           :modified="isEditSpotLocationModified"
+          :modified-fields="{
+            title: isEditSpotTitleModified,
+            category: isEditSpotCategoryModified,
+            address: isEditSpotAddressModified,
+          }"
           @update:address="activeSpotForm.address = $event"
           @update:maps-link="onSpotMapsLinkUpdate"
           @select="onSpotLocationSelect"
@@ -1033,7 +1041,7 @@ button.assign-chip-action:focus-visible {
   width: 6px;
   height: 6px;
   border-radius: var(--radius-pill);
-  background: var(--color-success-dark, var(--color-success));
+  background-color: var(--color-success);
 }
 
 @media (prefers-reduced-motion: reduce) {

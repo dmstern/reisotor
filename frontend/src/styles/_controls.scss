@@ -9,8 +9,13 @@
 
 /// Einheitlicher Dirty-/Modified-Indikator (Issue #875):
 /// 3px grüne Outline im Ruhezustand (ohne Layout-Shift und ohne doppelten Rand).
-@mixin control-modified-outline {
-  border-color: transparent;
+@mixin control-modified-outline($important: false) {
+  @if $important {
+    border-color: transparent !important;
+  } @else {
+    border-color: transparent;
+  }
+
   outline: var(--focus-ring-width, 3px) solid var(--color-success);
   outline-offset: 0;
 }
@@ -46,22 +51,6 @@
         var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
     }
 
-    &--invalid,
-    &.is-invalid {
-      border-color: var(--color-danger);
-
-      &:hover:not(:disabled):not(:focus-within):not(.is-focused) {
-        border-color: var(--color-danger);
-      }
-
-      &:focus-within,
-      &.is-focused {
-        border-color: var(--input-border-color);
-        outline: var(--focus-ring-width, 3px) solid var(--color-danger);
-        outline-color: var(--color-danger);
-      }
-    }
-
     &--modified,
     &.is-modified {
       @include control-modified-outline;
@@ -80,6 +69,24 @@
         outline-color: var(--color-success);
         box-shadow:
           var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
+      }
+    }
+
+    &--invalid,
+    &.is-invalid {
+      border-color: var(--color-danger);
+      outline: none;
+
+      &:hover:not(:disabled):not(:focus-within):not(.is-focused) {
+        border-color: var(--color-danger);
+        outline: none;
+      }
+
+      &:focus-within,
+      &.is-focused {
+        border-color: var(--input-border-color);
+        outline: var(--focus-ring-width, 3px) solid var(--color-danger);
+        outline-color: var(--color-danger);
       }
     }
   } @else {
@@ -97,23 +104,6 @@
         var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
     }
 
-    &--invalid,
-    &.is-invalid {
-      border-color: var(--color-danger);
-
-      &:hover:not(:disabled):not(:focus):not(:focus-visible) {
-        border-color: var(--color-danger);
-      }
-
-      &:focus,
-      &:focus-visible,
-      &:active:not(:disabled) {
-        border-color: var(--input-border-color);
-        outline: var(--focus-ring-width, 3px) solid var(--color-danger);
-        outline-color: var(--color-danger);
-      }
-    }
-
     &--modified,
     &.is-modified {
       @include control-modified-outline;
@@ -133,6 +123,25 @@
         outline-color: var(--color-success);
         box-shadow:
           var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
+      }
+    }
+
+    &--invalid,
+    &.is-invalid {
+      border-color: var(--color-danger);
+      outline: none;
+
+      &:hover:not(:disabled):not(:focus):not(:focus-visible) {
+        border-color: var(--color-danger);
+        outline: none;
+      }
+
+      &:focus,
+      &:focus-visible,
+      &:active:not(:disabled) {
+        border-color: var(--input-border-color);
+        outline: var(--focus-ring-width, 3px) solid var(--color-danger);
+        outline-color: var(--color-danger);
       }
     }
   }
@@ -354,25 +363,6 @@
     --control-grad-bottom: var(--gradient-control-bottom);
   }
 
-  &--invalid,
-  &.is-invalid {
-    border-color: var(--color-danger);
-
-    @include can-hover {
-      &:hover:not(:disabled):not(:focus):not(:focus-visible) {
-        border-color: var(--color-danger);
-      }
-    }
-
-    &:focus,
-    &:focus-visible,
-    #{$active-selector} {
-      border-color: var(--input-border-color);
-      outline: var(--focus-ring-width, 3px) solid var(--color-danger);
-      outline-color: var(--color-danger);
-    }
-  }
-
   &--modified,
   &.is-modified {
     @include control-modified-outline;
@@ -395,6 +385,27 @@
       outline-offset: var(--focus-ring-offset, 2px);
       outline-color: var(--color-success);
       box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control);
+    }
+  }
+
+  &--invalid,
+  &.is-invalid {
+    border-color: var(--color-danger);
+    outline: none;
+
+    @include can-hover {
+      &:hover:not(:disabled):not(:focus):not(:focus-visible) {
+        border-color: var(--color-danger);
+        outline: none;
+      }
+    }
+
+    &:focus,
+    &:focus-visible,
+    #{$active-selector} {
+      border-color: var(--input-border-color);
+      outline: var(--focus-ring-width, 3px) solid var(--color-danger);
+      outline-color: var(--color-danger);
     }
   }
 

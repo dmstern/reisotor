@@ -710,9 +710,7 @@ function handleModalClose(visible: boolean) {
 }
 
 .form-image-banner.is-modified {
-  border-color: transparent !important;
-  outline: var(--focus-ring-width, 3px) solid var(--color-success);
-  outline-offset: 0;
+  @include control-modified-outline(true);
 }
 
 .form-image-banner--polaroid {

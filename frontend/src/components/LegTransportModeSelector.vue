@@ -101,7 +101,8 @@ function onKeyDown(event: KeyboardEvent) {
               :open="isOpen"
               aria-label="Verkehrsmittel auswählen"
               aria-haspopup="listbox"
-              :trigger-class="transitModified ? 'transit-trigger is-modified' : 'transit-trigger'"
+              trigger-class="transit-trigger"
+              :modified="transitModified"
               @toggle="toggle"
               @keydown="onKeyDown"
             >
@@ -184,10 +185,6 @@ function onKeyDown(event: KeyboardEvent) {
 .transit-picker-wrap {
   position: relative;
   width: 100%;
-}
-
-.transit-picker-wrap :deep(.transit-trigger.is-modified) {
-  @include control-modified-outline;
 }
 
 .transit-trigger-content {
