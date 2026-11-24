@@ -2,6 +2,11 @@ import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { mockOsmTiles } from './helpers/externalMocks';
+
+test.beforeEach(async ({ page }) => {
+  await mockOsmTiles(page);
+});
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const seeded = JSON.parse(

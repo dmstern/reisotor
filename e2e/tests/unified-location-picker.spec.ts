@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Locator } from '@playwright/test';
+import { mockOsmTiles, mockSpotsPreview } from './helpers/externalMocks';
 
 /**
  * Comprehensive Opaque-Box E2E Test Suite for Unified Location Picker
@@ -267,6 +268,11 @@ test.describe('Unified Location Picker E2E Test Suite', () => {
   test.use({
     geolocation: { latitude: 48.2082, longitude: 16.3738 },
     permissions: ['geolocation'],
+  });
+
+  test.beforeEach(async ({ page }) => {
+    await mockOsmTiles(page);
+    await mockSpotsPreview(page);
   });
 
   // =========================================================================

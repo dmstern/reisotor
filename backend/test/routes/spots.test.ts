@@ -33,6 +33,11 @@ describe('spots route coordinate preservation', () => {
     tripId = tripRes.json().id;
   });
 
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    clearPhotoCache();
+  });
+
   it('creates a spot with coordinates and preserves them on edit without maps_link', async () => {
     // 1. Create a spot with coordinates (e.g. from manual pin)
     const createRes = await app.inject({
@@ -102,6 +107,8 @@ describe('spots route coordinate preservation', () => {
   });
 
   it('auto-populates cleaned link when maps_link is a booking link and link is omitted (issue #607)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network disabled in tests')));
+
     const res = await app.inject({
       method: 'POST',
       url: '/api/spots',

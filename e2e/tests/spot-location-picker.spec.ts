@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { mockOsmTiles, mockSpotsPreview } from './helpers/externalMocks';
 
 // Regressionstest für einen vom Nutzer gemeldeten Bug: L.map(mapEl.value) (ohne Options-Objekt) in
 // LocationPicker.vue crashte in leaflet-rotate's global gepatchtem L.Map.initialize ("Cannot read
@@ -7,6 +8,11 @@ import { test, expect } from '@playwright/test';
 // bei "Neuer Spot" in ExcursionsView.vue, das TripMap.vue direkt daneben rendert. Die Mini-Karte
 // blieb dadurch komplett leer. Fix: L.map(mapEl.value, {}) statt ohne Options-Objekt.
 test.describe('Standort manuell setzen (Spot-Formular)', () => {
+  test.beforeEach(async ({ page }) => {
+    await mockOsmTiles(page);
+    await mockSpotsPreview(page);
+  });
+
   test('die Mini-Karte rendert tatsächliche Kartenkacheln statt leer zu bleiben', async ({
     page,
   }) => {

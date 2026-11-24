@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { E2E_BACKEND_PORT, E2E_PWA_PREVIEW_PORT } from '../constants.js';
 import { newContextWithReducedMotion } from './helpers/context';
+import { FAKE_TILE_PNG } from './helpers/externalMocks';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendDir = path.join(__dirname, '..', '..', 'frontend');
@@ -82,10 +83,6 @@ test.describe.serial('Offline-Kartenkacheln (Workbox Runtime Caching)', () => {
   // wäre also unabhängig von jeder Sandbox-Netzwerkbeschränkung die falsche Wahl. Die Route wird auf
   // Context-Ebene registriert (nicht page.route), da die Kachel-Requests vom Service Worker
   // ausgehen, nicht direkt von der Seite.
-  const FAKE_TILE_PNG = Buffer.from(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
-    'base64'
-  );
 
   test('bereits angesehene Kartenkacheln bleiben nach einem Offline-Reload sichtbar', async ({
     browser,
