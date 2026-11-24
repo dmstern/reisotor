@@ -2,6 +2,16 @@
 @use './_touch.scss' as *;
 
 @mixin richtext-task-list {
+  ul:not([data-type='taskList']) > li,
+  ol > li {
+    margin: var(--space-1-5) 0;
+  }
+
+  ul:not([data-type='taskList']) > li > p,
+  ol > li > p {
+    margin: 0;
+  }
+
   ul[data-type='taskList'] {
     list-style: none;
     padding-left: 0;
@@ -10,7 +20,7 @@
 
   ul[data-type='taskList'] ul[data-type='taskList'] {
     padding-left: 1.5em;
-    margin-top: var(--space-2xs);
+    margin-top: var(--space-1-5);
   }
 
   // Live Tiptap TaskItem NodeView setzt `data-checked` auf `<li>`, aber `data-type="taskItem"`
@@ -19,7 +29,7 @@
     display: flex;
     align-items: flex-start;
     gap: var(--space-sm);
-    margin: var(--space-2xs) 0;
+    margin: var(--space-1-5) 0;
   }
 
   ul[data-type='taskList'] > li > label {
