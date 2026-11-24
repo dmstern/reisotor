@@ -35,6 +35,14 @@ const editForm = ref({
   period: '' as Period | '',
 });
 
+const initialSnapshot = ref<{
+  label: string;
+  link: string;
+  note: string;
+  shop: string;
+  period: Period | '';
+} | null>(null);
+
 const editLabelTouched = ref(false);
 
 watch(
@@ -43,16 +51,36 @@ watch(
     editLabelTouched.value = false;
 
     if (newItem) {
-      editForm.value = {
+      const initial = {
         label: newItem.label,
         link: newItem.link ?? '',
         note: newItem.note ?? '',
         shop: newItem.shop ?? '',
         period: (newItem.period as Period | '') ?? '',
       };
+      editForm.value = { ...initial };
+      initialSnapshot.value = initial;
+    } else {
+      initialSnapshot.value = null;
     }
   },
   { immediate: true }
+);
+
+const isLabelModified = computed(
+  () => initialSnapshot.value !== null && editForm.value.label !== initialSnapshot.value.label
+);
+const isShopModified = computed(
+  () => initialSnapshot.value !== null && editForm.value.shop !== initialSnapshot.value.shop
+);
+const isPeriodModified = computed(
+  () => initialSnapshot.value !== null && editForm.value.period !== initialSnapshot.value.period
+);
+const isLinkModified = computed(
+  () => initialSnapshot.value !== null && editForm.value.link !== initialSnapshot.value.link
+);
+const isNoteModified = computed(
+  () => initialSnapshot.value !== null && editForm.value.note !== initialSnapshot.value.note
 );
 
 const editDraft = useDraftAutosave(
@@ -136,12 +164,13 @@ function handleDelete() {
         label="Artikel"
         required
         :invalid="editLabelTouched && !editForm.label.trim()"
+        :modified="isLabelModified"
         :error="
           editLabelTouched && !editForm.label.trim()
             ? 'Dieses Feld muss noch ausgefüllt werden.'
             : undefined
         "
-        v-slot="{ id, invalid }"
+        v-slot="{ id, invalid, modified }"
       >
         <Input
           :id="id"
@@ -150,28 +179,52 @@ function handleDelete() {
           placeholder="Artikel"
           required
           :invalid="invalid"
+          :modified="modified"
           @blur="editLabelTouched = true"
         />
       </FormField>
 
-      <FormField icon="shop" label="Shop" v-slot="{ id }">
-        <Combobox :id="id" v-model="editForm.shop" :options="knownShops" placeholder="Shop/Laden" />
+      <FormField icon="shop" label="Shop" :modified="isShopModified" v-slot="{ id, modified }">
+        <Combobox
+          :id="id"
+          v-model="editForm.shop"
+          :options="knownShops"
+          placeholder="Shop/Laden"
+          :modified="modified"
+        />
       </FormField>
 
-      <FormField icon="period" label="Zeitraum" v-slot="{ id }">
-        <Select :id="id" v-model="editForm.period">
+      <FormField
+        icon="period"
+        label="Zeitraum"
+        :modified="isPeriodModified"
+        v-slot="{ id, modified }"
+      >
+        <Select :id="id" v-model="editForm.period" :modified="modified">
           <option value="">Kein Zeitraum</option>
           <option value="before">{{ PERIOD_META.before }}</option>
           <option value="during">{{ PERIOD_META.during }}</option>
         </Select>
       </FormField>
 
-      <FormField icon="link" label="Link" v-slot="{ id }">
-        <Input :id="id" v-model="editForm.link" type="url" placeholder="Link" />
+      <FormField icon="link" label="Link" :modified="isLinkModified" v-slot="{ id, modified }">
+        <Input
+          :id="id"
+          v-model="editForm.link"
+          type="url"
+          placeholder="Link"
+          :modified="modified"
+        />
       </FormField>
 
-      <FormField icon="note" label="Notiz" v-slot="{ id }">
-        <Input :id="id" v-model="editForm.note" type="text" placeholder="Notiz" />
+      <FormField icon="note" label="Notiz" :modified="isNoteModified" v-slot="{ id, modified }">
+        <Input
+          :id="id"
+          v-model="editForm.note"
+          type="text"
+          placeholder="Notiz"
+          :modified="modified"
+        />
       </FormField>
 
       <DraftStatusBar

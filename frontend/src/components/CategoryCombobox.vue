@@ -18,6 +18,7 @@ const props = withDefaults(
     disabled?: boolean;
     required?: boolean;
     invalid?: boolean;
+    modified?: boolean;
     showManageLink?: boolean;
     id?: string;
     name?: string;
@@ -29,6 +30,7 @@ const props = withDefaults(
     disabled: false,
     required: false,
     invalid: false,
+    modified: false,
     showManageLink: true,
   }
 );
@@ -112,6 +114,7 @@ defineOptions({
     :disabled="disabled"
     :required="required"
     :invalid="invalid"
+    :modified="modified"
     @update:model-value="emit('update:modelValue', $event)"
     @select="emit('select', $event)"
     @blur="emit('blur', $event)"

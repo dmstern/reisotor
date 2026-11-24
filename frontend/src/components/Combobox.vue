@@ -22,6 +22,7 @@ const props = withDefaults(
     disabled?: boolean;
     required?: boolean;
     invalid?: boolean;
+    modified?: boolean;
     id?: string;
     name?: string;
     teleport?: boolean;
@@ -32,6 +33,7 @@ const props = withDefaults(
     disabled: false,
     required: false,
     invalid: false,
+    modified: false,
     teleport: true,
   }
 );
@@ -530,6 +532,7 @@ defineOptions({
       :disabled="disabled"
       :required="required"
       :invalid="invalid"
+      :modified="modified"
       role="combobox"
       :aria-expanded="open"
       aria-autocomplete="list"

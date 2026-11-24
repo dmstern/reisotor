@@ -21,6 +21,8 @@ defineProps<{
   timeDurationInfo?: { label: string; duration: string } | null;
   timeDurationStatus?: TimeDurationStatus | null;
   activeDurationSeconds?: number | null;
+  departureModified?: boolean;
+  arrivalModified?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -55,11 +57,18 @@ function onArrivalChange(event: Event) {
 <template>
   <div class="time-section">
     <div class="time-row">
-      <FormField icon="time" :label="departureLabel" class="time-field time-field--departure">
+      <FormField
+        icon="time"
+        :label="departureLabel"
+        class="time-field time-field--departure"
+        :modified="departureModified"
+        v-slot="{ modified }"
+      >
         <div class="time-input-wrap departure-time-wrapper">
           <Input
             v-model="departureTime"
             type="time"
+            :modified="modified"
             @input="onDepartureChange"
             @change="onDepartureChange"
           />
@@ -89,11 +98,18 @@ function onArrivalChange(event: Event) {
         </button>
       </div>
 
-      <FormField icon="time" label="Ankunft" class="time-field time-field--arrival">
+      <FormField
+        icon="time"
+        label="Ankunft"
+        class="time-field time-field--arrival"
+        :modified="arrivalModified"
+        v-slot="{ modified }"
+      >
         <div class="time-input-wrap arrival-time-wrapper">
           <Input
             v-model="arrivalTime"
             type="time"
+            :modified="modified"
             @input="onArrivalChange"
             @change="onArrivalChange"
           />

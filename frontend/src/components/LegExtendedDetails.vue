@@ -19,6 +19,15 @@ const props = defineProps<{
   showsSeatField: boolean;
   users: User[];
   hasExtendedData: boolean;
+  modifiedFields?: {
+    checkin_info?: boolean;
+    seat?: boolean;
+    luggage?: boolean;
+    ticket_link?: boolean;
+    amount?: boolean;
+    paid_by_user_id?: boolean;
+    note?: boolean;
+  };
 }>();
 </script>
 
@@ -27,26 +36,42 @@ const props = defineProps<{
     <FormField
       :icon="props.extendedConfig.icons.checkin"
       :label="props.extendedConfig.labels.checkin"
+      :modified="props.modifiedFields?.checkin_info"
+      v-slot="{ modified }"
     >
       <Input
         v-model="checkinInfo"
         type="text"
         :placeholder="props.extendedConfig.placeholders.checkin"
+        :modified="modified"
       />
     </FormField>
 
     <div v-if="props.showsSeatField" class="row">
-      <FormField :icon="props.extendedConfig.icons.seat" :label="props.extendedConfig.labels.seat">
-        <Input v-model="seat" type="text" :placeholder="props.extendedConfig.placeholders.seat" />
+      <FormField
+        :icon="props.extendedConfig.icons.seat"
+        :label="props.extendedConfig.labels.seat"
+        :modified="props.modifiedFields?.seat"
+        v-slot="{ modified }"
+      >
+        <Input
+          v-model="seat"
+          type="text"
+          :placeholder="props.extendedConfig.placeholders.seat"
+          :modified="modified"
+        />
       </FormField>
       <FormField
         :icon="props.extendedConfig.icons.luggage"
         :label="props.extendedConfig.labels.luggage"
+        :modified="props.modifiedFields?.luggage"
+        v-slot="{ modified }"
       >
         <Input
           v-model="luggage"
           type="text"
           :placeholder="props.extendedConfig.placeholders.luggage"
+          :modified="modified"
         />
       </FormField>
     </div>
@@ -54,22 +79,28 @@ const props = defineProps<{
       v-else
       :icon="props.extendedConfig.icons.luggage"
       :label="props.extendedConfig.labels.luggage"
+      :modified="props.modifiedFields?.luggage"
+      v-slot="{ modified }"
     >
       <Input
         v-model="luggage"
         type="text"
         :placeholder="props.extendedConfig.placeholders.luggage"
+        :modified="modified"
       />
     </FormField>
 
     <FormField
       :icon="props.extendedConfig.icons.ticketLink"
       :label="props.extendedConfig.labels.ticketLink"
+      :modified="props.modifiedFields?.ticket_link"
+      v-slot="{ modified }"
     >
       <Input
         v-model="ticketLink"
         type="url"
         :placeholder="props.extendedConfig.placeholders.ticketLink"
+        :modified="modified"
       />
     </FormField>
 
@@ -77,6 +108,8 @@ const props = defineProps<{
       <FormField
         :icon="props.extendedConfig.icons.amount"
         :label="props.extendedConfig.labels.amount"
+        :modified="props.modifiedFields?.amount"
+        v-slot="{ modified }"
       >
         <Input
           v-model="amount"
@@ -84,10 +117,17 @@ const props = defineProps<{
           step="0.01"
           min="0"
           :placeholder="props.extendedConfig.placeholders.amount"
+          :modified="modified"
         />
       </FormField>
-      <FormField v-if="props.users.length > 1" icon="shared" label="Bezahlt von">
-        <Select v-model="paidByUserId">
+      <FormField
+        v-if="props.users.length > 1"
+        icon="shared"
+        label="Bezahlt von"
+        :modified="props.modifiedFields?.paid_by_user_id"
+        v-slot="{ modified }"
+      >
+        <Select v-model="paidByUserId" :modified="modified">
           <option value="">– wählen –</option>
           <option v-for="u in props.users" :key="u.id" :value="String(u.id)">
             {{ u.avatar }} {{ u.username }}
@@ -99,8 +139,18 @@ const props = defineProps<{
       Ohne Zahler:in wird der Betrag nicht in der Budgetplanung berücksichtigt.
     </p>
 
-    <FormField :icon="props.extendedConfig.icons.note" :label="props.extendedConfig.labels.note">
-      <Input v-model="note" type="text" :placeholder="props.extendedConfig.placeholders.note" />
+    <FormField
+      :icon="props.extendedConfig.icons.note"
+      :label="props.extendedConfig.labels.note"
+      :modified="props.modifiedFields?.note"
+      v-slot="{ modified }"
+    >
+      <Input
+        v-model="note"
+        type="text"
+        :placeholder="props.extendedConfig.placeholders.note"
+        :modified="modified"
+      />
     </FormField>
   </CollapsibleFieldset>
 </template>

@@ -37,6 +37,7 @@ const emptyForm = () => ({
 });
 
 const editForm = ref(emptyForm());
+const initialSnapshot = ref<ReturnType<typeof emptyForm> | null>(null);
 const editTitleTouched = ref(false);
 
 watch(
@@ -45,7 +46,7 @@ watch(
     editTitleTouched.value = false;
 
     if (newItem) {
-      editForm.value = {
+      const initial = {
         title: newItem.title,
         assigned_to_user_id:
           newItem.assigned_to_user_id != null ? String(newItem.assigned_to_user_id) : '',
@@ -54,9 +55,34 @@ watch(
         priority: newItem.priority,
         note: newItem.note ?? '',
       };
+      editForm.value = { ...initial };
+      initialSnapshot.value = initial;
+    } else {
+      initialSnapshot.value = null;
     }
   },
   { immediate: true }
+);
+
+const isTitleModified = computed(
+  () => initialSnapshot.value !== null && editForm.value.title !== initialSnapshot.value.title
+);
+const isAssignedModified = computed(
+  () =>
+    initialSnapshot.value !== null &&
+    String(editForm.value.assigned_to_user_id) !== String(initialSnapshot.value.assigned_to_user_id)
+);
+const isDueDateModified = computed(
+  () => initialSnapshot.value !== null && editForm.value.due_date !== initialSnapshot.value.due_date
+);
+const isPeriodModified = computed(
+  () => initialSnapshot.value !== null && editForm.value.period !== initialSnapshot.value.period
+);
+const isPriorityModified = computed(
+  () => initialSnapshot.value !== null && editForm.value.priority !== initialSnapshot.value.priority
+);
+const isNoteModified = computed(
+  () => initialSnapshot.value !== null && editForm.value.note !== initialSnapshot.value.note
 );
 
 const editDraft = useDraftAutosave(
@@ -140,12 +166,13 @@ function handleDelete() {
         label="Titel"
         required
         :invalid="editTitleTouched && !editForm.title.trim()"
+        :modified="isTitleModified"
         :error="
           editTitleTouched && !editForm.title.trim()
             ? 'Dieses Feld muss noch ausgefüllt werden.'
             : undefined
         "
-        v-slot="{ id, invalid }"
+        v-slot="{ id, invalid, modified }"
       >
         <Input
           :id="id"
@@ -154,12 +181,19 @@ function handleDelete() {
           placeholder="Titel"
           required
           :invalid="invalid"
+          :modified="modified"
           @blur="editTitleTouched = true"
         />
       </FormField>
 
-      <FormField v-if="users.length > 1" icon="person" label="Bearbeiter:in" v-slot="{ id }">
-        <Select :id="id" v-model="editForm.assigned_to_user_id">
+      <FormField
+        v-if="users.length > 1"
+        icon="person"
+        label="Bearbeiter:in"
+        :modified="isAssignedModified"
+        v-slot="{ id, modified }"
+      >
+        <Select :id="id" v-model="editForm.assigned_to_user_id" :modified="modified">
           <option value="">Nicht zugewiesen</option>
           <option v-for="u in users" :key="u.id" :value="String(u.id)">
             {{ u.avatar }} {{ u.username }}
@@ -167,12 +201,22 @@ function handleDelete() {
         </Select>
       </FormField>
 
-      <FormField icon="date" label="Fällig" v-slot="{ id }">
-        <Input :id="id" v-model="editForm.due_date" type="date" />
+      <FormField icon="date" label="Fällig" :modified="isDueDateModified" v-slot="{ id, modified }">
+        <Input :id="id" v-model="editForm.due_date" type="date" :modified="modified" />
       </FormField>
 
-      <FormField icon="period" label="Zeitraum" v-slot="{ id }">
-        <Select :id="id" v-model="editForm.period" :disabled="!!editForm.due_date">
+      <FormField
+        icon="period"
+        label="Zeitraum"
+        :modified="isPeriodModified"
+        v-slot="{ id, modified }"
+      >
+        <Select
+          :id="id"
+          v-model="editForm.period"
+          :disabled="!!editForm.due_date"
+          :modified="modified"
+        >
           <option value="">(Nach Datum / Ohne)</option>
           <option v-for="(label, key) in PERIOD_META" :key="key" :value="key">
             {{ label }}
@@ -180,16 +224,27 @@ function handleDelete() {
         </Select>
       </FormField>
 
-      <FormField icon="priority" label="Priorität" v-slot="{ id }">
-        <Select :id="id" v-model="editForm.priority">
+      <FormField
+        icon="priority"
+        label="Priorität"
+        :modified="isPriorityModified"
+        v-slot="{ id, modified }"
+      >
+        <Select :id="id" v-model="editForm.priority" :modified="modified">
           <option v-for="(meta, key) in PRIORITY_META" :key="key" :value="key">
             {{ meta.icon }} {{ meta.label }}
           </option>
         </Select>
       </FormField>
 
-      <FormField icon="note" label="Notiz" v-slot="{ id }">
-        <Input :id="id" v-model="editForm.note" type="text" placeholder="Notiz" />
+      <FormField icon="note" label="Notiz" :modified="isNoteModified" v-slot="{ id, modified }">
+        <Input
+          :id="id"
+          v-model="editForm.note"
+          type="text"
+          placeholder="Notiz"
+          :modified="modified"
+        />
       </FormField>
 
       <DraftStatusBar

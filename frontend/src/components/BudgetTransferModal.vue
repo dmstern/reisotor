@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { BudgetTransfer } from '../api/types';
 import type { SettlementSuggestion } from '../utils/budgetBalances';
 import Modal from './Modal.vue';
@@ -45,22 +45,64 @@ const modalTitle = computed(() =>
   isEdit.value ? 'Überweisung bearbeiten' : 'Überweisung eintragen'
 );
 
+const initialSnapshot = ref<{
+  from_user_id: string;
+  to_user_id: string;
+  amount: string;
+  date: string;
+  note: string;
+} | null>(null);
+
 watch(
   () => [props.modelValue, props.transfer, props.suggestion] as const,
   ([isOpen, transfer, sugg]) => {
     if (isOpen) {
       if (transfer) {
         initFromTransfer(transfer);
+        initialSnapshot.value = {
+          from_user_id: String(transferForm.value.from_user_id),
+          to_user_id: String(transferForm.value.to_user_id),
+          amount: String(transferForm.value.amount),
+          date: transferForm.value.date ?? '',
+          note: transferForm.value.note ?? '',
+        };
       } else if (sugg) {
         useSettlementSuggestion(sugg);
+        initialSnapshot.value = null;
       } else {
         closeTransferForm();
+        initialSnapshot.value = null;
       }
     } else {
       closeTransferForm();
+      initialSnapshot.value = null;
     }
   },
   { immediate: true }
+);
+
+const isFromModified = computed(
+  () =>
+    initialSnapshot.value !== null &&
+    String(transferForm.value.from_user_id) !== initialSnapshot.value.from_user_id
+);
+const isToModified = computed(
+  () =>
+    initialSnapshot.value !== null &&
+    String(transferForm.value.to_user_id) !== initialSnapshot.value.to_user_id
+);
+const isAmountModified = computed(
+  () =>
+    initialSnapshot.value !== null &&
+    String(transferForm.value.amount) !== initialSnapshot.value.amount
+);
+const isDateModified = computed(
+  () =>
+    initialSnapshot.value !== null && (transferForm.value.date ?? '') !== initialSnapshot.value.date
+);
+const isNoteModified = computed(
+  () =>
+    initialSnapshot.value !== null && (transferForm.value.note ?? '') !== initialSnapshot.value.note
 );
 
 function handleClose() {
@@ -112,8 +154,14 @@ async function handleDelete() {
   >
     <form class="edit-form add-form" @submit.prevent="handleSubmit">
       <div class="row">
-        <FormField icon="person" label="Von" required v-slot="{ id }">
-          <Select :id="id" v-model="transferForm.from_user_id" required>
+        <FormField
+          icon="person"
+          label="Von"
+          required
+          :modified="isFromModified"
+          v-slot="{ id, modified }"
+        >
+          <Select :id="id" v-model="transferForm.from_user_id" required :modified="modified">
             <option value="" disabled>Von…</option>
             <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
               {{ u.avatar }} {{ u.username }}
@@ -124,6 +172,7 @@ async function handleDelete() {
           icon="person"
           label="An"
           required
+          :modified="isToModified"
           :error="
             transferForm.from_user_id &&
             transferForm.to_user_id &&
@@ -131,9 +180,9 @@ async function handleDelete() {
               ? 'Sender und Empfänger dürfen nicht identisch sein.'
               : undefined
           "
-          v-slot="{ id }"
+          v-slot="{ id, modified }"
         >
-          <Select :id="id" v-model="transferForm.to_user_id" required>
+          <Select :id="id" v-model="transferForm.to_user_id" required :modified="modified">
             <option value="" disabled>An…</option>
             <option v-for="u in budgetStore.users" :key="u.id" :value="String(u.id)">
               {{ u.avatar }} {{ u.username }}
@@ -143,7 +192,13 @@ async function handleDelete() {
       </div>
 
       <div class="row">
-        <FormField icon="amount" label="Betrag" required v-slot="{ id }">
+        <FormField
+          icon="amount"
+          label="Betrag"
+          required
+          :modified="isAmountModified"
+          v-slot="{ id, modified }"
+        >
           <Input
             :id="id"
             v-model="transferForm.amount"
@@ -152,10 +207,11 @@ async function handleDelete() {
             step="0.01"
             placeholder="Betrag €"
             required
+            :modified="modified"
           />
         </FormField>
-        <FormField icon="date" label="Datum" v-slot="{ id }">
-          <Input :id="id" v-model="transferForm.date" type="date" />
+        <FormField icon="date" label="Datum" :modified="isDateModified" v-slot="{ id, modified }">
+          <Input :id="id" v-model="transferForm.date" type="date" :modified="modified" />
         </FormField>
       </div>
 
@@ -166,8 +222,14 @@ async function handleDelete() {
         :icon="FORM_FIELD_ICONS.note"
         icon-group="formFields"
       >
-        <FormField icon="note" label="Notiz" v-slot="{ id }">
-          <Input :id="id" v-model="transferForm.note" type="text" placeholder="Notiz" />
+        <FormField icon="note" label="Notiz" :modified="isNoteModified" v-slot="{ id, modified }">
+          <Input
+            :id="id"
+            v-model="transferForm.note"
+            type="text"
+            placeholder="Notiz"
+            :modified="modified"
+          />
         </FormField>
       </CollapsibleFieldset>
 

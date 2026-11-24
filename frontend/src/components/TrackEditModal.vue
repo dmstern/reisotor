@@ -323,7 +323,7 @@ async function deleteEditingTrack() {
           <Input v-model="editTrackStartedAt" type="datetime-local" required :modified="modified" />
         </FormField>
         <FormField icon="tour" label="Zugeordnete Tour" :modified="isEditTrackTourModified">
-          <div class="track-tour-assign-field">
+          <div class="track-tour-assign-field" :class="{ 'is-modified': isEditTrackTourModified }">
             <TourAssignDropdown
               :tours="trackTourAssignments"
               @toggle-tour="onToggleTrackTour"
@@ -379,7 +379,7 @@ async function deleteEditingTrack() {
   />
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .edit-form {
   display: flex;
   flex-direction: column;
@@ -468,6 +468,12 @@ async function deleteEditingTrack() {
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-2);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+}
+
+.track-tour-assign-field.is-modified :deep(.dropdown-trigger) {
+  @include control-modified-outline;
 }
 
 .track-title-field {

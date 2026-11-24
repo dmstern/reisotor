@@ -224,8 +224,14 @@ defineExpose({
           @blur="excursionTitleTouched = true"
         />
       </FormField>
-      <FormField icon="note" label="Notiz" :modified="isEditTourNoteModified">
-        <RichTextEditor v-model="activeExcursionForm.note" placeholder="Notiz" compact expandable />
+      <FormField icon="note" label="Notiz" :modified="isEditTourNoteModified" v-slot="{ modified }">
+        <RichTextEditor
+          v-model="activeExcursionForm.note"
+          placeholder="Notiz"
+          compact
+          expandable
+          :modified="modified"
+        />
       </FormField>
       <FormField
         icon="tour"
@@ -494,7 +500,7 @@ defineExpose({
 }
 
 .tour-done-field.is-modified {
-  border-color: var(--color-success);
+  @include control-modified-outline;
 }
 
 .tour-done-field.is-modified .tour-done-label {

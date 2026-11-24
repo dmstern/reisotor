@@ -496,7 +496,7 @@ function handleModalClose(visible: boolean) {
       </div>
 
       <template v-else>
-        <Badge v-if="isModified" variant="accent" size="sm" class="banner-badge-modified">
+        <Badge v-if="isModified" variant="success" size="sm" class="banner-badge-modified">
           <AppIcon :icon="ACTION_ICONS.done" :size="12" group="actions" />
           Bild geändert
         </Badge>
@@ -555,7 +555,7 @@ function handleModalClose(visible: boolean) {
             class="dialog-preview-img"
             referrerpolicy="no-referrer"
           />
-          <Badge v-if="isModified" variant="accent" size="sm" class="dialog-preview-badge">
+          <Badge v-if="isModified" variant="success" size="sm" class="dialog-preview-badge">
             <AppIcon :icon="ACTION_ICONS.done" :size="12" group="actions" />
             Bild geändert
           </Badge>
@@ -710,8 +710,9 @@ function handleModalClose(visible: boolean) {
 }
 
 .form-image-banner.is-modified {
-  border-color: var(--color-success) !important;
-  box-shadow: 0 0 0 1px var(--color-success);
+  border-color: transparent !important;
+  outline: var(--focus-ring-width, 3px) solid var(--color-success);
+  outline-offset: 0;
 }
 
 .form-image-banner--polaroid {

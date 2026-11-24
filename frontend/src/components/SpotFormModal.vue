@@ -489,8 +489,14 @@ function handleOpenScheduledDate(date: string) {
         />
       </FormField>
 
-      <FormField icon="note" label="Notiz" :modified="isEditSpotNoteModified">
-        <RichTextEditor v-model="activeSpotForm.note" placeholder="Notiz" compact expandable />
+      <FormField icon="note" label="Notiz" :modified="isEditSpotNoteModified" v-slot="{ modified }">
+        <RichTextEditor
+          v-model="activeSpotForm.note"
+          placeholder="Notiz"
+          compact
+          expandable
+          :modified="modified"
+        />
       </FormField>
 
       <!-- Kombiniertes "Einplanen"-Fieldset: Touren zuordnen + Datum einplanen in einem Bereich -->
@@ -800,6 +806,10 @@ function handleOpenScheduledDate(date: string) {
 .spot-region-icon {
   color: var(--color-primary);
   flex-shrink: 0;
+}
+
+.spot-region-field.is-modified {
+  @include control-modified-outline;
 }
 
 .spot-region-field.is-modified .spot-region-label {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch } from 'vue';
+import { computed, watch } from 'vue';
 import type { DiaryEntry, DiaryImage } from '../api/types';
 import { useAuthStore } from '../stores/auth';
 import { useDiaryEditForm } from '../composables/useDiaryEditForm';
@@ -130,6 +130,30 @@ function handleUploadClick() {
 
   editFileInputRef.value?.click();
 }
+
+const isEditMode = computed(() => editingEntry.value !== null && !editingEntry.value.is_draft);
+const isDateModified = computed(() => {
+  if (!isEditMode.value || !editingEntry.value) {
+    return false;
+  }
+
+  const initialDate = editingEntry.value.date ?? editingEntry.value.created_at?.slice(0, 10) ?? '';
+  return editForm.value.date !== initialDate;
+});
+const isTitleModified = computed(() => {
+  if (!isEditMode.value || !editingEntry.value) {
+    return false;
+  }
+
+  return editForm.value.title !== (editingEntry.value.title ?? '');
+});
+const isContentModified = computed(() => {
+  if (!isEditMode.value || !editingEntry.value) {
+    return false;
+  }
+
+  return editForm.value.content !== editingEntry.value.content;
+});
 </script>
 
 <template>
@@ -147,8 +171,9 @@ function handleUploadClick() {
         label="Datum"
         required
         :invalid="showDateError"
+        :modified="isDateModified"
         :error="showDateError ? 'Dieses Feld muss noch ausgefüllt werden.' : undefined"
-        v-slot="{ id, invalid }"
+        v-slot="{ id, invalid, modified }"
       >
         <Input
           :id="id"
@@ -156,12 +181,19 @@ function handleUploadClick() {
           type="date"
           required
           :invalid="invalid"
+          :modified="modified"
           @blur="dateTouched = true"
         />
       </FormField>
 
-      <FormField icon="title" label="Titel" v-slot="{ id }">
-        <Input :id="id" v-model="editForm.title" type="text" placeholder="Titel" />
+      <FormField icon="title" label="Titel" :modified="isTitleModified" v-slot="{ id, modified }">
+        <Input
+          :id="id"
+          v-model="editForm.title"
+          type="text"
+          placeholder="Titel"
+          :modified="modified"
+        />
       </FormField>
 
       <FormField
@@ -169,14 +201,16 @@ function handleUploadClick() {
         label="Eintrag"
         required
         :invalid="showContentError"
+        :modified="isContentModified"
         :error="showContentError ? 'Dieses Feld muss noch ausgefüllt werden.' : undefined"
-        v-slot="{ invalid }"
+        v-slot="{ invalid, modified }"
       >
         <RichTextEditor
           ref="editorRef"
           class="diary-editor"
           v-model="editForm.content"
           :invalid="invalid"
+          :modified="modified"
           @blur="contentTouched = true"
         />
       </FormField>

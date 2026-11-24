@@ -70,7 +70,7 @@ const id = computed(() => props.id || autoId);
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .form-field {
   display: flex;
   flex-direction: column;
@@ -143,11 +143,15 @@ const id = computed(() => props.id || autoId);
 .form-field.is-modified :deep(.input:not(:focus):not(:focus-visible)),
 .form-field.is-modified :deep(.select:not(:focus):not(:focus-visible)),
 .form-field.is-modified :deep(.textarea:not(:focus):not(:focus-visible)),
+.form-field.is-modified :deep(.richtext-editor:not(:focus-within):not(.is-focused)),
+.form-field.is-modified :deep(.collapsed-trigger:not(:focus):not(:focus-visible)),
+.form-field.is-modified :deep(.segmented-toggle:not(:focus-within)),
 .form-field.is-modified
   :deep(input:not([type='checkbox']):not([type='radio']):not(:focus):not(:focus-visible)),
 .form-field.is-modified :deep(select:not(:focus):not(:focus-visible)),
 .form-field.is-modified :deep(textarea:not(:focus):not(:focus-visible)) {
-  border-color: var(--color-success) !important;
-  box-shadow: 0 0 0 1px var(--color-success);
+  border-color: transparent !important;
+  outline: var(--focus-ring-width, 3px) solid var(--color-success);
+  outline-offset: 0;
 }
 </style>

@@ -282,6 +282,19 @@ function startEdit(note: Note) {
   editingNote.value = note;
 }
 
+const isNoteTitleModified = computed(
+  () =>
+    editingNote.value !== null &&
+    !editingNote.value.is_draft &&
+    editForm.value.title !== (editingNote.value.title ?? '')
+);
+const isNoteContentModified = computed(
+  () =>
+    editingNote.value !== null &&
+    !editingNote.value.is_draft &&
+    editForm.value.content !== editingNote.value.content
+);
+
 // Explizites "Speichern"/"Veröffentlichen" macht aus einem Entwurf immer eine veröffentlichte Notiz
 // (is_draft:false) - für bereits veröffentlichte Notizen ist das ein No-op, da dort schon 0.
 async function submitEdit() {
@@ -463,21 +476,34 @@ async function remove(id: number) {
       @update:model-value="(v) => !v && closeEditForm()"
     >
       <form class="add-form" @submit.prevent="submitEdit">
-        <FormField icon="title" label="Titel" v-slot="{ id }">
-          <Input :id="id" v-model="editForm.title" type="text" placeholder="Titel" />
+        <FormField
+          icon="title"
+          label="Titel"
+          :modified="isNoteTitleModified"
+          v-slot="{ id, modified }"
+        >
+          <Input
+            :id="id"
+            v-model="editForm.title"
+            type="text"
+            placeholder="Titel"
+            :modified="modified"
+          />
         </FormField>
         <FormField
           icon="note"
           label="Inhalt"
           required
           :invalid="showContentError"
+          :modified="isNoteContentModified"
           :error="showContentError ? 'Dieses Feld muss noch ausgefüllt werden.' : undefined"
-          v-slot="{ invalid }"
+          v-slot="{ invalid, modified }"
         >
           <RichTextEditor
             ref="editorRef"
             v-model="editForm.content"
             :invalid="invalid"
+            :modified="modified"
             @blur="noteContentTouched = true"
           />
         </FormField>

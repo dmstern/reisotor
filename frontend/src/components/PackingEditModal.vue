@@ -45,20 +45,46 @@ const editForm = ref<PackingEditFormInput>({
   ownerId: 'shared',
 });
 
+const initialSnapshot = ref<PackingEditFormInput | null>(null);
+
 watch(
   () => props.item,
   (newItem) => {
     if (newItem) {
-      editForm.value = {
+      const initial: PackingEditFormInput = {
         label: newItem.label,
         category: newItem.category ?? (props.categoryRequired ? 'Sonstiges' : ''),
         subcategory: newItem.subcategory ?? '',
         quantity: newItem.quantity,
         ownerId: newItem.owner_id == null ? 'shared' : String(newItem.owner_id),
       };
+      editForm.value = { ...initial };
+      initialSnapshot.value = initial;
+    } else {
+      initialSnapshot.value = null;
     }
   },
   { immediate: true }
+);
+
+const isLabelModified = computed(
+  () => initialSnapshot.value !== null && editForm.value.label !== initialSnapshot.value.label
+);
+const isCategoryModified = computed(
+  () => initialSnapshot.value !== null && editForm.value.category !== initialSnapshot.value.category
+);
+const isSubcategoryModified = computed(
+  () =>
+    initialSnapshot.value !== null &&
+    editForm.value.subcategory !== initialSnapshot.value.subcategory
+);
+const isQuantityModified = computed(
+  () =>
+    initialSnapshot.value !== null &&
+    Number(editForm.value.quantity) !== Number(initialSnapshot.value.quantity)
+);
+const isOwnerModified = computed(
+  () => initialSnapshot.value !== null && editForm.value.ownerId !== initialSnapshot.value.ownerId
 );
 
 const editDraft = useDraftAutosave(
@@ -133,34 +159,61 @@ function handleDelete() {
     @update:model-value="(v) => !v && handleClose()"
   >
     <form class="edit-form" @submit.prevent="handleSubmit">
-      <FormField icon="title" label="Gegenstand" required v-slot="{ id }">
-        <Input :id="id" v-model="editForm.label" type="text" placeholder="Gegenstand" required />
+      <FormField
+        icon="title"
+        label="Gegenstand"
+        required
+        :modified="isLabelModified"
+        v-slot="{ id, modified }"
+      >
+        <Input
+          :id="id"
+          v-model="editForm.label"
+          type="text"
+          placeholder="Gegenstand"
+          required
+          :modified="modified"
+        />
       </FormField>
 
       <FormField
         icon="category"
         label="Kategorie"
         :required="Boolean(categoryRequired)"
-        v-slot="{ id }"
+        :modified="isCategoryModified"
+        v-slot="{ id, modified }"
       >
         <Combobox
           :id="id"
           v-model="editForm.category"
           :options="categories"
           placeholder="Kategorie"
+          :modified="modified"
         />
       </FormField>
 
-      <FormField icon="category" label="Unterkategorie" v-slot="{ id }">
+      <FormField
+        icon="category"
+        label="Unterkategorie"
+        :modified="isSubcategoryModified"
+        v-slot="{ id, modified }"
+      >
         <Combobox
           :id="id"
           v-model="editForm.subcategory"
           :options="subcategories"
           placeholder="Unterkategorie (z. B. Outfit Tag 1)"
+          :modified="modified"
         />
       </FormField>
 
-      <FormField icon="amount" label="Anzahl" required v-slot="{ id }">
+      <FormField
+        icon="amount"
+        label="Anzahl"
+        required
+        :modified="isQuantityModified"
+        v-slot="{ id, modified }"
+      >
         <Input
           :id="id"
           v-model.number="editForm.quantity"
@@ -168,11 +221,18 @@ function handleDelete() {
           inputmode="numeric"
           min="1"
           step="1"
+          :modified="modified"
         />
       </FormField>
 
-      <FormField v-if="users.length > 1" icon="person" label="Liste" v-slot="{ id }">
-        <Select :id="id" v-model="editForm.ownerId">
+      <FormField
+        v-if="users.length > 1"
+        icon="person"
+        label="Liste"
+        :modified="isOwnerModified"
+        v-slot="{ id, modified }"
+      >
+        <Select :id="id" v-model="editForm.ownerId" :modified="modified">
           <option value="shared">🤝 Gemeinsam</option>
           <option
             v-if="

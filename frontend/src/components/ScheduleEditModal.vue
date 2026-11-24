@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { ScheduleItem } from '../api/types';
-import type { useScheduleItemForm } from '../composables/useScheduleItemForm';
+import { linkKeyFor, type useScheduleItemForm } from '../composables/useScheduleItemForm';
 import Modal from './Modal.vue';
 import FormField from './FormField.vue';
 import Input from './primitives/Input.vue';
@@ -34,6 +35,31 @@ const {
   discardEditDraft,
   deleteEditingItem,
 } = props.form;
+
+const isTitleModified = computed(
+  () => props.item !== null && editForm.value.title !== props.item.title
+);
+const isTimeModified = computed(
+  () => props.item !== null && editForm.value.time !== (props.item.time ?? '')
+);
+const isEndDateModified = computed(
+  () => props.item !== null && editForm.value.endDate !== (props.item.end_date ?? '')
+);
+const isEndTimeModified = computed(
+  () => props.item !== null && editForm.value.endTime !== (props.item.end_time ?? '')
+);
+const isLinkKeyModified = computed(
+  () => props.item !== null && editForm.value.linkKey !== linkKeyFor(props.item)
+);
+const isLocationModified = computed(
+  () => props.item !== null && editForm.value.location !== (props.item.location ?? '')
+);
+const isMapsLinkModified = computed(
+  () => props.item !== null && editForm.value.mapsLink !== (props.item.maps_link ?? '')
+);
+const isNoteModified = computed(
+  () => props.item !== null && editForm.value.note !== (props.item.note ?? '')
+);
 </script>
 
 <template>
@@ -51,8 +77,9 @@ const {
         label="Titel"
         required
         :invalid="showEditTitleError"
+        :modified="isTitleModified"
         :error="showEditTitleError ? 'Dieses Feld muss noch ausgefüllt werden.' : undefined"
-        v-slot="{ id, invalid }"
+        v-slot="{ id, invalid, modified }"
       >
         <Input
           :id="id"
@@ -61,6 +88,7 @@ const {
           placeholder="Titel"
           required
           :invalid="invalid"
+          :modified="modified"
           @blur="editTitleTouched = true"
         />
       </FormField>
@@ -69,17 +97,38 @@ const {
         <FormField icon="date" label="Startdatum" required v-slot="{ id }">
           <Input :id="id" :model-value="item?.date" type="date" disabled readonly />
         </FormField>
-        <FormField icon="time" label="Startzeit" v-slot="{ id }">
-          <Input :id="id" v-model="editForm.time" type="time" />
+        <FormField
+          icon="time"
+          label="Startzeit"
+          :modified="isTimeModified"
+          v-slot="{ id, modified }"
+        >
+          <Input :id="id" v-model="editForm.time" type="time" :modified="modified" />
         </FormField>
       </div>
 
       <div class="row">
-        <FormField icon="date" label="Enddatum" v-slot="{ id }">
-          <Input :id="id" v-model="editForm.endDate" type="date" :min="item?.date" />
+        <FormField
+          icon="date"
+          label="Enddatum"
+          :modified="isEndDateModified"
+          v-slot="{ id, modified }"
+        >
+          <Input
+            :id="id"
+            v-model="editForm.endDate"
+            type="date"
+            :min="item?.date"
+            :modified="modified"
+          />
         </FormField>
-        <FormField icon="time" label="Enduhrzeit" v-slot="{ id }">
-          <Input :id="id" v-model="editForm.endTime" type="time" />
+        <FormField
+          icon="time"
+          label="Enduhrzeit"
+          :modified="isEndTimeModified"
+          v-slot="{ id, modified }"
+        >
+          <Input :id="id" v-model="editForm.endTime" type="time" :modified="modified" />
         </FormField>
       </div>
 
@@ -88,10 +137,21 @@ const {
         v-model:location="editForm.location"
         v-model:maps-link="editForm.mapsLink"
         v-model:expanded="showEditLocationSection"
+        :modified-fields="{
+          linkKey: isLinkKeyModified,
+          location: isLocationModified,
+          mapsLink: isMapsLinkModified,
+        }"
       />
 
-      <FormField icon="note" label="Notiz">
-        <RichTextEditor v-model="editForm.note" placeholder="Notiz" compact expandable />
+      <FormField icon="note" label="Notiz" :modified="isNoteModified" v-slot="{ modified }">
+        <RichTextEditor
+          v-model="editForm.note"
+          placeholder="Notiz"
+          compact
+          expandable
+          :modified="modified"
+        />
       </FormField>
 
       <FileAttachments

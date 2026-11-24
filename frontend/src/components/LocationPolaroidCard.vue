@@ -503,11 +503,12 @@ defineExpose({
 }
 
 .polaroid-card.is-modified {
-  border-color: var(--color-success);
+  border-color: transparent;
+  outline: var(--focus-ring-width, 3px) solid var(--color-success);
+  outline-offset: 0;
   box-shadow:
     inset 0 1px 0 var(--shadow-control-highlight),
-    var(--shadow-md),
-    0 0 0 1px var(--color-success);
+    var(--shadow-md);
 }
 
 .polaroid-header-actions {
@@ -820,9 +821,7 @@ defineExpose({
   }
 
   .polaroid-card.is-modified {
-    box-shadow:
-      inset 0 1px 0 var(--shadow-control-highlight),
-      0 0 0 1px var(--color-success);
+    box-shadow: inset 0 1px 0 var(--shadow-control-highlight);
   }
 
   .polaroid-media :deep(.form-image-banner--polaroid) {

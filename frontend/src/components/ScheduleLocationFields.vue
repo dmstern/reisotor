@@ -13,6 +13,14 @@ const location = defineModel<string>('location', { default: '' });
 const mapsLink = defineModel<string>('mapsLink', { default: '' });
 const expanded = defineModel<boolean>('expanded', { default: false });
 
+defineProps<{
+  modifiedFields?: {
+    linkKey?: boolean;
+    location?: boolean;
+    mapsLink?: boolean;
+  };
+}>();
+
 const spotsStore = useSpotsStore();
 const placeNames = computed(() => spotsStore.spots.map((spot) => spot.title));
 </script>
@@ -24,19 +32,48 @@ const placeNames = computed(() => spotsStore.spots.map((spot) => spot.title));
     :icon="FORM_FIELD_ICONS.location"
     icon-group="formFields"
   >
-    <FormField icon="location" label="Ort aus Spots (optional)" v-slot="{ id }">
-      <Select :id="id" v-model="linkKey">
+    <FormField
+      icon="location"
+      label="Ort aus Spots (optional)"
+      :modified="modifiedFields?.linkKey"
+      v-slot="{ id, modified }"
+    >
+      <Select :id="id" v-model="linkKey" :modified="modified">
         <option value="">Keinen Spot als Ort wählen</option>
         <option v-for="s in spotsStore.spots" :key="`spot:${s.id}`" :value="`spot:${s.id}`">
           {{ s.title }}
         </option>
       </Select>
     </FormField>
-    <FormField v-if="!linkKey" icon="location" label="Ort (Freitext)" v-slot="{ id }">
-      <Combobox :id="id" v-model="location" :options="placeNames" placeholder="Ort" />
+    <FormField
+      v-if="!linkKey"
+      icon="location"
+      label="Ort (Freitext)"
+      :modified="modifiedFields?.location"
+      v-slot="{ id, modified }"
+    >
+      <Combobox
+        :id="id"
+        v-model="location"
+        :options="placeNames"
+        placeholder="Ort"
+        :modified="modified"
+      />
     </FormField>
-    <FormField v-if="!linkKey" icon="maps" label="Maps-Link" v-slot="{ id }">
-      <Input :id="id" v-model="mapsLink" type="url" placeholder="Maps-Link (Google/Apple)" />
+    <FormField
+      v-if="!linkKey"
+      icon="maps"
+      label="Maps-Link"
+      :modified="modifiedFields?.mapsLink"
+      v-slot="{ id, modified }"
+    >
+      <Input
+        :id="id"
+        v-model="mapsLink"
+        type="url"
+        placeholder="Maps-Link (Google/Apple)"
+        :modified="modified"
+      />
     </FormField>
   </CollapsibleFieldset>
 </template>

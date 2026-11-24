@@ -7,6 +7,14 @@
 
 @use 'touch' as *;
 
+/// Einheitlicher Dirty-/Modified-Indikator (Issue #875):
+/// 3px grüne Outline im Ruhezustand (ohne Layout-Shift und ohne doppelten Rand).
+@mixin control-modified-outline {
+  border-color: transparent;
+  outline: var(--focus-ring-width, 3px) solid var(--color-success);
+  outline-offset: 0;
+}
+
 /// Kapselt das Aussehen und Interaktionsverhalten versenkter Eingabefelder
 /// (Input, Textarea, RichTextEditor, QuickAddRow).
 ///
@@ -56,22 +64,19 @@
 
     &--modified,
     &.is-modified {
-      border-color: var(--color-success);
-      box-shadow:
-        0 0 0 1px var(--color-success),
-        var(--shadow-control-inset);
+      @include control-modified-outline;
+      box-shadow: var(--shadow-control-inset);
 
       &:hover:not(:disabled):not(:focus-within):not(.is-focused) {
-        border-color: var(--color-success);
-        box-shadow:
-          0 0 0 1px var(--color-success),
-          var(--shadow-control-inset-hover);
+        @include control-modified-outline;
+        box-shadow: var(--shadow-control-inset-hover);
       }
 
       &:focus-within,
       &.is-focused {
         border-color: var(--input-border-color) !important;
         outline: var(--focus-ring-width, 3px) solid var(--color-success);
+        outline-offset: var(--focus-ring-offset, 2px);
         outline-color: var(--color-success);
         box-shadow:
           var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
@@ -111,16 +116,12 @@
 
     &--modified,
     &.is-modified {
-      border-color: var(--color-success);
-      box-shadow:
-        0 0 0 1px var(--color-success),
-        var(--shadow-control-inset);
+      @include control-modified-outline;
+      box-shadow: var(--shadow-control-inset);
 
       &:hover:not(:disabled):not(:focus):not(:focus-visible) {
-        border-color: var(--color-success);
-        box-shadow:
-          0 0 0 1px var(--color-success),
-          var(--shadow-control-inset-hover);
+        @include control-modified-outline;
+        box-shadow: var(--shadow-control-inset-hover);
       }
 
       &:focus,
@@ -128,6 +129,7 @@
       &:active:not(:disabled) {
         border-color: var(--input-border-color) !important;
         outline: var(--focus-ring-width, 3px) solid var(--color-success);
+        outline-offset: var(--focus-ring-offset, 2px);
         outline-color: var(--color-success);
         box-shadow:
           var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control-inset);
@@ -373,17 +375,13 @@
 
   &--modified,
   &.is-modified {
-    border-color: var(--color-success);
-    box-shadow:
-      0 0 0 1px var(--color-success),
-      var(--shadow-control);
+    @include control-modified-outline;
+    box-shadow: var(--shadow-control);
 
     @include can-hover {
       &:hover:not(:disabled):not(:focus):not(:focus-visible) {
-        border-color: var(--color-success);
-        box-shadow:
-          0 0 0 1px var(--color-success),
-          var(--shadow-control-hover);
+        @include control-modified-outline;
+        box-shadow: var(--shadow-control-hover);
         --control-grad-top: var(--gradient-control-top);
         --control-grad-bottom: var(--gradient-control-bottom);
       }
@@ -394,6 +392,7 @@
     #{$active-selector} {
       border-color: var(--input-border-color) !important;
       outline: var(--focus-ring-width, 3px) solid var(--color-success);
+      outline-offset: var(--focus-ring-offset, 2px);
       outline-color: var(--color-success);
       box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface)), var(--shadow-control);
     }

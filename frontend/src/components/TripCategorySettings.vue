@@ -112,6 +112,20 @@ const afterCategoryMeta = computed(() => {
   };
 });
 
+const editModifiedFields = computed(() => {
+  if (!editingCategory.value || !beforeCategoryMeta.value) {
+    return undefined;
+  }
+
+  return {
+    name: editForm.value.name !== editingCategory.value.name,
+    icon:
+      editForm.value.icon !== beforeCategoryMeta.value.tabler.id ||
+      editForm.value.emoji !== beforeCategoryMeta.value.icon,
+    color: editForm.value.color !== beforeCategoryMeta.value.color,
+  };
+});
+
 const categoryListRef = ref<HTMLElement | null>(null);
 const { canScrollUp, canScrollDown, updateScrollFade } = useScrollFade(categoryListRef);
 
@@ -227,6 +241,7 @@ watch([() => filteredCategories.value.length, activeType], () => {
           :active-type="activeType"
           :input-name-id="editNameId"
           :show-preview="false"
+          :modified-fields="editModifiedFields"
           @open-icon-picker="openIconPicker('edit')"
           @submit="saveEdit"
         />

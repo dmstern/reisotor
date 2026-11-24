@@ -292,9 +292,10 @@ function onSubmit() {
         :search-context="{ name: form.destination || form.name }"
       />
 
-      <label :for="nameId">
+      <label :for="nameId" :class="{ 'is-modified': isNameModified }">
         <span class="label-text">
           Name des Urlaubs <span class="required-indicator" aria-hidden="true">*</span>
+          <span v-if="isNameModified" class="modified-dot" title="Geändert" aria-label="Geändert" />
         </span>
         <Input
           :id="nameId"
@@ -307,8 +308,16 @@ function onSubmit() {
       </label>
 
       <div class="dates-row">
-        <label :for="startDateId">
-          Start
+        <label :for="startDateId" :class="{ 'is-modified': isStartDateModified }">
+          <span class="label-text">
+            Start
+            <span
+              v-if="isStartDateModified"
+              class="modified-dot"
+              title="Geändert"
+              aria-label="Geändert"
+            />
+          </span>
           <Input
             :id="startDateId"
             v-model="form.start_date"
@@ -316,8 +325,16 @@ function onSubmit() {
             :modified="isStartDateModified"
           />
         </label>
-        <label :for="endDateId">
-          Ende
+        <label :for="endDateId" :class="{ 'is-modified': isEndDateModified }">
+          <span class="label-text">
+            Ende
+            <span
+              v-if="isEndDateModified"
+              class="modified-dot"
+              title="Geändert"
+              aria-label="Geändert"
+            />
+          </span>
           <Input
             :id="endDateId"
             v-model="form.end_date"
@@ -332,7 +349,15 @@ function onSubmit() {
       </p>
 
       <Card class="location-box" :class="{ 'is-modified': isLocationModified }">
-        <span class="field-label">Ziel &amp; Standort</span>
+        <span class="field-label">
+          Ziel &amp; Standort
+          <span
+            v-if="isLocationModified"
+            class="modified-dot"
+            title="Geändert"
+            aria-label="Geändert"
+          />
+        </span>
         <p class="hint">Wird für die Wetter-Anzeige und die Position auf der Karte verwendet.</p>
         <p v-if="locationError" class="hint error">
           <AppIcon :icon="ACTION_ICONS.mapPinExclamation" :size="14" group="actions" /> Der Standort
@@ -375,8 +400,20 @@ function onSubmit() {
           Urlaubsregion (z. B. ECMWF für Europa, ICON für Deutschland &amp; Alpen, GFS für die USA
           oder JMA für Japan).
         </p>
-        <label for="trip-weather-model" class="field-group">
-          Wettermodell
+        <label
+          for="trip-weather-model"
+          class="field-group"
+          :class="{ 'is-modified': isWeatherModelModified }"
+        >
+          <span class="label-text">
+            Wettermodell
+            <span
+              v-if="isWeatherModelModified"
+              class="modified-dot"
+              title="Geändert"
+              aria-label="Geändert"
+            />
+          </span>
           <Select
             id="trip-weather-model"
             v-model="form.weather_model"
@@ -499,6 +536,22 @@ label,
   gap: var(--space-2xs);
 }
 
+label.is-modified,
+label.is-modified .label-text,
+.location-box.is-modified .field-label {
+  color: var(--color-success-dark, var(--color-success));
+}
+
+.modified-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-success);
+  margin-left: var(--space-1);
+  flex-shrink: 0;
+}
+
 .hint {
   margin: calc(-1 * var(--space-xs)) 0 0;
   font-size: var(--font-size-sm);
@@ -552,11 +605,15 @@ label,
 }
 
 .location-box.is-modified {
-  border-color: var(--color-success) !important;
-  box-shadow: 0 0 0 1px var(--color-success);
+  border-color: transparent !important;
+  outline: var(--focus-ring-width, 3px) solid var(--color-success);
+  outline-offset: 0;
 }
 
 .location-box .field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text);
