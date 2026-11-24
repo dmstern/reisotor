@@ -319,6 +319,7 @@ function handleClick(event: MouseEvent) {
 .dropdown-item-trailing {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-1-5);
   flex-shrink: 0;
   max-width: 100%;
@@ -329,6 +330,11 @@ function handleClick(event: MouseEvent) {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--space-2xs);
+  }
+
+  .dropdown-item-main {
+    flex: none;
+    width: 100%;
   }
 }
 

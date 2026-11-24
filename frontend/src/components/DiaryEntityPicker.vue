@@ -151,7 +151,7 @@ function toggleId(list: number[], id: number, checked: boolean): number[] {
           class="excursion-option"
           @update:checked="excursionIds = toggleId(excursionIds, ex.id, $event)"
         >
-          <template #trailing>
+          <template v-if="ex.date === date || links.excursionDateMismatch(ex, date)" #trailing>
             <Badge
               v-if="ex.date === date"
               variant="primary"
@@ -199,7 +199,10 @@ function toggleId(list: number[], id: number, checked: boolean): number[] {
           class="excursion-option spot-option-item spot-option-btn"
           @update:checked="spotIds = toggleId(spotIds, spot.id, $event)"
         >
-          <template #trailing>
+          <template
+            v-if="links.spotAlreadyPlanned(spot.id, date) || links.spotDateMismatch(spot.id, date)"
+            #trailing
+          >
             <Badge
               v-if="links.spotAlreadyPlanned(spot.id, date)"
               variant="primary"
