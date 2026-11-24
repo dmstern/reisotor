@@ -77,6 +77,13 @@ describe('ExcursionCard', () => {
     expect(html).toContain('card-title-row');
     expect(html).toContain('tour-type-badge');
     expect(html).not.toContain('is-translucent');
+
+    const titleRowIdx = html.indexOf('card-title-row');
+    const badgeIdx = html.indexOf('tour-type-badge');
+    const chevronIdx = html.indexOf('tour-detail-chevron');
+    expect(titleRowIdx).toBeGreaterThan(-1);
+    expect(badgeIdx).toBeGreaterThan(titleRowIdx);
+    expect(chevronIdx).toBeGreaterThan(badgeIdx);
     expect(html).toContain('Parkplatz → Wasserfall');
     expect(html).toContain('excursion-card');
     expect(html).toContain('tour-status-meta');

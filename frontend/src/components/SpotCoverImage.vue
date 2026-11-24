@@ -4,6 +4,7 @@ import type { Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { formatDate as formatDateShared } from '../utils/dateFormat';
 import AppIcon from './AppIcon.vue';
+import CategoryChip from './CategoryChip.vue';
 import DisclosurePill from './primitives/DisclosurePill.vue';
 import RichTextDisplay from './RichTextDisplay.vue';
 
@@ -55,9 +56,12 @@ function formatAccommodationDate(dateStr: string | null) {
           <div class="overlay-bottom-row">
             <div class="overlay-bottom-text">
               <div class="card-title-block is-expanded">
-                <component :is="headingTag" class="card-title" :title="spot.title">
-                  {{ spot.title }}
-                </component>
+                <div class="card-title-inline">
+                  <component :is="headingTag" class="card-title" :title="spot.title">
+                    {{ spot.title }}
+                  </component>
+                  <CategoryChip :category="spot.category" :icon-only="false" />
+                </div>
                 <div
                   v-if="creatorLabel || (isAccommodation && (spot.start_date || spot.end_date))"
                   class="card-title-meta"
@@ -114,7 +118,7 @@ function formatAccommodationDate(dateStr: string | null) {
 }
 
 .image.is-expanded {
-  height: 165px;
+  height: 192px;
   cursor: pointer;
   border: 1px solid color-mix(in srgb, var(--color-primary) 28%, var(--color-border));
   box-shadow:
@@ -232,13 +236,33 @@ function formatAccommodationDate(dateStr: string | null) {
 }
 
 .overlay-bottom-content .card-title-block.is-expanded {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
   margin-bottom: 0;
   padding-right: 0;
   transform: none;
 }
 
+.overlay-bottom-content .card-title-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  min-width: 0;
+}
+
+.overlay-bottom-content .card-title-inline :deep(.category-chip) {
+  max-width: 100%;
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
 .overlay-bottom-content .card-title {
   margin: 0;
+  min-width: 0;
+  max-width: 100%;
   font-size: var(--font-size-lg);
   font-weight: 700;
   line-height: var(--line-height-tight);
@@ -342,7 +366,7 @@ function formatAccommodationDate(dateStr: string | null) {
   }
 
   .image.is-expanded {
-    height: 145px;
+    height: 168px;
   }
 
   .image-expanded-overlay {

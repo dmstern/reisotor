@@ -1,16 +1,21 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach } from 'vitest';
-import { createApp, h } from 'vue';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createApp, h, nextTick } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { renderToString } from 'vue/server-renderer';
 import SpotCard from './SpotCard.vue';
 import type { Spot } from '../api/types';
+import { api } from '../api/client';
 
 import type { CommentItem } from './Comments.vue';
 
 describe('SpotCard', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   const mockSpot: Spot = {
@@ -73,6 +78,14 @@ describe('SpotCard', () => {
     expect(html).toContain('btn--ghost');
     expect(html).not.toContain('disclosure-pill--overlay');
     expect(html).not.toContain('like-btn');
+    expect(html).toContain('card-header-actions');
+
+    const titleBlockIdx = html.indexOf('card-title-block');
+    const chipIdx = html.indexOf('category-chip');
+    const actionsIdx = html.indexOf('card-header-actions');
+    expect(titleBlockIdx).toBeGreaterThan(-1);
+    expect(chipIdx).toBeGreaterThan(titleBlockIdx);
+    expect(actionsIdx).toBeGreaterThan(chipIdx);
   });
 
   it('renders expanded state with map actions, details, and cover overlay', async () => {
@@ -104,6 +117,7 @@ describe('SpotCard', () => {
     expect(html).toContain('category-chip');
     expect(html).toContain('category-chip-label');
     expect(html).toContain('Sehenswürdigkeit');
+    expect(html).toContain('card-title-inline');
     expect(html).not.toContain('is-icon-only');
   });
 
@@ -123,6 +137,7 @@ describe('SpotCard', () => {
     expect(html).toContain('category-chip');
     expect(html).toContain('category-chip-label');
     expect(html).toContain('Sehenswürdigkeit');
+    expect(html).toContain('card-title-inline');
     expect(html).not.toContain('is-icon-only');
   });
 
@@ -175,6 +190,7 @@ describe('SpotCard', () => {
       groupMode: 'category',
     });
 
+    expect(html).toContain('card-status-badges');
     expect(html).toContain('spot-location-badge');
     expect(html).toContain('set-location-btn');
     expect(html).toContain('Standort festlegen');
@@ -205,5 +221,114 @@ describe('SpotCard', () => {
     expect(html).toContain('spot-distance-badge');
     expect(html).toContain('1,2\u00A0km');
     expect(html).toContain('Hotel Central');
+  });
+
+  function mountToDom(options: { expanded: boolean; spot: Spot }) {
+    vi.spyOn(api, 'get').mockResolvedValue([]);
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    const onOpen = vi.fn();
+    const onClose = vi.fn();
+
+    const app = createApp({
+      render: () =>
+        h(SpotCard, {
+          spot: options.spot,
+          creatorLabel: 'Daniel',
+          likeCount: 0,
+          liked: false,
+          comments: [],
+          expanded: options.expanded,
+          scheduledDate: null,
+          onOpen,
+          onClose,
+        }),
+    });
+    app.use(createPinia());
+    app.mount(container);
+
+    return {
+      container,
+      onOpen,
+      onClose,
+      cleanup: () => {
+        app.unmount();
+        container.remove();
+      },
+    };
+  }
+
+  it('ignores clicks on status badges in collapsed state while category chip opens the card', async () => {
+    const pendingSpotNoCoords: Spot = {
+      ...mockSpot,
+      lat: null,
+      lng: null,
+      _pending: true,
+    };
+    const { container, onOpen, cleanup } = mountToDom({
+      expanded: false,
+      spot: pendingSpotNoCoords,
+    });
+
+    try {
+      const locationBadge = container.querySelector('.spot-location-badge') as HTMLElement;
+      const pendingBadge = container.querySelector('.pending-sync-badge') as HTMLElement;
+      const categoryChip = container.querySelector('.category-chip') as HTMLElement;
+
+      expect(locationBadge).not.toBeNull();
+      expect(pendingBadge).not.toBeNull();
+      expect(categoryChip).not.toBeNull();
+
+      locationBadge.click();
+      pendingBadge.click();
+      await nextTick();
+      expect(onOpen).not.toHaveBeenCalled();
+
+      categoryChip.click();
+      await nextTick();
+      expect(onOpen).toHaveBeenCalledTimes(1);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it('closes on clicking cover category chip in expanded state and ignores status badge clicks', async () => {
+    const pendingSpotNoCoords: Spot = {
+      ...mockSpot,
+      lat: null,
+      lng: null,
+      _pending: true,
+    };
+    const { container, onClose, cleanup } = mountToDom({
+      expanded: true,
+      spot: pendingSpotNoCoords,
+    });
+
+    try {
+      const locationBadge = container.querySelector(
+        '.card-status-badges .spot-location-badge'
+      ) as HTMLElement;
+      const pendingBadge = container.querySelector(
+        '.card-status-badges .pending-sync-badge'
+      ) as HTMLElement;
+      const coverCategoryChip = container.querySelector('.image .category-chip') as HTMLElement;
+
+      expect(locationBadge).not.toBeNull();
+      expect(pendingBadge).not.toBeNull();
+      expect(coverCategoryChip).not.toBeNull();
+
+      locationBadge.click();
+      pendingBadge.click();
+      await nextTick();
+      expect(onClose).not.toHaveBeenCalled();
+
+      coverCategoryChip.click();
+      await nextTick();
+      expect(onClose).toHaveBeenCalledTimes(1);
+    } finally {
+      cleanup();
+    }
   });
 });

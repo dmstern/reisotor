@@ -125,21 +125,21 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
     <header class="tour-detail-header">
       <div class="tour-detail-heading-group">
         <div class="tour-detail-header-top">
-          <component :is="headingTag" class="tour-detail-title" :title="excursion.title">
-            {{ excursion.title }}
-          </component>
-
-          <div class="tour-detail-badges">
+          <div class="tour-detail-title-group">
+            <component :is="headingTag" class="tour-detail-title" :title="excursion.title">
+              {{ excursion.title }}
+            </component>
             <TourRoleBadge :role="excursion.role" translucent />
             <PendingSyncBadge v-if="excursion._pending" />
-            <EditButton
-              size="sm"
-              shape="squircle"
-              variant="ghost"
-              class="tour-edit-btn"
-              @click="emit('edit', excursion)"
-            />
           </div>
+
+          <EditButton
+            size="sm"
+            shape="squircle"
+            variant="ghost"
+            class="tour-edit-btn"
+            @click="emit('edit', excursion)"
+          />
         </div>
 
         <div v-if="hasMeta" class="tour-detail-meta-row">
@@ -340,22 +340,29 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
   min-width: 0;
 }
 
-.tour-detail-title {
-  margin: 0;
+.tour-detail-title-group {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  padding-top: var(--space-1);
+}
+
+.tour-detail-title-group :deep(.category-chip) {
+  max-width: 100%;
+}
+
+.tour-detail-title {
+  margin: 0;
+  min-width: 0;
+  max-width: 100%;
   font-size: var(--font-size-lg);
   font-weight: 700;
   line-height: var(--line-height-snug);
   color: var(--color-text);
   overflow-wrap: break-word;
-}
-
-.tour-detail-badges {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
 }
 
 .tour-edit-btn {
@@ -491,25 +498,5 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
 
 .tour-detail-stations {
   min-width: 0;
-}
-
-@include container-down('spots-col', 'mobile-compact') {
-  .tour-detail-badges :deep(.category-chip-label) {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
-  }
-
-  .tour-detail-badges :deep(.category-chip) {
-    padding: 3px var(--space-1);
-    gap: 0;
-    max-width: none;
-  }
 }
 </style>

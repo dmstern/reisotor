@@ -17,6 +17,7 @@ const props = withDefaults(
      */
     context?: 'card' | 'dialog';
     popoverClass?: string;
+    popoverAlign?: 'left' | 'right';
   }>(),
   {
     spot: null,
@@ -24,6 +25,7 @@ const props = withDefaults(
     expanded: false,
     context: 'card',
     popoverClass: '',
+    popoverAlign: 'left',
   }
 );
 
@@ -103,7 +105,7 @@ function onEditClick(closePopover?: () => void) {
           : 'Hinweise zum fehlenden Standort anzeigen'
       "
       placement="bottom"
-      :align="context === 'dialog' ? 'left' : 'right'"
+      :align="popoverAlign"
       :icon-size="13"
       :menu-width="context === 'dialog' ? 260 : 290"
       @click.stop

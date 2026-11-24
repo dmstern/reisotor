@@ -101,19 +101,17 @@ function onCardKeydown(event: KeyboardEvent) {
               <component :is="headingTag" class="card-title" :title="excursion.title">
                 {{ excursion.title }}
               </component>
-            </div>
-
-            <div class="card-badge-group">
               <TourRoleBadge :role="excursion.role" />
               <PendingSyncBadge v-if="excursion._pending" />
-              <AppIcon
-                :icon="ACTION_ICONS.scrollRight"
-                :size="16"
-                group="actions"
-                class="tour-detail-chevron"
-                aria-hidden="true"
-              />
             </div>
+
+            <AppIcon
+              :icon="ACTION_ICONS.scrollRight"
+              :size="16"
+              group="actions"
+              class="tour-detail-chevron"
+              aria-hidden="true"
+            />
           </div>
         </div>
 
@@ -310,16 +308,18 @@ function onCardKeydown(event: KeyboardEvent) {
 .card-title-block {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2xs);
 }
 
 .card-title-row {
   display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
   min-width: 0;
+}
+
+.card-title-row :deep(.category-chip) {
+  max-width: 100%;
 }
 
 .card-title {
@@ -329,6 +329,7 @@ function onCardKeydown(event: KeyboardEvent) {
   line-height: var(--line-height-snug);
   color: var(--color-text);
   min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -340,15 +341,9 @@ function onCardKeydown(event: KeyboardEvent) {
   transition: color 0.2s ease;
 }
 
-.card-badge-group {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  margin-top: 1px;
-}
-
 .tour-detail-chevron {
+  flex-shrink: 0;
+  margin-top: 3px;
   color: var(--color-text-muted);
   transition:
     color 0.2s ease,
@@ -377,26 +372,6 @@ function onCardKeydown(event: KeyboardEvent) {
   gap: var(--space-1);
   min-width: 0;
   flex: 0 1 auto;
-}
-
-@include container-down('excursion-card', 'mobile-compact') {
-  .card-badge-group :deep(.category-chip-label) {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
-  }
-
-  .card-badge-group :deep(.category-chip) {
-    padding: 3px var(--space-1);
-    gap: 0;
-    max-width: none;
-  }
 }
 
 @include container-down('spots-col', 'mobile-compact') {
