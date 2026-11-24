@@ -1,0 +1,112 @@
+// Gemeinsame Styles für Überschriften-Hierarchie und Tabellen in RichTextEditor & RichTextDisplay.
+
+@mixin richtext-headings {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin: var(--space-sm) 0 var(--space-xs);
+    font-weight: 600;
+    line-height: var(--line-height-tight);
+    color: var(--color-text);
+  }
+
+  h1 {
+    margin-top: var(--space-md);
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+  }
+
+  h2 {
+    font-size: var(--font-size-lg);
+  }
+
+  h3 {
+    font-size: var(--font-size-md);
+  }
+
+  h4,
+  h5,
+  h6 {
+    font-size: var(--font-size-sm);
+  }
+}
+
+@mixin richtext-table {
+  .richtext-table-wrapper,
+  .tableWrapper {
+    overflow-x: auto;
+    max-inline-size: 100%;
+    margin: var(--space-sm) 0;
+    border-radius: var(--radius-xs-squircle);
+    corner-shape: squircle;
+  }
+
+  .richtext-table-wrapper:focus-visible {
+    outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
+    outline-offset: var(--focus-ring-offset, 2px);
+    box-shadow: var(--focus-ring-halo, 0 0 0 2px var(--color-surface));
+  }
+
+  table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    margin: 0;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-xs-squircle);
+    corner-shape: squircle;
+    overflow: hidden;
+  }
+
+  th,
+  td {
+    padding: var(--space-xs) var(--space-sm);
+    text-align: left;
+    vertical-align: top;
+    min-width: 72px;
+    border-right: 1px solid var(--color-border-divider);
+    border-bottom: 1px solid var(--color-border-divider);
+    box-sizing: border-box;
+  }
+
+  tr > th:last-child,
+  tr > td:last-child {
+    border-right: none;
+  }
+
+  thead > tr:last-child > th,
+  thead > tr:last-child > td {
+    border-bottom: 1px solid var(--color-border-strong);
+  }
+
+  tbody:last-child > tr:last-child > th,
+  tbody:last-child > tr:last-child > td,
+  tfoot:last-child > tr:last-child > th,
+  tfoot:last-child > tr:last-child > td {
+    border-bottom: none;
+  }
+
+  th {
+    background: var(--color-surface-sunken);
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  th > p,
+  td > p {
+    margin: 0;
+  }
+
+  th > p + p,
+  td > p + p {
+    margin-top: var(--space-2xs);
+  }
+
+  th.selectedCell,
+  td.selectedCell {
+    background: var(--color-primary-tint);
+  }
+}

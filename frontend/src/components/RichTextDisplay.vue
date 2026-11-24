@@ -15,8 +15,13 @@ import {
 // zusätzlich zum bereits serverseitig sanitizten Wert - günstige zweite Absicherung direkt vorm
 // v-html, kostet nichts an einer einzelnen Stelle statt X Views einzeln absichern zu müssen.
 const props = withDefaults(
-  defineProps<{ content: string; format?: string | null; interactive?: boolean }>(),
-  { format: null, interactive: false }
+  defineProps<{
+    content: string;
+    format?: string | null;
+    interactive?: boolean;
+    compact?: boolean;
+  }>(),
+  { format: null, interactive: false, compact: false }
 );
 const emit = defineEmits<{
   (e: 'update:content', value: string): void;
@@ -31,7 +36,9 @@ const containerRef = ref<HTMLElement | null>(null);
 // wurde (DB-Default war 'legacy'). Ohne diesen Fallback würden die <p>-Tags als Rohtext angezeigt.
 const html = computed(() => {
   if (props.format === 'html' || props.content.trimStart().startsWith('<')) {
-    return prepareChecklistHtmlForDisplay(sanitizeRichTextHtml(props.content), props.interactive);
+    return prepareChecklistHtmlForDisplay(sanitizeRichTextHtml(props.content), props.interactive, {
+      wrapTables: !props.compact,
+    });
   }
 
   return renderRichText(props.content);
@@ -83,7 +90,7 @@ function onContainerChange(event: Event) {
   <div
     ref="containerRef"
     class="richtext"
-    :class="{ 'is-interactive': interactive }"
+    :class="{ 'is-interactive': interactive, 'is-compact': compact }"
     @click="onContainerClick"
     @change="onContainerChange"
     v-html="html"
@@ -93,6 +100,7 @@ function onContainerChange(event: Event) {
 
 <style lang="scss" scoped>
 @use '../styles/_richtextTaskList.scss' as *;
+@use '../styles/_richtextTable.scss' as *;
 
 .richtext :deep(> :first-child) {
   margin-top: 0;
@@ -106,36 +114,8 @@ function onContainerChange(event: Event) {
 
 .richtext :deep() {
   @include richtext-task-list;
-}
-
-.richtext :deep(h1),
-.richtext :deep(h2),
-.richtext :deep(h3),
-.richtext :deep(h4),
-.richtext :deep(h5),
-.richtext :deep(h6) {
-  margin: var(--space-sm) 0 var(--space-xs);
-  font-weight: 600;
-  line-height: var(--line-height-tight);
-  color: var(--color-text);
-}
-
-.richtext :deep(h1) {
-  font-size: var(--font-size-xl);
-}
-
-.richtext :deep(h2) {
-  font-size: var(--font-size-lg);
-}
-
-.richtext :deep(h3) {
-  font-size: var(--font-size-md);
-}
-
-.richtext :deep(h4),
-.richtext :deep(h5),
-.richtext :deep(h6) {
-  font-size: var(--font-size-sm);
+  @include richtext-headings;
+  @include richtext-table;
 }
 
 .richtext :deep(blockquote) {
@@ -172,5 +152,67 @@ function onContainerChange(event: Event) {
 
 .richtext :deep(.richtext-link) {
   vertical-align: middle;
+}
+
+.richtext.is-compact :deep(.richtext-table-wrapper),
+.richtext.is-compact :deep(table),
+.richtext.is-compact :deep(thead),
+.richtext.is-compact :deep(tbody),
+.richtext.is-compact :deep(tfoot),
+.richtext.is-compact :deep(tr),
+.richtext.is-compact :deep(th),
+.richtext.is-compact :deep(td),
+.richtext.is-compact :deep(h1),
+.richtext.is-compact :deep(h2),
+.richtext.is-compact :deep(h3),
+.richtext.is-compact :deep(h4),
+.richtext.is-compact :deep(h5),
+.richtext.is-compact :deep(h6) {
+  display: inline;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  overflow: visible;
+}
+
+.richtext.is-compact :deep(h1),
+.richtext.is-compact :deep(h2),
+.richtext.is-compact :deep(h3),
+.richtext.is-compact :deep(h4),
+.richtext.is-compact :deep(h5),
+.richtext.is-compact :deep(h6) {
+  font-size: inherit;
+  font-weight: 600;
+}
+
+.richtext.is-compact :deep(th) {
+  font-weight: 600;
+}
+
+.richtext.is-compact :deep(th > p),
+.richtext.is-compact :deep(td > p) {
+  display: inline;
+  margin: 0;
+}
+
+.richtext.is-compact :deep(th + th::before),
+.richtext.is-compact :deep(td + td::before),
+.richtext.is-compact :deep(th + td::before),
+.richtext.is-compact :deep(td + th::before),
+.richtext.is-compact :deep(tr + tr::before),
+.richtext.is-compact :deep(thead + tbody > tr:first-child::before),
+.richtext.is-compact :deep(h1 + p::before),
+.richtext.is-compact :deep(h2 + p::before),
+.richtext.is-compact :deep(h3 + p::before),
+.richtext.is-compact :deep(p + h1::before),
+.richtext.is-compact :deep(p + h2::before),
+.richtext.is-compact :deep(p + h3::before),
+.richtext.is-compact :deep(table + p::before),
+.richtext.is-compact :deep(p + table::before) {
+  content: ' · ';
+  color: var(--color-text-muted);
+  font-weight: 400;
 }
 </style>

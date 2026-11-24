@@ -215,3 +215,39 @@ describe('createLatestWinsSaveQueue', () => {
     expect(onRollback).toHaveBeenCalledWith('v1-server');
   });
 });
+
+describe('table sanitization and display wrapper', () => {
+  it('preserves valid tables and strips style, scripts, and invalid span/scope attributes', () => {
+    const input =
+      '<table style="width:100%"><thead><tr><th scope="col" colspan="2">Kopf</th>' +
+      '<th scope="evil" rowspan="0">Bad</th></tr></thead>' +
+      '<tbody><tr><td style="color:red" colspan="abc" onclick="alert(1)"><p>Zelle</p></td>' +
+      '<td><script>alert(2)</script><p>Sicher</p></td></tr></tbody></table>';
+
+    const output = sanitizeRichTextHtml(input);
+    expect(output).toContain('<table>');
+    expect(output).toContain('scope="col"');
+    expect(output).toContain('colspan="2"');
+    expect(output).not.toContain('style=');
+    expect(output).not.toContain('scope="evil"');
+    expect(output).not.toContain('rowspan="0"');
+    expect(output).not.toContain('colspan="abc"');
+    expect(output).not.toContain('onclick');
+    expect(output).not.toContain('<script');
+    expect(output).toContain('Sicher');
+  });
+
+  it('wraps tables in a keyboard-scrollable region by default and skips wrapping when wrapTables is false', () => {
+    const tableHtml = '<table><tbody><tr><th>A</th><td>B</td></tr></tbody></table>';
+
+    const fullHtml = prepareChecklistHtmlForDisplay(tableHtml, false);
+    expect(fullHtml).toContain('class="richtext-table-wrapper"');
+    expect(fullHtml).toContain('tabindex="0"');
+    expect(fullHtml).toContain('role="region"');
+    expect(fullHtml).toContain('aria-label="Tabelle"');
+
+    const compactHtml = prepareChecklistHtmlForDisplay(tableHtml, false, { wrapTables: false });
+    expect(compactHtml).not.toContain('richtext-table-wrapper');
+    expect(compactHtml).not.toContain('tabindex="0"');
+  });
+});

@@ -11,9 +11,9 @@ import sanitize from 'sanitize-html';
 // String-Parser ohne DOM-Abhängigkeit, funktioniert also auf jeder Node-Version.
 //
 // Allowlist entspricht genau dem, was RichTextEditor.vue's Tiptap-Toolbar erzeugen kann (StarterKit
-// + Link-Extension + TaskList/TaskItem für Checklisten): Absätze, Fett/Kursiv/Durchgestrichen,
-// Überschriften, Listen (inkl. interaktiver Task-Listen), Zitat, Code (inline + Block),
-// Trennlinie, Zeilenumbruch, Links.
+// + Link-Extension + TaskList/TaskItem für Checklisten + Table für Tabellen): Absätze,
+// Fett/Kursiv/Durchgestrichen, Überschriften, Listen (inkl. interaktiver Task-Listen), Tabellen,
+// Zitat, Code (inline + Block), Trennlinie, Zeilenumbruch, Links.
 const ALLOWED_TAGS = [
   'p',
   'br',
@@ -38,7 +38,37 @@ const ALLOWED_TAGS = [
   'input',
   'span',
   'div',
+  'table',
+  'thead',
+  'tbody',
+  'tfoot',
+  'tr',
+  'th',
+  'td',
 ];
+
+const VALID_SPAN_PATTERN = /^[1-9]\d?$/;
+const ALLOWED_TABLE_SCOPES = new Set(['col', 'row', 'colgroup', 'rowgroup']);
+
+function sanitizeTableCellAttribs(tagName: string, attribs: sanitize.Attributes): sanitize.Tag {
+  const nextAttribs: sanitize.Attributes = { ...attribs };
+
+  for (const attr of ['colspan', 'rowspan'] as const) {
+    if (nextAttribs[attr] !== undefined && !VALID_SPAN_PATTERN.test(nextAttribs[attr])) {
+      delete nextAttribs[attr];
+    }
+  }
+
+  if (
+    tagName === 'th' &&
+    nextAttribs.scope !== undefined &&
+    !ALLOWED_TABLE_SCOPES.has(nextAttribs.scope)
+  ) {
+    delete nextAttribs.scope;
+  }
+
+  return { tagName, attribs: nextAttribs };
+}
 
 export function sanitizeHtml(html: string): string {
   return sanitize(html, {
@@ -51,6 +81,12 @@ export function sanitizeHtml(html: string): string {
         { name: 'data-checked', values: ['true', 'false'] },
       ],
       input: [{ name: 'type', values: ['checkbox'] }, 'checked', 'disabled'],
+      th: ['colspan', 'rowspan', { name: 'scope', values: ['col', 'row', 'colgroup', 'rowgroup'] }],
+      td: ['colspan', 'rowspan'],
+    },
+    transformTags: {
+      th: sanitizeTableCellAttribs,
+      td: sanitizeTableCellAttribs,
     },
     allowedSchemes: ['http', 'https', 'mailto'],
     exclusiveFilter: (frame) => frame.tag === 'input' && frame.attribs.type !== 'checkbox',

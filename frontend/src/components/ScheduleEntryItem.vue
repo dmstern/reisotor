@@ -100,6 +100,7 @@ const hasObjectJump = computed(() => jumpLabel.value !== undefined);
       </p>
       <RichTextDisplay
         v-if="entry.note && !isEmptyRichText(entry.note)"
+        compact
         :content="entry.note"
         format="html"
         class="note"
