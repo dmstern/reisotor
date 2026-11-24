@@ -20,11 +20,11 @@ Das System bildet die vier Fragen bei parallelen PRs orthogonal ab:
 
 ### 1. Code-Review-Stand (exklusiv: maximal 1 Label)
 
-| Label                    | Bedeutung                    | Wann setzen?                                                                              |
-| :----------------------- | :--------------------------- | :---------------------------------------------------------------------------------------- |
-| `👀️ review:needed`       | Wartet auf Code-Review       | Bei neuer PR-Erstellung oder nach gepushten Fixes auf `needs-polish`.                     |
-| `🛠️ review:needs-polish` | Fixes / Feinschliff nötig    | Review fand Blocker, fehlende Tests/Checks oder konkreten Polish-Bedarf.                  |
-| `👍️ review:reviewed`     | Code-Review erfolgt & sauber | Das Code-Review ist bestanden (auch wenn manueller Test oder Abstimmung noch offen sind). |
+| Label                    | Bedeutung                    | Wann setzen?                                                                                                                                                                         |
+| :----------------------- | :--------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `👀️ review:needed`       | Wartet auf Code-Review       | Bei neuer PR-Erstellung oder nach externen/separaten Fixes auf `needs-polish`.                                                                                                       |
+| `🛠️ review:needs-polish` | Fixes / Feinschliff nötig    | Review fand Blocker, fehlende Tests/Checks oder konkreten Polish-Bedarf.                                                                                                             |
+| `👍️ review:reviewed`     | Code-Review erfolgt & sauber | Das Code-Review ist bestanden – auch wenn der Reviewer seine eigenen Polish-Befunde direkt selbst behoben & verifiziert hat (unabhängig von offenem manuellem Test oder Abstimmung). |
 
 ### 2. Manueller Test (exklusiv untereinander, entfällt wenn Test n/a)
 
@@ -93,6 +93,7 @@ node .agent/skills/pr-review/scripts/pr-labels.mjs set <pr-nr> \
 
 3. **Review-Ergebnis & Ziel-Labels bestimmen:**
    - **Blocker oder Nachbesserungen (`🔴` / `🟡`):** `--review needs-polish --ready false` (falls ein manueller UI-Test ohnehin nötig ist, kann `--manual-test needed` bereits gesetzt oder beibehalten werden).
+     - **Quota-Regel bei direkter Behebung durch den Reviewer:** Werden gemeldete Polish-Punkte anschließend direkt im selben Review-Kontext behoben, verifiziert und gepusht, setzt der Agent abschließend `--review reviewed` (plus `--manual-test needed` oder `--ready true` gemäß den folgenden Punkten) statt erneut `👀️ review:needed`.
    - **Review sauber (`✅`):** `--review reviewed`, und zusätzlich:
      - **Manueller Test erforderlich** (sichtbare UI-/UX-/API-Änderung) und noch kein `✅️ review:manually-tested`: `--manual-test needed --ready false`.
      - **Manueller Test bereits erledigt (`✅️`) oder n/a** (reine Doku, CI/Workflow, Agent-Config, Tests-only, grüner Dependabot-PR): `--ready true` (oder wenn erst noch besprochen werden soll, nur `--review reviewed` ohne `--ready true`).
@@ -132,7 +133,7 @@ node .agent/skills/pr-review/scripts/pr-labels.mjs set <pr-nr> \
 
    ---
 
-   👉 **Nächster Schritt:** <z. B. „Manuell testen und danach mit `✅️ review:manually-tested` + `🚀️ review:ready-to-merge` freigeben.“ oder „Polish-Punkte beheben und danach wieder auf `👀️ review:needed` setzen.“>
+   👉 **Nächster Schritt:** <z. B. „Manuell testen und danach mit `✅️ review:manually-tested` + `🚀️ review:ready-to-merge` freigeben.“ oder „Polish-Punkte beheben und danach wieder auf `👀️ review:needed` (bzw. bei direkter Behebung durch den Reviewer auf `👍️ review:reviewed`) setzen.“>
    ```
 
 5. **Abschluss im Chat:**
