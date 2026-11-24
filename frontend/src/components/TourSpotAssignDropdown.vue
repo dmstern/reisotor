@@ -13,12 +13,10 @@ const DEFAULT_MENU_WIDTH = 260;
 const DEFAULT_MENU_HEIGHT = 280;
 const MENU_OFFSET = 6;
 const TRIGGER_ICON_SIZE = 14;
-const LIKE_ICON_SIZE = 12;
 
 const props = withDefaults(
   defineProps<{
     spots: Spot[];
-    likeCount: (spotId: number) => number;
     compact?: boolean;
   }>(),
   {
@@ -37,10 +35,8 @@ const popupRef = ref<InstanceType<typeof PickerMenu> | null>(null);
 const popupStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
 
 const sortedSpots = computed(() => {
-  return [...props.spots].sort(
-    (spotA, spotB) =>
-      props.likeCount(spotB.id) - props.likeCount(spotA.id) ||
-      spotA.title.localeCompare(spotB.title)
+  return [...props.spots].sort((spotA, spotB) =>
+    spotA.title.localeCompare(spotB.title, 'de', { sensitivity: 'base' })
   );
 });
 
@@ -176,18 +172,12 @@ onUnmounted(() => {
           >
             {{ spot.title }}
             <template #trailing>
-              <span class="spot-assign-trailing">
-                <span class="spot-assign-likes">
-                  <AppIcon :icon="ACTION_ICONS.sortLikes" :size="LIKE_ICON_SIZE" group="actions" />
-                  {{ likeCount(spot.id) }}
-                </span>
-                <AppIcon
-                  :icon="ACTION_ICONS.add"
-                  :size="TRIGGER_ICON_SIZE"
-                  group="actions"
-                  class="spot-assign-plus"
-                />
-              </span>
+              <AppIcon
+                :icon="ACTION_ICONS.add"
+                :size="TRIGGER_ICON_SIZE"
+                group="actions"
+                class="spot-assign-plus"
+              />
             </template>
           </DropdownMenuItem>
         </div>
@@ -248,25 +238,9 @@ onUnmounted(() => {
   gap: var(--space-2xs);
 }
 
-.spot-assign-trailing {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-left: auto;
-  flex-shrink: 0;
-}
-
-.spot-assign-likes {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-}
-
 .spot-assign-plus {
   color: var(--color-primary);
+  margin-left: auto;
   flex-shrink: 0;
 }
 

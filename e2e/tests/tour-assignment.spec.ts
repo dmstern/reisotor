@@ -180,7 +180,7 @@ test.describe('Touren-Reihenfolge-Editor: Reihenfolge + Mehrfachbesuch direkt in
     // weitere Station hinzu (kein Checkbox-Verhalten) - der Reihenfolge-Editor ist seit dem
     // Zurückbau des früheren "erweiterten Touren-Modus" immer verfügbar, kein Umschalten mehr nötig.
     const addableRow = (title: string) =>
-      newTourModal.locator('.spot-picker .derived-option', { hasText: title });
+      newTourModal.locator('.spot-picker-option', { hasText: title });
     await addableRow(spotATitle).click();
     await addableRow(spotBTitle).click();
     await addableRow(spotATitle).click();

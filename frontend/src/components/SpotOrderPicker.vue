@@ -7,11 +7,20 @@ import { travelTypeIconDef } from '../utils/travelTypeIcon';
 import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
 import type { IconDef } from '../utils/icon';
 import AppIcon from './AppIcon.vue';
+import Badge from './primitives/Badge.vue';
 import Button from './primitives/Button.vue';
+import Divider from './primitives/Divider.vue';
+import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
 import IconButton from './primitives/IconButton.vue';
+import Input from './primitives/Input.vue';
 import LegTransportModal from './LegTransportModal.vue';
 
-// Drag&Drop-Reihenfolge-Editor fürs Touren-Formular (ExcursionsView.vue) – TourAssignDropdown.vue
+const SEARCH_THRESHOLD = 8;
+const ICON_SIZE_SM = 14;
+const ICON_SIZE_XS = 12;
+const GRIP_ICON_SIZE = 15;
+
+// Reihenfolge-Editor fürs Touren-Formular (ExcursionFormModal.vue) – TourAssignDropdown.vue
 // bietet daneben im Spot-Formular einen schnelleren Weg, einen Spot ohne Reihenfolge einer Tour
 // zuzuordnen. Eine Tour-Station ist seit der Verschmelzung von Unterkunft/Reise-Orten in Spots
 // (siehe Migrationskommentar in db/index.ts) immer ein echter Spot.
@@ -21,7 +30,6 @@ const props = withDefaults(
   defineProps<{
     modelValue: number[];
     spots: Spot[];
-    likeCount: (spotId: number) => number;
     legs?: ExcursionLeg[];
     users?: User[];
   }>(),
@@ -36,17 +44,17 @@ const emit = defineEmits<{
   (e: 'create-spot'): void;
 }>();
 
-// Schreibbarer Computed statt einzelner add/remove-Emits: die Checkboxen der "weitere Spots"-Liste
-// nutzen dadurch dasselbe v-model-Array-Muster wie vorher, ohne dass die Elternkomponente eigene
-// add/remove-Handler bräuchte.
+const searchQuery = ref('');
+
+// Schreibbarer Computed statt einzelner add/remove-Emits: die Spot-Liste nutzt dadurch dasselbe
+// v-model-Array-Muster, ohne dass die Elternkomponente eigene add/remove-Handler bräuchte.
 const selected = computed<number[]>({
   get: () => props.modelValue,
   set: (v) => emit('update:modelValue', v),
 });
 
 // Reihenfolge der geplanten Stationen entspricht der Abklapper-Reihenfolge während des Ausflugs
-// (und bestimmt auch die auf der Karte gezeichnete Route, siehe TripMap.vue) – deshalb hier nach
-// modelValue-Reihenfolge, NICHT nach Likes sortiert.
+// (und bestimmt auch die auf der Karte gezeichnete Route, siehe TripMap.vue).
 const plannedStations = computed(() =>
   props.modelValue
     .map((spotId) => {
@@ -69,15 +77,34 @@ const plannedStations = computed(() =>
     )
 );
 
-// Bewusst NICHT mehr gefiltert auf "noch nicht eingeplant" – für einen Rundgang muss derselbe Spot
+const spotUsageCounts = computed(() => {
+  const counts = new Map<number, number>();
+
+  for (const spotId of props.modelValue) {
+    counts.set(spotId, (counts.get(spotId) ?? 0) + 1);
+  }
+
+  return counts;
+});
+
+// Bewusst NICHT gefiltert auf "noch nicht eingeplant" – für einen Rundgang muss derselbe Spot
 // mehrfach in der Reihenfolge stehen können (z. B. Start UND Ende an der Unterkunft), Klick fügt
-// deshalb immer eine weitere Station hinzu statt (wie ein Checkbox-Häkchen) nur ein einziges Mal
-// umschaltbar zu sein.
-const addableSpots = computed(() =>
-  [...props.spots].sort(
-    (a, b) => props.likeCount(b.id) - props.likeCount(a.id) || a.title.localeCompare(b.title)
+// deshalb immer eine weitere Station hinzu statt nur ein einziges Mal umschaltbar zu sein.
+const sortedSpots = computed(() =>
+  [...props.spots].sort((spotA, spotB) =>
+    spotA.title.localeCompare(spotB.title, 'de', { sensitivity: 'base' })
   )
 );
+
+const filteredSpots = computed(() => {
+  const query = searchQuery.value.trim().toLocaleLowerCase();
+
+  if (!query) {
+    return sortedSpots.value;
+  }
+
+  return sortedSpots.value.filter((spot) => spot.title.toLocaleLowerCase().includes(query));
+});
 
 function addSpot(id: number) {
   selected.value = [...selected.value, id];
@@ -99,6 +126,20 @@ function cleanupLegsForSpots(newSpotIds: number[]) {
 function removeSpotAt(index: number) {
   const next = [...selected.value];
   next.splice(index, 1);
+  selected.value = next;
+  cleanupLegsForSpots(next);
+}
+
+function moveSpot(index: number, delta: -1 | 1) {
+  const targetIndex = index + delta;
+
+  if (targetIndex < 0 || targetIndex >= selected.value.length) {
+    return;
+  }
+
+  const next = [...selected.value];
+  const [moved] = next.splice(index, 1);
+  next.splice(targetIndex, 0, moved);
   selected.value = next;
   cleanupLegsForSpots(next);
 }
@@ -257,170 +298,187 @@ function onDeleteLeg() {
 
 <template>
   <div class="spot-order-picker">
-    <fieldset v-if="plannedStations.length" class="planned-box">
-      <legend>
-        <AppIcon :icon="ACTION_ICONS.order" :size="14" group="actions" /> Tourreihenfolge
-      </legend>
+    <section v-if="plannedStations.length" class="planned-section">
+      <h4 class="picker-section-title">
+        <AppIcon :icon="ACTION_ICONS.order" :size="ICON_SIZE_SM" group="actions" />
+        <span>Tourreihenfolge</span>
+      </h4>
       <p class="order-hint">
-        In dieser Reihenfolge werden die Stationen während der Tour abgeklappert (bestimmt auch die
-        eingezeichnete Route auf der Karte) – zum Sortieren ziehen.
+        Reihenfolge der Stationen auf Tour &amp; Karte – per Buttons oder Ziehen sortieren.
       </p>
-      <template v-for="(station, index) in plannedStations" :key="index">
-        <div class="drop-line" v-if="draggedIndex !== null && dropIndicatorIndex === index"></div>
-        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
-        <div
-          class="planned-row"
-          :class="{ dragging: draggedIndex === index }"
-          draggable="true"
-          @dragstart="onDragStart($event, index)"
-          @dragover.prevent="onRowDragOver($event, index)"
-          @drop.prevent="onDrop"
-          @dragend="onDragEnd"
-        >
-          <span class="order-num">{{ index + 1 }}.</span>
-          <span class="drag-handle" aria-hidden="true">⠿</span>
-          <span class="spot-title">
-            <AppIcon :icon="station.tabler" :size="14" group="categories" />
-            {{ station.title }}
-          </span>
-          <span
-            v-if="getLayover(index) != null"
-            class="layover-badge"
-            title="Aufenthalts-/Umsteigezeit"
+      <div class="planned-list">
+        <template v-for="(station, index) in plannedStations" :key="`${station.id}-${index}`">
+          <div class="drop-line" v-if="draggedIndex !== null && dropIndicatorIndex === index"></div>
+          <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+          <div
+            class="planned-row"
+            :class="{ dragging: draggedIndex === index }"
+            draggable="true"
+            @dragstart="onDragStart($event, index)"
+            @dragover.prevent="onRowDragOver($event, index)"
+            @drop.prevent="onDrop"
+            @dragend="onDragEnd"
           >
-            <AppIcon :icon="ACTION_ICONS.duration" :size="12" group="actions" />
-            {{ formatTravelDuration(getLayover(index)!) }} Umstiegszeit
-          </span>
-          <IconButton
-            variant="ghost"
-            size="xs"
-            :icon="ACTION_ICONS.close"
-            class="remove-btn"
-            aria-label="Aus Tour entfernen"
-            title="Aus Tour entfernen"
-            @click="removeSpotAt(index)"
-          />
-        </div>
-
-        <!-- Teilstrecken-Verbinder zwischen zwei Stationen (Issue #361) -->
-        <div v-if="index < plannedStations.length - 1" class="leg-connector">
-          <div class="leg-connector-line"></div>
-          <div class="leg-item-wrap">
-            <Button
-              type="button"
-              variant="secondary"
-              :dashed="!getLegBetween(station.id, plannedStations[index + 1].id)"
-              size="xs"
-              shape="squircle"
-              class="leg-btn"
-              :class="{
-                'has-data': !!getLegBetween(station.id, plannedStations[index + 1].id),
-              }"
-              @click="openLegModal(index)"
+            <AppIcon
+              :icon="ACTION_ICONS.dragHandle"
+              :size="GRIP_ICON_SIZE"
+              group="actions"
+              class="drag-handle"
+              aria-hidden="true"
+            />
+            <span class="order-num">{{ index + 1 }}.</span>
+            <span class="spot-title">
+              <AppIcon :icon="station.tabler" :size="ICON_SIZE_SM" group="categories" />
+              <span class="spot-title-text">{{ station.title }}</span>
+            </span>
+            <Badge
+              v-if="getLayover(index) != null"
+              size="sm"
+              class="layover-badge"
+              title="Aufenthalts-/Umsteigezeit"
             >
-              <template v-if="getLegBetween(station.id, plannedStations[index + 1].id)">
-                <span class="leg-pill">
-                  <AppIcon
-                    :icon="
-                      travelTypeIconDef(
-                        getLegBetween(station.id, plannedStations[index + 1].id)!.transport_type ??
-                          null
-                      )
-                    "
-                    :size="13"
-                    group="actions"
-                    force-style="icons"
-                  />
-                  <span class="leg-type">
-                    {{
-                      getLegBetween(station.id, plannedStations[index + 1].id)!.transport_type ||
-                      'Verkehrsmittel'
-                    }}
-                  </span>
-                  <span
-                    v-if="
-                      getLegBetween(station.id, plannedStations[index + 1].id)!.departure_time ||
-                      getLegBetween(station.id, plannedStations[index + 1].id)!.arrival_time
-                    "
-                    class="leg-times"
-                  >
-                    {{
-                      getLegBetween(station.id, plannedStations[index + 1].id)!.departure_time ||
-                      '?'
-                    }}–{{
-                      getLegBetween(station.id, plannedStations[index + 1].id)!.arrival_time || '?'
-                    }}
+              <AppIcon :icon="ACTION_ICONS.duration" :size="ICON_SIZE_XS" group="actions" />
+              {{ formatTravelDuration(getLayover(index)!) }} Umstiegszeit
+            </Badge>
+            <div class="planned-row-actions">
+              <IconButton
+                variant="ghost"
+                size="sm"
+                :icon="ACTION_ICONS.chevronUp"
+                :disabled="index === 0"
+                class="move-up-btn"
+                aria-label="Station nach oben verschieben"
+                title="Nach oben"
+                @click="moveSpot(index, -1)"
+              />
+              <IconButton
+                variant="ghost"
+                size="sm"
+                :icon="ACTION_ICONS.chevronDown"
+                :disabled="index === plannedStations.length - 1"
+                class="move-down-btn"
+                aria-label="Station nach unten verschieben"
+                title="Nach unten"
+                @click="moveSpot(index, 1)"
+              />
+              <IconButton
+                variant="ghost"
+                size="sm"
+                :icon="ACTION_ICONS.close"
+                class="remove-btn"
+                aria-label="Aus Tour entfernen"
+                title="Aus Tour entfernen"
+                @click="removeSpotAt(index)"
+              />
+            </div>
+          </div>
+
+          <!-- Teilstrecken-Verbinder zwischen zwei Stationen (Issue #361) -->
+          <div v-if="index < plannedStations.length - 1" class="leg-connector">
+            <div class="leg-connector-line"></div>
+            <div class="leg-item-wrap">
+              <Button
+                type="button"
+                variant="secondary"
+                :dashed="!getLegBetween(station.id, plannedStations[index + 1].id)"
+                size="xs"
+                shape="squircle"
+                class="leg-btn"
+                :class="{
+                  'has-data': !!getLegBetween(station.id, plannedStations[index + 1].id),
+                }"
+                @click="openLegModal(index)"
+              >
+                <template v-if="getLegBetween(station.id, plannedStations[index + 1].id)">
+                  <span class="leg-pill">
+                    <AppIcon
+                      :icon="
+                        travelTypeIconDef(
+                          getLegBetween(station.id, plannedStations[index + 1].id)!
+                            .transport_type ?? null
+                        )
+                      "
+                      :size="13"
+                      group="actions"
+                      force-style="icons"
+                    />
+                    <span class="leg-type">
+                      {{
+                        getLegBetween(station.id, plannedStations[index + 1].id)!.transport_type ||
+                        'Verkehrsmittel'
+                      }}
+                    </span>
                     <span
-                      v-if="getLegDuration(station.id, plannedStations[index + 1].id)"
-                      class="leg-duration"
+                      v-if="
+                        getLegBetween(station.id, plannedStations[index + 1].id)!.departure_time ||
+                        getLegBetween(station.id, plannedStations[index + 1].id)!.arrival_time
+                      "
+                      class="leg-times"
                     >
-                      ({{ getLegDuration(station.id, plannedStations[index + 1].id) }})
+                      {{
+                        getLegBetween(station.id, plannedStations[index + 1].id)!.departure_time ||
+                        '?'
+                      }}–{{
+                        getLegBetween(station.id, plannedStations[index + 1].id)!.arrival_time ||
+                        '?'
+                      }}
+                      <span
+                        v-if="getLegDuration(station.id, plannedStations[index + 1].id)"
+                        class="leg-duration"
+                      >
+                        ({{ getLegDuration(station.id, plannedStations[index + 1].id) }})
+                      </span>
+                    </span>
+                    <span
+                      v-if="getLegBetween(station.id, plannedStations[index + 1].id)!.amount"
+                      class="leg-cost"
+                    >
+                      ·
+                      {{
+                        getLegBetween(station.id, plannedStations[index + 1].id)!
+                          .amount!.toFixed(2)
+                          .replace('.', ',')
+                      }}&nbsp;€
                     </span>
                   </span>
-                  <span
-                    v-if="getLegBetween(station.id, plannedStations[index + 1].id)!.amount"
-                    class="leg-cost"
-                  >
-                    ·
-                    {{
-                      getLegBetween(station.id, plannedStations[index + 1].id)!
-                        .amount!.toFixed(2)
-                        .replace('.', ',')
-                    }}&nbsp;€
+                </template>
+                <template v-else>
+                  <span class="leg-empty">
+                    <AppIcon
+                      :icon="ACTION_ICONS.recordStart"
+                      :size="ICON_SIZE_XS"
+                      group="actions"
+                    />
+                    + Verkehrsmittel
                   </span>
-                </span>
-              </template>
-              <template v-else>
-                <span class="leg-empty">
-                  <AppIcon :icon="ACTION_ICONS.recordStart" :size="12" group="actions" /> +
-                  Verkehrsmittel
-                </span>
-              </template>
-            </Button>
-            <IconButton
-              v-if="getLegBetween(station.id, plannedStations[index + 1].id)"
-              variant="ghost"
-              size="xs"
-              :icon="ACTION_ICONS.close"
-              class="remove-btn leg-remove-btn"
-              title="Weg-Details entfernen"
-              aria-label="Weg-Details entfernen"
-              @click.stop="removeLegBetween(station.id, plannedStations[index + 1].id)"
-            />
+                </template>
+              </Button>
+              <IconButton
+                v-if="getLegBetween(station.id, plannedStations[index + 1].id)"
+                variant="ghost"
+                size="xs"
+                :icon="ACTION_ICONS.close"
+                class="remove-btn leg-remove-btn"
+                title="Weg-Details entfernen"
+                aria-label="Weg-Details entfernen"
+                @click.stop="removeLegBetween(station.id, plannedStations[index + 1].id)"
+              />
+            </div>
+            <div class="leg-connector-line"></div>
           </div>
-          <div class="leg-connector-line"></div>
-        </div>
-      </template>
-      <div
-        class="drop-line"
-        v-if="draggedIndex !== null && dropIndicatorIndex === plannedStations.length"
-      ></div>
-    </fieldset>
+        </template>
+        <div
+          class="drop-line"
+          v-if="draggedIndex !== null && dropIndicatorIndex === plannedStations.length"
+        ></div>
+      </div>
+    </section>
 
-    <fieldset class="spot-picker">
-      <legend>
-        Spots hinzufügen – nach Likes sortiert (auch mehrfach möglich, z. B. Start &amp; Ende)
-      </legend>
-      <p v-if="!addableSpots.length" class="spot-picker-empty">Noch keine Spots angelegt.</p>
-      <button
-        v-for="spot in addableSpots"
-        :key="spot.id"
-        type="button"
-        class="derived-option"
-        @click="addSpot(spot.id)"
-      >
-        <span class="spot-option-title">
-          <AppIcon :icon="spotCategoryMeta(spot.category).tabler" :size="14" group="categories" />
-          {{ spot.title }}
-        </span>
-        <span class="spot-option-likes">
-          <AppIcon :icon="ACTION_ICONS.sortLikes" :size="13" group="actions" />
-          {{ likeCount(spot.id) }}
-        </span>
-        <span class="derived-add" aria-hidden="true">+</span>
-      </button>
+    <Divider v-if="plannedStations.length" />
 
-      <div class="spot-picker-create-row">
+    <section class="spot-picker-section">
+      <div class="spot-picker-header">
+        <h4 class="picker-section-title">Spots hinzufügen</h4>
         <Button
           type="button"
           variant="secondary"
@@ -428,11 +486,59 @@ function onDeleteLeg() {
           class="spot-picker-create-btn"
           @click="emit('create-spot')"
         >
-          <AppIcon :icon="ACTION_ICONS.mapPinPlus" :size="14" group="actions" />
+          <AppIcon :icon="ACTION_ICONS.mapPinPlus" :size="ICON_SIZE_SM" group="actions" />
           <span>Neuen Spot erstellen</span>
         </Button>
       </div>
-    </fieldset>
+
+      <Input
+        v-if="spots.length >= SEARCH_THRESHOLD"
+        v-model="searchQuery"
+        type="search"
+        size="sm"
+        shape="pill"
+        placeholder="Spots filtern..."
+        aria-label="Spots filtern"
+        class="spot-picker-search"
+      />
+
+      <p v-if="!spots.length" class="spot-picker-empty">Noch keine Spots angelegt.</p>
+      <p v-else-if="!filteredSpots.length" class="spot-picker-empty">
+        Keine passenden Spots gefunden.
+      </p>
+      <div v-else class="spot-picker-list">
+        <DropdownMenuItem
+          v-for="spot in filteredSpots"
+          :key="spot.id"
+          :icon="spotCategoryMeta(spot.category).tabler"
+          icon-group="categories"
+          :icon-size="ICON_SIZE_SM"
+          class="spot-picker-option"
+          @click="addSpot(spot.id)"
+        >
+          {{ spot.title }}
+          <template #trailing>
+            <span class="spot-option-trailing">
+              <Badge
+                v-if="spotUsageCounts.get(spot.id)"
+                variant="primary"
+                size="sm"
+                class="spot-usage-badge"
+              >
+                {{ spotUsageCounts.get(spot.id) }}×
+              </Badge>
+              <AppIcon
+                :icon="ACTION_ICONS.add"
+                :size="ICON_SIZE_SM"
+                group="actions"
+                class="spot-option-add"
+                aria-hidden="true"
+              />
+            </span>
+          </template>
+        </DropdownMenuItem>
+      </div>
+    </section>
 
     <LegTransportModal
       v-model="showLegModal"
@@ -450,8 +556,121 @@ function onDeleteLeg() {
 .spot-order-picker {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-md);
   min-width: 0;
+}
+
+.planned-section,
+.spot-picker-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.picker-section-title {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.order-hint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.planned-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.planned-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1-5);
+  min-height: 44px;
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-divider);
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  cursor: grab;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.planned-row:active {
+  cursor: grabbing;
+}
+
+.planned-row.dragging {
+  opacity: 0.4;
+}
+
+.drop-line {
+  height: 2px;
+  border-radius: 1px;
+  background: var(--color-primary);
+  margin: 0 var(--space-2);
+}
+
+.drag-handle {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.order-num {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  flex-shrink: 0;
+}
+
+.spot-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  flex: 1 1 120px;
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.spot-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layover-badge {
+  flex-shrink: 0;
+}
+
+.planned-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.remove-btn {
+  color: var(--color-text-muted);
+}
+
+@include can-hover {
+  .remove-btn:hover:not(:disabled) {
+    color: var(--color-danger);
+  }
 }
 
 .leg-connector {
@@ -532,173 +751,36 @@ function onDeleteLeg() {
   gap: var(--space-1);
 }
 
-.layover-badge {
-  display: inline-flex;
+.spot-picker-header {
+  display: flex;
   align-items: center;
-  gap: var(--space-1);
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  color: var(--color-text-muted);
-  background: var(--color-hover);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  padding: var(--space-2xs) var(--space-1-5);
-  margin-left: auto;
-  white-space: nowrap;
-  max-width: 100%;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
 }
 
-.planned-box,
-.spot-picker {
-  @include surface-sunken-box;
-  padding: var(--space-md) var(--space-lg);
+.spot-picker-search {
+  width: 100%;
+}
+
+.spot-picker-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2xs);
   min-width: 0;
 }
 
-.planned-box {
-  border-color: var(--color-primary);
-  background: var(--color-primary-tint);
-}
-
-.planned-box legend,
-.spot-picker legend {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-text-muted);
-  padding: 0 var(--space-1);
-}
-
-.order-hint {
-  margin: 0 0 var(--space-1);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-
-.planned-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  padding: var(--space-1-5) var(--space-2);
-  background: var(--color-surface);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  cursor: grab;
-  min-width: 0;
-}
-
-.planned-row:active {
-  cursor: grabbing;
-}
-
-.planned-row.dragging {
-  opacity: 0.4;
-}
-
-.drop-line {
-  height: 2px;
-  border-radius: 1px;
-  background: var(--color-primary);
-  margin: 0 var(--space-2);
-}
-
-.order-num {
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  color: var(--color-primary-dark);
-  flex-shrink: 0;
-}
-
-.drag-handle {
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-}
-
-.spot-title {
-  flex: 1 1 120px;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--font-size-sm);
-}
-
-.remove-btn {
-  color: var(--color-text-muted);
-}
-
-@include can-hover {
-  .remove-btn:hover:not(:disabled) {
-    color: var(--color-danger);
-  }
-}
-
-.spot-option-title {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.spot-option-likes {
+.spot-option-trailing {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  white-space: nowrap;
+  gap: var(--space-1-5);
+  margin-left: auto;
   flex-shrink: 0;
 }
 
-.derived-option {
-  @include touch-target($expand: true);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--font-size-sm);
-  background: none;
-  border: none;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  /* #207: der globale `button`-Basisstil (style.css) setzt box-shadow: var(--shadow-sm) - ohne
-     Reset klebten in dieser dichten Liste die Einzelschatten benachbarter Zeilen aneinander und
-     wirkten buggy, statt wie ein einzelnes, flaches Listenelement auszusehen. */
-  box-shadow: none;
-  padding: var(--space-xs) var(--space-2xs);
-  cursor: pointer;
-  color: var(--color-text);
-  width: 100%;
-  min-width: 0;
-  text-align: left;
-}
-
-@include can-hover {
-  .derived-option:hover {
-    color: var(--color-primary-dark);
-  }
-}
-
-.derived-option:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: var(--focus-ring-offset, 2px);
-}
-
-.derived-add {
+.spot-option-add {
   color: var(--color-primary);
-  font-weight: 700;
   flex-shrink: 0;
-}
-
-.spot-picker-create-row {
-  margin-top: var(--space-xs);
-  padding-top: var(--space-sm);
-  @include divider-engraved('top');
-  display: flex;
-  justify-content: flex-start;
 }
 
 .spot-picker-empty {

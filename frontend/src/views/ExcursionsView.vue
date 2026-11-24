@@ -2029,7 +2029,6 @@ onUnmounted(() => {
                       <div class="tour-empty-actions">
                         <TourSpotAssignDropdown
                           :spots="spotsStore.spots"
-                          :like-count="spotsStore.likeCountFor"
                           @select-spot="
                             (spotId) => onAddExistingSpotToTour(selectedExcursion!, spotId)
                           "

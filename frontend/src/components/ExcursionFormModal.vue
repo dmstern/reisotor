@@ -9,7 +9,8 @@ import Select from './primitives/Select.vue';
 import Button from './primitives/Button.vue';
 import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
 import SpotOrderPicker from './SpotOrderPicker.vue';
-import Checkbox from './primitives/Checkbox.vue';
+import Badge from './primitives/Badge.vue';
+import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
 import FileAttachments from './FileAttachments.vue';
 import DraftStatusBar from './DraftStatusBar.vue';
 import RichTextEditor from './RichTextEditor.vue';
@@ -326,7 +327,6 @@ defineExpose({
           v-model="activeExcursionForm.spot_ids"
           v-model:legs="activeExcursionForm.legs"
           :spots="spotsStore.spots"
-          :like-count="spotsStore.likeCountFor"
           :users="users"
           @create-spot="emit('create-spot')"
         />
@@ -358,39 +358,32 @@ defineExpose({
           <p v-if="!selectableTracksForTour.length" class="empty-subtext">
             Keine verfügbaren Aufzeichnungen für diesen Urlaub vorhanden.
           </p>
-          <ul v-else class="excursion-tracks-list">
-            <li
+          <div v-else class="excursion-tracks-list">
+            <DropdownMenuItem
               v-for="trk in selectableTracksForTour"
               :key="trk.id"
+              multiselect
+              :input-id="`tour-track-${trk.id}`"
+              :checked="activeExcursionForm.track_ids.includes(trk.id)"
+              :active="activeExcursionForm.track_ids.includes(trk.id)"
+              :label="trackTitle(trk)"
               class="excursion-track-item"
-              :class="{ 'is-selected': activeExcursionForm.track_ids.includes(trk.id) }"
+              @update:checked="onToggleTourTrack(trk)"
             >
-              <label class="excursion-track-label" :for="`tour-track-${trk.id}`">
-                <Checkbox
-                  :id="`tour-track-${trk.id}`"
-                  :checked="activeExcursionForm.track_ids.includes(trk.id)"
-                  @change="onToggleTourTrack(trk)"
-                />
-                <div class="excursion-track-info">
-                  <span class="excursion-track-name">{{ trackTitle(trk) }}</span>
-                  <span class="excursion-track-meta">
-                    <span>{{ formatDateTime(trk.started_at) }}</span>
-                    <template v-if="trackDurationLabel(trk)">
-                      · <span>{{ trackDurationLabel(trk) }}</span>
-                    </template>
-                    <span
-                      v-if="trk.visibility === 'private'"
-                      class="privacy-pill privacy-pill--private"
-                      title="Aktuell nur für dich sichtbar"
-                    >
-                      <AppIcon :icon="ACTION_ICONS.private" :size="11" group="actions" />
-                      Privat
-                    </span>
-                  </span>
-                </div>
-              </label>
-            </li>
-          </ul>
+              <template #subtitle>
+                <span>{{ formatDateTime(trk.started_at) }}</span>
+                <template v-if="trackDurationLabel(trk)">
+                  · <span>{{ trackDurationLabel(trk) }}</span>
+                </template>
+              </template>
+              <template v-if="trk.visibility === 'private'" #trailing>
+                <Badge size="sm" title="Aktuell nur für dich sichtbar">
+                  <AppIcon :icon="ACTION_ICONS.private" :size="11" group="actions" />
+                  Privat
+                </Badge>
+              </template>
+            </DropdownMenuItem>
+          </div>
         </div>
       </CollapsibleFieldset>
       <DiaryEntryPicker
@@ -545,85 +538,9 @@ defineExpose({
 }
 
 .excursion-tracks-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.excursion-track-item {
-  border: 1px solid var(--color-border-divider);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
-  background: var(--color-surface);
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease;
-}
-
-@include can-hover {
-  .excursion-track-item:hover {
-    background: var(--color-hover);
-  }
-}
-
-.excursion-track-item.is-selected {
-  border-color: var(--color-primary);
-  background: var(--color-primary-tint);
-}
-
-.excursion-track-label {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-md) var(--space-lg);
-  cursor: pointer;
-  width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-}
-
-.excursion-track-info {
   display: flex;
   flex-direction: column;
   gap: var(--space-2xs);
-  flex: 1;
-  min-width: 0;
-}
-
-.excursion-track-name {
-  font-size: var(--font-size-md);
-  font-weight: 600;
-  color: var(--color-text);
-  overflow-wrap: anywhere;
-}
-
-.excursion-track-meta {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-}
-
-.privacy-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 1px var(--space-1-5);
-  border-radius: var(--radius-pill);
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.privacy-pill--private {
-  background: var(--color-surface-sunken);
-  border: 1px solid var(--color-border-divider);
-  color: var(--color-text-muted);
 }
 
 .empty-subtext {
@@ -631,11 +548,5 @@ defineExpose({
   color: var(--color-text-muted);
   display: block;
   margin: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .excursion-track-item {
-    transition: none;
-  }
 }
 </style>

@@ -143,6 +143,7 @@ import {
   IconCopy,
   IconCheck,
   IconExternalLink,
+  IconGripVertical,
 } from '@tabler/icons-vue';
 import type { IconDef } from './icon';
 
@@ -268,7 +269,8 @@ export type ActionIconKey =
   | 'checklist'
   | 'shieldCheck'
   | 'mail'
-  | 'externalLink';
+  | 'externalLink'
+  | 'dragHandle';
 
 export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   edit: { id: 'pencil', emoji: '✏️', outline: IconPencil, filled: IconPencilFilled },
@@ -551,5 +553,10 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
     id: 'external-link',
     emoji: '↗',
     outline: IconExternalLink,
+  },
+  dragHandle: {
+    id: 'grip-vertical',
+    emoji: '⋮',
+    outline: IconGripVertical,
   },
 };

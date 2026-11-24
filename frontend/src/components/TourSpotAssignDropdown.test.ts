@@ -30,11 +30,8 @@ describe('TourSpotAssignDropdown', () => {
     } as unknown as Spot,
   ];
 
-  const likeCount = (id: number) => (id === 2 ? 5 : 1);
-
   function mountComponent(props: {
     spots: Spot[];
-    likeCount: (id: number) => number;
     compact?: boolean;
     onSelectSpot?: (id: number) => void;
     onCreateSpot?: () => void;
@@ -46,7 +43,6 @@ describe('TourSpotAssignDropdown', () => {
       render: () =>
         h(TourSpotAssignDropdown, {
           spots: props.spots,
-          likeCount: props.likeCount,
           compact: props.compact,
           'onSelect-spot': props.onSelectSpot,
           'onCreate-spot': props.onCreateSpot,
@@ -61,10 +57,9 @@ describe('TourSpotAssignDropdown', () => {
     };
   }
 
-  it('renders trigger button and opens popover on click', async () => {
+  it('renders trigger button and opens popover sorted A-Z without like counts', async () => {
     const { container } = mountComponent({
       spots,
-      likeCount,
     });
 
     const trigger = container.querySelector('.tour-add-spot-trigger') as HTMLButtonElement;
@@ -80,6 +75,7 @@ describe('TourSpotAssignDropdown', () => {
     expect(popup).not.toBeNull();
     expect(popup?.classList.contains('picker-menu')).toBe(true);
     expect(popup?.textContent).toContain('Spot hinzufügen');
+    expect(popup?.querySelector('.spot-assign-likes')).toBeNull();
 
     const options = document.querySelectorAll('.spot-assign-option');
     expect(options.length).toBe(2);
@@ -92,7 +88,6 @@ describe('TourSpotAssignDropdown', () => {
     let selectedId: number | null = null;
     const { container } = mountComponent({
       spots,
-      likeCount,
       onSelectSpot: (id) => {
         selectedId = id;
       },
@@ -114,7 +109,6 @@ describe('TourSpotAssignDropdown', () => {
     let created = false;
     const { container } = mountComponent({
       spots,
-      likeCount,
       onCreateSpot: () => {
         created = true;
       },
