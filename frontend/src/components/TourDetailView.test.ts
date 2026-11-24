@@ -120,9 +120,17 @@ describe('TourDetailView', () => {
     expect(html).toContain('tour-detail-links-row');
     expect(html).toContain('Auf Karte anzeigen');
     expect(html).toContain('Festes Schuhwerk erforderlich');
+    expect(html).toContain('tour-detail-title-group');
     expect(html).toContain('tour-edit-btn');
     expect(html).toContain('is-translucent');
     expect(html).toContain('test-stations-slot');
+
+    const titleGroupIdx = html.indexOf('tour-detail-title-group');
+    const badgeIdx = html.indexOf('tour-type-badge');
+    const editBtnIdx = html.indexOf('tour-edit-btn');
+    expect(titleGroupIdx).toBeGreaterThan(-1);
+    expect(badgeIdx).toBeGreaterThan(titleGroupIdx);
+    expect(editBtnIdx).toBeGreaterThan(badgeIdx);
   });
 
   it('rendert Uhrzeit-Spanne (Abfahrt/Ankunft) zusammen mit der Dauer in der Meta-Zeile', async () => {

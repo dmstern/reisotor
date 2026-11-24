@@ -122,12 +122,12 @@ function getCardDomElement(event?: MouseEvent): HTMLElement | null {
 function onCardClick(event?: MouseEvent) {
   const target = event?.target as HTMLElement | null;
 
-  if (target?.closest('.spot-edit-btn, a, button')) {
+  if (target?.closest('.spot-edit-btn, .spot-location-badge, .pending-sync-badge, a, button')) {
     return;
   }
 
   if (props.expanded) {
-    if (target && !target.closest('.image, .card-badge-group')) {
+    if (target && !target.closest('.image')) {
       return;
     }
 
@@ -169,26 +169,36 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
     />
 
     <div class="body">
-      <!-- Dynamischer Flex-Header im Body (Titel + Badge-Gruppe ohne Überlappung) -->
+      <!-- Dynamischer Flex-Header im Body (Titel + Badges inline links, Edit-Button rechts) -->
       <div class="card-header-row" :class="{ 'is-expanded': expanded }">
         <div v-if="!expanded" class="card-title-block">
           <component :is="headingTag" class="card-title" :title="spot.title">
             {{ spot.title }}
           </component>
-        </div>
-
-        <div class="card-badge-group">
+          <CategoryChip :category="spot.category" :icon-only="iconOnlyCategory" />
           <SpotLocationBadge
             v-if="spot.lat == null || spot.lng == null"
             :spot="spot"
-            :expanded="expanded"
+            :expanded="false"
             @edit="emit('edit', spot)"
           />
-          <CategoryChip
-            :category="spot.category"
-            :icon-only="expanded ? false : iconOnlyCategory"
+          <PendingSyncBadge v-if="spot._pending" />
+        </div>
+
+        <div
+          v-else-if="spot.lat == null || spot.lng == null || spot._pending"
+          class="card-status-badges"
+        >
+          <SpotLocationBadge
+            v-if="spot.lat == null || spot.lng == null"
+            :spot="spot"
+            :expanded="true"
+            @edit="emit('edit', spot)"
           />
           <PendingSyncBadge v-if="spot._pending" />
+        </div>
+
+        <div class="card-header-actions">
           <EditButton
             size="sm"
             shape="squircle"
@@ -417,10 +427,10 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   cursor: default;
 }
 
-/* Dynamischer Flex-Header im eingeklappten Zustand (Titel links, Badges rechts ohne Überlappung) */
+/* Dynamischer Flex-Header im eingeklappten Zustand (Titel + Badges links, Edit-Button rechts) */
 .card-header-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-2);
   min-width: 0;
@@ -430,42 +440,37 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   display: contents;
 }
 
-.card-badge-group {
+.card-header-actions {
   flex-shrink: 0;
   z-index: var(--z-card-elevated);
   display: flex;
   align-items: center;
-  gap: var(--space-1);
   pointer-events: auto;
 }
 
-.card-badge-group > *:not(.spot-edit-btn) {
-  box-shadow: var(--shadow-xs);
-}
-
-.spot-card.expanded .card-badge-group {
+.spot-card.expanded .card-header-actions {
   position: absolute;
   top: calc(var(--spot-card-pad) + var(--space-2));
   right: calc(var(--spot-card-pad) + var(--space-2));
-  max-width: calc(100% - 2 * (var(--spot-card-pad) + var(--space-2)));
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  cursor: pointer;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.card-badge-group :deep(.category-chip) {
-  cursor: inherit;
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease,
-    box-shadow 0.2s ease,
-    padding 0.2s ease,
-    gap 0.2s ease;
+.card-status-badges {
+  position: absolute;
+  top: calc(var(--spot-card-pad) + var(--space-2));
+  left: calc(var(--spot-card-pad) + var(--space-2));
+  max-width: calc(100% - 2 * (var(--spot-card-pad) + var(--space-2)) - 44px);
+  z-index: var(--z-card-elevated);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  pointer-events: auto;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.spot-card.expanded .card-badge-group :deep(.category-chip),
-.spot-card.expanded .card-badge-group :deep(.spot-location-badge) {
+.card-status-badges :deep(.spot-location-badge),
+.card-status-badges :deep(.pending-sync-badge) {
   box-shadow:
     0 1px 4px rgba(0, 0, 0, 0.4),
     0 0 0 1px rgba(255, 255, 255, 0.15);
@@ -488,77 +493,21 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 }
 
 @include can-hover {
-  .spot-card.expanded:has(
-      .image.is-expanded:hover:not(:has(a:hover)),
-      .card-badge-group:hover:not(
-          :has(.spot-location-badge:hover, .pending-sync-badge:hover, .spot-edit-btn:hover)
-        )
-    )
+  .spot-card.expanded:has(.image.is-expanded:hover:not(:has(a:hover)))
     .body
     > :not(.card-header-row, .accordion:not(.is-expanded)) {
     transform: translateY(-2px);
     opacity: 0.84;
   }
 
-  .spot-card.expanded:has(
-      .image.is-expanded:hover:not(:has(a:hover)),
-      .card-badge-group:hover:not(
-          :has(.spot-location-badge:hover, .pending-sync-badge:hover, .spot-edit-btn:hover)
-        )
-    )
-    .card-badge-group {
+  .spot-card.expanded:has(.image.is-expanded:hover:not(:has(a:hover)))
+    :is(.card-status-badges, .card-header-actions) {
     transform: translateY(-1px);
   }
 
-  .spot-card.expanded:has(
-      .image.is-expanded:active:not(:has(a:active)),
-      .card-badge-group:active:not(
-          :has(.spot-location-badge:active, .pending-sync-badge:active, .spot-edit-btn:active)
-        )
-    )
-    .card-badge-group {
+  .spot-card.expanded:has(.image.is-expanded:active:not(:has(a:active)))
+    :is(.card-status-badges, .card-header-actions) {
     transform: translateY(1px);
-  }
-
-  .spot-card.expanded:has(
-      .card-badge-group:hover:not(
-          :has(.spot-location-badge:hover, .pending-sync-badge:hover, .spot-edit-btn:hover)
-        )
-    )
-    :deep(.image.is-expanded) {
-    border-color: var(--color-primary);
-    box-shadow:
-      inset 0 1px 0 var(--shadow-control-highlight-strong),
-      var(--shadow-control-hover);
-    transform: translateY(-1px);
-  }
-
-  .spot-card.expanded:has(
-      .card-badge-group:active:not(
-          :has(.spot-location-badge:active, .pending-sync-badge:active, .spot-edit-btn:active)
-        )
-    )
-    :deep(.image.is-expanded) {
-    transform: translateY(1px) scale(0.995);
-    box-shadow: var(--shadow-control-active);
-  }
-
-  .spot-card.expanded:has(
-      .card-badge-group:hover:not(
-          :has(.spot-location-badge:hover, .pending-sync-badge:hover, .spot-edit-btn:hover)
-        )
-    )
-    :deep(.disclosure-pill) {
-    @include card-disclosure-pill-hover('overlay');
-  }
-
-  .spot-card.expanded:has(
-      .card-badge-group:hover:not(
-          :has(.spot-location-badge:hover, .pending-sync-badge:hover, .spot-edit-btn:hover)
-        )
-    )
-    :deep(.disclosure-chevron) {
-    transform: translateY(-2px);
   }
 }
 
@@ -596,11 +545,33 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 .card-title-block {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  padding-top: var(--space-1-5);
   box-sizing: border-box;
+}
+
+.card-title-block > :not(.card-title) {
+  box-shadow: var(--shadow-xs);
+}
+
+.card-title-block :deep(.category-chip) {
+  max-width: 100%;
+  cursor: inherit;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    padding 0.2s ease,
+    gap 0.2s ease;
 }
 
 .card-title {
   margin: 0;
+  min-width: 0;
+  max-width: 100%;
   font-size: var(--font-size-md);
   font-weight: 600;
   line-height: var(--line-height-snug);
@@ -883,19 +854,6 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
     left: calc(var(--spot-card-pad) + var(--space-1));
   }
 
-  .spot-card:not(.expanded) .card-badge-group :deep(.category-chip) {
-    max-width: 115px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .spot-card.expanded .card-badge-group {
-    top: calc(var(--spot-card-pad) + var(--space-2));
-    right: calc(var(--spot-card-pad) + var(--space-2));
-    max-width: calc(100% - 2 * (var(--spot-card-pad) + var(--space-2)));
-  }
-
   .spot-note-container {
     max-height: 1.45em;
   }
@@ -908,60 +866,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   }
 }
 
-@container spot-card (max-width: 380px) {
-  .spot-card:not(.expanded) .card-badge-group :deep(.spot-location-badge-label) {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
-  }
-
-  .spot-card:not(.expanded) .card-badge-group :deep(.spot-location-badge-action-btn) {
-    padding: 0 var(--space-2xs) 0 var(--space-xs);
-  }
-}
-
 @container spot-card (max-width: 340px) {
-  .spot-card:not(.expanded) .card-badge-group :deep(.category-chip-label) {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
-  }
-
-  .spot-card:not(.expanded) .card-badge-group :deep(.category-chip) {
-    padding: 3px var(--space-1);
-    gap: 0;
-    max-width: none;
-  }
-
-  .spot-card:not(.expanded) .card-badge-group :deep(.pending-sync-badge span) {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
-  }
-
-  .spot-card:not(.expanded) .card-badge-group :deep(.pending-sync-badge) {
-    padding: 3px var(--space-1);
-    gap: 0;
-  }
-
   :deep(.disclosure-pill) {
     width: 26px;
     padding: 0;
@@ -975,7 +880,8 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 @media (prefers-reduced-motion: reduce) {
   .spot-card,
   .body,
-  .spot-card.expanded .card-badge-group,
+  .spot-card.expanded .card-status-badges,
+  .spot-card.expanded .card-header-actions,
   .spot-card.expanded .body > :not(.card-header-row),
   .actions-accordion,
   .actions-accordion-inner > * {

@@ -73,6 +73,14 @@ describe('SpotCard', () => {
     expect(html).toContain('btn--ghost');
     expect(html).not.toContain('disclosure-pill--overlay');
     expect(html).not.toContain('like-btn');
+    expect(html).toContain('card-header-actions');
+
+    const titleBlockIdx = html.indexOf('card-title-block');
+    const chipIdx = html.indexOf('category-chip');
+    const actionsIdx = html.indexOf('card-header-actions');
+    expect(titleBlockIdx).toBeGreaterThan(-1);
+    expect(chipIdx).toBeGreaterThan(titleBlockIdx);
+    expect(actionsIdx).toBeGreaterThan(chipIdx);
   });
 
   it('renders expanded state with map actions, details, and cover overlay', async () => {
@@ -104,6 +112,7 @@ describe('SpotCard', () => {
     expect(html).toContain('category-chip');
     expect(html).toContain('category-chip-label');
     expect(html).toContain('Sehenswürdigkeit');
+    expect(html).toContain('card-title-inline');
     expect(html).not.toContain('is-icon-only');
   });
 
@@ -123,6 +132,7 @@ describe('SpotCard', () => {
     expect(html).toContain('category-chip');
     expect(html).toContain('category-chip-label');
     expect(html).toContain('Sehenswürdigkeit');
+    expect(html).toContain('card-title-inline');
     expect(html).not.toContain('is-icon-only');
   });
 
@@ -175,6 +185,7 @@ describe('SpotCard', () => {
       groupMode: 'category',
     });
 
+    expect(html).toContain('card-status-badges');
     expect(html).toContain('spot-location-badge');
     expect(html).toContain('set-location-btn');
     expect(html).toContain('Standort festlegen');

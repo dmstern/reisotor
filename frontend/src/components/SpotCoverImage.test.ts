@@ -74,6 +74,9 @@ describe('SpotCoverImage', () => {
       headingTag: 'h3',
     });
     expect(html).toContain('image-expanded-overlay');
+    expect(html).toContain('card-title-inline');
+    expect(html).toContain('category-chip');
+    expect(html).toContain('Sehenswürdigkeit');
     expect(html).toContain('Brandenburger Tor');
     expect(html).toContain('Von Daniel');
     expect(html).toContain('Ein schöner historischer Ort');
