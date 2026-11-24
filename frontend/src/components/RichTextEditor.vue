@@ -565,7 +565,7 @@ defineExpose({
           :inert="!isTableToolbarOpen"
         >
           <div class="table-toolbar-inner">
-            <div class="toolbar table-toolbar" role="toolbar" aria-label="Tabellen-Aktionen">
+            <div class="table-toolbar" role="toolbar" aria-label="Tabellen-Aktionen">
               <div class="toolbar-group" role="group" aria-label="Zeilen">
                 <button
                   type="button"
@@ -740,15 +740,19 @@ defineExpose({
   overflow: hidden;
 }
 
-.toolbar {
+.toolbar,
+.table-toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2xs);
-  padding: var(--space-xs);
   /* Fixer Flex-Sibling außerhalb von .content-scroll (siehe unten) statt Teil des scrollenden
      Bereichs - bleibt dadurch beim Scrollen langer Texte immer sichtbar, ganz ohne position:sticky. */
   flex-shrink: 0;
   border-bottom: 1px solid var(--color-border-divider);
+}
+
+.toolbar {
+  padding: var(--space-xs);
   background: var(--color-hover);
   transform: translateY(-4px);
   transition: transform 0.18s ease;
@@ -842,7 +846,6 @@ defineExpose({
 .table-toolbar {
   padding: var(--space-2xs) var(--space-xs);
   background: var(--color-surface-sunken);
-  transform: none;
 }
 
 .toolbar-group {
