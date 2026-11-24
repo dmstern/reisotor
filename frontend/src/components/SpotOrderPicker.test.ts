@@ -164,4 +164,63 @@ describe('SpotOrderPicker', () => {
     expect(updatedTitles).toEqual(['Zweiter', 'Erster']);
     app.unmount();
   });
+
+  it('reorders planned stations via drag and drop on the list dropzone', async () => {
+    const spots = [makeSpot(1, 'Erster'), makeSpot(2, 'Zweiter'), makeSpot(3, 'Dritter')];
+    const selected = ref<number[]>([1, 2, 3]);
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    const app = createApp({
+      render: () =>
+        h(SpotOrderPicker, {
+          modelValue: selected.value,
+          spots,
+          'onUpdate:modelValue': (next: number[]) => {
+            selected.value = next;
+          },
+        }),
+    });
+    app.use(createPinia());
+    app.mount(container);
+
+    const rows = Array.from(container.querySelectorAll('.planned-row')) as HTMLElement[];
+    rows.forEach((row, index) => {
+      row.getBoundingClientRect = () =>
+        ({
+          top: index * 50,
+          height: 44,
+          bottom: index * 50 + 44,
+          left: 0,
+          right: 300,
+          width: 300,
+          x: 0,
+          y: index * 50,
+          toJSON: () => ({}),
+        }) as DOMRect;
+    });
+
+    const dropzone = container.querySelector('.planned-list-dropzone') as HTMLElement;
+    expect(dropzone).not.toBeNull();
+
+    rows[0].dispatchEvent(new Event('dragstart', { bubbles: true }));
+    await nextTick();
+
+    const dragOverEvent = Object.assign(
+      new Event('dragover', { bubbles: true, cancelable: true }),
+      {
+        clientY: 140,
+      }
+    );
+    dropzone.dispatchEvent(dragOverEvent);
+    await nextTick();
+
+    expect(rows[2].classList.contains('drop-after')).toBe(true);
+
+    dropzone.dispatchEvent(new Event('drop', { bubbles: true, cancelable: true }));
+    await nextTick();
+
+    expect(selected.value).toEqual([2, 3, 1]);
+    app.unmount();
+  });
 });

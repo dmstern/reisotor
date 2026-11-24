@@ -165,7 +165,27 @@ const draggedIndex = ref<number | null>(null);
 // (statt nur "auf" einer Zeile) ablegen kann.
 const dropIndicatorIndex = ref<number | null>(null);
 
+const visibleDropIndicatorIndex = computed(() => {
+  if (draggedIndex.value === null || dropIndicatorIndex.value === null) {
+    return null;
+  }
+
+  if (
+    dropIndicatorIndex.value === draggedIndex.value ||
+    dropIndicatorIndex.value === draggedIndex.value + 1
+  ) {
+    return null;
+  }
+
+  return dropIndicatorIndex.value;
+});
+
 function onDragStart(event: DragEvent, index: number) {
+  if ((event.target as HTMLElement | null)?.closest('button')) {
+    event.preventDefault();
+    return;
+  }
+
   draggedIndex.value = index;
   event.dataTransfer?.setData('text/plain', '');
 
@@ -174,10 +194,29 @@ function onDragStart(event: DragEvent, index: number) {
   }
 }
 
-function onRowDragOver(event: DragEvent, index: number) {
-  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-  const before = event.clientY < rect.top + rect.height / 2;
-  dropIndicatorIndex.value = before ? index : index + 1;
+function onListDragOver(event: DragEvent) {
+  if (draggedIndex.value === null) {
+    return;
+  }
+
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move';
+  }
+
+  const dropzone = event.currentTarget as HTMLElement;
+  const rows = Array.from(dropzone.querySelectorAll('.planned-row'));
+  let nextIndex = rows.length;
+
+  for (let i = 0; i < rows.length; i++) {
+    const rect = rows[i].getBoundingClientRect();
+
+    if (event.clientY < rect.top + rect.height / 2) {
+      nextIndex = i;
+      break;
+    }
+  }
+
+  dropIndicatorIndex.value = nextIndex;
 }
 
 function onDrop() {
@@ -222,71 +261,71 @@ function onDragEnd() {
       <p class="order-hint">
         Reihenfolge der Stationen auf Tour &amp; Karte – per Buttons oder Ziehen sortieren.
       </p>
-      <TransitionGroup tag="div" name="list" class="planned-list">
-        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
-        <div
-          v-for="(station, index) in plannedStations"
-          :key="station.entryKey"
-          class="planned-row"
-          :class="{
-            dragging: draggedIndex === index,
-            'drop-before': draggedIndex !== null && dropIndicatorIndex === index,
-            'drop-after':
-              draggedIndex !== null &&
-              index === plannedStations.length - 1 &&
-              dropIndicatorIndex === plannedStations.length,
-          }"
-          draggable="true"
-          @dragstart="onDragStart($event, index)"
-          @dragover.prevent="onRowDragOver($event, index)"
-          @drop.prevent="onDrop"
-          @dragend="onDragEnd"
-        >
-          <AppIcon
-            :icon="ACTION_ICONS.dragHandle"
-            :size="GRIP_ICON_SIZE"
-            group="actions"
-            class="drag-handle"
-            aria-hidden="true"
-          />
-          <span class="order-num">{{ index + 1 }}.</span>
-          <span class="spot-title">
-            <AppIcon :icon="station.tabler" :size="ICON_SIZE_SM" group="categories" />
-            <span class="spot-title-text">{{ station.title }}</span>
-          </span>
-          <div class="planned-row-actions">
-            <IconButton
-              variant="ghost"
-              size="sm"
-              :icon="ACTION_ICONS.chevronUp"
-              :disabled="index === 0"
-              class="move-up-btn"
-              aria-label="Station nach oben verschieben"
-              title="Nach oben"
-              @click="moveSpot(index, -1)"
+      <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+      <div class="planned-list-dropzone" @dragover.prevent="onListDragOver" @drop.prevent="onDrop">
+        <TransitionGroup tag="div" name="list" class="planned-list">
+          <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+          <div
+            v-for="(station, index) in plannedStations"
+            :key="station.entryKey"
+            class="planned-row"
+            :class="{
+              dragging: draggedIndex === index,
+              'drop-before': visibleDropIndicatorIndex === index,
+              'drop-after':
+                index === plannedStations.length - 1 &&
+                visibleDropIndicatorIndex === plannedStations.length,
+            }"
+            draggable="true"
+            @dragstart="onDragStart($event, index)"
+            @dragend="onDragEnd"
+          >
+            <AppIcon
+              :icon="ACTION_ICONS.dragHandle"
+              :size="GRIP_ICON_SIZE"
+              group="actions"
+              class="drag-handle"
+              aria-hidden="true"
             />
-            <IconButton
-              variant="ghost"
-              size="sm"
-              :icon="ACTION_ICONS.chevronDown"
-              :disabled="index === plannedStations.length - 1"
-              class="move-down-btn"
-              aria-label="Station nach unten verschieben"
-              title="Nach unten"
-              @click="moveSpot(index, 1)"
-            />
-            <IconButton
-              variant="ghost"
-              size="sm"
-              :icon="ACTION_ICONS.close"
-              class="remove-btn"
-              aria-label="Aus Tour entfernen"
-              title="Aus Tour entfernen"
-              @click="removeSpotAt(index)"
-            />
+            <span class="order-num">{{ index + 1 }}.</span>
+            <span class="spot-title">
+              <AppIcon :icon="station.tabler" :size="ICON_SIZE_SM" group="categories" />
+              <span class="spot-title-text">{{ station.title }}</span>
+            </span>
+            <div class="planned-row-actions">
+              <IconButton
+                variant="ghost"
+                size="sm"
+                :icon="ACTION_ICONS.chevronUp"
+                :disabled="index === 0"
+                class="move-up-btn"
+                aria-label="Station nach oben verschieben"
+                title="Nach oben"
+                @click="moveSpot(index, -1)"
+              />
+              <IconButton
+                variant="ghost"
+                size="sm"
+                :icon="ACTION_ICONS.chevronDown"
+                :disabled="index === plannedStations.length - 1"
+                class="move-down-btn"
+                aria-label="Station nach unten verschieben"
+                title="Nach unten"
+                @click="moveSpot(index, 1)"
+              />
+              <IconButton
+                variant="ghost"
+                size="sm"
+                :icon="ACTION_ICONS.close"
+                class="remove-btn"
+                aria-label="Aus Tour entfernen"
+                title="Aus Tour entfernen"
+                @click="removeSpotAt(index)"
+              />
+            </div>
           </div>
-        </div>
-      </TransitionGroup>
+        </TransitionGroup>
+      </div>
     </template>
     <p v-else class="spot-picker-empty">Noch keine Stationen zugeordnet.</p>
 
@@ -314,6 +353,10 @@ function onDragEnd() {
   margin: 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+}
+
+.planned-list-dropzone {
+  padding: var(--space-2xs) 0;
 }
 
 .planned-list {

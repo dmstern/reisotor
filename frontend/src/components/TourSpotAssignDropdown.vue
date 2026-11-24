@@ -11,7 +11,7 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { computePopoverPosition } from '../utils/popoverPosition';
 
-const DEFAULT_MENU_WIDTH = 320;
+const DEFAULT_MENU_WIDTH = 380;
 const DEFAULT_MENU_HEIGHT = 320;
 const MENU_OFFSET = 6;
 const TRIGGER_ICON_SIZE = 14;
@@ -272,9 +272,10 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
-.tour-spot-assign-popup {
-  min-width: 280px;
-  max-width: min(360px, calc(100vw - 24px));
+:global(.tour-spot-assign-popup) {
+  width: min(380px, calc(100vw - 24px));
+  min-width: min(320px, calc(100vw - 24px));
+  max-width: min(420px, calc(100vw - 24px));
 }
 
 .popup-head {
