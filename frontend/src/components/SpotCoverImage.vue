@@ -117,7 +117,7 @@ function formatAccommodationDate(dateStr: string | null) {
 }
 
 .image.is-expanded {
-  height: 165px;
+  height: 192px;
   cursor: pointer;
   border: 1px solid color-mix(in srgb, var(--color-primary) 28%, var(--color-border));
   box-shadow:
@@ -353,7 +353,7 @@ function formatAccommodationDate(dateStr: string | null) {
   }
 
   .image.is-expanded {
-    height: 145px;
+    height: 168px;
   }
 
   .image-expanded-overlay {

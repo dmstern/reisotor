@@ -179,4 +179,72 @@ describe('SpotLocationBadge', () => {
     app.unmount();
     container.remove();
   });
+
+  it('aligns InfoPopover to the left by default and supports popoverAlign="right"', async () => {
+    const TRIGGER_LEFT = 400;
+    const TRIGGER_RIGHT = 420;
+    const TRIGGER_TOP = 100;
+    const TRIGGER_BOTTOM = 120;
+    const TRIGGER_SIZE = 20;
+    const CARD_POPOVER_WIDTH = 290;
+
+    const mockRect = () =>
+      ({
+        left: TRIGGER_LEFT,
+        right: TRIGGER_RIGHT,
+        top: TRIGGER_TOP,
+        bottom: TRIGGER_BOTTOM,
+        width: TRIGGER_SIZE,
+        height: TRIGGER_SIZE,
+        x: TRIGGER_LEFT,
+        y: TRIGGER_TOP,
+        toJSON: () => ({}),
+      }) as DOMRect;
+
+    const defaultContainer = document.createElement('div');
+    document.body.appendChild(defaultContainer);
+    const defaultApp = createApp({
+      render: () => h(SpotLocationBadge, { spot: spotWithoutLocation }),
+    });
+    defaultApp.use(createPinia());
+    defaultApp.mount(defaultContainer);
+
+    const defaultInfoBtn = defaultContainer.querySelector('.info-popover-btn') as HTMLButtonElement;
+    defaultInfoBtn.getBoundingClientRect = mockRect;
+    defaultInfoBtn.click();
+    await nextTick();
+    await nextTick();
+
+    const defaultMenu = document.body.querySelector('.info-popover-menu') as HTMLElement;
+    expect(defaultMenu).not.toBeNull();
+    expect(defaultMenu.style.left).toBe(`${TRIGGER_LEFT}px`);
+
+    defaultApp.unmount();
+    defaultContainer.remove();
+
+    const rightContainer = document.createElement('div');
+    document.body.appendChild(rightContainer);
+    const rightApp = createApp({
+      render: () =>
+        h(SpotLocationBadge, {
+          spot: spotWithoutLocation,
+          popoverAlign: 'right',
+        }),
+    });
+    rightApp.use(createPinia());
+    rightApp.mount(rightContainer);
+
+    const rightInfoBtn = rightContainer.querySelector('.info-popover-btn') as HTMLButtonElement;
+    rightInfoBtn.getBoundingClientRect = mockRect;
+    rightInfoBtn.click();
+    await nextTick();
+    await nextTick();
+
+    const rightMenu = document.body.querySelector('.info-popover-menu') as HTMLElement;
+    expect(rightMenu).not.toBeNull();
+    expect(rightMenu.style.left).toBe(`${TRIGGER_RIGHT - CARD_POPOVER_WIDTH}px`);
+
+    rightApp.unmount();
+    rightContainer.remove();
+  });
 });

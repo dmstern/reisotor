@@ -459,14 +459,21 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   position: absolute;
   top: calc(var(--spot-card-pad) + var(--space-2));
   left: calc(var(--spot-card-pad) + var(--space-2));
-  max-width: calc(100% - 2 * (var(--spot-card-pad) + var(--space-2)) - 44px);
+  max-width: calc(
+    100% - 2 *
+      (var(--spot-card-pad) + var(--space-2)) - var(--control-height-sm, 36px) - var(--space-2)
+  );
   z-index: var(--z-card-elevated);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1);
-  pointer-events: auto;
+  pointer-events: none;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-status-badges > * {
+  pointer-events: auto;
 }
 
 .card-status-badges :deep(.spot-location-badge),
@@ -553,7 +560,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
   box-sizing: border-box;
 }
 
-.card-title-block > :not(.card-title) {
+.card-title-block > :not(.card-title, :focus-visible) {
   box-shadow: var(--shadow-xs);
 }
 
@@ -583,7 +590,10 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 }
 
 @include can-hover {
-  .spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) .card-title {
+  .spot-card:not(.expanded):hover:not(
+      :has(.spot-edit-btn:hover, .spot-location-badge:hover, .pending-sync-badge:hover)
+    )
+    .card-title {
     color: var(--color-primary-dark);
   }
 }
@@ -678,11 +688,17 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 }
 
 @include can-hover {
-  .spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) :deep(.disclosure-pill) {
+  .spot-card:not(.expanded):hover:not(
+      :has(.spot-edit-btn:hover, .spot-location-badge:hover, .pending-sync-badge:hover)
+    )
+    :deep(.disclosure-pill) {
     @include card-disclosure-pill-hover('tonal');
   }
 
-  .spot-card:not(.expanded):hover:not(:has(.spot-edit-btn:hover)) :deep(.disclosure-chevron) {
+  .spot-card:not(.expanded):hover:not(
+      :has(.spot-edit-btn:hover, .spot-location-badge:hover, .pending-sync-badge:hover)
+    )
+    :deep(.disclosure-chevron) {
     transform: translateY(1.5px);
   }
 }
