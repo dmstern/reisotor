@@ -9,6 +9,7 @@ import RichTextEditor from '../components/RichTextEditor.vue';
 import FormField from '../components/FormField.vue';
 import RichTextDisplay from '../components/RichTextDisplay.vue';
 import { isEmptyRichText } from '../utils/richText';
+import { createLatestWinsSaveQueue } from '../utils/richTextChecklist';
 import Modal from '../components/Modal.vue';
 import EditButton from '../components/EditButton.vue';
 import SocialRow from '../components/SocialRow.vue';
@@ -178,32 +179,43 @@ function toggleComments(noteId: number) {
   }
 }
 
+const noteSaveQueue = createLatestWinsSaveQueue<Note>();
+
+function replaceNote(updated: Note) {
+  const idx = notes.value.findIndex((item) => item.id === updated.id);
+
+  if (idx !== -1) {
+    notes.value[idx] = updated;
+  }
+}
+
 async function updateNoteContent(note: Note, html: string) {
-  const previousContent = note.content;
-  const previousFormat = note.content_format;
+  const snapshot: Note = { ...note };
   note.content = html;
   note.content_format = 'html';
 
-  try {
-    const updated = await api.put<Note>(`/notes/${note.id}`, {
-      title: note.title ?? '',
-      content: html,
-      content_format: 'html',
-      is_draft: Boolean(note.is_draft),
-    });
-    const idx = notes.value.findIndex((item) => item.id === note.id);
-
-    if (idx !== -1) {
-      notes.value[idx] = updated;
-    }
-  } catch {
-    note.content = previousContent;
-    note.content_format = previousFormat;
-    showToast({
-      message: 'Checklisten-Status konnte nicht gespeichert werden.',
-      type: 'error',
-    });
-  }
+  await noteSaveQueue.enqueue(String(note.id), {
+    captureSnapshot: () => snapshot,
+    persist: () =>
+      api.put<Note>(`/notes/${note.id}`, {
+        title: note.title ?? '',
+        content: html,
+        content_format: 'html',
+        is_draft: Boolean(note.is_draft),
+      }),
+    onCommitted: (updated) => {
+      replaceNote(updated);
+    },
+    onRollback: (confirmed) => {
+      note.content = confirmed.content;
+      note.content_format = confirmed.content_format;
+      replaceNote(confirmed);
+      showToast({
+        message: 'Checklisten-Status konnte nicht gespeichert werden.',
+        type: 'error',
+      });
+    },
+  });
 }
 
 async function toggleLike(noteId: number) {

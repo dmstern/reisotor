@@ -44,7 +44,7 @@ function onContainerClick(event: MouseEvent) {
 
   const target = event.target as HTMLElement | null;
 
-  if (target?.closest('li[data-type="taskItem"] > label')) {
+  if (target?.closest('li[data-type="taskItem"]')) {
     event.stopPropagation();
   }
 }

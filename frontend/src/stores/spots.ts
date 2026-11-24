@@ -7,6 +7,7 @@ import { useLiveSyncStore } from './liveSync';
 import { useToast } from '../composables/useToast';
 import { restoreTrashItem } from '../api/trash';
 import { useTripCategoriesStore } from './tripCategories';
+import { createLatestWinsSaveQueue } from '../utils/richTextChecklist';
 export interface SpotFormData {
   trip_id: number;
   title: string;
@@ -314,6 +315,20 @@ export const useSpotsStore = defineStore('spots', () => {
     };
   }
 
+  const noteSaveQueue = createLatestWinsSaveQueue<Spot>();
+
+  function replaceSpot(updated: Spot) {
+    const idx = spots.value.findIndex((spot) => spot.id === updated.id);
+
+    if (idx === -1) {
+      return;
+    }
+
+    const next = [...spots.value];
+    next[idx] = updated;
+    spots.value = next;
+  }
+
   async function updateNote(id: number, note: string) {
     const idx = spots.value.findIndex((spot) => spot.id === id);
 
@@ -326,23 +341,21 @@ export const useSpotsStore = defineStore('spots', () => {
     next[idx] = { ...existing, note, note_format: 'html' };
     spots.value = next;
 
-    try {
-      await update(id, buildSpotNotePayload(existing, note));
-    } catch {
-      const rollback = [...spots.value];
-      const rollbackIdx = rollback.findIndex((spot) => spot.id === id);
-
-      if (rollbackIdx !== -1) {
-        rollback[rollbackIdx] = existing;
-        spots.value = rollback;
-      }
-
-      const { showToast } = useToast();
-      showToast({
-        message: 'Checklisten-Status konnte nicht gespeichert werden.',
-        type: 'error',
-      });
-    }
+    await noteSaveQueue.enqueue(String(id), {
+      captureSnapshot: () => existing,
+      persist: () => api.put<Spot>(`/spots/${id}`, buildSpotNotePayload(existing, note)),
+      onCommitted: (updated) => {
+        replaceSpot(updated);
+      },
+      onRollback: (snapshot) => {
+        replaceSpot(snapshot);
+        const { showToast } = useToast();
+        showToast({
+          message: 'Checklisten-Status konnte nicht gespeichert werden.',
+          type: 'error',
+        });
+      },
+    });
   }
 
   return {

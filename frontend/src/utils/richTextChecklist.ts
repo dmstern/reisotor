@@ -130,3 +130,78 @@ export function toggleTaskItemInHtml(
 
   return sanitizeRichTextHtml(doc.body.innerHTML);
 }
+
+export interface LatestWinsSaveTask<TEntity> {
+  captureSnapshot: () => TEntity;
+  persist: () => Promise<TEntity>;
+  onCommitted: (result: TEntity) => void;
+  onRollback: (snapshot: TEntity) => void;
+}
+
+interface ActiveBatchState<TEntity> {
+  lastConfirmed: TEntity;
+  pending: LatestWinsSaveTask<TEntity> | null;
+  promise: Promise<void>;
+}
+
+/**
+ * Serializes and coalesces rapid optimistic updates per entity key ("latest wins").
+ * At most one `persist()` call runs at a time per key; intermediate clicks overwrite `pending`,
+ * stale intermediate responses update the rollback baseline without overwriting newer optimistic UI,
+ * and errors roll back to the last server-confirmed snapshot.
+ */
+export function createLatestWinsSaveQueue<TEntity>() {
+  const activeBatches = new Map<string, ActiveBatchState<TEntity>>();
+
+  async function flush(
+    key: string,
+    initialTask: LatestWinsSaveTask<TEntity>,
+    state: ActiveBatchState<TEntity>
+  ): Promise<void> {
+    let currentTask: LatestWinsSaveTask<TEntity> | null = initialTask;
+
+    while (currentTask) {
+      const taskToRun = currentTask;
+
+      try {
+        const result = await taskToRun.persist();
+
+        if (state.pending) {
+          state.lastConfirmed = result;
+          currentTask = state.pending;
+          state.pending = null;
+        } else {
+          activeBatches.delete(key);
+          taskToRun.onCommitted(result);
+          currentTask = null;
+        }
+      } catch {
+        state.pending = null;
+        activeBatches.delete(key);
+        taskToRun.onRollback(state.lastConfirmed);
+        currentTask = null;
+      }
+    }
+  }
+
+  function enqueue(key: string, task: LatestWinsSaveTask<TEntity>): Promise<void> {
+    const existing = activeBatches.get(key);
+
+    if (existing) {
+      existing.pending = task;
+      return existing.promise;
+    }
+
+    const state: ActiveBatchState<TEntity> = {
+      lastConfirmed: task.captureSnapshot(),
+      pending: null,
+      promise: Promise.resolve(),
+    };
+
+    state.promise = flush(key, task, state);
+    activeBatches.set(key, state);
+    return state.promise;
+  }
+
+  return { enqueue };
+}

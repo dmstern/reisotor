@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
+  createLatestWinsSaveQueue,
   prepareChecklistHtmlForDisplay,
   sanitizeRichTextHtml,
   toggleTaskItemInHtml,
@@ -83,5 +84,134 @@ describe('toggleTaskItemInHtml', () => {
   it('returns html unchanged for out-of-bounds index', () => {
     expect(toggleTaskItemInHtml(SAMPLE_TASK_LIST, -1)).toBe(SAMPLE_TASK_LIST);
     expect(toggleTaskItemInHtml(SAMPLE_TASK_LIST, 99)).toBe(SAMPLE_TASK_LIST);
+  });
+});
+
+interface Deferred<T> {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+  reject: (reason?: unknown) => void;
+}
+
+function createDeferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+
+  return { promise, resolve, reject };
+}
+
+describe('createLatestWinsSaveQueue', () => {
+  it('coalesces rapid updates and skips stale onCommitted callbacks', async () => {
+    const queue = createLatestWinsSaveQueue<string>();
+    const first = createDeferred<string>();
+    const third = createDeferred<string>();
+    const onCommitted = vi.fn();
+    const onRollback = vi.fn();
+    const persist1 = vi.fn(() => first.promise);
+    const persist2 = vi.fn(async () => 'v2');
+    const persist3 = vi.fn(() => third.promise);
+
+    const p1 = queue.enqueue('note-1', {
+      captureSnapshot: () => 'v0',
+      persist: persist1,
+      onCommitted,
+      onRollback,
+    });
+    const p2 = queue.enqueue('note-1', {
+      captureSnapshot: () => 'v1-optimistic',
+      persist: persist2,
+      onCommitted,
+      onRollback,
+    });
+    const p3 = queue.enqueue('note-1', {
+      captureSnapshot: () => 'v2-optimistic',
+      persist: persist3,
+      onCommitted,
+      onRollback,
+    });
+
+    expect(persist1).toHaveBeenCalledTimes(1);
+    expect(persist2).not.toHaveBeenCalled();
+    expect(persist3).not.toHaveBeenCalled();
+
+    first.resolve('v1-server');
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(onCommitted).not.toHaveBeenCalled();
+    expect(persist2).not.toHaveBeenCalled();
+    expect(persist3).toHaveBeenCalledTimes(1);
+
+    third.resolve('v3-server');
+    await Promise.all([p1, p2, p3]);
+
+    expect(onCommitted).toHaveBeenCalledTimes(1);
+    expect(onCommitted).toHaveBeenCalledWith('v3-server');
+    expect(onRollback).not.toHaveBeenCalled();
+  });
+
+  it('rolls back to initial snapshot when first request fails with queued update', async () => {
+    const queue = createLatestWinsSaveQueue<string>();
+    const first = createDeferred<string>();
+    const onCommitted = vi.fn();
+    const onRollback = vi.fn();
+    const persist2 = vi.fn(async () => 'v2-server');
+
+    const p1 = queue.enqueue('note-1', {
+      captureSnapshot: () => 'v0',
+      persist: () => first.promise,
+      onCommitted,
+      onRollback,
+    });
+    const p2 = queue.enqueue('note-1', {
+      captureSnapshot: () => 'v1-optimistic',
+      persist: persist2,
+      onCommitted,
+      onRollback,
+    });
+
+    first.reject(new Error('network error'));
+    await Promise.all([p1, p2]);
+
+    expect(persist2).not.toHaveBeenCalled();
+    expect(onCommitted).not.toHaveBeenCalled();
+    expect(onRollback).toHaveBeenCalledTimes(1);
+    expect(onRollback).toHaveBeenCalledWith('v0');
+  });
+
+  it('rolls back to server-confirmed first result when second coalesced request fails', async () => {
+    const queue = createLatestWinsSaveQueue<string>();
+    const first = createDeferred<string>();
+    const second = createDeferred<string>();
+    const onCommitted = vi.fn();
+    const onRollback = vi.fn();
+
+    const p1 = queue.enqueue('note-1', {
+      captureSnapshot: () => 'v0',
+      persist: () => first.promise,
+      onCommitted,
+      onRollback,
+    });
+    const p2 = queue.enqueue('note-1', {
+      captureSnapshot: () => 'v1-optimistic',
+      persist: () => second.promise,
+      onCommitted,
+      onRollback,
+    });
+
+    first.resolve('v1-server');
+    await Promise.resolve();
+    await Promise.resolve();
+
+    second.reject(new Error('network error'));
+    await Promise.all([p1, p2]);
+
+    expect(onCommitted).not.toHaveBeenCalled();
+    expect(onRollback).toHaveBeenCalledTimes(1);
+    expect(onRollback).toHaveBeenCalledWith('v1-server');
   });
 });

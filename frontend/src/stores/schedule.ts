@@ -5,6 +5,7 @@ import type { ScheduleItem } from '../api/types';
 import { useTripStore } from './trip';
 import { useLiveSyncStore } from './liveSync';
 import { useToast } from '../composables/useToast';
+import { createLatestWinsSaveQueue } from '../utils/richTextChecklist';
 export interface ScheduleFormData {
   trip_id: number;
   date: string;
@@ -117,6 +118,20 @@ export const useScheduleStore = defineStore('schedule', () => {
     };
   }
 
+  const noteSaveQueue = createLatestWinsSaveQueue<ScheduleItem>();
+
+  function replaceScheduleItem(updated: ScheduleItem) {
+    const idx = items.value.findIndex((item) => item.id === updated.id);
+
+    if (idx === -1) {
+      return;
+    }
+
+    const next = [...items.value];
+    next[idx] = updated;
+    items.value = next;
+  }
+
   async function updateNote(id: number, note: string) {
     const idx = items.value.findIndex((item) => item.id === id);
 
@@ -129,23 +144,22 @@ export const useScheduleStore = defineStore('schedule', () => {
     next[idx] = { ...existing, note };
     items.value = next;
 
-    try {
-      await update(id, buildScheduleNotePayload(existing, note));
-    } catch {
-      const rollback = [...items.value];
-      const rollbackIdx = rollback.findIndex((item) => item.id === id);
-
-      if (rollbackIdx !== -1) {
-        rollback[rollbackIdx] = existing;
-        items.value = rollback;
-      }
-
-      const { showToast } = useToast();
-      showToast({
-        message: 'Checklisten-Status konnte nicht gespeichert werden.',
-        type: 'error',
-      });
-    }
+    await noteSaveQueue.enqueue(String(id), {
+      captureSnapshot: () => existing,
+      persist: () =>
+        api.put<ScheduleItem>(`/schedule/${id}`, buildScheduleNotePayload(existing, note)),
+      onCommitted: (updated) => {
+        replaceScheduleItem(updated);
+      },
+      onRollback: (snapshot) => {
+        replaceScheduleItem(snapshot);
+        const { showToast } = useToast();
+        showToast({
+          message: 'Checklisten-Status konnte nicht gespeichert werden.',
+          type: 'error',
+        });
+      },
+    });
   }
 
   return {
