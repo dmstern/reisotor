@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   isBookingLinkUrl,
   cleanAccommodationTitle,
@@ -397,6 +397,10 @@ describe('bookingLink', () => {
       vi.restoreAllMocks();
     });
 
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
     it('fetches URL, extracts metadata and dates from URL query params', async () => {
       const mockHtml = `
         <html>
@@ -412,11 +416,14 @@ describe('bookingLink', () => {
         </html>
       `;
 
-      global.fetch = vi.fn().mockResolvedValue({
-        status: 200,
-        url: 'https://www.booking.com/hotel/at/alpenchalet.html?checkIn=2026-07-01&checkOut=2026-07-08',
-        text: async () => mockHtml,
-      } as unknown as Response);
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          status: 200,
+          url: 'https://www.booking.com/hotel/at/alpenchalet.html?checkIn=2026-07-01&checkOut=2026-07-08',
+          text: async () => mockHtml,
+        })
+      );
 
       const preview = await fetchAccommodationPreview(
         'https://www.booking.com/hotel/at/alpenchalet.html?checkIn=2026-07-01&checkOut=2026-07-08'
@@ -444,46 +451,49 @@ describe('bookingLink', () => {
         </html>
       `;
 
-      global.fetch = vi.fn((url: string) => {
-        if (String(url).includes('booking.com')) {
-          return Promise.resolve({
-            status: 200,
-            url: 'https://www.booking.com/hotel/at/sonnenhof.html',
-            text: async () => mockHtmlWithoutCoords,
-          });
-        }
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((url: string) => {
+          if (String(url).includes('booking.com')) {
+            return Promise.resolve({
+              status: 200,
+              url: 'https://www.booking.com/hotel/at/sonnenhof.html',
+              text: async () => mockHtmlWithoutCoords,
+            });
+          }
 
-        if (
-          String(url).includes('nominatim') ||
-          String(url).includes('photon') ||
-          String(url).includes('places')
-        ) {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({
-              type: 'FeatureCollection',
-              features: [
-                {
-                  type: 'Feature',
-                  geometry: {
-                    type: 'Point',
-                    coordinates: [13.055, 47.8095],
+          if (
+            String(url).includes('nominatim') ||
+            String(url).includes('photon') ||
+            String(url).includes('places')
+          ) {
+            return Promise.resolve({
+              ok: true,
+              json: async () => ({
+                type: 'FeatureCollection',
+                features: [
+                  {
+                    type: 'Feature',
+                    geometry: {
+                      type: 'Point',
+                      coordinates: [13.055, 47.8095],
+                    },
+                    properties: {
+                      name: 'Pension Sonnenhof',
+                      street: 'Hauptstraße',
+                      housenumber: '15',
+                      city: 'Salzburg',
+                      country: 'Österreich',
+                    },
                   },
-                  properties: {
-                    name: 'Pension Sonnenhof',
-                    street: 'Hauptstraße',
-                    housenumber: '15',
-                    city: 'Salzburg',
-                    country: 'Österreich',
-                  },
-                },
-              ],
-            }),
-          });
-        }
+                ],
+              }),
+            });
+          }
 
-        return Promise.resolve({ ok: true, text: async () => '' });
-      }) as unknown as typeof fetch;
+          return Promise.resolve({ ok: true, text: async () => '' });
+        })
+      );
 
       const preview = await fetchAccommodationPreview(
         'https://www.booking.com/hotel/at/sonnenhof.html'
@@ -512,10 +522,13 @@ describe('bookingLink', () => {
           </head>
         </html>
       `;
-      global.fetch = vi.fn().mockResolvedValue({
-        status: 200,
-        text: async () => mockHtml,
-      } as unknown as Response);
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          status: 200,
+          text: async () => mockHtml,
+        })
+      );
 
       const preview = await fetchAccommodationPreview(
         'https://www.booking.com/hotel/de/ferienpark.html?checkin=2026-12-11&checkout=2026-12-14&sr_pri_blocks=57600623_372486079_2_0_0__23409'
@@ -549,10 +562,13 @@ describe('bookingLink', () => {
           </head>
         </html>
       `;
-      global.fetch = vi.fn().mockResolvedValue({
-        status: 200,
-        text: async () => mockHtml,
-      } as unknown as Response);
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          status: 200,
+          text: async () => mockHtml,
+        })
+      );
 
       const preview = await fetchAccommodationPreview(
         'https://www.trivago.de/en-US/acd/hotels-ueberlingen-germany?search=100-118997;dr-20270401-20270404;drs-46;rc-1-2'
@@ -565,29 +581,32 @@ describe('bookingLink', () => {
     });
 
     it('retries with fallback user agent when AWS WAF bot challenge is returned', async () => {
-      global.fetch = vi.fn((_url: string, init?: RequestInit) => {
-        const ua = (init?.headers as Record<string, string>)?.['User-Agent'];
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((_url: string, init?: RequestInit) => {
+          const ua = (init?.headers as Record<string, string>)?.['User-Agent'];
 
-        if (ua?.includes('Chrome')) {
-          // Simulator: Browser UA wird mit WAF-Challenge blockiert
+          if (ua?.includes('Chrome')) {
+            // Simulator: Browser UA wird mit WAF-Challenge blockiert
+            return Promise.resolve({
+              status: 200,
+              text: async () =>
+                '<html><script>window.awsWafCookieDomainList=["booking.com"];</script></html>',
+            });
+          }
+
+          // Preview Bot UA erhält volles HTML
           return Promise.resolve({
             status: 200,
-            text: async () =>
-              '<html><script>window.awsWafCookieDomainList=["booking.com"];</script></html>',
-          } as unknown as Response);
-        }
-
-        // Preview Bot UA erhält volles HTML
-        return Promise.resolve({
-          status: 200,
-          text: async () => `
+            text: async () => `
             <html>
               <head><meta property="og:title" content="Ferienpark Müritz" /></head>
               <body><a data-atlas-latlng="53.357957,12.728514">Karte</a></body>
             </html>
           `,
-        } as unknown as Response);
-      }) as unknown as typeof fetch;
+          });
+        })
+      );
 
       const preview = await fetchAccommodationPreview(
         'https://www.booking.com/hotel/de/ferienpark.html'
