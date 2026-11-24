@@ -201,7 +201,12 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 
       <!-- Spot-Notiz: Trunkiert mit Ellipsis im collapsed Zustand (#235) -->
       <div v-if="!expanded && spot.note" class="spot-note-container">
-        <RichTextDisplay class="note is-clamped" :content="spot.note" :format="spot.note_format" />
+        <RichTextDisplay
+          class="note is-clamped"
+          compact
+          :content="spot.note"
+          :format="spot.note_format"
+        />
       </div>
 
       <!-- Eigene, explizite Aktionen (#109, #381) – nur im aufgeklappten Zustand sichtbar -->

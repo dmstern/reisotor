@@ -76,6 +76,7 @@ function formatAccommodationDate(dateStr: string | null) {
               <div v-if="spot.note" class="overlay-note">
                 <RichTextDisplay
                   class="note is-banner"
+                  compact
                   :content="spot.note"
                   :format="spot.note_format"
                   interactive
@@ -283,9 +284,21 @@ function formatAccommodationDate(dateStr: string | null) {
 }
 
 .note.is-banner :deep(p),
-.note.is-banner :deep(div) {
+.note.is-banner :deep(div),
+.note.is-banner :deep(h1),
+.note.is-banner :deep(h2),
+.note.is-banner :deep(h3),
+.note.is-banner :deep(h4),
+.note.is-banner :deep(h5),
+.note.is-banner :deep(h6),
+.note.is-banner :deep(th),
+.note.is-banner :deep(td) {
   display: inline;
   margin: 0;
+  color: inherit;
+}
+
+.note.is-banner :deep(::before) {
   color: inherit;
 }
 

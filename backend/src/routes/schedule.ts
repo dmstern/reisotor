@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { db } from '../db/index.js';
 import { requireTripMember } from '../tripAccess.js';
 import { recordActivity } from '../activity.js';
+import { sanitizeHtml } from '../utils/sanitizeHtml.js';
 
 interface ScheduleBody {
   trip_id: number;
@@ -57,6 +58,18 @@ function locationFromSpot(spotId: number | null | undefined) {
     { maps_link: string | null; lat: number | null; lng: number | null } | undefined;
 }
 
+function sanitizeScheduleNote(note: string | undefined): string | null {
+  if (!note) {
+    return null;
+  }
+
+  if (note.trimStart().startsWith('<')) {
+    return sanitizeHtml(note);
+  }
+
+  return note;
+}
+
 export const scheduleRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { trip_id?: string } }>('/schedule', async (req, reply) => {
     if (!req.query.trip_id) {
@@ -101,7 +114,7 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
       time ?? null,
       end_time ?? null,
       title,
-      note ?? null,
+      sanitizeScheduleNote(note),
       location ?? null,
       spot?.maps_link ?? maps_link ?? null,
       spot?.lat ?? lat ?? null,
@@ -178,7 +191,7 @@ export const scheduleRoutes: FastifyPluginAsync = async (app) => {
       time ?? null,
       end_time ?? null,
       title,
-      note ?? null,
+      sanitizeScheduleNote(note),
       location ?? null,
       spot?.maps_link ?? maps_link ?? null,
       spot?.lat ?? lat ?? null,

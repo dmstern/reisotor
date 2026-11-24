@@ -143,6 +143,14 @@ import {
   IconCopy,
   IconCheck,
   IconExternalLink,
+  IconTable,
+  IconRowInsertTop,
+  IconRowInsertBottom,
+  IconRowRemove,
+  IconColumnInsertLeft,
+  IconColumnInsertRight,
+  IconColumnRemove,
+  IconTableRow,
 } from '@tabler/icons-vue';
 import type { IconDef } from './icon';
 
@@ -266,6 +274,14 @@ export type ActionIconKey =
   | 'copy'
   | 'check'
   | 'checklist'
+  | 'table'
+  | 'rowInsertTop'
+  | 'rowInsertBottom'
+  | 'rowRemove'
+  | 'columnInsertLeft'
+  | 'columnInsertRight'
+  | 'columnRemove'
+  | 'tableHeader'
   | 'shieldCheck'
   | 'mail'
   | 'externalLink';
@@ -540,6 +556,46 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
     id: 'list-check',
     emoji: '☑️',
     outline: IconListCheck,
+  },
+  table: {
+    id: 'table',
+    emoji: '▦',
+    outline: IconTable,
+  },
+  rowInsertTop: {
+    id: 'row-insert-top',
+    emoji: '⬆',
+    outline: IconRowInsertTop,
+  },
+  rowInsertBottom: {
+    id: 'row-insert-bottom',
+    emoji: '⬇',
+    outline: IconRowInsertBottom,
+  },
+  rowRemove: {
+    id: 'row-remove',
+    emoji: '✕',
+    outline: IconRowRemove,
+  },
+  columnInsertLeft: {
+    id: 'column-insert-left',
+    emoji: '⬅',
+    outline: IconColumnInsertLeft,
+  },
+  columnInsertRight: {
+    id: 'column-insert-right',
+    emoji: '➡',
+    outline: IconColumnInsertRight,
+  },
+  columnRemove: {
+    id: 'column-remove',
+    emoji: '✕',
+    outline: IconColumnRemove,
+  },
+  tableHeader: {
+    id: 'table-row',
+    emoji: '▤',
+    outline: IconTableRow,
   },
   mail: {
     id: 'mail',

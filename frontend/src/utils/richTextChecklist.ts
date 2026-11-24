@@ -1,16 +1,30 @@
 import DOMPurify from 'dompurify';
 
 const ALLOWED_DATA_ATTRS = new Set(['data-type', 'data-checked']);
+const VALID_SPAN_PATTERN = /^[1-9]\d?$/;
+const ALLOWED_TABLE_SCOPES = new Set(['col', 'row', 'colgroup', 'rowgroup']);
 
 /**
  * Sanitizes Rich-Text HTML while preserving Tiptap TaskList/TaskItem structures
- * (`data-type`, `data-checked`, `<label>`, `<input type="checkbox">`, `<span>`, `<div>`).
- * Non-checkbox `<input>` elements and arbitrary `data-*` attributes are stripped.
+ * (`data-type`, `data-checked`, `<label>`, `<input type="checkbox">`, `<span>`, `<div>`)
+ * and table structures (`<table>`, `<thead>`, `<tbody>`, `<tfoot>`, `<tr>`, `<th>`, `<td>`).
+ * Non-checkbox `<input>` elements, inline `style` attributes, invalid table spans/scopes,
+ * and arbitrary `data-*` attributes are stripped.
  */
 export function sanitizeRichTextHtml(html: string): string {
   const sanitized = DOMPurify.sanitize(html, {
     ADD_TAGS: ['label', 'input', 'span', 'div'],
-    ADD_ATTR: ['data-type', 'data-checked', 'type', 'checked', 'disabled'],
+    ADD_ATTR: [
+      'data-type',
+      'data-checked',
+      'type',
+      'checked',
+      'disabled',
+      'colspan',
+      'rowspan',
+      'scope',
+    ],
+    FORBID_ATTR: ['style'],
   });
 
   if (typeof DOMParser === 'undefined') {
@@ -29,6 +43,24 @@ export function sanitizeRichTextHtml(html: string): string {
     for (const attr of Array.from(element.attributes)) {
       if (attr.name.startsWith('data-') && !ALLOWED_DATA_ATTRS.has(attr.name)) {
         element.removeAttribute(attr.name);
+      }
+    }
+  }
+
+  for (const cell of Array.from(doc.querySelectorAll('td, th'))) {
+    for (const attr of ['colspan', 'rowspan'] as const) {
+      const value = cell.getAttribute(attr);
+
+      if (value !== null && !VALID_SPAN_PATTERN.test(value)) {
+        cell.removeAttribute(attr);
+      }
+    }
+
+    if (cell.tagName === 'TH') {
+      const scope = cell.getAttribute('scope');
+
+      if (scope !== null && !ALLOWED_TABLE_SCOPES.has(scope)) {
+        cell.removeAttribute('scope');
       }
     }
   }
@@ -53,13 +85,19 @@ function getTaskItemLabel(item: Element): string {
 
 /**
  * Synchronizes `<input type="checkbox">` state, `aria-label`, and `disabled`/`tabindex`
- * attributes for read-only vs. interactive `RichTextDisplay` rendering.
+ * attributes for read-only vs. interactive `RichTextDisplay` rendering, and optionally wraps
+ * `<table>` elements in a keyboard-scrollable region wrapper.
  */
-export function prepareChecklistHtmlForDisplay(html: string, interactive: boolean): string {
+export function prepareChecklistHtmlForDisplay(
+  html: string,
+  interactive: boolean,
+  options?: { wrapTables?: boolean }
+): string {
   if (typeof DOMParser === 'undefined') {
     return html;
   }
 
+  const wrapTables = options?.wrapTables ?? true;
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const taskItems = doc.querySelectorAll('li[data-type="taskItem"]');
 
@@ -88,6 +126,22 @@ export function prepareChecklistHtmlForDisplay(html: string, interactive: boolea
     } else {
       checkbox.setAttribute('disabled', 'disabled');
       checkbox.setAttribute('tabindex', '-1');
+    }
+  }
+
+  if (wrapTables) {
+    for (const table of Array.from(doc.querySelectorAll('table'))) {
+      if (table.parentElement?.classList.contains('richtext-table-wrapper')) {
+        continue;
+      }
+
+      const wrapper = doc.createElement('div');
+      wrapper.className = 'richtext-table-wrapper';
+      wrapper.setAttribute('tabindex', '0');
+      wrapper.setAttribute('role', 'region');
+      wrapper.setAttribute('aria-label', 'Tabelle');
+      table.parentNode?.insertBefore(wrapper, table);
+      wrapper.appendChild(table);
     }
   }
 
