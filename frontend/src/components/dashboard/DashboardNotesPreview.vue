@@ -84,7 +84,7 @@ const secondPreviewText = computed(() => {
   position: absolute;
   width: 82px;
   height: 70px;
-  border-radius: 4px;
+  border-radius: var(--radius-2xs);
   box-shadow:
     0 4px 10px rgba(0, 0, 0, 0.12),
     0 1px 3px rgba(0, 0, 0, 0.08);

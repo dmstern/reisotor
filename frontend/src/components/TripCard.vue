@@ -344,8 +344,7 @@ function onCardClick(event: MouseEvent) {
   border: none;
   padding: var(--space-1) var(--space-1-5);
   margin: calc(-1 * var(--space-1)) calc(-1 * var(--space-1-5));
-  border-radius: var(--radius-xs-squircle);
-  corner-shape: squircle;
+  border-radius: var(--radius-xs);
   font-family: inherit;
   font-size: var(--font-size-md);
   font-weight: 700;

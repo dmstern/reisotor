@@ -126,7 +126,7 @@ const timeStr = computed(() => {
   width: 114px;
   height: 60px;
   background: #ffffff;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   box-shadow:
     0 5px 14px rgba(0, 0, 0, 0.16),
     0 1px 3px rgba(0, 0, 0, 0.08);
@@ -252,7 +252,7 @@ const timeStr = computed(() => {
   width: 8px;
   height: 8px;
   background: var(--color-surface, #ffffff);
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   border: 1px solid rgba(0, 0, 0, 0.08);
   z-index: 2;
 }

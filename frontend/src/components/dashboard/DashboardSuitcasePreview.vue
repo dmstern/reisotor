@@ -197,7 +197,7 @@ const fillTier = computed(() => {
   width: 58px;
   height: 60px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(241, 245, 249, 0.95) 100%);
-  border-radius: 8px;
+  border-radius: var(--control-radius-sm);
   border: 1.5px solid #94a3b8;
   box-shadow:
     0 6px 14px rgba(0, 0, 0, 0.16),
@@ -475,7 +475,7 @@ const fillTier = computed(() => {
   width: 6px;
   height: 6px;
   background: #1e293b;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   border: 1px solid #64748b;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }

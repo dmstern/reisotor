@@ -542,7 +542,7 @@ const currentZIndex = computed(() => modalStore.getZIndex(modalId));
   --scroll-fade-bg: var(--color-surface);
   --tab-bar-fade-bg: var(--color-surface);
   border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-lg-squircle);
+  border-radius: var(--radius-xl-squircle);
   corner-shape: squircle;
   /* Ausreichend Außen-Padding unten (20px Desktop, 12px Mobile), damit der Scrollbereich
      klar innerhalb der abgerundeten Squircle-Ecken von .modal bleibt; weitere 16px Abstand

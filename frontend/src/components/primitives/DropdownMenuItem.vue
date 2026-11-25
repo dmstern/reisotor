@@ -208,8 +208,7 @@ function handleClick(event: MouseEvent) {
   padding: 10px var(--space-md);
   border: none;
   background: transparent;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--control-radius-sm);
   color: var(--color-text);
   font-family: inherit;
   font-size: var(--font-size-sm);

@@ -64,7 +64,7 @@ const previewTodos = computed(() => {
   width: 68px;
   height: 74px;
   background: linear-gradient(135deg, #a16207 0%, #78350f 100%);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   padding: 10px 4px 4px 4px;
   box-sizing: border-box;
   box-shadow:

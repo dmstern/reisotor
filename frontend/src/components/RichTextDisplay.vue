@@ -133,7 +133,7 @@ function onContainerChange(event: Event) {
 
 .richtext :deep(code) {
   background: var(--color-bg);
-  border-radius: 4px;
+  border-radius: var(--radius-2xs);
   padding: 1px 5px;
   font-size: 0.9em;
 }

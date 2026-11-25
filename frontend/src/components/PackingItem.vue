@@ -254,8 +254,7 @@ function handleMainClick(e: MouseEvent) {
   margin: 0;
   padding: 0;
   border: 2px solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--radius-xs);
   background: var(--color-surface);
   cursor: pointer;
   position: relative;

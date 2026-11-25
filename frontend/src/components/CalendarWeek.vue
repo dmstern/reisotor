@@ -395,8 +395,7 @@ function isTripEnd(date: string) {
   color: var(--color-accent-secondary);
   font-size: var(--font-size-xs);
   font-weight: 600;
-  border-radius: var(--radius-xs-squircle);
-  corner-shape: squircle;
+  border-radius: var(--radius-xs);
   padding: 1px var(--space-xs);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -427,8 +426,7 @@ function isTripEnd(date: string) {
   gap: var(--space-2xs);
   font-size: var(--font-size-xs);
   background: var(--color-hover);
-  border-radius: var(--radius-xs-squircle);
-  corner-shape: squircle;
+  border-radius: var(--radius-xs);
   border-left: 2.5px solid var(--item-cat-color, var(--color-primary));
   padding: 1px 3px;
   overflow: hidden;

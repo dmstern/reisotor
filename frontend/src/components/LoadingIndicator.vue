@@ -103,7 +103,7 @@ const label = computed(() => (visibleKind.value ? LABELS[visibleKind.value] : ''
   color: #fff;
   background: var(--color-primary);
   padding: var(--space-xs) 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   line-height: var(--line-height-snug);
   white-space: nowrap;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);

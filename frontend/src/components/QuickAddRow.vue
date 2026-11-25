@@ -241,8 +241,7 @@ function onBlur(event: FocusEvent) {
   min-width: 36px;
   min-height: 36px;
   padding: 0;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--control-radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -342,8 +341,7 @@ function onBlur(event: FocusEvent) {
   background-size: 14px 14px;
   min-width: 0;
   width: auto;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--control-radius-sm);
 
   /* iOS/WebKit Auto-Zoom-Prävention: Auf Mobilgeräten & Touchscreens mindestens 16px (1rem) */
   @include media-down('desktop-sm') {
@@ -368,8 +366,7 @@ function onBlur(event: FocusEvent) {
   min-height: var(--input-height-sm, 38px);
   padding: var(--space-1-5) 28px var(--space-1-5) 10px;
   width: 100%;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--control-radius-sm);
 
   /* iOS/WebKit Auto-Zoom-Prävention: Auf Mobilgeräten & Touchscreens mindestens 16px (1rem) */
   @include media-down('desktop-sm') {

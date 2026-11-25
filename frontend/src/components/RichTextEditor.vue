@@ -772,7 +772,7 @@ defineExpose({
   min-block-size: 28px;
   padding: 0 var(--space-1-5);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-2xs);
   background: transparent;
   color: var(--color-text);
   font-size: var(--font-size-sm);
@@ -961,7 +961,7 @@ defineExpose({
 
 .richtext-editor :deep(.richtext-content code) {
   background: var(--color-bg);
-  border-radius: 4px;
+  border-radius: var(--radius-2xs);
   padding: 1px 5px;
   font-size: 0.9em;
 }

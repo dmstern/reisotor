@@ -224,8 +224,7 @@ function discardDraft() {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--control-radius-sm);
 }
 
 .quick-input-actions {

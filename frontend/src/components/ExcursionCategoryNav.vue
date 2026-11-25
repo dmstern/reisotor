@@ -203,8 +203,7 @@ const emit = defineEmits<{
   background: none;
   border: none;
   box-shadow: none;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--control-radius-sm);
   padding: var(--space-2) var(--space-3);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);

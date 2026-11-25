@@ -275,6 +275,7 @@ defineExpose({
   height: var(--control-height-sm, 36px);
   min-height: var(--control-height-sm, 36px);
   font-size: var(--font-size-sm);
+  border-radius: var(--control-radius-sm);
 }
 
 .dropdown--lg .dropdown__button.dropdown__field,
@@ -283,6 +284,7 @@ defineExpose({
   height: var(--control-height-lg, 52px);
   min-height: var(--control-height-lg, 52px);
   font-size: var(--font-size-md);
+  border-radius: var(--control-radius-lg);
 }
 
 .dropdown__button.dropdown__field :deep(.app-icon) {

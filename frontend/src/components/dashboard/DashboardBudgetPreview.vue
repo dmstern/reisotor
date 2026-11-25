@@ -143,7 +143,7 @@ defineProps<{
   width: 68px;
   height: 48px;
   background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow:
     0 6px 14px rgba(0, 0, 0, 0.25),
@@ -190,7 +190,7 @@ defineProps<{
   width: 100%;
   height: 32px;
   background: linear-gradient(135deg, #818cf8 0%, #4f46e5 100%);
-  border-radius: 4px;
+  border-radius: var(--radius-2xs);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   padding: 4px 5px;
   box-sizing: border-box;

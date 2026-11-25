@@ -126,7 +126,7 @@ function selectMode(val: ThemeMode) {
   width: 36px;
   height: 36px;
   flex-shrink: 0;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   corner-shape: round;
   justify-content: center;
 }

@@ -65,7 +65,7 @@ defineProps<{
   bottom: 4px;
   width: 66px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   transform: rotateX(60deg);
   display: flex;
   align-items: center;
@@ -75,7 +75,7 @@ defineProps<{
 
 .ring {
   position: absolute;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   border: 1px solid rgba(234, 88, 12, 0.4);
 }
 
@@ -117,7 +117,7 @@ defineProps<{
   bottom: 4px;
   width: 66px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   transform: rotateX(60deg);
   background: conic-gradient(
     from 0deg,
@@ -164,7 +164,7 @@ defineProps<{
   background: rgba(234, 88, 12, 0.15);
   border: 1px solid rgba(234, 88, 12, 0.4);
   padding: 1px 5px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   display: flex;
   align-items: center;
   gap: 3px;
@@ -184,7 +184,7 @@ defineProps<{
 .status-dot {
   width: 4px;
   height: 4px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   background: #ea580c;
   box-shadow: 0 0 4px #ea580c;
   animation: pulse-dot 1.5s ease-in-out infinite;
