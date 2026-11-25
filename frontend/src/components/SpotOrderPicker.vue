@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
+import { computed, onUnmounted, ref, watch } from 'vue';
 import type { ExcursionLeg, Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -11,12 +11,15 @@ import TourSpotAssignDropdown from './TourSpotAssignDropdown.vue';
 const ICON_SIZE_SM = 14;
 const GRIP_ICON_SIZE = 15;
 const DRAG_THRESHOLD_PX = 4;
-const DRAG_OVERSHOOT_PX = 16;
+const DRAG_OVERSHOOT_PX = 20;
 const DEFAULT_ROW_GAP_PX = 6;
-const DOWNWARD_CROSS_RATIO = 0.4;
-const UPWARD_CROSS_RATIO = 0.6;
-const SETTLE_DURATION_MS = 160;
-const JUST_MOVED_FLASH_MS = 420;
+const DOWNWARD_CROSS_RATIO = 0.42;
+const UPWARD_CROSS_RATIO = 0.58;
+const SEAM_EDGE_OFFSET_PX = 8;
+const INDICATOR_HALF_HEIGHT_PX = 2;
+const JUST_MOVED_FLASH_MS = 520;
+const NUDGE_MAX_PX = 12;
+const NUDGE_DECAY_PX = 3;
 
 let nextRowKeyId = 1;
 
@@ -28,9 +31,10 @@ interface RowMetric {
 interface ActiveDragState {
   fromIndex: number;
   targetIndex: number;
-  settling: boolean;
-  slotTop: number;
-  slotHeight: number;
+  seamIndex: number | null;
+  originTop: number;
+  originHeight: number;
+  indicatorTop: number | null;
   rowOffsets: number[];
 }
 
@@ -46,8 +50,9 @@ interface PointerSession {
 }
 
 // Reihenfolge-Editor fürs Touren-Formular (ExcursionFormModal.vue) – nutzt für die Spot-Auswahl
-// dasselbe Popover (TourSpotAssignDropdown.vue) wie die Tour-Detailansicht und animiert
-// Umsortierungen per Pointer-Live-Shift beim Ziehen sowie per TransitionGroup (FLIP) bei Button-Klicks.
+// dasselbe Popover (TourSpotAssignDropdown.vue) wie die Tour-Detailansicht. Beim Ziehen weichen
+// benachbarte Karten sanft auseinander ("Curtain Parting"), beim Loslassen gleiten alle Karten
+// per TransitionGroup (FLIP) ruhig in ihre neue Position.
 const props = withDefaults(
   defineProps<{
     modelValue: number[];
@@ -66,14 +71,11 @@ const emit = defineEmits<{
 
 const rowKeys = ref<string[]>([]);
 const listWrapRef = ref<HTMLElement | null>(null);
-const suppressListTransition = ref(false);
 const justMovedKey = ref<string | null>(null);
 const activeDrag = ref<ActiveDragState | null>(null);
 
 let pointerSession: PointerSession | null = null;
-let settleTimer: ReturnType<typeof setTimeout> | null = null;
 let flashTimer: ReturnType<typeof setTimeout> | null = null;
-let pendingSettleCommit: { fromIndex: number; targetIndex: number } | null = null;
 
 function syncRowKeys(ids: number[]) {
   if (
@@ -221,29 +223,46 @@ function moveSpot(stationIndex: number, delta: -1 | 1) {
   moveStationTo(stationIndex, stationIndex + delta);
 }
 
-function computeTargetIndex(metrics: RowMetric[], fromIndex: number, rawDeltaY: number): number {
+function computeSeamAndTarget(
+  metrics: RowMetric[],
+  fromIndex: number,
+  rawDeltaY: number
+): { seamIndex: number | null; targetIndex: number } {
   const draggedCenter = metrics[fromIndex].top + metrics[fromIndex].height / 2 + rawDeltaY;
-  let targetIndex = fromIndex;
 
   if (rawDeltaY > 0) {
+    let seam = fromIndex + 1;
+
     for (let i = fromIndex + 1; i < metrics.length; i++) {
       if (draggedCenter > metrics[i].top + metrics[i].height * DOWNWARD_CROSS_RATIO) {
-        targetIndex = i;
+        seam = i + 1;
       }
     }
 
-    return targetIndex;
+    if (seam === fromIndex + 1) {
+      return { seamIndex: null, targetIndex: fromIndex };
+    }
+
+    return { seamIndex: seam, targetIndex: seam - 1 };
   }
 
   if (rawDeltaY < 0) {
+    let seam = fromIndex;
+
     for (let i = fromIndex - 1; i >= 0; i--) {
       if (draggedCenter < metrics[i].top + metrics[i].height * UPWARD_CROSS_RATIO) {
-        targetIndex = i;
+        seam = i;
       }
     }
+
+    if (seam === fromIndex) {
+      return { seamIndex: null, targetIndex: fromIndex };
+    }
+
+    return { seamIndex: seam, targetIndex: seam };
   }
 
-  return targetIndex;
+  return { seamIndex: null, targetIndex: fromIndex };
 }
 
 function computeExactTargetOffset(
@@ -273,62 +292,110 @@ function computeExactTargetOffset(
   return offset;
 }
 
-function computeRowOffsets(options: {
-  metrics: RowMetric[];
-  gap: number;
+function computePartedRowOffsets(options: {
+  count: number;
   fromIndex: number;
-  targetIndex: number;
+  seamIndex: number | null;
   draggedDeltaY: number;
 }): number[] {
-  const { metrics, gap, fromIndex, targetIndex, draggedDeltaY } = options;
-  const shiftSize = metrics[fromIndex].height + gap;
+  const { count, fromIndex, seamIndex, draggedDeltaY } = options;
+  const offsets = new Array<number>(count).fill(0);
+  offsets[fromIndex] = draggedDeltaY;
 
-  return metrics.map((_, idx) => {
-    if (idx === fromIndex) {
-      return draggedDeltaY;
+  if (seamIndex === null) {
+    return offsets;
+  }
+
+  let distAbove = 0;
+
+  for (let i = seamIndex - 1; i >= 0; i--) {
+    if (i !== fromIndex) {
+      offsets[i] = -Math.max(0, NUDGE_MAX_PX - distAbove * NUDGE_DECAY_PX);
+      distAbove++;
     }
+  }
 
-    if (targetIndex > fromIndex && idx > fromIndex && idx <= targetIndex) {
-      return -shiftSize;
+  let distBelow = 0;
+
+  for (let i = seamIndex; i < count; i++) {
+    if (i !== fromIndex) {
+      offsets[i] = Math.max(0, NUDGE_MAX_PX - distBelow * NUDGE_DECAY_PX);
+      distBelow++;
     }
+  }
 
-    if (targetIndex < fromIndex && idx >= targetIndex && idx < fromIndex) {
-      return shiftSize;
+  return offsets;
+}
+
+function findNeighborIndex(options: {
+  start: number;
+  step: -1 | 1;
+  limit: number;
+  skipIndex: number;
+}): number {
+  const { start, step, limit, skipIndex } = options;
+
+  for (let i = start; step > 0 ? i <= limit : i >= limit; i += step) {
+    if (i !== skipIndex) {
+      return i;
     }
+  }
 
-    return 0;
+  return -1;
+}
+
+function computeIndicatorTop(options: {
+  metrics: RowMetric[];
+  offsets: number[];
+  fromIndex: number;
+  seamIndex: number | null;
+}): number | null {
+  const { metrics, offsets, fromIndex, seamIndex } = options;
+
+  if (seamIndex === null) {
+    return null;
+  }
+
+  const prevIdx = findNeighborIndex({
+    start: seamIndex - 1,
+    step: -1,
+    limit: 0,
+    skipIndex: fromIndex,
   });
+  const nextIdx = findNeighborIndex({
+    start: seamIndex,
+    step: 1,
+    limit: metrics.length - 1,
+    skipIndex: fromIndex,
+  });
+
+  if (prevIdx !== -1 && nextIdx !== -1) {
+    const prevBottom = metrics[prevIdx].top + offsets[prevIdx] + metrics[prevIdx].height;
+    const nextTop = metrics[nextIdx].top + offsets[nextIdx];
+    return (prevBottom + nextTop) / 2 - INDICATOR_HALF_HEIGHT_PX;
+  }
+
+  if (nextIdx !== -1) {
+    return metrics[nextIdx].top + offsets[nextIdx] - SEAM_EDGE_OFFSET_PX;
+  }
+
+  if (prevIdx !== -1) {
+    return (
+      metrics[prevIdx].top +
+      offsets[prevIdx] +
+      metrics[prevIdx].height +
+      SEAM_EDGE_OFFSET_PX -
+      INDICATOR_HALF_HEIGHT_PX * 2
+    );
+  }
+
+  return null;
 }
 
 function detachWindowPointerListeners() {
   window.removeEventListener('pointermove', onWindowPointerMove);
   window.removeEventListener('pointerup', onWindowPointerUp);
   window.removeEventListener('pointercancel', onWindowPointerCancel);
-}
-
-function flushPendingSettle() {
-  if (settleTimer !== null) {
-    clearTimeout(settleTimer);
-    settleTimer = null;
-  }
-
-  const commit = pendingSettleCommit;
-  pendingSettleCommit = null;
-
-  if (!commit && !activeDrag.value) {
-    return;
-  }
-
-  suppressListTransition.value = true;
-  activeDrag.value = null;
-
-  if (commit && commit.fromIndex !== commit.targetIndex) {
-    moveStationTo(commit.fromIndex, commit.targetIndex);
-  }
-
-  void nextTick(() => {
-    suppressListTransition.value = false;
-  });
 }
 
 function onRowPointerDown(event: PointerEvent, index: number) {
@@ -347,8 +414,6 @@ function onRowPointerDown(event: PointerEvent, index: number) {
   ) {
     return;
   }
-
-  flushPendingSettle();
 
   if (!listWrapRef.value) {
     return;
@@ -413,23 +478,28 @@ function onWindowPointerMove(event: PointerEvent) {
   const maxDelta =
     computeExactTargetOffset(metrics, gap, fromIndex, metrics.length - 1) + DRAG_OVERSHOOT_PX;
   const clampedDeltaY = Math.max(minDelta, Math.min(maxDelta, rawDeltaY));
-  const targetIndex = computeTargetIndex(metrics, fromIndex, rawDeltaY);
-  const slotTop =
-    metrics[fromIndex].top + computeExactTargetOffset(metrics, gap, fromIndex, targetIndex);
+  const { seamIndex, targetIndex } = computeSeamAndTarget(metrics, fromIndex, rawDeltaY);
+  const rowOffsets = computePartedRowOffsets({
+    count: metrics.length,
+    fromIndex,
+    seamIndex,
+    draggedDeltaY: clampedDeltaY,
+  });
+  const indicatorTop = computeIndicatorTop({
+    metrics,
+    offsets: rowOffsets,
+    fromIndex,
+    seamIndex,
+  });
 
   activeDrag.value = {
     fromIndex,
     targetIndex,
-    settling: false,
-    slotTop,
-    slotHeight: metrics[fromIndex].height,
-    rowOffsets: computeRowOffsets({
-      metrics,
-      gap,
-      fromIndex,
-      targetIndex,
-      draggedDeltaY: clampedDeltaY,
-    }),
+    seamIndex,
+    originTop: metrics[fromIndex].top,
+    originHeight: metrics[fromIndex].height,
+    indicatorTop,
+    rowOffsets,
   };
 }
 
@@ -448,32 +518,11 @@ function onWindowPointerUp(event: PointerEvent) {
   }
 
   const { fromIndex, targetIndex } = activeDrag.value;
-  pendingSettleCommit = { fromIndex, targetIndex };
+  activeDrag.value = null;
 
-  const prefersReducedMotion =
-    typeof window !== 'undefined' &&
-    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
-  if (prefersReducedMotion) {
-    flushPendingSettle();
-    return;
+  if (fromIndex !== targetIndex) {
+    moveStationTo(fromIndex, targetIndex);
   }
-
-  const exactOffset = computeExactTargetOffset(
-    session.metrics,
-    session.gap,
-    fromIndex,
-    targetIndex
-  );
-  activeDrag.value = {
-    ...activeDrag.value,
-    settling: true,
-    rowOffsets: activeDrag.value.rowOffsets.map((val, idx) =>
-      idx === fromIndex ? exactOffset : val
-    ),
-  };
-
-  settleTimer = setTimeout(flushPendingSettle, SETTLE_DURATION_MS);
 }
 
 function onWindowPointerCancel(event: PointerEvent) {
@@ -485,7 +534,6 @@ function onWindowPointerCancel(event: PointerEvent) {
   pointerSession = null;
   detachWindowPointerListeners();
   activeDrag.value = null;
-  pendingSettleCommit = null;
 }
 
 function displayOrderNumber(index: number): number {
@@ -516,8 +564,8 @@ function rowDynamicStyle(index: number): { transform: string } | undefined {
   }
 
   const offset = activeDrag.value.rowOffsets[index] ?? 0;
-  const isActivelyDragged = index === activeDrag.value.fromIndex && !activeDrag.value.settling;
-  const scaleSuffix = isActivelyDragged ? ' scale(1.02)' : '';
+  const isActivelyDragged = index === activeDrag.value.fromIndex;
+  const scaleSuffix = isActivelyDragged ? ' scale(1.015)' : '';
 
   return {
     transform: `translate3d(0, ${offset}px, 0)${scaleSuffix}`,
@@ -526,10 +574,6 @@ function rowDynamicStyle(index: number): { transform: string } | undefined {
 
 onUnmounted(() => {
   detachWindowPointerListeners();
-
-  if (settleTimer !== null) {
-    clearTimeout(settleTimer);
-  }
 
   if (flashTimer !== null) {
     clearTimeout(flashTimer);
@@ -550,25 +594,28 @@ onUnmounted(() => {
       >
         <div
           v-if="activeDrag"
-          class="planned-drop-slot"
+          class="planned-origin-footprint"
           :style="{
-            height: `${activeDrag.slotHeight}px`,
-            transform: `translate3d(0, ${activeDrag.slotTop}px, 0)`,
+            height: `${activeDrag.originHeight}px`,
+            transform: `translate3d(0, ${activeDrag.originTop}px, 0)`,
           }"
           aria-hidden="true"
         />
-        <TransitionGroup
-          tag="div"
-          :name="suppressListTransition ? undefined : 'list'"
-          class="planned-list"
-        >
+        <div
+          v-if="activeDrag && activeDrag.indicatorTop !== null"
+          class="planned-drop-indicator"
+          :style="{
+            transform: `translate3d(0, ${activeDrag.indicatorTop}px, 0)`,
+          }"
+          aria-hidden="true"
+        />
+        <TransitionGroup tag="div" name="list" class="planned-list">
           <div
             v-for="(station, index) in plannedStations"
             :key="station.entryKey"
             class="planned-row"
             :class="{
-              'is-dragging': activeDrag?.fromIndex === index && !activeDrag.settling,
-              'is-settling': activeDrag?.fromIndex === index && activeDrag.settling,
+              'is-dragging': activeDrag?.fromIndex === index,
               'is-shifting': !!activeDrag && activeDrag.fromIndex !== index,
               'is-just-moved': justMovedKey === station.entryKey,
             }"
@@ -655,7 +702,7 @@ onUnmounted(() => {
   padding: var(--space-2xs) 0;
 }
 
-.planned-drop-slot {
+.planned-origin-footprint {
   position: absolute;
   top: 0;
   left: 0;
@@ -663,14 +710,27 @@ onUnmounted(() => {
   z-index: 0;
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
-  border: 1.5px dashed var(--color-primary);
-  background: var(--color-primary-tint);
-  opacity: 0.55;
+  border: 1px dashed var(--color-border-strong);
+  background: color-mix(in srgb, var(--color-hover) 55%, transparent);
+  opacity: 0.6;
   pointer-events: none;
   box-sizing: border-box;
+}
+
+.planned-drop-indicator {
+  position: absolute;
+  top: 0;
+  left: var(--space-2);
+  right: var(--space-2);
+  height: 4px;
+  z-index: 15;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 55%, transparent);
+  pointer-events: none;
   transition:
-    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-    height 0.18s ease;
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.2s ease;
 }
 
 .planned-list {
@@ -698,9 +758,9 @@ onUnmounted(() => {
   box-sizing: border-box;
   user-select: none;
   transition:
-    background-color 0.18s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+    background-color 0.2s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease;
 }
 
 @include can-hover {
@@ -719,28 +779,24 @@ onUnmounted(() => {
   z-index: 20;
   cursor: grabbing;
   border-color: var(--color-primary);
-  background: var(--color-surface);
+  background: color-mix(in srgb, var(--color-surface) 84%, transparent);
+  backdrop-filter: blur(6px);
+  opacity: 0.94;
   box-shadow:
     var(--shadow-lg),
     0 0 0 2px var(--color-primary-tint);
   transition:
-    box-shadow 0.18s ease,
-    border-color 0.18s ease !important;
-}
-
-.planned-row.is-settling {
-  z-index: 20;
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
-  transition:
-    transform 0.16s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.16s ease,
-    border-color 0.16s ease !important;
+    box-shadow 0.24s ease,
+    border-color 0.24s ease,
+    background-color 0.24s ease !important;
 }
 
 .planned-row.is-shifting {
   z-index: 1;
-  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  transition:
+    transform 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .planned-row.is-just-moved {
@@ -749,9 +805,10 @@ onUnmounted(() => {
 }
 
 .planned-row.list-move {
+  z-index: 5;
   transition:
-    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.2s ease;
+    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.28s ease;
 }
 
 .drag-handle {
@@ -759,8 +816,8 @@ onUnmounted(() => {
   flex-shrink: 0;
   touch-action: none;
   transition:
-    color 0.18s ease,
-    transform 0.18s ease;
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .order-num {
@@ -818,9 +875,8 @@ onUnmounted(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .planned-drop-slot,
+  .planned-drop-indicator,
   .planned-row,
-  .planned-row.is-settling,
   .planned-row.is-shifting,
   .planned-row.list-move,
   .drag-handle {

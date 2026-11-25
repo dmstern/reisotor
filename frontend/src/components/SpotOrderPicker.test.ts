@@ -264,6 +264,62 @@ describe('SpotOrderPicker', () => {
     app.unmount();
   });
 
+  it('parts neighbors gently in opposite directions around the drop seam while dragging', async () => {
+    const spots = [makeSpot(1, 'Eins'), makeSpot(2, 'Zwei'), makeSpot(3, 'Drei')];
+    const selected = ref<number[]>([1, 2, 3]);
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    const app = createApp({
+      render: () =>
+        h(SpotOrderPicker, {
+          modelValue: selected.value,
+          spots,
+          'onUpdate:modelValue': (next: number[]) => {
+            selected.value = next;
+          },
+        }),
+    });
+    app.use(createPinia());
+    app.mount(container);
+
+    const rows = mockRowMetrics(container);
+    rows[0].dispatchEvent(
+      Object.assign(new Event('pointerdown', { bubbles: true, cancelable: true }), {
+        button: 0,
+        pointerId: 7,
+        pointerType: 'mouse',
+        clientY: 100,
+      })
+    );
+    await nextTick();
+
+    // Drag row 0 down by 50px -> seam between row 1 (index 1) and row 2 (index 2)
+    window.dispatchEvent(
+      Object.assign(new Event('pointermove', { bubbles: true, cancelable: true }), {
+        pointerId: 7,
+        clientY: 150,
+      })
+    );
+    await nextTick();
+
+    expect(container.querySelector('.planned-drop-indicator')).not.toBeNull();
+    expect(container.querySelector('.planned-origin-footprint')).not.toBeNull();
+    expect(rows[0].classList.contains('is-dragging')).toBe(true);
+    expect(rows[1].style.transform).toContain('translate3d(0, -12px, 0)');
+    expect(rows[2].style.transform).toContain('translate3d(0, 12px, 0)');
+
+    window.dispatchEvent(
+      Object.assign(new Event('pointerup', { bubbles: true, cancelable: true }), {
+        pointerId: 7,
+        clientY: 150,
+      })
+    );
+    await nextTick();
+    expect(selected.value).toEqual([2, 1, 3]);
+    app.unmount();
+  });
+
   it('reorders and removes visible stations accurately when modelValue contains unresolvable spot IDs', async () => {
     const spots = [makeSpot(1, 'Erster'), makeSpot(2, 'Zweiter'), makeSpot(3, 'Dritter')];
     const selected = ref<number[]>([999, 1, 2, 3]);
