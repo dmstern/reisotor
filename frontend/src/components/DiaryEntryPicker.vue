@@ -6,8 +6,11 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { formatDate } from '../utils/dateFormat';
 import AppIcon from './AppIcon.vue';
-import Checkbox from './primitives/Checkbox.vue';
+import Badge from './primitives/Badge.vue';
 import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
+import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
+
+const BADGE_ICON_SIZE = 13;
 
 const props = withDefaults(
   defineProps<{
@@ -86,6 +89,18 @@ function isMatchingDate(entry: DiaryEntry): boolean {
 function entryLabel(entry: DiaryEntry): string {
   return entry.title?.trim() || formatDate(entry.date);
 }
+
+function toggleEntry(entryId: number, checked: boolean) {
+  if (checked) {
+    if (!modelValue.value.includes(entryId)) {
+      modelValue.value = [...modelValue.value, entryId];
+    }
+
+    return;
+  }
+
+  modelValue.value = modelValue.value.filter((id) => id !== entryId);
+}
 </script>
 
 <template>
@@ -97,143 +112,37 @@ function entryLabel(entry: DiaryEntry): string {
     icon-group="navigation"
     :count="modelValue.length ? `(${modelValue.length} zugeordnet)` : undefined"
   >
-    <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-    <label
-      v-for="entry in publishedEntries"
-      :key="entry.id"
-      :for="`${idPrefix}-${entry.id}`"
-      class="diary-picker-option"
-    >
-      <Checkbox :id="`${idPrefix}-${entry.id}`" v-model="modelValue" :value="entry.id" />
-      <span class="diary-picker-option-content">
-        <span class="diary-picker-option-title">
-          <span class="diary-picker-option-name">{{ entryLabel(entry) }}</span>
-        </span>
-        <span v-if="isMatchingDate(entry)" class="diary-picker-badge recommended">
-          <AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" />
-          <span class="diary-picker-badge-text">Empfohlen – gleicher Tag</span>
-        </span>
-        <span
-          v-else
-          class="diary-picker-badge date-chip"
-          :class="{ 'is-muted': referenceDateSet.size > 0 }"
-        >
-          <span class="diary-picker-badge-text">{{ formatDate(entry.date) }}</span>
-        </span>
-      </span>
-    </label>
+    <div class="diary-picker-list">
+      <DropdownMenuItem
+        v-for="entry in publishedEntries"
+        :key="entry.id"
+        multiselect
+        :input-id="`${idPrefix}-${entry.id}`"
+        :checked="modelValue.includes(entry.id)"
+        :active="modelValue.includes(entry.id)"
+        :value="entry.id"
+        :label="entryLabel(entry)"
+        @update:checked="toggleEntry(entry.id, $event)"
+      >
+        <template #trailing>
+          <Badge v-if="isMatchingDate(entry)" variant="primary" size="sm">
+            <AppIcon :icon="ACTION_ICONS.recommended" :size="BADGE_ICON_SIZE" group="actions" />
+            Empfohlen – gleicher Tag
+          </Badge>
+          <Badge v-else size="sm">
+            {{ formatDate(entry.date) }}
+          </Badge>
+        </template>
+      </DropdownMenuItem>
+    </div>
   </CollapsibleFieldset>
 </template>
 
 <style lang="scss" scoped>
-.diary-picker-option {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-sm);
-  padding: var(--space-1-5) var(--space-sm);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  cursor: pointer;
-  width: 100%;
-  box-sizing: border-box;
-  user-select: none;
-  font-size: var(--font-size-sm);
-  font-weight: 400;
-  transition: background-color var(--transition-fast);
-}
-
-@include can-hover {
-  .diary-picker-option:hover {
-    background-color: var(--color-hover);
-  }
-}
-
-.diary-picker-option:focus-within {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo);
-}
-
-.diary-picker-option-content {
+.diary-picker-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-2xs);
-  flex: 1;
   min-width: 0;
-}
-
-@include container-up('mobile-sm') {
-  .diary-picker-option-content {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-sm);
-  }
-}
-
-.diary-picker-option-title {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  min-width: 0;
-  max-width: 100%;
-  font-size: var(--font-size-sm);
-  color: var(--color-text);
-  line-height: var(--line-height-snug);
-  min-height: 24px;
-}
-
-.diary-picker-option-name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.diary-picker-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  font-size: var(--font-size-xs);
-  max-width: 100%;
-  box-sizing: border-box;
-  flex-shrink: 0;
-  width: fit-content;
-}
-
-.diary-picker-badge-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.diary-picker-badge.recommended {
-  background: var(--color-primary-tint);
-  color: var(--color-text);
-  padding: var(--space-2xs) var(--space-sm);
-  border-radius: var(--radius-pill);
-  corner-shape: round;
-  font-weight: 600;
-}
-
-.diary-picker-badge.date-chip {
-  background: var(--color-surface);
-  border: var(--border-width) solid var(--color-border);
-  color: var(--color-text-muted);
-  padding: var(--space-2xs) var(--space-sm);
-  border-radius: var(--radius-pill);
-  corner-shape: round;
-  font-weight: 500;
-}
-
-.diary-picker-badge.date-chip.is-muted {
-  background: var(--color-hover);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .diary-picker-option {
-    transition: none;
-  }
 }
 </style>

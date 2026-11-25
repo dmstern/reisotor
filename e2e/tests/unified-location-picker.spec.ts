@@ -226,7 +226,7 @@ function getDropdown(page: Page) {
 
 // Helper: Get autocomplete option items
 function getDropdownOptions(page: Page) {
-  return page.locator('[role="option"], .location-result-item, .dropdown-item');
+  return getDropdown(page).locator('[role="option"], .location-result-item, .dropdown-item');
 }
 
 // Helper: Get location status badge/text

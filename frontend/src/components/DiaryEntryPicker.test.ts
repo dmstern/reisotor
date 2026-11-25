@@ -114,8 +114,8 @@ describe('DiaryEntryPicker', () => {
     expect(container.textContent).toContain('(1 zugeordnet)');
     expect(container.textContent).not.toContain('Entwurf am selben Tag');
 
-    const names = Array.from(container.querySelectorAll('.diary-picker-option-name')).map(
-      (element) => element.textContent
+    const names = Array.from(container.querySelectorAll('.dropdown-item-label')).map((element) =>
+      element.textContent?.trim()
     );
     expect(names).toEqual(['Passender Tag', 'Neuerer Tag', 'Alter Tag']);
     expect(container.textContent).toContain('Empfohlen – gleicher Tag');

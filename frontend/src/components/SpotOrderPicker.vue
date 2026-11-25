@@ -1,33 +1,67 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import type { ExcursionLeg, Spot, User } from '../api/types';
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
+import type { ExcursionLeg, Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { ACTION_ICONS } from '../utils/actionIcons';
-import { travelTypeIconDef } from '../utils/travelTypeIcon';
-import { formatTravelDuration, travelDurationMinutes } from '../utils/travelDuration';
 import type { IconDef } from '../utils/icon';
 import AppIcon from './AppIcon.vue';
-import Button from './primitives/Button.vue';
 import IconButton from './primitives/IconButton.vue';
-import LegTransportModal from './LegTransportModal.vue';
+import TourSpotAssignDropdown from './TourSpotAssignDropdown.vue';
 
-// Drag&Drop-Reihenfolge-Editor fürs Touren-Formular (ExcursionsView.vue) – TourAssignDropdown.vue
-// bietet daneben im Spot-Formular einen schnelleren Weg, einen Spot ohne Reihenfolge einer Tour
-// zuzuordnen. Eine Tour-Station ist seit der Verschmelzung von Unterkunft/Reise-Orten in Spots
-// (siehe Migrationskommentar in db/index.ts) immer ein echter Spot.
-// Issue #361: Unterstützt zusätzlich Teilstrecken (legs) zwischen je zwei aufeinanderfolgenden
-// Stationen mit individuellen Verkehrsmitteln, Zeiten, Sitzplatz, Kosten und Umsteigedauer.
+const ICON_SIZE_SM = 14;
+const GRIP_ICON_SIZE = 15;
+const DRAG_THRESHOLD_PX = 4;
+const DRAG_OVERSHOOT_PX = 20;
+const DEFAULT_ROW_GAP_PX = 6;
+const DOWNWARD_CROSS_RATIO = 0.42;
+const UPWARD_CROSS_RATIO = 0.58;
+const SEAM_EDGE_OFFSET_PX = 8;
+const INDICATOR_HALF_HEIGHT_PX = 2;
+const JUST_MOVED_FLASH_MS = 520;
+const LEAVE_COLLAPSE_TAIL_MS = 420;
+const NUDGE_MAX_PX = 12;
+const NUDGE_DECAY_PX = 3;
+
+let nextRowKeyId = 1;
+
+interface RowMetric {
+  top: number;
+  height: number;
+}
+
+interface ActiveDragState {
+  fromIndex: number;
+  targetIndex: number;
+  seamIndex: number | null;
+  originTop: number;
+  originHeight: number;
+  indicatorTop: number | null;
+  rowOffsets: number[];
+}
+
+interface PointerSession {
+  pointerId: number;
+  fromIndex: number;
+  startClientY: number;
+  rowEl: HTMLElement;
+  scrollEl: HTMLElement | null;
+  initialScrollTop: number;
+  metrics: RowMetric[];
+  gap: number;
+}
+
+// Reihenfolge-Editor fürs Touren-Formular (ExcursionFormModal.vue) – nutzt für die Spot-Auswahl
+// dasselbe Popover (TourSpotAssignDropdown.vue) wie die Tour-Detailansicht. Beim Ziehen weichen
+// benachbarte Karten sanft auseinander ("Curtain Parting"), beim Loslassen gleiten alle Karten
+// per TransitionGroup (FLIP) ruhig in ihre neue Position.
 const props = withDefaults(
   defineProps<{
     modelValue: number[];
     spots: Spot[];
-    likeCount: (spotId: number) => number;
     legs?: ExcursionLeg[];
-    users?: User[];
   }>(),
   {
     legs: () => [],
-    users: () => [],
   }
 );
 const emit = defineEmits<{
@@ -36,24 +70,69 @@ const emit = defineEmits<{
   (e: 'create-spot'): void;
 }>();
 
-// Schreibbarer Computed statt einzelner add/remove-Emits: die Checkboxen der "weitere Spots"-Liste
-// nutzen dadurch dasselbe v-model-Array-Muster wie vorher, ohne dass die Elternkomponente eigene
-// add/remove-Handler bräuchte.
+const rowKeys = ref<string[]>([]);
+const listWrapRef = ref<HTMLElement | null>(null);
+const justMovedKey = ref<string | null>(null);
+const activeDrag = ref<ActiveDragState | null>(null);
+
+let activeLeavingCount = 0;
+let pointerSession: PointerSession | null = null;
+let flashTimer: ReturnType<typeof setTimeout> | null = null;
+let leaveCollapseTimer: ReturnType<typeof setTimeout> | null = null;
+const pendingLeaveRects = new WeakMap<Element, { top: number; left: number; width: number }>();
+
+function syncRowKeys(ids: number[]) {
+  if (
+    rowKeys.value.length === ids.length &&
+    ids.every((id, index) => rowKeys.value[index]?.startsWith(`${id}-`))
+  ) {
+    return;
+  }
+
+  const availableBySpotId = new Map<number, string[]>();
+
+  for (const key of rowKeys.value) {
+    const spotId = Number(key.split('-')[0]);
+    const queue = availableBySpotId.get(spotId) ?? [];
+    queue.push(key);
+    availableBySpotId.set(spotId, queue);
+  }
+
+  rowKeys.value = ids.map((id) => {
+    const queue = availableBySpotId.get(id);
+
+    if (queue && queue.length > 0) {
+      return queue.shift()!;
+    }
+
+    return `${id}-${nextRowKeyId++}`;
+  });
+}
+
+watch(
+  () => props.modelValue,
+  (ids) => syncRowKeys(ids),
+  { immediate: true, deep: true }
+);
+
+// Schreibbarer Computed statt einzelner add/remove-Emits: die Spot-Liste nutzt dadurch dasselbe
+// v-model-Array-Muster, ohne dass die Elternkomponente eigene add/remove-Handler bräuchte.
 const selected = computed<number[]>({
   get: () => props.modelValue,
   set: (v) => emit('update:modelValue', v),
 });
 
 // Reihenfolge der geplanten Stationen entspricht der Abklapper-Reihenfolge während des Ausflugs
-// (und bestimmt auch die auf der Karte gezeichnete Route, siehe TripMap.vue) – deshalb hier nach
-// modelValue-Reihenfolge, NICHT nach Likes sortiert.
+// (und bestimmt auch die auf der Karte gezeichnete Route, siehe TripMap.vue).
 const plannedStations = computed(() =>
   props.modelValue
-    .map((spotId) => {
+    .map((spotId, index) => {
       const spot = props.spots.find((candidate) => candidate.id === spotId);
       return spot
         ? {
             id: spotId,
+            modelIndex: index,
+            entryKey: rowKeys.value[index] ?? `${spotId}-${index}`,
             spot,
             title: spot.title,
             icon: spotCategoryMeta(spot.category).icon,
@@ -64,22 +143,32 @@ const plannedStations = computed(() =>
     .filter(
       (
         station
-      ): station is { id: number; spot: Spot; title: string; icon: string; tabler: IconDef } =>
-        !!station
+      ): station is {
+        id: number;
+        modelIndex: number;
+        entryKey: string;
+        spot: Spot;
+        title: string;
+        icon: string;
+        tabler: IconDef;
+      } => !!station
     )
 );
 
-// Bewusst NICHT mehr gefiltert auf "noch nicht eingeplant" – für einen Rundgang muss derselbe Spot
-// mehrfach in der Reihenfolge stehen können (z. B. Start UND Ende an der Unterkunft), Klick fügt
-// deshalb immer eine weitere Station hinzu statt (wie ein Checkbox-Häkchen) nur ein einziges Mal
-// umschaltbar zu sein.
-const addableSpots = computed(() =>
-  [...props.spots].sort(
-    (a, b) => props.likeCount(b.id) - props.likeCount(a.id) || a.title.localeCompare(b.title)
-  )
-);
+function triggerMovedFlash(entryKey: string) {
+  if (flashTimer !== null) {
+    clearTimeout(flashTimer);
+  }
+
+  justMovedKey.value = entryKey;
+  flashTimer = setTimeout(() => {
+    justMovedKey.value = null;
+    flashTimer = null;
+  }, JUST_MOVED_FLASH_MS);
+}
 
 function addSpot(id: number) {
+  rowKeys.value = [...rowKeys.value, `${id}-${nextRowKeyId++}`];
   selected.value = [...selected.value, id];
 }
 
@@ -96,353 +185,611 @@ function cleanupLegsForSpots(newSpotIds: number[]) {
   emit('update:legs', updated);
 }
 
-function removeSpotAt(index: number) {
+function removeSpotAt(stationIndex: number) {
+  const station = plannedStations.value[stationIndex];
+
+  if (!station) {
+    return;
+  }
+
+  const wrapEl = listWrapRef.value;
+  const rowElements = wrapEl?.querySelectorAll<HTMLElement>('.planned-row:not(.list-leave-active)');
+  const rowEl = rowElements?.[stationIndex];
+
+  if (rowEl) {
+    pendingLeaveRects.set(rowEl, {
+      top: rowEl.offsetTop,
+      left: rowEl.offsetLeft,
+      width: rowEl.offsetWidth,
+    });
+  }
+
+  if (wrapEl) {
+    if (leaveCollapseTimer !== null) {
+      clearTimeout(leaveCollapseTimer);
+      leaveCollapseTimer = null;
+    }
+
+    wrapEl.style.height = `${wrapEl.offsetHeight}px`;
+    wrapEl.classList.add('is-leaving-list');
+  }
+
+  const nextKeys = [...rowKeys.value];
+  nextKeys.splice(station.modelIndex, 1);
+  rowKeys.value = nextKeys;
+
   const next = [...selected.value];
-  next.splice(index, 1);
+  next.splice(station.modelIndex, 1);
   selected.value = next;
   cleanupLegsForSpots(next);
 }
 
-// Drag&Drop-Umsortierung innerhalb der geplanten Liste – rein lokal (kein Component-übergreifendes
-// dataTransfer-Format nötig, anders als beim Ziehen von SpotCard auf ExcursionCard). setData mit
-// leerem Wert ist trotzdem nötig, manche Browser starten sonst gar keinen Drag.
-const draggedIndex = ref<number | null>(null);
-// Index in plannedSpots, VOR dem die Drop-Line gerade eingezeichnet wird (index === Länge des
-// Arrays => Line nach dem letzten Eintrag) – wird bei jedem dragover anhand der Cursor-Position
-// relativ zur Mitte der jeweiligen Zeile neu bestimmt, damit man sichtbar zwischen zwei Zeilen
-// (statt nur "auf" einer Zeile) ablegen kann.
-const dropIndicatorIndex = ref<number | null>(null);
+function moveStationTo(fromStationIndex: number, toStationIndex: number) {
+  const fromStation = plannedStations.value[fromStationIndex];
+  const toStation = plannedStations.value[toStationIndex];
 
-function onDragStart(event: DragEvent, index: number) {
-  draggedIndex.value = index;
-  event.dataTransfer?.setData('text/plain', '');
-
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'move';
-  }
-}
-
-function onRowDragOver(event: DragEvent, index: number) {
-  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-  const before = event.clientY < rect.top + rect.height / 2;
-  dropIndicatorIndex.value = before ? index : index + 1;
-}
-
-function onDrop() {
-  if (draggedIndex.value === null || dropIndicatorIndex.value === null) {
+  if (!fromStation || !toStation || fromStationIndex === toStationIndex) {
     return;
   }
 
-  let targetIndex = dropIndicatorIndex.value;
+  const nextKeys = [...rowKeys.value];
+  const [movedKey] = nextKeys.splice(fromStation.modelIndex, 1);
+  nextKeys.splice(toStation.modelIndex, 0, movedKey);
+  rowKeys.value = nextKeys;
 
-  // Ziel-Index bezieht sich auf das Array VOR dem Entfernen des gezogenen Eintrags – liegt die
-  // Zeile davor, verschiebt das Herausnehmen alle nachfolgenden Indizes um eins nach vorn.
-  if (draggedIndex.value < targetIndex) {
-    targetIndex--;
+  const next = [...selected.value];
+  const [moved] = next.splice(fromStation.modelIndex, 1);
+  next.splice(toStation.modelIndex, 0, moved);
+  selected.value = next;
+  cleanupLegsForSpots(next);
+  triggerMovedFlash(movedKey);
+}
+
+function moveSpot(stationIndex: number, delta: -1 | 1) {
+  moveStationTo(stationIndex, stationIndex + delta);
+}
+
+function computeSeamAndTarget(
+  metrics: RowMetric[],
+  fromIndex: number,
+  rawDeltaY: number
+): { seamIndex: number | null; targetIndex: number } {
+  const draggedCenter = metrics[fromIndex].top + metrics[fromIndex].height / 2 + rawDeltaY;
+
+  if (rawDeltaY > 0) {
+    let seam = fromIndex + 1;
+
+    for (let i = fromIndex + 1; i < metrics.length; i++) {
+      if (draggedCenter > metrics[i].top + metrics[i].height * DOWNWARD_CROSS_RATIO) {
+        seam = i + 1;
+      }
+    }
+
+    if (seam === fromIndex + 1) {
+      return { seamIndex: null, targetIndex: fromIndex };
+    }
+
+    return { seamIndex: seam, targetIndex: seam - 1 };
   }
 
-  if (targetIndex !== draggedIndex.value) {
-    const next = [...selected.value];
-    const [moved] = next.splice(draggedIndex.value, 1);
-    next.splice(targetIndex, 0, moved);
-    selected.value = next;
-    cleanupLegsForSpots(next);
+  if (rawDeltaY < 0) {
+    let seam = fromIndex;
+
+    for (let i = fromIndex - 1; i >= 0; i--) {
+      if (draggedCenter < metrics[i].top + metrics[i].height * UPWARD_CROSS_RATIO) {
+        seam = i;
+      }
+    }
+
+    if (seam === fromIndex) {
+      return { seamIndex: null, targetIndex: fromIndex };
+    }
+
+    return { seamIndex: seam, targetIndex: seam };
   }
 
-  draggedIndex.value = null;
-  dropIndicatorIndex.value = null;
+  return { seamIndex: null, targetIndex: fromIndex };
 }
 
-function onDragEnd() {
-  draggedIndex.value = null;
-  dropIndicatorIndex.value = null;
+function computeExactTargetOffset(
+  metrics: RowMetric[],
+  gap: number,
+  fromIndex: number,
+  targetIndex: number
+): number {
+  if (targetIndex === fromIndex) {
+    return 0;
+  }
+
+  let offset = 0;
+
+  if (targetIndex > fromIndex) {
+    for (let i = fromIndex + 1; i <= targetIndex; i++) {
+      offset += metrics[i].height + gap;
+    }
+
+    return offset;
+  }
+
+  for (let i = targetIndex; i < fromIndex; i++) {
+    offset -= metrics[i].height + gap;
+  }
+
+  return offset;
 }
 
-// --- Teilstrecken-Verkehrsmittel Modal-Verwaltung (Issue #361) ---
-const editingLegFromIndex = ref<number | null>(null);
-const showLegModal = ref(false);
+function computePartedRowOffsets(options: {
+  count: number;
+  fromIndex: number;
+  seamIndex: number | null;
+  draggedDeltaY: number;
+}): number[] {
+  const { count, fromIndex, seamIndex, draggedDeltaY } = options;
+  const offsets = new Array<number>(count).fill(0);
+  offsets[fromIndex] = draggedDeltaY;
 
-function getLegBetween(fromId: number, toId: number): ExcursionLeg | undefined {
-  return props.legs.find((leg) => leg.from_spot_id === fromId && leg.to_spot_id === toId);
+  if (seamIndex === null) {
+    return offsets;
+  }
+
+  let distAbove = 0;
+
+  for (let i = seamIndex - 1; i >= 0; i--) {
+    if (i !== fromIndex) {
+      offsets[i] = -Math.max(0, NUDGE_MAX_PX - distAbove * NUDGE_DECAY_PX);
+      distAbove++;
+    }
+  }
+
+  let distBelow = 0;
+
+  for (let i = seamIndex; i < count; i++) {
+    if (i !== fromIndex) {
+      offsets[i] = Math.max(0, NUDGE_MAX_PX - distBelow * NUDGE_DECAY_PX);
+      distBelow++;
+    }
+  }
+
+  return offsets;
 }
 
-function getLegDuration(fromId: number, toId: number): string | null {
-  const leg = getLegBetween(fromId, toId);
+function findNeighborIndex(options: {
+  start: number;
+  step: -1 | 1;
+  limit: number;
+  skipIndex: number;
+}): number {
+  const { start, step, limit, skipIndex } = options;
 
-  if (!leg?.departure_time || !leg?.arrival_time) {
+  for (let i = start; step > 0 ? i <= limit : i >= limit; i += step) {
+    if (i !== skipIndex) {
+      return i;
+    }
+  }
+
+  return -1;
+}
+
+function computeIndicatorTop(options: {
+  metrics: RowMetric[];
+  offsets: number[];
+  fromIndex: number;
+  seamIndex: number | null;
+}): number | null {
+  const { metrics, offsets, fromIndex, seamIndex } = options;
+
+  if (seamIndex === null) {
     return null;
   }
 
-  const mins = travelDurationMinutes(leg.departure_time, leg.arrival_time);
-  return mins != null ? formatTravelDuration(mins) : null;
+  const prevIdx = findNeighborIndex({
+    start: seamIndex - 1,
+    step: -1,
+    limit: 0,
+    skipIndex: fromIndex,
+  });
+  const nextIdx = findNeighborIndex({
+    start: seamIndex,
+    step: 1,
+    limit: metrics.length - 1,
+    skipIndex: fromIndex,
+  });
+
+  if (prevIdx !== -1 && nextIdx !== -1) {
+    const prevBottom = metrics[prevIdx].top + offsets[prevIdx] + metrics[prevIdx].height;
+    const nextTop = metrics[nextIdx].top + offsets[nextIdx];
+    return (prevBottom + nextTop) / 2 - INDICATOR_HALF_HEIGHT_PX;
+  }
+
+  if (nextIdx !== -1) {
+    return metrics[nextIdx].top + offsets[nextIdx] - SEAM_EDGE_OFFSET_PX;
+  }
+
+  if (prevIdx !== -1) {
+    return (
+      metrics[prevIdx].top +
+      offsets[prevIdx] +
+      metrics[prevIdx].height +
+      SEAM_EDGE_OFFSET_PX -
+      INDICATOR_HALF_HEIGHT_PX * 2
+    );
+  }
+
+  return null;
 }
 
-function getLayover(index: number): number | null {
-  if (index <= 0 || index >= plannedStations.value.length - 1) {
-    return null;
-  }
-
-  const prevSpotId = plannedStations.value[index - 1].id;
-  const currSpotId = plannedStations.value[index].id;
-  const nextSpotId = plannedStations.value[index + 1].id;
-  const inLeg = getLegBetween(prevSpotId, currSpotId);
-  const outLeg = getLegBetween(currSpotId, nextSpotId);
-
-  if (!inLeg?.arrival_time || !outLeg?.departure_time) {
-    return null;
-  }
-
-  return travelDurationMinutes(inLeg.arrival_time, outLeg.departure_time);
+function detachWindowPointerListeners() {
+  window.removeEventListener('pointermove', onWindowPointerMove);
+  window.removeEventListener('pointerup', onWindowPointerUp);
+  window.removeEventListener('pointercancel', onWindowPointerCancel);
 }
 
-const currentModalFromSpot = computed(() => {
-  if (editingLegFromIndex.value == null) {
-    return null;
-  }
-
-  return plannedStations.value[editingLegFromIndex.value]?.spot ?? null;
-});
-
-const currentModalToSpot = computed(() => {
-  if (editingLegFromIndex.value == null) {
-    return null;
-  }
-
-  return plannedStations.value[editingLegFromIndex.value + 1]?.spot ?? null;
-});
-
-const currentModalLeg = computed(() => {
-  if (!currentModalFromSpot.value || !currentModalToSpot.value) {
-    return null;
-  }
-
-  return getLegBetween(currentModalFromSpot.value.id, currentModalToSpot.value.id) ?? null;
-});
-
-function openLegModal(index: number) {
-  editingLegFromIndex.value = index;
-  showLegModal.value = true;
-}
-
-function onSaveLeg(savedLeg: ExcursionLeg) {
-  const nextLegs = [...props.legs];
-  const idx = nextLegs.findIndex(
-    (leg) => leg.from_spot_id === savedLeg.from_spot_id && leg.to_spot_id === savedLeg.to_spot_id
-  );
-
-  if (idx !== -1) {
-    nextLegs[idx] = savedLeg;
-  } else {
-    nextLegs.push(savedLeg);
-  }
-
-  emit('update:legs', nextLegs);
-}
-
-function removeLegBetween(fromSpotId: number, toSpotId: number) {
-  const nextLegs = props.legs.filter(
-    (leg) => !(leg.from_spot_id === fromSpotId && leg.to_spot_id === toSpotId)
-  );
-  emit('update:legs', nextLegs);
-}
-
-function onDeleteLeg() {
-  if (!currentModalFromSpot.value || !currentModalToSpot.value) {
+function onRowPointerDown(event: PointerEvent, index: number) {
+  if (event.button !== 0 || plannedStations.value.length < 2) {
     return;
   }
 
-  removeLegBetween(currentModalFromSpot.value.id, currentModalToSpot.value.id);
+  if (event.target instanceof Element && event.target.closest('button, a, input')) {
+    return;
+  }
+
+  if (
+    event.pointerType &&
+    event.pointerType !== 'mouse' &&
+    !(event.target instanceof Element && event.target.closest('.drag-handle'))
+  ) {
+    return;
+  }
+
+  if (!listWrapRef.value) {
+    return;
+  }
+
+  const rowElements = Array.from(
+    listWrapRef.value.querySelectorAll<HTMLElement>('.planned-row:not(.list-leave-active)')
+  );
+  const metrics = rowElements.map((el) => ({
+    top: el.offsetTop,
+    height: el.offsetHeight,
+  }));
+
+  if (!metrics[index]) {
+    return;
+  }
+
+  const gap =
+    metrics.length > 1
+      ? Math.max(0, metrics[1].top - (metrics[0].top + metrics[0].height))
+      : DEFAULT_ROW_GAP_PX;
+  const rowEl = event.currentTarget as HTMLElement;
+  const scrollEl = rowEl.closest('.modal-body') as HTMLElement | null;
+
+  pointerSession = {
+    pointerId: event.pointerId,
+    fromIndex: index,
+    startClientY: event.clientY,
+    rowEl,
+    scrollEl,
+    initialScrollTop: scrollEl?.scrollTop ?? 0,
+    metrics,
+    gap,
+  };
+
+  window.addEventListener('pointermove', onWindowPointerMove, { passive: false });
+  window.addEventListener('pointerup', onWindowPointerUp);
+  window.addEventListener('pointercancel', onWindowPointerCancel);
 }
+
+function onWindowPointerMove(event: PointerEvent) {
+  if (!pointerSession || event.pointerId !== pointerSession.pointerId) {
+    return;
+  }
+
+  const scrollDelta = (pointerSession.scrollEl?.scrollTop ?? 0) - pointerSession.initialScrollTop;
+  const rawDeltaY = event.clientY - pointerSession.startClientY + scrollDelta;
+
+  if (!activeDrag.value) {
+    if (Math.abs(rawDeltaY) < DRAG_THRESHOLD_PX) {
+      return;
+    }
+
+    pointerSession.rowEl.setPointerCapture?.(event.pointerId);
+    window.getSelection?.()?.removeAllRanges?.();
+  }
+
+  event.preventDefault();
+
+  const { metrics, gap, fromIndex } = pointerSession;
+  const minDelta = computeExactTargetOffset(metrics, gap, fromIndex, 0) - DRAG_OVERSHOOT_PX;
+  const maxDelta =
+    computeExactTargetOffset(metrics, gap, fromIndex, metrics.length - 1) + DRAG_OVERSHOOT_PX;
+  const clampedDeltaY = Math.max(minDelta, Math.min(maxDelta, rawDeltaY));
+  const { seamIndex, targetIndex } = computeSeamAndTarget(metrics, fromIndex, rawDeltaY);
+  const rowOffsets = computePartedRowOffsets({
+    count: metrics.length,
+    fromIndex,
+    seamIndex,
+    draggedDeltaY: clampedDeltaY,
+  });
+  const indicatorTop = computeIndicatorTop({
+    metrics,
+    offsets: rowOffsets,
+    fromIndex,
+    seamIndex,
+  });
+
+  activeDrag.value = {
+    fromIndex,
+    targetIndex,
+    seamIndex,
+    originTop: metrics[fromIndex].top,
+    originHeight: metrics[fromIndex].height,
+    indicatorTop,
+    rowOffsets,
+  };
+}
+
+function onWindowPointerUp(event: PointerEvent) {
+  if (!pointerSession || event.pointerId !== pointerSession.pointerId) {
+    return;
+  }
+
+  const session = pointerSession;
+  pointerSession = null;
+  detachWindowPointerListeners();
+  session.rowEl.releasePointerCapture?.(event.pointerId);
+
+  if (!activeDrag.value) {
+    return;
+  }
+
+  const { fromIndex, targetIndex } = activeDrag.value;
+  activeDrag.value = null;
+
+  if (fromIndex !== targetIndex) {
+    moveStationTo(fromIndex, targetIndex);
+  }
+}
+
+function onWindowPointerCancel(event: PointerEvent) {
+  if (!pointerSession || event.pointerId !== pointerSession.pointerId) {
+    return;
+  }
+
+  pointerSession.rowEl.releasePointerCapture?.(event.pointerId);
+  pointerSession = null;
+  detachWindowPointerListeners();
+  activeDrag.value = null;
+}
+
+function displayOrderNumber(index: number): number {
+  if (!activeDrag.value) {
+    return index + 1;
+  }
+
+  const { fromIndex, targetIndex } = activeDrag.value;
+
+  if (index === fromIndex) {
+    return targetIndex + 1;
+  }
+
+  if (targetIndex > fromIndex && index > fromIndex && index <= targetIndex) {
+    return index;
+  }
+
+  if (targetIndex < fromIndex && index >= targetIndex && index < fromIndex) {
+    return index + 2;
+  }
+
+  return index + 1;
+}
+
+function rowDynamicStyle(index: number): { transform: string } | undefined {
+  if (!activeDrag.value) {
+    return undefined;
+  }
+
+  const offset = activeDrag.value.rowOffsets[index] ?? 0;
+  const isActivelyDragged = index === activeDrag.value.fromIndex;
+  const scaleSuffix = isActivelyDragged ? ' scale(1.015)' : '';
+
+  return {
+    transform: `translate3d(0, ${offset}px, 0)${scaleSuffix}`,
+  };
+}
+
+function resetLeaveWrapHeight() {
+  leaveCollapseTimer = null;
+
+  if (listWrapRef.value) {
+    listWrapRef.value.classList.remove('is-leaving-list');
+    listWrapRef.value.style.height = '';
+  }
+}
+
+function onBeforeLeave(el: Element) {
+  if (leaveCollapseTimer !== null) {
+    clearTimeout(leaveCollapseTimer);
+    leaveCollapseTimer = null;
+  }
+
+  activeLeavingCount++;
+
+  const wrapEl = listWrapRef.value;
+  const listEl = wrapEl?.querySelector<HTMLElement>('.planned-list');
+  const extraWrapHeight =
+    wrapEl && listEl ? Math.max(0, wrapEl.offsetHeight - listEl.offsetHeight) : 0;
+
+  if (wrapEl) {
+    if (!wrapEl.style.height) {
+      wrapEl.style.height = `${wrapEl.offsetHeight}px`;
+    }
+
+    wrapEl.classList.add('is-leaving-list');
+  }
+
+  const htmlEl = el as HTMLElement;
+  const captured = pendingLeaveRects.get(el);
+  pendingLeaveRects.delete(el);
+
+  htmlEl.style.top = `${captured ? captured.top : htmlEl.offsetTop}px`;
+  htmlEl.style.left = `${captured ? captured.left : htmlEl.offsetLeft}px`;
+  htmlEl.style.width = `${captured ? captured.width : htmlEl.offsetWidth}px`;
+
+  void nextTick(() => {
+    const currentWrap = listWrapRef.value;
+    const currentList = currentWrap?.querySelector<HTMLElement>('.planned-list');
+
+    if (!currentWrap || !currentList) {
+      return;
+    }
+
+    void currentWrap.offsetHeight;
+    const nextHeight =
+      plannedStations.value.length > 0 ? currentList.offsetHeight + extraWrapHeight : 0;
+    currentWrap.style.height = `${nextHeight}px`;
+  });
+}
+
+function onAfterLeave() {
+  activeLeavingCount = Math.max(0, activeLeavingCount - 1);
+
+  if (activeLeavingCount > 0) {
+    return;
+  }
+
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+  if (prefersReducedMotion) {
+    resetLeaveWrapHeight();
+    return;
+  }
+
+  leaveCollapseTimer = setTimeout(resetLeaveWrapHeight, LEAVE_COLLAPSE_TAIL_MS);
+}
+
+onUnmounted(() => {
+  detachWindowPointerListeners();
+
+  if (flashTimer !== null) {
+    clearTimeout(flashTimer);
+  }
+
+  if (leaveCollapseTimer !== null) {
+    clearTimeout(leaveCollapseTimer);
+  }
+});
 </script>
 
 <template>
   <div class="spot-order-picker">
-    <fieldset v-if="plannedStations.length" class="planned-box">
-      <legend>
-        <AppIcon :icon="ACTION_ICONS.order" :size="14" group="actions" /> Tourreihenfolge
-      </legend>
-      <p class="order-hint">
-        In dieser Reihenfolge werden die Stationen während der Tour abgeklappert (bestimmt auch die
-        eingezeichnete Route auf der Karte) – zum Sortieren ziehen.
-      </p>
-      <template v-for="(station, index) in plannedStations" :key="index">
-        <div class="drop-line" v-if="draggedIndex !== null && dropIndicatorIndex === index"></div>
-        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
-        <div
-          class="planned-row"
-          :class="{ dragging: draggedIndex === index }"
-          draggable="true"
-          @dragstart="onDragStart($event, index)"
-          @dragover.prevent="onRowDragOver($event, index)"
-          @drop.prevent="onDrop"
-          @dragend="onDragEnd"
-        >
-          <span class="order-num">{{ index + 1 }}.</span>
-          <span class="drag-handle" aria-hidden="true">⠿</span>
-          <span class="spot-title">
-            <AppIcon :icon="station.tabler" :size="14" group="categories" />
-            {{ station.title }}
-          </span>
-          <span
-            v-if="getLayover(index) != null"
-            class="layover-badge"
-            title="Aufenthalts-/Umsteigezeit"
-          >
-            <AppIcon :icon="ACTION_ICONS.duration" :size="12" group="actions" />
-            {{ formatTravelDuration(getLayover(index)!) }} Umstiegszeit
-          </span>
-          <IconButton
-            variant="ghost"
-            size="xs"
-            :icon="ACTION_ICONS.close"
-            class="remove-btn"
-            aria-label="Aus Tour entfernen"
-            title="Aus Tour entfernen"
-            @click="removeSpotAt(index)"
-          />
-        </div>
+    <p v-if="plannedStations.length" class="order-hint">
+      Reihenfolge der Stationen auf Tour &amp; Karte – per Buttons oder Ziehen sortieren.
+    </p>
+    <p v-else class="spot-picker-empty">Noch keine Stationen zugeordnet.</p>
 
-        <!-- Teilstrecken-Verbinder zwischen zwei Stationen (Issue #361) -->
-        <div v-if="index < plannedStations.length - 1" class="leg-connector">
-          <div class="leg-connector-line"></div>
-          <div class="leg-item-wrap">
-            <Button
-              type="button"
-              variant="secondary"
-              :dashed="!getLegBetween(station.id, plannedStations[index + 1].id)"
-              size="xs"
-              shape="squircle"
-              class="leg-btn"
-              :class="{
-                'has-data': !!getLegBetween(station.id, plannedStations[index + 1].id),
-              }"
-              @click="openLegModal(index)"
-            >
-              <template v-if="getLegBetween(station.id, plannedStations[index + 1].id)">
-                <span class="leg-pill">
-                  <AppIcon
-                    :icon="
-                      travelTypeIconDef(
-                        getLegBetween(station.id, plannedStations[index + 1].id)!.transport_type ??
-                          null
-                      )
-                    "
-                    :size="13"
-                    group="actions"
-                    force-style="icons"
-                  />
-                  <span class="leg-type">
-                    {{
-                      getLegBetween(station.id, plannedStations[index + 1].id)!.transport_type ||
-                      'Verkehrsmittel'
-                    }}
-                  </span>
-                  <span
-                    v-if="
-                      getLegBetween(station.id, plannedStations[index + 1].id)!.departure_time ||
-                      getLegBetween(station.id, plannedStations[index + 1].id)!.arrival_time
-                    "
-                    class="leg-times"
-                  >
-                    {{
-                      getLegBetween(station.id, plannedStations[index + 1].id)!.departure_time ||
-                      '?'
-                    }}–{{
-                      getLegBetween(station.id, plannedStations[index + 1].id)!.arrival_time || '?'
-                    }}
-                    <span
-                      v-if="getLegDuration(station.id, plannedStations[index + 1].id)"
-                      class="leg-duration"
-                    >
-                      ({{ getLegDuration(station.id, plannedStations[index + 1].id) }})
-                    </span>
-                  </span>
-                  <span
-                    v-if="getLegBetween(station.id, plannedStations[index + 1].id)!.amount"
-                    class="leg-cost"
-                  >
-                    ·
-                    {{
-                      getLegBetween(station.id, plannedStations[index + 1].id)!
-                        .amount!.toFixed(2)
-                        .replace('.', ',')
-                    }}&nbsp;€
-                  </span>
-                </span>
-              </template>
-              <template v-else>
-                <span class="leg-empty">
-                  <AppIcon :icon="ACTION_ICONS.recordStart" :size="12" group="actions" /> +
-                  Verkehrsmittel
-                </span>
-              </template>
-            </Button>
+    <div
+      ref="listWrapRef"
+      class="planned-list-wrap"
+      :class="{
+        'is-dragging-list': !!activeDrag,
+      }"
+    >
+      <div
+        v-if="activeDrag"
+        class="planned-origin-footprint"
+        :style="{
+          height: `${activeDrag.originHeight}px`,
+          transform: `translate3d(0, ${activeDrag.originTop}px, 0)`,
+        }"
+        aria-hidden="true"
+      />
+      <div
+        v-if="activeDrag && activeDrag.indicatorTop !== null"
+        class="planned-drop-indicator"
+        :style="{
+          transform: `translate3d(0, ${activeDrag.indicatorTop}px, 0)`,
+        }"
+        aria-hidden="true"
+      />
+      <TransitionGroup
+        tag="div"
+        name="list"
+        class="planned-list"
+        @before-leave="onBeforeLeave"
+        @after-leave="onAfterLeave"
+        @leave-cancelled="onAfterLeave"
+      >
+        <div
+          v-for="(station, index) in plannedStations"
+          :key="station.entryKey"
+          class="planned-row"
+          :class="{
+            'is-dragging': activeDrag?.fromIndex === index,
+            'is-shifting': !!activeDrag && activeDrag.fromIndex !== index,
+            'is-just-moved': justMovedKey === station.entryKey,
+          }"
+          :style="rowDynamicStyle(index)"
+          @pointerdown="onRowPointerDown($event, index)"
+        >
+          <AppIcon
+            :icon="ACTION_ICONS.dragHandle"
+            :size="GRIP_ICON_SIZE"
+            group="actions"
+            class="drag-handle"
+            aria-hidden="true"
+          />
+          <span class="order-num">{{ displayOrderNumber(index) }}.</span>
+          <span class="spot-title">
+            <AppIcon :icon="station.tabler" :size="ICON_SIZE_SM" group="categories" />
+            <span class="spot-title-text">{{ station.title }}</span>
+          </span>
+          <div class="planned-row-actions">
             <IconButton
-              v-if="getLegBetween(station.id, plannedStations[index + 1].id)"
               variant="ghost"
-              size="xs"
+              size="sm"
+              :icon="ACTION_ICONS.chevronUp"
+              :disabled="index === 0"
+              class="move-up-btn"
+              aria-label="Station nach oben verschieben"
+              title="Nach oben"
+              @click="moveSpot(index, -1)"
+            />
+            <IconButton
+              variant="ghost"
+              size="sm"
+              :icon="ACTION_ICONS.chevronDown"
+              :disabled="index === plannedStations.length - 1"
+              class="move-down-btn"
+              aria-label="Station nach unten verschieben"
+              title="Nach unten"
+              @click="moveSpot(index, 1)"
+            />
+            <IconButton
+              variant="ghost"
+              size="sm"
               :icon="ACTION_ICONS.close"
-              class="remove-btn leg-remove-btn"
-              title="Weg-Details entfernen"
-              aria-label="Weg-Details entfernen"
-              @click.stop="removeLegBetween(station.id, plannedStations[index + 1].id)"
+              class="remove-btn"
+              aria-label="Aus Tour entfernen"
+              title="Aus Tour entfernen"
+              @click="removeSpotAt(index)"
             />
           </div>
-          <div class="leg-connector-line"></div>
         </div>
-      </template>
-      <div
-        class="drop-line"
-        v-if="draggedIndex !== null && dropIndicatorIndex === plannedStations.length"
-      ></div>
-    </fieldset>
+      </TransitionGroup>
+    </div>
 
-    <fieldset class="spot-picker">
-      <legend>
-        Spots hinzufügen – nach Likes sortiert (auch mehrfach möglich, z. B. Start &amp; Ende)
-      </legend>
-      <p v-if="!addableSpots.length" class="spot-picker-empty">Noch keine Spots angelegt.</p>
-      <button
-        v-for="spot in addableSpots"
-        :key="spot.id"
-        type="button"
-        class="derived-option"
-        @click="addSpot(spot.id)"
-      >
-        <span class="spot-option-title">
-          <AppIcon :icon="spotCategoryMeta(spot.category).tabler" :size="14" group="categories" />
-          {{ spot.title }}
-        </span>
-        <span class="spot-option-likes">
-          <AppIcon :icon="ACTION_ICONS.sortLikes" :size="13" group="actions" />
-          {{ likeCount(spot.id) }}
-        </span>
-        <span class="derived-add" aria-hidden="true">+</span>
-      </button>
-
-      <div class="spot-picker-create-row">
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          class="spot-picker-create-btn"
-          @click="emit('create-spot')"
-        >
-          <AppIcon :icon="ACTION_ICONS.mapPinPlus" :size="14" group="actions" />
-          <span>Neuen Spot erstellen</span>
-        </Button>
-      </div>
-    </fieldset>
-
-    <LegTransportModal
-      v-model="showLegModal"
-      :from-spot="currentModalFromSpot"
-      :to-spot="currentModalToSpot"
-      :leg="currentModalLeg"
-      :users="props.users"
-      @save="onSaveLeg"
-      @delete="onDeleteLeg"
-    />
+    <div class="spot-picker-actions">
+      <TourSpotAssignDropdown
+        :spots="spots"
+        :selected-spot-ids="modelValue"
+        :close-on-select="false"
+        @select-spot="addSpot"
+        @create-spot="emit('create-spot')"
+      />
+    </div>
   </div>
 </template>
 
@@ -450,159 +797,175 @@ function onDeleteLeg() {
 .spot-order-picker {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-sm);
   min-width: 0;
-}
-
-.leg-connector {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2xs) 0 var(--space-2xs) var(--space-3);
-  min-width: 0;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-.leg-connector-line {
-  flex: 0 0 12px;
-  height: 1px;
-  background: var(--color-primary-dark, #ccc);
-  opacity: 0.3;
-}
-
-.leg-item-wrap {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  min-width: 0;
-  max-width: 100%;
-  flex: 0 1 auto;
-}
-
-.leg-btn {
-  min-width: 0;
-  max-width: 100%;
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  text-align: left;
-}
-
-.leg-btn.has-data {
-  border-color: var(--color-primary);
-  color: var(--color-text);
-}
-
-.leg-pill {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  font-weight: 500;
-  min-width: 0;
-  max-width: 100%;
-}
-
-.leg-type {
-  font-weight: 600;
-}
-
-.leg-times {
-  color: var(--color-text-muted);
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-}
-
-.leg-duration {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-}
-
-.leg-cost {
-  font-weight: 600;
-  color: var(--color-scheduled-dark, var(--color-scheduled));
-  white-space: nowrap;
-}
-
-.leg-empty {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-.layover-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  color: var(--color-text-muted);
-  background: var(--color-hover);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  padding: var(--space-2xs) var(--space-1-5);
-  margin-left: auto;
-  white-space: nowrap;
-  max-width: 100%;
-}
-
-.planned-box,
-.spot-picker {
-  @include surface-sunken-box;
-  padding: var(--space-md) var(--space-lg);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  min-width: 0;
-}
-
-.planned-box {
-  border-color: var(--color-primary);
-  background: var(--color-primary-tint);
-}
-
-.planned-box legend,
-.spot-picker legend {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-text-muted);
-  padding: 0 var(--space-1);
 }
 
 .order-hint {
-  margin: 0 0 var(--space-1);
+  margin: 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
+.planned-list-wrap {
+  position: relative;
+  padding: var(--space-2xs) 0;
+  transition: height 0.52s cubic-bezier(0.22, 1, 0.36, 1) 0.24s;
+}
+
+.planned-list-wrap:not(.is-leaving-list):has(> .planned-list:empty) {
+  display: none;
+}
+
+.planned-origin-footprint {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 0;
+  border-radius: var(--radius-sm-squircle);
+  corner-shape: squircle;
+  border: 1px dashed var(--color-border-strong);
+  background: color-mix(in srgb, var(--color-hover) 55%, transparent);
+  opacity: 0.6;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.planned-drop-indicator {
+  position: absolute;
+  top: 0;
+  left: var(--space-2);
+  right: var(--space-2);
+  height: 4px;
+  z-index: 15;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 55%, transparent);
+  pointer-events: none;
+  transition:
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.2s ease;
+}
+
+.planned-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+  min-width: 0;
+  position: relative;
+}
+
 .planned-row {
+  position: relative;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  padding: var(--space-1-5) var(--space-2);
+  gap: var(--space-1-5);
+  min-height: 44px;
+  padding: var(--space-1) var(--space-2);
   background: var(--color-surface);
+  border: 1px solid var(--color-border-divider);
   border-radius: var(--radius-sm-squircle);
   corner-shape: squircle;
   cursor: grab;
   min-width: 0;
+  box-sizing: border-box;
+  user-select: none;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease;
 }
 
-.planned-row:active {
+@include can-hover {
+  .planned-list-wrap:not(.is-dragging-list) .planned-row:hover {
+    border-color: var(--color-border-strong);
+    background: var(--color-hover);
+  }
+
+  .planned-list-wrap:not(.is-dragging-list) .planned-row:hover .drag-handle {
+    color: var(--color-primary);
+    transform: scale(1.08);
+  }
+}
+
+.planned-row.is-dragging {
+  z-index: 20;
   cursor: grabbing;
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-surface) 84%, transparent);
+  backdrop-filter: blur(6px);
+  opacity: 0.94;
+  box-shadow:
+    var(--shadow-lg),
+    0 0 0 2px var(--color-primary-tint);
+  transition:
+    box-shadow 0.24s ease,
+    border-color 0.24s ease,
+    background-color 0.24s ease !important;
 }
 
-.planned-row.dragging {
-  opacity: 0.4;
+.planned-row.is-shifting {
+  z-index: 1;
+  transition:
+    transform 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
-.drop-line {
-  height: 2px;
-  border-radius: 1px;
-  background: var(--color-primary);
-  margin: 0 var(--space-2);
+.planned-row.is-just-moved {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary-tint) 45%, var(--color-surface));
+}
+
+.planned-row.list-move {
+  z-index: 5;
+  transition:
+    transform 0.44s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.28s ease;
+}
+
+.planned-list-wrap.is-leaving-list .planned-row.list-move {
+  transition:
+    transform 0.52s cubic-bezier(0.22, 1, 0.36, 1) 0.24s,
+    opacity 0.36s ease 0.24s;
+}
+
+.planned-row.list-enter-active {
+  transition:
+    opacity 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.planned-row.list-leave-active {
+  position: absolute;
+  z-index: 8;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--color-surface) 78%, transparent);
+  backdrop-filter: blur(4px);
+  transition:
+    opacity 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.planned-row.list-enter-from {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.97);
+}
+
+.planned-row.list-leave-to {
+  opacity: 0;
+  transform: translateX(48px) scale(0.96);
+}
+
+.drag-handle {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  touch-action: none;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .order-num {
@@ -610,20 +973,32 @@ function onDeleteLeg() {
   font-weight: 700;
   color: var(--color-primary-dark);
   flex-shrink: 0;
-}
-
-.drag-handle {
-  color: var(--color-text-muted);
-  flex-shrink: 0;
+  min-width: 1.5ch;
 }
 
 .spot-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
   flex: 1 1 120px;
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.spot-title-text {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--font-size-sm);
+}
+
+.planned-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .remove-btn {
@@ -636,74 +1011,28 @@ function onDeleteLeg() {
   }
 }
 
-.spot-option-title {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.spot-option-likes {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.derived-option {
-  @include touch-target($expand: true);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--font-size-sm);
-  background: none;
-  border: none;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  /* #207: der globale `button`-Basisstil (style.css) setzt box-shadow: var(--shadow-sm) - ohne
-     Reset klebten in dieser dichten Liste die Einzelschatten benachbarter Zeilen aneinander und
-     wirkten buggy, statt wie ein einzelnes, flaches Listenelement auszusehen. */
-  box-shadow: none;
-  padding: var(--space-xs) var(--space-2xs);
-  cursor: pointer;
-  color: var(--color-text);
-  width: 100%;
-  min-width: 0;
-  text-align: left;
-}
-
-@include can-hover {
-  .derived-option:hover {
-    color: var(--color-primary-dark);
-  }
-}
-
-.derived-option:focus-visible {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: var(--focus-ring-offset, 2px);
-}
-
-.derived-add {
-  color: var(--color-primary);
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.spot-picker-create-row {
-  margin-top: var(--space-xs);
-  padding-top: var(--space-sm);
-  @include divider-engraved('top');
-  display: flex;
-  justify-content: flex-start;
-}
-
 .spot-picker-empty {
   margin: 0;
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
+}
+
+.spot-picker-actions {
+  display: flex;
+  align-items: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planned-list-wrap,
+  .planned-drop-indicator,
+  .planned-row,
+  .planned-row.is-shifting,
+  .planned-row.list-move,
+  .planned-list-wrap.is-leaving-list .planned-row.list-move,
+  .planned-row.list-enter-active,
+  .planned-row.list-leave-active,
+  .drag-handle {
+    transition: none !important;
+  }
 }
 </style>

@@ -247,7 +247,7 @@ function creatorLabel(userId: number | null | undefined): string | null {
         <div class="tour-add-spot-row-inner">
           <TourSpotAssignDropdown
             :spots="spotsStore.spots"
-            :like-count="spotsStore.likeCountFor"
+            :selected-spot-ids="excursion.spot_ids"
             @select-spot="(spotId) => emit('addSpotToTour', spotId)"
             @create-spot="emit('createSpotForTour')"
           />

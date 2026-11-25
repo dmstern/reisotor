@@ -2,27 +2,32 @@
 import { computed, nextTick, onUnmounted, ref, watch, type ComponentPublicInstance } from 'vue';
 import type { Spot } from '../api/types';
 import AppIcon from './AppIcon.vue';
+import Badge from './primitives/Badge.vue';
 import Button from './primitives/Button.vue';
 import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
+import Input from './primitives/Input.vue';
 import PickerMenu from './primitives/PickerMenu.vue';
 import { ACTION_ICONS } from '../utils/actionIcons';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { computePopoverPosition } from '../utils/popoverPosition';
 
-const DEFAULT_MENU_WIDTH = 260;
-const DEFAULT_MENU_HEIGHT = 280;
+const DEFAULT_MENU_WIDTH = 380;
+const DEFAULT_MENU_HEIGHT = 320;
 const MENU_OFFSET = 6;
 const TRIGGER_ICON_SIZE = 14;
-const LIKE_ICON_SIZE = 12;
+const SEARCH_THRESHOLD = 8;
 
 const props = withDefaults(
   defineProps<{
     spots: Spot[];
-    likeCount: (spotId: number) => number;
+    selectedSpotIds?: number[];
     compact?: boolean;
+    closeOnSelect?: boolean;
   }>(),
   {
+    selectedSpotIds: () => [],
     compact: false,
+    closeOnSelect: true,
   }
 );
 
@@ -32,16 +37,35 @@ const emit = defineEmits<{
 }>();
 
 const open = ref(false);
+const searchQuery = ref('');
 const buttonRef = ref<ComponentPublicInstance | HTMLElement | null>(null);
 const popupRef = ref<InstanceType<typeof PickerMenu> | null>(null);
 const popupStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' });
 
+const spotUsageCounts = computed(() => {
+  const counts = new Map<number, number>();
+
+  for (const spotId of props.selectedSpotIds) {
+    counts.set(spotId, (counts.get(spotId) ?? 0) + 1);
+  }
+
+  return counts;
+});
+
 const sortedSpots = computed(() => {
-  return [...props.spots].sort(
-    (spotA, spotB) =>
-      props.likeCount(spotB.id) - props.likeCount(spotA.id) ||
-      spotA.title.localeCompare(spotB.title)
+  return [...props.spots].sort((spotA, spotB) =>
+    spotA.title.localeCompare(spotB.title, 'de', { sensitivity: 'base' })
   );
+});
+
+const filteredSpots = computed(() => {
+  const query = searchQuery.value.trim().toLocaleLowerCase();
+
+  if (!query) {
+    return sortedSpots.value;
+  }
+
+  return sortedSpots.value.filter((spot) => spot.title.toLocaleLowerCase().includes(query));
 });
 
 function resolveTriggerEl(event?: MouseEvent): HTMLElement | null {
@@ -55,6 +79,7 @@ function resolveTriggerEl(event?: MouseEvent): HTMLElement | null {
 
 function close() {
   open.value = false;
+  searchQuery.value = '';
 }
 
 async function toggle(event?: MouseEvent) {
@@ -92,7 +117,10 @@ async function toggle(event?: MouseEvent) {
 
 function handleSelectSpot(spotId: number) {
   emit('select-spot', spotId);
-  close();
+
+  if (props.closeOnSelect) {
+    close();
+  }
 }
 
 function handleCreateSpot() {
@@ -163,29 +191,51 @@ onUnmounted(() => {
           <span class="popup-title">Spot hinzufügen</span>
         </div>
 
+        <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
+        <div v-if="spots.length >= SEARCH_THRESHOLD" class="popup-search" @click.stop>
+          <Input
+            v-model="searchQuery"
+            type="search"
+            size="sm"
+            shape="pill"
+            placeholder="Spots filtern..."
+            aria-label="Spots filtern"
+            class="spot-assign-search"
+          />
+        </div>
+
         <div class="spot-assign-list">
-          <p v-if="!sortedSpots.length" class="spot-assign-empty">Noch keine Spots angelegt</p>
+          <p v-if="!spots.length" class="spot-assign-empty">Noch keine Spots angelegt</p>
+          <p v-else-if="!filteredSpots.length" class="spot-assign-empty">
+            Keine passenden Spots gefunden.
+          </p>
           <DropdownMenuItem
-            v-for="spot in sortedSpots"
+            v-for="spot in filteredSpots"
             :key="spot.id"
             :icon="spotCategoryMeta(spot.category).tabler"
             icon-group="categories"
             :icon-size="TRIGGER_ICON_SIZE"
+            :active="(spotUsageCounts.get(spot.id) ?? 0) > 0"
             class="spot-assign-option"
             @click="handleSelectSpot(spot.id)"
           >
             {{ spot.title }}
             <template #trailing>
               <span class="spot-assign-trailing">
-                <span class="spot-assign-likes">
-                  <AppIcon :icon="ACTION_ICONS.sortLikes" :size="LIKE_ICON_SIZE" group="actions" />
-                  {{ likeCount(spot.id) }}
-                </span>
+                <Badge
+                  v-if="spotUsageCounts.get(spot.id)"
+                  variant="primary"
+                  size="sm"
+                  class="spot-usage-badge"
+                >
+                  {{ spotUsageCounts.get(spot.id) }}×
+                </Badge>
                 <AppIcon
                   :icon="ACTION_ICONS.add"
                   :size="TRIGGER_ICON_SIZE"
                   group="actions"
                   class="spot-assign-plus"
+                  aria-hidden="true"
                 />
               </span>
             </template>
@@ -222,9 +272,10 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
-.tour-spot-assign-popup {
-  min-width: 230px;
-  max-width: min(300px, calc(100vw - 24px));
+:global(.tour-spot-assign-popup) {
+  width: min(380px, calc(100vw - 24px));
+  min-width: min(320px, calc(100vw - 24px));
+  max-width: min(420px, calc(100vw - 24px));
 }
 
 .popup-head {
@@ -240,8 +291,16 @@ onUnmounted(() => {
   letter-spacing: 0.03em;
 }
 
+.popup-search {
+  padding: var(--space-xs) 0 var(--space-2xs);
+}
+
+.spot-assign-search {
+  width: 100%;
+}
+
 .spot-assign-list {
-  max-height: 200px;
+  max-height: 240px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -251,17 +310,8 @@ onUnmounted(() => {
 .spot-assign-trailing {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1-5);
   margin-left: auto;
-  flex-shrink: 0;
-}
-
-.spot-assign-likes {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
   flex-shrink: 0;
 }
 

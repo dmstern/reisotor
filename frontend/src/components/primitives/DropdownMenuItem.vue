@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useId } from 'vue';
+import { computed, useId } from 'vue';
 import type { IconDef } from '../../utils/icon';
 import type { IconGroup } from '../../stores/iconStyle';
 import AppIcon from '../AppIcon.vue';
@@ -8,7 +8,7 @@ import Checkbox from './Checkbox.vue';
 // DropdownMenuItem-Primitive: Wiederverwendbarer Menüeintrag für PickerMenu.vue / DropdownMenu.vue (Issue #721).
 // Unterstützt Buttons, Links (<a>) und Multiselect-Checkbox-Zeilen mit konsistentem Hover-, Fokus- und Active-Styling.
 
-const inputId = useId();
+const generatedInputId = useId();
 
 const props = withDefaults(
   defineProps<{
@@ -32,8 +32,10 @@ const props = withDefaults(
     target?: string;
     /** Link-Rel (z. B. 'noopener') */
     rel?: string;
-    /** Multiselect-Modus mit Checkbox (<label :for="inputId"> statt <button>/<a>) */
+    /** Multiselect-Modus mit Checkbox (<label :for="resolvedInputId"> statt <button>/<a>) */
     multiselect?: boolean;
+    /** Optionale explizite ID für die Multiselect-Checkbox */
+    inputId?: string;
     /** Checkbox-Zustand für Multiselect */
     checked?: boolean;
     /** Wert für Checkbox */
@@ -64,6 +66,8 @@ const emit = defineEmits<{
   (e: 'update:checked', value: boolean): void;
 }>();
 
+const resolvedInputId = computed(() => props.inputId || generatedInputId);
+
 function handleClick(event: MouseEvent) {
   if (props.disabled) {
     event.preventDefault();
@@ -78,33 +82,53 @@ function handleClick(event: MouseEvent) {
   <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
   <label
     v-if="multiselect"
-    :for="inputId"
+    :for="resolvedInputId"
     :title="title"
-    class="dropdown-item"
+    class="dropdown-item dropdown-item--multiselect"
     :class="{ 'is-active': active, 'is-disabled': disabled }"
   >
     <slot name="checkbox">
       <Checkbox
-        :id="inputId"
+        :id="resolvedInputId"
         :checked="checked"
         :disabled="disabled"
         :value="value"
-        @update:checked="$emit('update:checked', $event)"
         @change="$emit('update:checked', ($event.target as HTMLInputElement).checked)"
       />
     </slot>
-    <AppIcon
-      v-if="icon"
-      :icon="icon"
-      :group="iconGroup"
-      :force-style="iconForceStyle"
-      :size="iconSize"
-      :active="active"
-      class="dropdown-item-icon"
-    />
-    <span class="dropdown-item-label">
-      <slot>{{ label }}</slot>
-    </span>
+    <div class="dropdown-item-body">
+      <div class="dropdown-item-main">
+        <span class="dropdown-item-title-row">
+          <AppIcon
+            v-if="icon"
+            :icon="icon"
+            :group="iconGroup"
+            :force-style="iconForceStyle"
+            :size="iconSize"
+            :active="active"
+            class="dropdown-item-icon"
+          />
+          <span class="dropdown-item-label">
+            <slot>{{ label }}</slot>
+          </span>
+        </span>
+        <span v-if="$slots.subtitle" class="dropdown-item-subtitle">
+          <slot name="subtitle" />
+        </span>
+      </div>
+      <div v-if="$slots.trailing || trailingIcon" class="dropdown-item-trailing">
+        <slot name="trailing">
+          <AppIcon
+            v-if="trailingIcon"
+            :icon="trailingIcon"
+            :group="trailingIconGroup"
+            :size="trailingIconSize"
+            :active="active"
+            class="dropdown-item-trailing-icon"
+          />
+        </slot>
+      </div>
+    </div>
   </label>
   <a
     v-else-if="href"
@@ -213,7 +237,8 @@ function handleClick(event: MouseEvent) {
   transform: scale(0.99);
 }
 
-.dropdown-item:focus-visible {
+.dropdown-item:focus-visible,
+.dropdown-item--multiselect:has(:focus-visible) {
   outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-primary));
   outline-offset: -3px;
 }
@@ -248,11 +273,69 @@ function handleClick(event: MouseEvent) {
   justify-content: center;
 }
 
+.dropdown-item-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs) var(--space-sm);
+  flex: 1;
+  min-width: 0;
+}
+
+.dropdown-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  flex: 1;
+  min-width: 0;
+}
+
+.dropdown-item-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
 .dropdown-item-label {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.dropdown-item-subtitle {
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  line-height: var(--line-height-snug);
+}
+
+.dropdown-item-trailing {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1-5);
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
+@include container-down('mobile-sm') {
+  .dropdown-item-body {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2xs);
+  }
+
+  .dropdown-item-main {
+    flex: none;
+    width: 100%;
+  }
 }
 
 .dropdown-item-trailing-icon {

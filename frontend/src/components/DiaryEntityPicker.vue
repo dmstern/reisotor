@@ -11,8 +11,13 @@ import { SECTION_ICON_DEFS } from '../utils/sectionIcons';
 import { formatDate } from '../utils/dateFormat';
 import AppIcon from './AppIcon.vue';
 import Alert from './primitives/Alert.vue';
+import Badge from './primitives/Badge.vue';
 import Checkbox from './primitives/Checkbox.vue';
 import CollapsibleFieldset from './primitives/CollapsibleFieldset.vue';
+import DropdownMenuItem from './primitives/DropdownMenuItem.vue';
+
+const BADGE_ICON_SIZE = 13;
+const SPOT_ICON_SIZE = 14;
 
 const props = defineProps<{
   date: string;
@@ -113,6 +118,14 @@ const mismatchedSpots = computed(() => {
 const hasDateMismatch = computed(() => {
   return mismatchedExcursions.value.length > 0 || mismatchedSpots.value.length > 0;
 });
+
+function toggleId(list: number[], id: number, checked: boolean): number[] {
+  if (checked) {
+    return list.includes(id) ? list : [...list, id];
+  }
+
+  return list.filter((item) => item !== id);
+}
 </script>
 
 <template>
@@ -125,34 +138,41 @@ const hasDateMismatch = computed(() => {
       :icon="SECTION_ICON_DEFS.excursions"
       icon-group="navigation"
     >
-      <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-      <label
-        :for="`diary-excursion-${ex.id}`"
-        v-for="ex in excursions"
-        :key="ex.id"
-        class="diary-picker-option excursion-option"
-      >
-        <Checkbox :id="`diary-excursion-${ex.id}`" :value="ex.id" v-model="excursionIds" />
-        <span class="diary-picker-option-content">
-          <span class="diary-picker-option-title excursion-option-title">
-            <span class="diary-picker-option-name">{{ ex.title }}</span>
-          </span>
-          <span
-            v-if="ex.date === date"
-            class="diary-picker-badge excursion-option-badge recommended"
-          >
-            <AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" />
-            <span class="diary-picker-badge-text">Empfohlen – an diesem Tag geplant</span>
-          </span>
-          <span
-            v-else-if="links.excursionDateMismatch(ex, date)"
-            class="diary-picker-badge excursion-option-badge warning"
-          >
-            <AppIcon :icon="ACTION_ICONS.warning" :size="13" group="actions" />
-            <span class="diary-picker-badge-text">Geplant am {{ formatDate(ex.date!) }}</span>
-          </span>
-        </span>
-      </label>
+      <div class="diary-picker-list">
+        <DropdownMenuItem
+          v-for="ex in excursions"
+          :key="ex.id"
+          multiselect
+          :input-id="`diary-excursion-${ex.id}`"
+          :checked="excursionIds.includes(ex.id)"
+          :active="excursionIds.includes(ex.id)"
+          :value="ex.id"
+          :label="ex.title"
+          class="excursion-option"
+          @update:checked="excursionIds = toggleId(excursionIds, ex.id, $event)"
+        >
+          <template v-if="ex.date === date || links.excursionDateMismatch(ex, date)" #trailing>
+            <Badge
+              v-if="ex.date === date"
+              variant="primary"
+              size="sm"
+              class="excursion-option-badge recommended"
+            >
+              <AppIcon :icon="ACTION_ICONS.recommended" :size="BADGE_ICON_SIZE" group="actions" />
+              Empfohlen – an diesem Tag geplant
+            </Badge>
+            <Badge
+              v-else-if="links.excursionDateMismatch(ex, date)"
+              variant="warning"
+              size="sm"
+              class="excursion-option-badge warning"
+            >
+              <AppIcon :icon="ACTION_ICONS.warning" :size="BADGE_ICON_SIZE" group="actions" />
+              Geplant am {{ formatDate(ex.date!) }}
+            </Badge>
+          </template>
+        </DropdownMenuItem>
+      </div>
     </CollapsibleFieldset>
 
     <CollapsibleFieldset
@@ -163,36 +183,48 @@ const hasDateMismatch = computed(() => {
       :icon="FORM_FIELD_ICONS.location"
       icon-group="formFields"
     >
-      <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-      <label
-        v-for="spot in spots"
-        :key="spot.id"
-        :for="`diary-spot-${spot.id}`"
-        class="diary-picker-option excursion-option spot-option-item spot-option-btn"
-      >
-        <Checkbox :id="`diary-spot-${spot.id}`" :value="spot.id" v-model="spotIds" />
-        <span class="diary-picker-option-content">
-          <span class="diary-picker-option-title excursion-option-title">
-            <AppIcon :icon="spotCategoryMeta(spot.category).tabler" :size="14" group="categories" />
-            <span class="diary-picker-option-name">{{ spot.title }}</span>
-          </span>
-          <span
-            v-if="links.spotAlreadyPlanned(spot.id, date)"
-            class="diary-picker-badge excursion-option-badge recommended"
+      <div class="diary-picker-list">
+        <DropdownMenuItem
+          v-for="spot in spots"
+          :key="spot.id"
+          multiselect
+          :input-id="`diary-spot-${spot.id}`"
+          :icon="spotCategoryMeta(spot.category).tabler"
+          icon-group="categories"
+          :icon-size="SPOT_ICON_SIZE"
+          :checked="spotIds.includes(spot.id)"
+          :active="spotIds.includes(spot.id)"
+          :value="spot.id"
+          :label="spot.title"
+          class="excursion-option spot-option-item spot-option-btn"
+          @update:checked="spotIds = toggleId(spotIds, spot.id, $event)"
+        >
+          <template
+            v-if="links.spotAlreadyPlanned(spot.id, date) || links.spotDateMismatch(spot.id, date)"
+            #trailing
           >
-            <AppIcon :icon="ACTION_ICONS.recommended" :size="13" group="actions" />
-            <span class="diary-picker-badge-text">Empfohlen – an diesem Tag geplant</span>
-          </span>
-          <span
-            v-else-if="links.spotDateMismatch(spot.id, date)"
-            class="diary-picker-badge excursion-option-badge warning"
-            :title="formatSpotScheduledFull(spot.id)"
-          >
-            <AppIcon :icon="ACTION_ICONS.warning" :size="13" group="actions" />
-            <span class="diary-picker-badge-text">{{ formatSpotScheduled(spot.id) }}</span>
-          </span>
-        </span>
-      </label>
+            <Badge
+              v-if="links.spotAlreadyPlanned(spot.id, date)"
+              variant="primary"
+              size="sm"
+              class="excursion-option-badge recommended"
+            >
+              <AppIcon :icon="ACTION_ICONS.recommended" :size="BADGE_ICON_SIZE" group="actions" />
+              Empfohlen – an diesem Tag geplant
+            </Badge>
+            <Badge
+              v-else-if="links.spotDateMismatch(spot.id, date)"
+              variant="warning"
+              size="sm"
+              class="excursion-option-badge warning"
+              :title="formatSpotScheduledFull(spot.id)"
+            >
+              <AppIcon :icon="ACTION_ICONS.warning" :size="BADGE_ICON_SIZE" group="actions" />
+              {{ formatSpotScheduled(spot.id) }}
+            </Badge>
+          </template>
+        </DropdownMenuItem>
+      </div>
     </CollapsibleFieldset>
 
     <Alert
@@ -243,106 +275,11 @@ const hasDateMismatch = computed(() => {
   max-width: 100%;
 }
 
-.diary-picker-option {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-sm);
-  padding: var(--space-1-5) var(--space-sm);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
-  cursor: pointer;
-  width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-  user-select: none;
-  font-size: var(--font-size-sm);
-  font-weight: 400;
-  transition: background-color var(--transition-fast);
-}
-
-@include can-hover {
-  .diary-picker-option:hover {
-    background-color: var(--color-hover);
-  }
-}
-
-.diary-picker-option:focus-within {
-  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
-  outline-offset: var(--focus-ring-offset, 2px);
-  box-shadow: var(--focus-ring-halo);
-}
-
-.diary-picker-option-content {
+.diary-picker-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-2xs);
-  flex: 1;
   min-width: 0;
-}
-
-@include container-up('mobile-sm') {
-  .diary-picker-option-content {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-sm);
-  }
-}
-
-.diary-picker-option-title {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  min-width: 0;
-  max-width: 100%;
-  font-size: var(--font-size-sm);
-  color: var(--color-text);
-  line-height: var(--line-height-snug);
-  min-height: 24px;
-}
-
-.diary-picker-option-name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.diary-picker-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  font-size: var(--font-size-xs);
-  max-width: 100%;
-  box-sizing: border-box;
-  flex-shrink: 0;
-  width: fit-content;
-}
-
-.diary-picker-badge-text {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.diary-picker-badge.recommended {
-  background: var(--color-primary-tint);
-  color: var(--color-text);
-  padding: var(--space-2xs) var(--space-sm);
-  border-radius: var(--radius-pill);
-  corner-shape: round;
-  font-weight: 600;
-}
-
-.diary-picker-badge.warning {
-  background: var(--color-warning-tint);
-  color: var(--color-warning-dark);
-  padding: var(--space-2xs) var(--space-sm);
-  border-radius: var(--radius-pill);
-  corner-shape: round;
-  font-weight: 600;
 }
 
 .diary-mismatch-alert {
@@ -393,11 +330,5 @@ const hasDateMismatch = computed(() => {
 
 .mismatch-opt-in-text {
   line-height: var(--line-height-snug);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .diary-picker-option {
-    transition: none;
-  }
 }
 </style>

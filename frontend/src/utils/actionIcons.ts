@@ -143,6 +143,7 @@ import {
   IconCopy,
   IconCheck,
   IconExternalLink,
+  IconGripVertical,
   IconTable,
   IconRowInsertTop,
   IconRowInsertBottom,
@@ -284,7 +285,8 @@ export type ActionIconKey =
   | 'tableHeader'
   | 'shieldCheck'
   | 'mail'
-  | 'externalLink';
+  | 'externalLink'
+  | 'dragHandle';
 
 export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
   edit: { id: 'pencil', emoji: '✏️', outline: IconPencil, filled: IconPencilFilled },
@@ -607,5 +609,10 @@ export const ACTION_ICONS: Record<ActionIconKey, IconDef> = {
     id: 'external-link',
     emoji: '↗',
     outline: IconExternalLink,
+  },
+  dragHandle: {
+    id: 'grip-vertical',
+    emoji: '⋮',
+    outline: IconGripVertical,
   },
 };
