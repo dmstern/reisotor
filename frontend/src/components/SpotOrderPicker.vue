@@ -18,7 +18,7 @@ const UPWARD_CROSS_RATIO = 0.58;
 const SEAM_EDGE_OFFSET_PX = 8;
 const INDICATOR_HALF_HEIGHT_PX = 2;
 const JUST_MOVED_FLASH_MS = 520;
-const LEAVE_COLLAPSE_TAIL_MS = 300;
+const LEAVE_COLLAPSE_TAIL_MS = 420;
 const NUDGE_MAX_PX = 12;
 const NUDGE_DECAY_PX = 3;
 
@@ -74,9 +74,8 @@ const rowKeys = ref<string[]>([]);
 const listWrapRef = ref<HTMLElement | null>(null);
 const justMovedKey = ref<string | null>(null);
 const activeDrag = ref<ActiveDragState | null>(null);
-const leavingCount = ref(0);
-const isCollapsingHeight = ref(false);
 
+let activeLeavingCount = 0;
 let pointerSession: PointerSession | null = null;
 let flashTimer: ReturnType<typeof setTimeout> | null = null;
 let leaveCollapseTimer: ReturnType<typeof setTimeout> | null = null;
@@ -193,9 +192,8 @@ function removeSpotAt(stationIndex: number) {
     return;
   }
 
-  const rowElements = listWrapRef.value?.querySelectorAll<HTMLElement>(
-    '.planned-row:not(.list-leave-active)'
-  );
+  const wrapEl = listWrapRef.value;
+  const rowElements = wrapEl?.querySelectorAll<HTMLElement>('.planned-row:not(.list-leave-active)');
   const rowEl = rowElements?.[stationIndex];
 
   if (rowEl) {
@@ -204,6 +202,16 @@ function removeSpotAt(stationIndex: number) {
       left: rowEl.offsetLeft,
       width: rowEl.offsetWidth,
     });
+  }
+
+  if (wrapEl) {
+    if (leaveCollapseTimer !== null) {
+      clearTimeout(leaveCollapseTimer);
+      leaveCollapseTimer = null;
+    }
+
+    wrapEl.style.height = `${wrapEl.offsetHeight}px`;
+    wrapEl.classList.add('is-leaving-list');
   }
 
   const nextKeys = [...rowKeys.value];
@@ -591,10 +599,10 @@ function rowDynamicStyle(index: number): { transform: string } | undefined {
 }
 
 function resetLeaveWrapHeight() {
-  isCollapsingHeight.value = false;
   leaveCollapseTimer = null;
 
   if (listWrapRef.value) {
+    listWrapRef.value.classList.remove('is-leaving-list');
     listWrapRef.value.style.height = '';
   }
 }
@@ -605,15 +613,19 @@ function onBeforeLeave(el: Element) {
     leaveCollapseTimer = null;
   }
 
-  leavingCount.value++;
-  isCollapsingHeight.value = true;
+  activeLeavingCount++;
 
   const wrapEl = listWrapRef.value;
   const listEl = wrapEl?.querySelector<HTMLElement>('.planned-list');
-  const extraWrapHeight = wrapEl && listEl ? wrapEl.offsetHeight - listEl.offsetHeight : 0;
+  const extraWrapHeight =
+    wrapEl && listEl ? Math.max(0, wrapEl.offsetHeight - listEl.offsetHeight) : 0;
 
   if (wrapEl) {
-    wrapEl.style.height = `${wrapEl.offsetHeight}px`;
+    if (!wrapEl.style.height) {
+      wrapEl.style.height = `${wrapEl.offsetHeight}px`;
+    }
+
+    wrapEl.classList.add('is-leaving-list');
   }
 
   const htmlEl = el as HTMLElement;
@@ -640,9 +652,9 @@ function onBeforeLeave(el: Element) {
 }
 
 function onAfterLeave() {
-  leavingCount.value = Math.max(0, leavingCount.value - 1);
+  activeLeavingCount = Math.max(0, activeLeavingCount - 1);
 
-  if (leavingCount.value > 0) {
+  if (activeLeavingCount > 0) {
     return;
   }
 
@@ -679,12 +691,10 @@ onUnmounted(() => {
     <p v-else class="spot-picker-empty">Noch keine Stationen zugeordnet.</p>
 
     <div
-      v-show="plannedStations.length > 0 || leavingCount > 0 || isCollapsingHeight"
       ref="listWrapRef"
       class="planned-list-wrap"
       :class="{
         'is-dragging-list': !!activeDrag,
-        'is-leaving-list': leavingCount > 0 || isCollapsingHeight,
       }"
     >
       <div
@@ -800,7 +810,11 @@ onUnmounted(() => {
 .planned-list-wrap {
   position: relative;
   padding: var(--space-2xs) 0;
-  transition: height 0.48s cubic-bezier(0.22, 1, 0.36, 1) 0.22s;
+  transition: height 0.52s cubic-bezier(0.22, 1, 0.36, 1) 0.24s;
+}
+
+.planned-list-wrap:not(.is-leaving-list):has(> .planned-list:empty) {
+  display: none;
 }
 
 .planned-origin-footprint {
@@ -914,8 +928,8 @@ onUnmounted(() => {
 
 .planned-list-wrap.is-leaving-list .planned-row.list-move {
   transition:
-    transform 0.48s cubic-bezier(0.22, 1, 0.36, 1) 0.22s,
-    opacity 0.32s ease 0.22s;
+    transform 0.52s cubic-bezier(0.22, 1, 0.36, 1) 0.24s,
+    opacity 0.36s ease 0.24s;
 }
 
 .planned-row.list-enter-active {
@@ -932,7 +946,7 @@ onUnmounted(() => {
   backdrop-filter: blur(4px);
   transition:
     opacity 0.36s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .planned-row.list-enter-from {
@@ -942,7 +956,7 @@ onUnmounted(() => {
 
 .planned-row.list-leave-to {
   opacity: 0;
-  transform: translateX(44px) scale(0.96);
+  transform: translateX(48px) scale(0.96);
 }
 
 .drag-handle {
