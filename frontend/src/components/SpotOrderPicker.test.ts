@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createApp, h, nextTick, ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import SpotOrderPicker from './SpotOrderPicker.vue';
@@ -9,6 +9,11 @@ describe('SpotOrderPicker', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     document.body.innerHTML = '';
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   function makeSpot(id: number, title: string, category = 'Aussichtspunkt'): Spot {
@@ -20,6 +25,66 @@ describe('SpotOrderPicker', () => {
       created_by: 1,
       is_home: 0,
     } as unknown as Spot;
+  }
+
+  function mockRowMetrics(container: HTMLElement, rowHeight = 44, gap = 6) {
+    const rows = Array.from(
+      container.querySelectorAll('.planned-row:not(.list-leave-active)')
+    ) as HTMLElement[];
+
+    rows.forEach((row, index) => {
+      Object.defineProperty(row, 'offsetTop', {
+        configurable: true,
+        value: index * (rowHeight + gap),
+      });
+      Object.defineProperty(row, 'offsetHeight', {
+        configurable: true,
+        value: rowHeight,
+      });
+    });
+
+    return rows;
+  }
+
+  async function dragRowByPointer(
+    container: HTMLElement,
+    fromIndex: number,
+    deltaY: number,
+    options: { pointerId?: number } = {}
+  ) {
+    const rows = mockRowMetrics(container);
+    const row = rows[fromIndex];
+    const pointerId = options.pointerId ?? 1;
+    const startClientY = 100;
+
+    row.dispatchEvent(
+      Object.assign(new Event('pointerdown', { bubbles: true, cancelable: true }), {
+        button: 0,
+        pointerId,
+        pointerType: 'mouse',
+        clientY: startClientY,
+      })
+    );
+    await nextTick();
+
+    window.dispatchEvent(
+      Object.assign(new Event('pointermove', { bubbles: true, cancelable: true }), {
+        pointerId,
+        clientY: startClientY + deltaY,
+      })
+    );
+    await nextTick();
+
+    window.dispatchEvent(
+      Object.assign(new Event('pointerup', { bubbles: true, cancelable: true }), {
+        pointerId,
+        clientY: startClientY + deltaY,
+      })
+    );
+    await nextTick();
+
+    vi.advanceTimersByTime(200);
+    await nextTick();
   }
 
   function mountComponent(options: {
@@ -165,9 +230,9 @@ describe('SpotOrderPicker', () => {
     app.unmount();
   });
 
-  it('reorders planned stations via drag and drop on the list dropzone', async () => {
-    const spots = [makeSpot(1, 'Erster'), makeSpot(2, 'Zweiter'), makeSpot(3, 'Dritter')];
-    const selected = ref<number[]>([1, 2, 3]);
+  it('reorders first-to-last, last-to-first, and duplicate spots reliably via pointer drag', async () => {
+    const spots = [makeSpot(1, 'Erster'), makeSpot(2, 'Zweiter')];
+    const selected = ref<number[]>([1, 2, 1]);
     const container = document.createElement('div');
     document.body.appendChild(container);
 
@@ -184,43 +249,18 @@ describe('SpotOrderPicker', () => {
     app.use(createPinia());
     app.mount(container);
 
-    const rows = Array.from(container.querySelectorAll('.planned-row')) as HTMLElement[];
-    rows.forEach((row, index) => {
-      row.getBoundingClientRect = () =>
-        ({
-          top: index * 50,
-          height: 44,
-          bottom: index * 50 + 44,
-          left: 0,
-          right: 300,
-          width: 300,
-          x: 0,
-          y: index * 50,
-          toJSON: () => ({}),
-        }) as DOMRect;
-    });
+    // Drag first station past the last station (even with overshoot beyond list end)
+    await dragRowByPointer(container, 0, 140);
+    expect(selected.value).toEqual([2, 1, 1]);
 
-    const dropzone = container.querySelector('.planned-list-dropzone') as HTMLElement;
-    expect(dropzone).not.toBeNull();
+    // Drag last station back to the top (even with overshoot above row 0)
+    await dragRowByPointer(container, 2, -140);
+    expect(selected.value).toEqual([1, 2, 1]);
 
-    rows[0].dispatchEvent(new Event('dragstart', { bubbles: true }));
-    await nextTick();
+    // Drag middle station down to last
+    await dragRowByPointer(container, 1, 60);
+    expect(selected.value).toEqual([1, 1, 2]);
 
-    const dragOverEvent = Object.assign(
-      new Event('dragover', { bubbles: true, cancelable: true }),
-      {
-        clientY: 140,
-      }
-    );
-    dropzone.dispatchEvent(dragOverEvent);
-    await nextTick();
-
-    expect(rows[2].classList.contains('drop-after')).toBe(true);
-
-    dropzone.dispatchEvent(new Event('drop', { bubbles: true, cancelable: true }));
-    await nextTick();
-
-    expect(selected.value).toEqual([2, 3, 1]);
     app.unmount();
   });
 
@@ -259,37 +299,8 @@ describe('SpotOrderPicker', () => {
     await nextTick();
     expect(visibleTitles()).toEqual(['Zweiter', 'Dritter', 'Erster']);
 
-    // Drag & drop visible row 2 back to index 0
-    const rows = Array.from(container.querySelectorAll('.planned-row')) as HTMLElement[];
-    rows.forEach((row, index) => {
-      row.getBoundingClientRect = () =>
-        ({
-          top: index * 50,
-          height: 44,
-          bottom: index * 50 + 44,
-          left: 0,
-          right: 300,
-          width: 300,
-          x: 0,
-          y: index * 50,
-          toJSON: () => ({}),
-        }) as DOMRect;
-    });
-
-    const dropzone = container.querySelector('.planned-list-dropzone') as HTMLElement;
-    rows[2].dispatchEvent(new Event('dragstart', { bubbles: true }));
-    await nextTick();
-
-    dropzone.dispatchEvent(
-      Object.assign(new Event('dragover', { bubbles: true, cancelable: true }), {
-        clientY: 10,
-      })
-    );
-    await nextTick();
-
-    dropzone.dispatchEvent(new Event('drop', { bubbles: true, cancelable: true }));
-    await nextTick();
-
+    // Drag visible row 2 back to index 0
+    await dragRowByPointer(container, 2, -120);
     expect(visibleTitles()).toEqual(['Erster', 'Zweiter', 'Dritter']);
 
     // Remove visible row 1 ('Zweiter')
