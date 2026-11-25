@@ -18,6 +18,7 @@ const UPWARD_CROSS_RATIO = 0.58;
 const SEAM_EDGE_OFFSET_PX = 8;
 const INDICATOR_HALF_HEIGHT_PX = 2;
 const JUST_MOVED_FLASH_MS = 520;
+const LEAVE_COLLAPSE_TAIL_MS = 300;
 const NUDGE_MAX_PX = 12;
 const NUDGE_DECAY_PX = 3;
 
@@ -74,9 +75,11 @@ const listWrapRef = ref<HTMLElement | null>(null);
 const justMovedKey = ref<string | null>(null);
 const activeDrag = ref<ActiveDragState | null>(null);
 const leavingCount = ref(0);
+const isCollapsingHeight = ref(false);
 
 let pointerSession: PointerSession | null = null;
 let flashTimer: ReturnType<typeof setTimeout> | null = null;
+let leaveCollapseTimer: ReturnType<typeof setTimeout> | null = null;
 const pendingLeaveRects = new WeakMap<Element, { top: number; left: number; width: number }>();
 
 function syncRowKeys(ids: number[]) {
@@ -587,8 +590,23 @@ function rowDynamicStyle(index: number): { transform: string } | undefined {
   };
 }
 
+function resetLeaveWrapHeight() {
+  isCollapsingHeight.value = false;
+  leaveCollapseTimer = null;
+
+  if (listWrapRef.value) {
+    listWrapRef.value.style.height = '';
+  }
+}
+
 function onBeforeLeave(el: Element) {
+  if (leaveCollapseTimer !== null) {
+    clearTimeout(leaveCollapseTimer);
+    leaveCollapseTimer = null;
+  }
+
   leavingCount.value++;
+  isCollapsingHeight.value = true;
 
   const wrapEl = listWrapRef.value;
   const listEl = wrapEl?.querySelector<HTMLElement>('.planned-list');
@@ -624,9 +642,20 @@ function onBeforeLeave(el: Element) {
 function onAfterLeave() {
   leavingCount.value = Math.max(0, leavingCount.value - 1);
 
-  if (leavingCount.value === 0 && listWrapRef.value) {
-    listWrapRef.value.style.height = '';
+  if (leavingCount.value > 0) {
+    return;
   }
+
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+  if (prefersReducedMotion) {
+    resetLeaveWrapHeight();
+    return;
+  }
+
+  leaveCollapseTimer = setTimeout(resetLeaveWrapHeight, LEAVE_COLLAPSE_TAIL_MS);
 }
 
 onUnmounted(() => {
@@ -634,6 +663,10 @@ onUnmounted(() => {
 
   if (flashTimer !== null) {
     clearTimeout(flashTimer);
+  }
+
+  if (leaveCollapseTimer !== null) {
+    clearTimeout(leaveCollapseTimer);
   }
 });
 </script>
@@ -646,10 +679,13 @@ onUnmounted(() => {
     <p v-else class="spot-picker-empty">Noch keine Stationen zugeordnet.</p>
 
     <div
-      v-show="plannedStations.length > 0 || leavingCount > 0"
+      v-show="plannedStations.length > 0 || leavingCount > 0 || isCollapsingHeight"
       ref="listWrapRef"
       class="planned-list-wrap"
-      :class="{ 'is-dragging-list': !!activeDrag }"
+      :class="{
+        'is-dragging-list': !!activeDrag,
+        'is-leaving-list': leavingCount > 0 || isCollapsingHeight,
+      }"
     >
       <div
         v-if="activeDrag"
@@ -764,7 +800,7 @@ onUnmounted(() => {
 .planned-list-wrap {
   position: relative;
   padding: var(--space-2xs) 0;
-  transition: height 0.44s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: height 0.48s cubic-bezier(0.22, 1, 0.36, 1) 0.22s;
 }
 
 .planned-origin-footprint {
@@ -876,6 +912,12 @@ onUnmounted(() => {
     opacity 0.28s ease;
 }
 
+.planned-list-wrap.is-leaving-list .planned-row.list-move {
+  transition:
+    transform 0.48s cubic-bezier(0.22, 1, 0.36, 1) 0.22s,
+    opacity 0.32s ease 0.22s;
+}
+
 .planned-row.list-enter-active {
   transition:
     opacity 0.34s cubic-bezier(0.22, 1, 0.36, 1),
@@ -886,8 +928,10 @@ onUnmounted(() => {
   position: absolute;
   z-index: 8;
   pointer-events: none;
+  background: color-mix(in srgb, var(--color-surface) 78%, transparent);
+  backdrop-filter: blur(4px);
   transition:
-    opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.36s cubic-bezier(0.22, 1, 0.36, 1),
     transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -898,7 +942,7 @@ onUnmounted(() => {
 
 .planned-row.list-leave-to {
   opacity: 0;
-  transform: translateX(24px) scale(0.95);
+  transform: translateX(44px) scale(0.96);
 }
 
 .drag-handle {
@@ -970,6 +1014,7 @@ onUnmounted(() => {
   .planned-row,
   .planned-row.is-shifting,
   .planned-row.list-move,
+  .planned-list-wrap.is-leaving-list .planned-row.list-move,
   .planned-row.list-enter-active,
   .planned-row.list-leave-active,
   .drag-handle {
