@@ -77,6 +77,7 @@ const leavingCount = ref(0);
 
 let pointerSession: PointerSession | null = null;
 let flashTimer: ReturnType<typeof setTimeout> | null = null;
+const pendingLeaveRects = new WeakMap<Element, { top: number; left: number; width: number }>();
 
 function syncRowKeys(ids: number[]) {
   if (
@@ -187,6 +188,19 @@ function removeSpotAt(stationIndex: number) {
 
   if (!station) {
     return;
+  }
+
+  const rowElements = listWrapRef.value?.querySelectorAll<HTMLElement>(
+    '.planned-row:not(.list-leave-active)'
+  );
+  const rowEl = rowElements?.[stationIndex];
+
+  if (rowEl) {
+    pendingLeaveRects.set(rowEl, {
+      top: rowEl.offsetTop,
+      left: rowEl.offsetLeft,
+      width: rowEl.offsetWidth,
+    });
   }
 
   const nextKeys = [...rowKeys.value];
@@ -585,9 +599,12 @@ function onBeforeLeave(el: Element) {
   }
 
   const htmlEl = el as HTMLElement;
-  htmlEl.style.top = `${htmlEl.offsetTop}px`;
-  htmlEl.style.left = `${htmlEl.offsetLeft}px`;
-  htmlEl.style.width = `${htmlEl.offsetWidth}px`;
+  const captured = pendingLeaveRects.get(el);
+  pendingLeaveRects.delete(el);
+
+  htmlEl.style.top = `${captured ? captured.top : htmlEl.offsetTop}px`;
+  htmlEl.style.left = `${captured ? captured.left : htmlEl.offsetLeft}px`;
+  htmlEl.style.width = `${captured ? captured.width : htmlEl.offsetWidth}px`;
 
   void nextTick(() => {
     const currentWrap = listWrapRef.value;
@@ -747,7 +764,7 @@ onUnmounted(() => {
 .planned-list-wrap {
   position: relative;
   padding: var(--space-2xs) 0;
-  transition: height 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: height 0.44s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .planned-origin-footprint {
@@ -855,23 +872,23 @@ onUnmounted(() => {
 .planned-row.list-move {
   z-index: 5;
   transition:
-    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.44s cubic-bezier(0.22, 1, 0.36, 1),
     opacity 0.28s ease;
 }
 
 .planned-row.list-enter-active {
   transition:
-    opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .planned-row.list-leave-active {
   position: absolute;
-  z-index: 0;
+  z-index: 8;
   pointer-events: none;
   transition:
-    opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .planned-row.list-enter-from {
@@ -881,7 +898,7 @@ onUnmounted(() => {
 
 .planned-row.list-leave-to {
   opacity: 0;
-  transform: translateX(12px) scale(0.96);
+  transform: translateX(24px) scale(0.95);
 }
 
 .drag-handle {
