@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
 import type { ExcursionLeg, Spot } from '../api/types';
 import { spotCategoryMeta } from '../utils/spotCategory';
 import { ACTION_ICONS } from '../utils/actionIcons';
@@ -73,6 +73,7 @@ const rowKeys = ref<string[]>([]);
 const listWrapRef = ref<HTMLElement | null>(null);
 const justMovedKey = ref<string | null>(null);
 const activeDrag = ref<ActiveDragState | null>(null);
+const leavingCount = ref(0);
 
 let pointerSession: PointerSession | null = null;
 let flashTimer: ReturnType<typeof setTimeout> | null = null;
@@ -572,6 +573,45 @@ function rowDynamicStyle(index: number): { transform: string } | undefined {
   };
 }
 
+function onBeforeLeave(el: Element) {
+  leavingCount.value++;
+
+  const wrapEl = listWrapRef.value;
+  const listEl = wrapEl?.querySelector<HTMLElement>('.planned-list');
+  const extraWrapHeight = wrapEl && listEl ? wrapEl.offsetHeight - listEl.offsetHeight : 0;
+
+  if (wrapEl) {
+    wrapEl.style.height = `${wrapEl.offsetHeight}px`;
+  }
+
+  const htmlEl = el as HTMLElement;
+  htmlEl.style.top = `${htmlEl.offsetTop}px`;
+  htmlEl.style.left = `${htmlEl.offsetLeft}px`;
+  htmlEl.style.width = `${htmlEl.offsetWidth}px`;
+
+  void nextTick(() => {
+    const currentWrap = listWrapRef.value;
+    const currentList = currentWrap?.querySelector<HTMLElement>('.planned-list');
+
+    if (!currentWrap || !currentList) {
+      return;
+    }
+
+    void currentWrap.offsetHeight;
+    const nextHeight =
+      plannedStations.value.length > 0 ? currentList.offsetHeight + extraWrapHeight : 0;
+    currentWrap.style.height = `${nextHeight}px`;
+  });
+}
+
+function onAfterLeave() {
+  leavingCount.value = Math.max(0, leavingCount.value - 1);
+
+  if (leavingCount.value === 0 && listWrapRef.value) {
+    listWrapRef.value.style.height = '';
+  }
+}
+
 onUnmounted(() => {
   detachWindowPointerListeners();
 
@@ -583,93 +623,100 @@ onUnmounted(() => {
 
 <template>
   <div class="spot-order-picker">
-    <template v-if="plannedStations.length">
-      <p class="order-hint">
-        Reihenfolge der Stationen auf Tour &amp; Karte – per Buttons oder Ziehen sortieren.
-      </p>
+    <p v-if="plannedStations.length" class="order-hint">
+      Reihenfolge der Stationen auf Tour &amp; Karte – per Buttons oder Ziehen sortieren.
+    </p>
+    <p v-else class="spot-picker-empty">Noch keine Stationen zugeordnet.</p>
+
+    <div
+      v-show="plannedStations.length > 0 || leavingCount > 0"
+      ref="listWrapRef"
+      class="planned-list-wrap"
+      :class="{ 'is-dragging-list': !!activeDrag }"
+    >
       <div
-        ref="listWrapRef"
-        class="planned-list-wrap"
-        :class="{ 'is-dragging-list': !!activeDrag }"
+        v-if="activeDrag"
+        class="planned-origin-footprint"
+        :style="{
+          height: `${activeDrag.originHeight}px`,
+          transform: `translate3d(0, ${activeDrag.originTop}px, 0)`,
+        }"
+        aria-hidden="true"
+      />
+      <div
+        v-if="activeDrag && activeDrag.indicatorTop !== null"
+        class="planned-drop-indicator"
+        :style="{
+          transform: `translate3d(0, ${activeDrag.indicatorTop}px, 0)`,
+        }"
+        aria-hidden="true"
+      />
+      <TransitionGroup
+        tag="div"
+        name="list"
+        class="planned-list"
+        @before-leave="onBeforeLeave"
+        @after-leave="onAfterLeave"
+        @leave-cancelled="onAfterLeave"
       >
         <div
-          v-if="activeDrag"
-          class="planned-origin-footprint"
-          :style="{
-            height: `${activeDrag.originHeight}px`,
-            transform: `translate3d(0, ${activeDrag.originTop}px, 0)`,
+          v-for="(station, index) in plannedStations"
+          :key="station.entryKey"
+          class="planned-row"
+          :class="{
+            'is-dragging': activeDrag?.fromIndex === index,
+            'is-shifting': !!activeDrag && activeDrag.fromIndex !== index,
+            'is-just-moved': justMovedKey === station.entryKey,
           }"
-          aria-hidden="true"
-        />
-        <div
-          v-if="activeDrag && activeDrag.indicatorTop !== null"
-          class="planned-drop-indicator"
-          :style="{
-            transform: `translate3d(0, ${activeDrag.indicatorTop}px, 0)`,
-          }"
-          aria-hidden="true"
-        />
-        <TransitionGroup tag="div" name="list" class="planned-list">
-          <div
-            v-for="(station, index) in plannedStations"
-            :key="station.entryKey"
-            class="planned-row"
-            :class="{
-              'is-dragging': activeDrag?.fromIndex === index,
-              'is-shifting': !!activeDrag && activeDrag.fromIndex !== index,
-              'is-just-moved': justMovedKey === station.entryKey,
-            }"
-            :style="rowDynamicStyle(index)"
-            @pointerdown="onRowPointerDown($event, index)"
-          >
-            <AppIcon
-              :icon="ACTION_ICONS.dragHandle"
-              :size="GRIP_ICON_SIZE"
-              group="actions"
-              class="drag-handle"
-              aria-hidden="true"
+          :style="rowDynamicStyle(index)"
+          @pointerdown="onRowPointerDown($event, index)"
+        >
+          <AppIcon
+            :icon="ACTION_ICONS.dragHandle"
+            :size="GRIP_ICON_SIZE"
+            group="actions"
+            class="drag-handle"
+            aria-hidden="true"
+          />
+          <span class="order-num">{{ displayOrderNumber(index) }}.</span>
+          <span class="spot-title">
+            <AppIcon :icon="station.tabler" :size="ICON_SIZE_SM" group="categories" />
+            <span class="spot-title-text">{{ station.title }}</span>
+          </span>
+          <div class="planned-row-actions">
+            <IconButton
+              variant="ghost"
+              size="sm"
+              :icon="ACTION_ICONS.chevronUp"
+              :disabled="index === 0"
+              class="move-up-btn"
+              aria-label="Station nach oben verschieben"
+              title="Nach oben"
+              @click="moveSpot(index, -1)"
             />
-            <span class="order-num">{{ displayOrderNumber(index) }}.</span>
-            <span class="spot-title">
-              <AppIcon :icon="station.tabler" :size="ICON_SIZE_SM" group="categories" />
-              <span class="spot-title-text">{{ station.title }}</span>
-            </span>
-            <div class="planned-row-actions">
-              <IconButton
-                variant="ghost"
-                size="sm"
-                :icon="ACTION_ICONS.chevronUp"
-                :disabled="index === 0"
-                class="move-up-btn"
-                aria-label="Station nach oben verschieben"
-                title="Nach oben"
-                @click="moveSpot(index, -1)"
-              />
-              <IconButton
-                variant="ghost"
-                size="sm"
-                :icon="ACTION_ICONS.chevronDown"
-                :disabled="index === plannedStations.length - 1"
-                class="move-down-btn"
-                aria-label="Station nach unten verschieben"
-                title="Nach unten"
-                @click="moveSpot(index, 1)"
-              />
-              <IconButton
-                variant="ghost"
-                size="sm"
-                :icon="ACTION_ICONS.close"
-                class="remove-btn"
-                aria-label="Aus Tour entfernen"
-                title="Aus Tour entfernen"
-                @click="removeSpotAt(index)"
-              />
-            </div>
+            <IconButton
+              variant="ghost"
+              size="sm"
+              :icon="ACTION_ICONS.chevronDown"
+              :disabled="index === plannedStations.length - 1"
+              class="move-down-btn"
+              aria-label="Station nach unten verschieben"
+              title="Nach unten"
+              @click="moveSpot(index, 1)"
+            />
+            <IconButton
+              variant="ghost"
+              size="sm"
+              :icon="ACTION_ICONS.close"
+              class="remove-btn"
+              aria-label="Aus Tour entfernen"
+              title="Aus Tour entfernen"
+              @click="removeSpotAt(index)"
+            />
           </div>
-        </TransitionGroup>
-      </div>
-    </template>
-    <p v-else class="spot-picker-empty">Noch keine Stationen zugeordnet.</p>
+        </div>
+      </TransitionGroup>
+    </div>
 
     <div class="spot-picker-actions">
       <TourSpotAssignDropdown
@@ -700,6 +747,7 @@ onUnmounted(() => {
 .planned-list-wrap {
   position: relative;
   padding: var(--space-2xs) 0;
+  transition: height 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .planned-origin-footprint {
@@ -811,6 +859,31 @@ onUnmounted(() => {
     opacity 0.28s ease;
 }
 
+.planned-row.list-enter-active {
+  transition:
+    opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.planned-row.list-leave-active {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.planned-row.list-enter-from {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.97);
+}
+
+.planned-row.list-leave-to {
+  opacity: 0;
+  transform: translateX(12px) scale(0.96);
+}
+
 .drag-handle {
   color: var(--color-text-muted);
   flex-shrink: 0;
@@ -875,10 +948,13 @@ onUnmounted(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .planned-list-wrap,
   .planned-drop-indicator,
   .planned-row,
   .planned-row.is-shifting,
   .planned-row.list-move,
+  .planned-row.list-enter-active,
+  .planned-row.list-leave-active,
   .drag-handle {
     transition: none !important;
   }

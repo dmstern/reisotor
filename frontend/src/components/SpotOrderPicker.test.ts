@@ -360,9 +360,12 @@ describe('SpotOrderPicker', () => {
     expect(visibleTitles()).toEqual(['Erster', 'Zweiter', 'Dritter']);
 
     // Remove visible row 1 ('Zweiter')
+    const rowsBeforeRemove = mockRowMetrics(container);
     (container.querySelectorAll('.remove-btn')[1] as HTMLButtonElement).click();
     await nextTick();
     expect(selected.value).toEqual([999, 1, 3]);
+    expect(rowsBeforeRemove[1].classList.contains('list-leave-active')).toBe(true);
+    expect(rowsBeforeRemove[1].style.top).toBe('50px');
 
     app.unmount();
   });
