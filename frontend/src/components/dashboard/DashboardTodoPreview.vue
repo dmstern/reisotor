@@ -8,8 +8,10 @@ const props = defineProps<{
   total: number;
 }>();
 
+const MAX_TODO_PREVIEW_ITEMS = 3;
+
 const previewTodos = computed(() => {
-  return props.todos.slice(0, 3);
+  return props.todos.slice(0, MAX_TODO_PREVIEW_ITEMS);
 });
 </script>
 

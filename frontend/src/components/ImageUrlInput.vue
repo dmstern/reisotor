@@ -92,8 +92,15 @@ async function onFileSelected(event: Event) {
   setUploading(true);
 
   try {
+    const BANNER_MAX_DIMENSION_PX = 2560;
+    const STANDARD_MAX_DIMENSION_PX = 1600;
+    const UPLOAD_PROGRESS_CAP = 90;
+    const UPLOAD_PROGRESS_STEP = 5;
+    const UPLOAD_PROGRESS_INTERVAL_MS = 150;
+
     progressPercent.value = 20;
-    const maxDimension = props.variant === 'banner' ? 2560 : 1600;
+    const maxDimension =
+      props.variant === 'banner' ? BANNER_MAX_DIMENSION_PX : STANDARD_MAX_DIMENSION_PX;
     const compressed = await compressImage(file, { maxDimension });
 
     if (abortController.signal.aborted) {
@@ -103,10 +110,13 @@ async function onFileSelected(event: Event) {
     progressPercent.value = 50;
 
     progressTimer = setInterval(() => {
-      if (progressPercent.value < 90) {
-        progressPercent.value = Math.min(90, progressPercent.value + 5);
+      if (progressPercent.value < UPLOAD_PROGRESS_CAP) {
+        progressPercent.value = Math.min(
+          UPLOAD_PROGRESS_CAP,
+          progressPercent.value + UPLOAD_PROGRESS_STEP
+        );
       }
-    }, 150);
+    }, UPLOAD_PROGRESS_INTERVAL_MS);
 
     const { url } = await api.post<{ url: string }>(
       '/images',

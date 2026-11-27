@@ -33,11 +33,15 @@ function selectPreset(val: string) {
   uiSettings.glassStyle = style;
 }
 
+const DEFAULT_GLASS_OPACITY = 42;
+const DEFAULT_GLASS_BLUR = 6;
+const FROSTED_GLASS_OPACITY = 80;
+
 const isDefault = computed(() => {
   return (
     uiSettings.glassStyle === 'glass' &&
-    uiSettings.glassOpacity === 42 &&
-    uiSettings.glassBlur === 6
+    uiSettings.glassOpacity === DEFAULT_GLASS_OPACITY &&
+    uiSettings.glassBlur === DEFAULT_GLASS_BLUR
   );
 });
 
@@ -46,9 +50,12 @@ function resetGlass() {
 }
 
 function onSliderChange() {
-  if (uiSettings.glassOpacity === 42 && uiSettings.glassBlur === 6) {
+  if (
+    uiSettings.glassOpacity === DEFAULT_GLASS_OPACITY &&
+    uiSettings.glassBlur === DEFAULT_GLASS_BLUR
+  ) {
     uiSettings.glassStyle = 'glass';
-  } else if (uiSettings.glassOpacity === 80 && uiSettings.glassBlur === 24) {
+  } else if (uiSettings.glassOpacity === FROSTED_GLASS_OPACITY && uiSettings.glassBlur === 24) {
     uiSettings.glassStyle = 'frosted';
   } else if (uiSettings.glassOpacity === 100 && uiSettings.glassBlur === 0) {
     uiSettings.glassStyle = 'opaque';

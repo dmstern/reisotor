@@ -83,7 +83,8 @@ function render() {
   if (coords.length > 1) {
     map.fitBounds(leaflet.latLngBounds(coords), { padding: [24, 24] });
   } else if (coords.length === 1) {
-    map.setView(coords[0], 14);
+    const SINGLE_POINT_ZOOM = 14;
+    map.setView(coords[0], SINGLE_POINT_ZOOM);
   }
 }
 

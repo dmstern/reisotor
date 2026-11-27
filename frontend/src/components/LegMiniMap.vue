@@ -9,6 +9,12 @@ import { ACTION_ICONS } from '../utils/actionIcons';
 import { useMobileMapLock } from '../composables/useMobileMapLock';
 import Button from './primitives/Button.vue';
 
+const TOOLTIP_OFFSET_Y = -28;
+const MIN_VISIBLE_MAP_WIDTH_PX = 80;
+const FIT_BOUNDS_PADDING_PX = 20;
+const FIT_BOUNDS_MAX_ZOOM = 16;
+const SINGLE_POINT_ZOOM = 14;
+
 const props = withDefaults(
   defineProps<{
     fromSpot?: Spot | null;
@@ -114,7 +120,10 @@ async function render() {
       .addTo(markersLayer);
 
     if (props.fromSpot.title) {
-      marker.bindTooltip(`Start: ${props.fromSpot.title}`, { direction: 'top', offset: [0, -28] });
+      marker.bindTooltip(`Start: ${props.fromSpot.title}`, {
+        direction: 'top',
+        offset: [0, TOOLTIP_OFFSET_Y],
+      });
     }
   }
 
@@ -130,7 +139,10 @@ async function render() {
       .addTo(markersLayer);
 
     if (props.toSpot.title) {
-      marker.bindTooltip(`Ziel: ${props.toSpot.title}`, { direction: 'top', offset: [0, -28] });
+      marker.bindTooltip(`Ziel: ${props.toSpot.title}`, {
+        direction: 'top',
+        offset: [0, TOOLTIP_OFFSET_Y],
+      });
     }
   }
 
@@ -217,7 +229,10 @@ async function render() {
   let adjustedCoveredLeftPx = coveredLeftPx;
 
   if (map?.getSize && map.getSize().x > 0) {
-    adjustedCoveredLeftPx = Math.min(adjustedCoveredLeftPx, Math.max(0, map.getSize().x - 80));
+    adjustedCoveredLeftPx = Math.min(
+      adjustedCoveredLeftPx,
+      Math.max(0, map.getSize().x - MIN_VISIBLE_MAP_WIDTH_PX)
+    );
   }
 
   // Kartenausschnitt anpassen auf den tatsächlich sichtbaren Bereich
@@ -228,9 +243,12 @@ async function render() {
   ) {
     try {
       map.fitBounds(fullBounds, {
-        paddingTopLeft: [20 + adjustedCoveredLeftPx, 20 + coveredTopPx],
-        paddingBottomRight: [20, 20],
-        maxZoom: 16,
+        paddingTopLeft: [
+          FIT_BOUNDS_PADDING_PX + adjustedCoveredLeftPx,
+          FIT_BOUNDS_PADDING_PX + coveredTopPx,
+        ],
+        paddingBottomRight: [FIT_BOUNDS_PADDING_PX, FIT_BOUNDS_PADDING_PX],
+        maxZoom: FIT_BOUNDS_MAX_ZOOM,
         animate: false,
       });
     } catch {
@@ -242,14 +260,14 @@ async function render() {
       typeof map.project !== 'function' ||
       typeof map.unproject !== 'function'
     ) {
-      map.setView(boundsPoints[0], 14, { animate: false });
+      map.setView(boundsPoints[0], SINGLE_POINT_ZOOM, { animate: false });
     } else {
-      const targetPoint = map.project(boundsPoints[0], 14);
+      const targetPoint = map.project(boundsPoints[0], SINGLE_POINT_ZOOM);
       const shiftedCenter = map.unproject(
         targetPoint.add([-adjustedCoveredLeftPx / 2, -coveredTopPx / 2]),
-        14
+        SINGLE_POINT_ZOOM
       );
-      map.setView(shiftedCenter, 14, { animate: false });
+      map.setView(shiftedCenter, SINGLE_POINT_ZOOM, { animate: false });
     }
   }
 }

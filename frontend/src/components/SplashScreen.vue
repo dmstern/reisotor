@@ -52,8 +52,10 @@ onMounted(() => {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isWebdriver = Boolean(navigator.webdriver);
 
+  const INTRO_FALLBACK_MS = 4000;
+
   if (props.playIntro && !reducedMotion && !isWebdriver) {
-    fallbackTimer = setTimeout(finish, 4000);
+    fallbackTimer = setTimeout(finish, INTRO_FALLBACK_MS);
   } else {
     finish();
   }

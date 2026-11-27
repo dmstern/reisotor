@@ -88,6 +88,9 @@ function smoothScrollTo(el: HTMLElement, targetLeft: number) {
   }
 }
 
+const TAB_SCROLL_STEP_RATIO = 0.7;
+const TAB_ARROW_CLEARANCE_PX = 36;
+
 function scrollBy(direction: 1 | -1) {
   const el = tabBarEl.value;
 
@@ -95,7 +98,7 @@ function scrollBy(direction: 1 | -1) {
     return;
   }
 
-  const delta = direction * Math.round(el.clientWidth * 0.7);
+  const delta = direction * Math.round(el.clientWidth * TAB_SCROLL_STEP_RATIO);
 
   if (typeof el.scrollBy === 'function') {
     el.scrollBy({ left: delta, behavior: 'smooth' });
@@ -116,8 +119,8 @@ function scrollActiveTabIntoView() {
   const btnRight = btnLeft + activeEl.offsetWidth;
   const viewLeft = bar.scrollLeft;
   const viewRight = viewLeft + bar.clientWidth;
-  const leftOffset = btnLeft > 0 ? 36 : 0;
-  const rightOffset = btnRight < bar.scrollWidth - 1 ? 36 : 0;
+  const leftOffset = btnLeft > 0 ? TAB_ARROW_CLEARANCE_PX : 0;
+  const rightOffset = btnRight < bar.scrollWidth - 1 ? TAB_ARROW_CLEARANCE_PX : 0;
 
   if (btnLeft - leftOffset < viewLeft) {
     smoothScrollTo(bar, Math.max(0, btnLeft - leftOffset));

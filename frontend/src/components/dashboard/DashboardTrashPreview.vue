@@ -10,6 +10,9 @@ const props = defineProps<{
 // 1: 1 Knäuel am Boden
 // 2-3: 3 Knäuel
 // 4+: Voller Korb (5 Knäuel, einer lugt oben heraus)
+const TRASH_TIER_MEDIUM_MAX_COUNT = 3;
+const TRASH_TIER_FULL = 3;
+
 const ballTier = computed(() => {
   if (props.count <= 0) {
     return 0;
@@ -19,11 +22,11 @@ const ballTier = computed(() => {
     return 1;
   }
 
-  if (props.count <= 3) {
+  if (props.count <= TRASH_TIER_MEDIUM_MAX_COUNT) {
     return 2;
   }
 
-  return 3;
+  return TRASH_TIER_FULL;
 });
 </script>
 

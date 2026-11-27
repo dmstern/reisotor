@@ -148,9 +148,10 @@ async function copyDiagnostics() {
     await navigator.clipboard.writeText(text);
     copied.value = true;
     showToast({ message: 'Diagnose in die Zwischenablage kopiert.', type: 'success' });
+    const COPY_FEEDBACK_MS = 2000;
     setTimeout(() => {
       copied.value = false;
-    }, 2000);
+    }, COPY_FEEDBACK_MS);
   } catch {
     showToast({ message: 'Kopieren in die Zwischenablage fehlgeschlagen.', type: 'warning' });
   }

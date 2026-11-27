@@ -99,12 +99,20 @@ const fillPercent = computed(() => {
   return Math.max(0, Math.min(100, fillRatio * 100));
 });
 
+const OVER_ORANGE_END_RATIO = 0.2;
+const OVER_DARK_RED_RANGE_RATIO = 0.3;
+const REMAINING_YELLOW_THRESHOLD_RATIO = 0.15;
+const REMAINING_GREEN_RANGE_RATIO = 0.35;
+
 const effectiveColor = computed(() => {
   if (useTrafficLight.value) {
     if (isOver.value) {
       // Bis 20 % Überschreitung: Sanfter Übergang von Orange nach Kräftiges Rot (Danger)
-      if (overRatio.value <= 0.2) {
-        const redPct = Math.max(0, Math.min(100, Math.round((overRatio.value / 0.2) * 100)));
+      if (overRatio.value <= OVER_ORANGE_END_RATIO) {
+        const redPct = Math.max(
+          0,
+          Math.min(100, Math.round((overRatio.value / OVER_ORANGE_END_RATIO) * 100))
+        );
 
         if (redPct <= 0) {
           return 'var(--color-meter-orange, #ea580c)';
@@ -120,7 +128,10 @@ const effectiveColor = computed(() => {
       // Ab 20 % bis 50 %+ Überschreitung: Sanfter Übergang von Kräftigem Rot in tiefes Dunkelrot
       const darkRedPct = Math.max(
         0,
-        Math.min(100, Math.round(((overRatio.value - 0.2) / 0.3) * 100))
+        Math.min(
+          100,
+          Math.round(((overRatio.value - OVER_ORANGE_END_RATIO) / OVER_DARK_RED_RANGE_RATIO) * 100)
+        )
       );
 
       if (darkRedPct <= 0) {
@@ -141,10 +152,17 @@ const effectiveColor = computed(() => {
       }
 
       // 15 % bis 50 % Restbudget: Sanfter Übergang von Grün nach Gelb
-      if (remainingRatio.value >= 0.15) {
+      if (remainingRatio.value >= REMAINING_YELLOW_THRESHOLD_RATIO) {
         const greenPct = Math.max(
           0,
-          Math.min(100, Math.round(((remainingRatio.value - 0.15) / 0.35) * 100))
+          Math.min(
+            100,
+            Math.round(
+              ((remainingRatio.value - REMAINING_YELLOW_THRESHOLD_RATIO) /
+                REMAINING_GREEN_RANGE_RATIO) *
+                100
+            )
+          )
         );
 
         if (greenPct >= 100) {
@@ -159,7 +177,10 @@ const effectiveColor = computed(() => {
       }
 
       // 0 % bis 15 % Restbudget: Sanfter Übergang von Gelb nach Orange (bei 0 % = Orange)
-      const yellowPct = Math.max(0, Math.min(100, Math.round((remainingRatio.value / 0.15) * 100)));
+      const yellowPct = Math.max(
+        0,
+        Math.min(100, Math.round((remainingRatio.value / REMAINING_YELLOW_THRESHOLD_RATIO) * 100))
+      );
 
       if (yellowPct >= 100) {
         return 'var(--color-meter-yellow, #eab308)';

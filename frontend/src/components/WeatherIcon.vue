@@ -25,7 +25,8 @@ const showParts = computed(
     iconStyle.styleForGroup('weather') === 'icons' &&
     !!meta.value.parts
 );
-const accentSize = computed(() => Math.round(props.size * 0.62));
+const ACCENT_ICON_SIZE_RATIO = 0.62;
+const accentSize = computed(() => Math.round(props.size * ACCENT_ICON_SIZE_RATIO));
 </script>
 
 <template>

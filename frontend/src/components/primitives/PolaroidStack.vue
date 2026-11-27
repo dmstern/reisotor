@@ -79,10 +79,11 @@ function fileExtension(name?: string | null): string {
     return 'DATEI';
   }
 
+  const MAX_EXT_BADGE_LENGTH = 4;
   return name
     .slice(dotIdx + 1)
     .toUpperCase()
-    .slice(0, 4);
+    .slice(0, MAX_EXT_BADGE_LENGTH);
 }
 
 function checkIsImage(item: Record<string, unknown>, url: string | null): boolean {
@@ -218,14 +219,38 @@ function polaroidTileStyle(idx: number, total: number) {
     };
   }
 
-  const angles = [-2, 6, -7, 8];
-  const xOffsets = [0, 4, -5, 6];
+  const BASE_ANGLE_0 = -2;
+  const BASE_ANGLE_1 = 6;
+  const BASE_ANGLE_2 = -7;
+  const BASE_ANGLE_3 = 8;
+  const BASE_X_1 = 4;
+  const BASE_X_2 = -5;
+  const BASE_X_3 = 6;
+  const FANNED_ANGLE_0 = -3;
+  const FANNED_ANGLE_1 = 11;
+  const FANNED_ANGLE_2 = -13;
+  const FANNED_ANGLE_3 = 15;
+  const FANNED_X_0 = -2;
+  const FANNED_X_1 = 9;
+  const FANNED_X_2 = -10;
+  const FANNED_X_3 = 13;
+  const FANNED_Y_0 = -2;
+  const FANNED_SCALE_PRIMARY = 1.02;
+  const FANNED_SCALE_SECONDARY = 1.01;
+
+  const angles = [BASE_ANGLE_0, BASE_ANGLE_1, BASE_ANGLE_2, BASE_ANGLE_3];
+  const xOffsets = [0, BASE_X_1, BASE_X_2, BASE_X_3];
   const yOffsets = [0, -1, 2, 1];
 
-  const fannedAngles = [-3, 11, -13, 15];
-  const fannedX = [-2, 9, -10, 13];
-  const fannedY = [-2, -1, 2, 1];
-  const fannedScale = [1.02, 1.01, 1.01, 1.01];
+  const fannedAngles = [FANNED_ANGLE_0, FANNED_ANGLE_1, FANNED_ANGLE_2, FANNED_ANGLE_3];
+  const fannedX = [FANNED_X_0, FANNED_X_1, FANNED_X_2, FANNED_X_3];
+  const fannedY = [FANNED_Y_0, -1, 2, 1];
+  const fannedScale = [
+    FANNED_SCALE_PRIMARY,
+    FANNED_SCALE_SECONDARY,
+    FANNED_SCALE_SECONDARY,
+    FANNED_SCALE_SECONDARY,
+  ];
 
   return {
     '--tile-base-transform': `rotate(${angles[idx % angles.length]}deg) translate(${xOffsets[idx % xOffsets.length]}px, ${yOffsets[idx % yOffsets.length]}px)`,

@@ -57,11 +57,14 @@ function close() {
   emit('close');
 }
 
+const MIN_PASSWORD_LENGTH = 6;
+const COPY_FEEDBACK_MS = 2000;
+
 function handleReset() {
   error.value = '';
 
   if (mode.value === 'custom') {
-    if (!customPassword.value || customPassword.value.length < 6) {
+    if (!customPassword.value || customPassword.value.length < MIN_PASSWORD_LENGTH) {
       error.value = 'Das temporäre Passwort muss mindestens 6 Zeichen lang sein.';
       return;
     }
@@ -84,12 +87,12 @@ async function copyToClipboard(text?: string | null, type?: 'password' | 'link')
       copiedPassword.value = true;
       setTimeout(() => {
         copiedPassword.value = false;
-      }, 2000);
+      }, COPY_FEEDBACK_MS);
     } else if (type === 'link') {
       copiedLink.value = true;
       setTimeout(() => {
         copiedLink.value = false;
-      }, 2000);
+      }, COPY_FEEDBACK_MS);
     }
   } catch {
     // Clipboard API nicht verfügbar

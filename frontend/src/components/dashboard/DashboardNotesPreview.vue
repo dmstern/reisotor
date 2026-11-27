@@ -15,20 +15,23 @@ const latestNote = computed(() => {
   return props.notes[0];
 });
 
+const MAX_PRIMARY_NOTE_PREVIEW_CHARS = 35;
+const MAX_SECONDARY_NOTE_PREVIEW_CHARS = 25;
+
 const previewText = computed(() => {
   if (!latestNote.value) {
     return 'Notiz schreiben… ✍️';
   }
 
   const text = latestNote.value.title?.trim() || stripHtml(latestNote.value.content);
-  return text ? text.slice(0, 35) : 'Notiz';
+  return text ? text.slice(0, MAX_PRIMARY_NOTE_PREVIEW_CHARS) : 'Notiz';
 });
 
 const secondPreviewText = computed(() => {
   if (props.notes.length > 1) {
     const second = props.notes[1];
     const text = second.title?.trim() || stripHtml(second.content);
-    return text ? text.slice(0, 25) : '';
+    return text ? text.slice(0, MAX_SECONDARY_NOTE_PREVIEW_CHARS) : '';
   }
 
   return '';

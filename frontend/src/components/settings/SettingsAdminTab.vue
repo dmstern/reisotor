@@ -277,10 +277,11 @@ async function saveGeo() {
 }
 
 async function saveEmail() {
+  const DEFAULT_SMTP_PORT = 587;
   await saveSection('email', {
     email: {
       smtpHost: emailForm.smtpHost,
-      smtpPort: Number(emailForm.smtpPort) || 587,
+      smtpPort: Number(emailForm.smtpPort) || DEFAULT_SMTP_PORT,
       smtpSecure: emailForm.smtpSecure,
       smtpUser: emailForm.smtpUser,
       smtpPass: emailForm.smtpPass || undefined,

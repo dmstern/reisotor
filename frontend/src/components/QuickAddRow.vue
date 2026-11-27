@@ -76,6 +76,7 @@ function onBlur(event: FocusEvent) {
   // Leichte Verzögerung: ein Klick auf ein Zusatzfeld im "extra"-Slot (z. B. ein <select>) löst vorher
   // ein blur auf diesem Eingabefeld aus - ohne Verzögerung würde die Zeile schon einklappen, bevor
   // die Auswahl im Zusatzfeld ankommt.
+  const BLUR_COLLAPSE_DELAY_MS = 150;
   window.setTimeout(() => {
     if (
       !props.forceExpanded &&
@@ -84,7 +85,7 @@ function onBlur(event: FocusEvent) {
     ) {
       focused.value = false;
     }
-  }, 150);
+  }, BLUR_COLLAPSE_DELAY_MS);
 }
 </script>
 
