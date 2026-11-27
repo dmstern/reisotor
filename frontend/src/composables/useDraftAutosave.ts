@@ -76,11 +76,13 @@ export function useDraftAutosave<T extends Record<string, unknown>>(
       return Promise.resolve(tripStore.currentTripId);
     }
 
+    const TRIP_ID_WAIT_TIMEOUT_MS = 5000;
+
     return new Promise((resolve) => {
       const timeout = setTimeout(() => {
         stop();
         resolve(tripStore.currentTripId);
-      }, 5000);
+      }, TRIP_ID_WAIT_TIMEOUT_MS);
       const stop = watch(
         () => tripStore.currentTripId,
         (id) => {

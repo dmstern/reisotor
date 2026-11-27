@@ -32,18 +32,31 @@ export function parseTimeToMinutes(timeStr?: string | null): number | null {
   const hours = Number(parts[0]);
   const minutes = Number(parts[1]);
 
-  if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+  const MAX_HOUR = 23;
+  const MAX_MINUTE = 59;
+
+  if (
+    isNaN(hours) ||
+    isNaN(minutes) ||
+    hours < 0 ||
+    hours > MAX_HOUR ||
+    minutes < 0 ||
+    minutes > MAX_MINUTE
+  ) {
     return null;
   }
 
   return hours * 60 + minutes;
 }
 
+const MINUTES_PER_DAY = 1440;
+
 /**
  * Formatiert Minuten seit Mitternacht in einen "HH:MM"-String.
  */
 export function formatMinutesToTime(totalMinutes: number): string {
-  const normalized = ((Math.round(totalMinutes) % 1440) + 1440) % 1440;
+  const normalized =
+    ((Math.round(totalMinutes) % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
   const hours = Math.floor(normalized / 60);
   const minutes = normalized % 60;
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
@@ -88,7 +101,7 @@ export function calcElapsedMinutes(departureStr: string, arrivalStr: string): nu
     return null;
   }
 
-  return (((arr - dep) % 1440) + 1440) % 1440;
+  return (((arr - dep) % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
 }
 
 export interface UseLegTimeSyncOptions {

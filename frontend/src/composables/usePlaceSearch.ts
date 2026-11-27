@@ -196,10 +196,12 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
       }
     };
 
+    const SEARCH_DEBOUNCE_MS = 300;
+
     if (immediate) {
       void runSearch();
     } else {
-      debounceTimer = setTimeout(runSearch, 300);
+      debounceTimer = setTimeout(runSearch, SEARCH_DEBOUNCE_MS);
     }
   }
 
@@ -253,10 +255,11 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
           continue;
         }
 
+        const DUPLICATE_COORD_EPSILON_DEG = 0.0005;
         const isDup = results.value.some(
           (existingResult) =>
-            Math.abs(existingResult.lat - item.lat) < 0.0005 &&
-            Math.abs(existingResult.lng - item.lng) < 0.0005 &&
+            Math.abs(existingResult.lat - item.lat) < DUPLICATE_COORD_EPSILON_DEG &&
+            Math.abs(existingResult.lng - item.lng) < DUPLICATE_COORD_EPSILON_DEG &&
             existingResult.name.toLowerCase() === item.name.toLowerCase()
         );
 
@@ -269,8 +272,9 @@ export function usePlaceSearch(options: UsePlaceSearchOptions = {}) {
         }
       }
 
+      const MAX_SEARCH_RESULTS = 50;
       results.value = [...results.value, ...newItems];
-      hasMore.value = data.length >= 10 && results.value.length < 50;
+      hasMore.value = data.length >= 10 && results.value.length < MAX_SEARCH_RESULTS;
     } catch {
       hasMore.value = false;
     } finally {

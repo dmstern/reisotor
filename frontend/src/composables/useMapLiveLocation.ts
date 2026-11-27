@@ -153,11 +153,14 @@ export function useMapLiveLocation(options: UseMapLiveLocationOptions) {
       return;
     }
 
+    const LIVE_LOCATION_ZOOM = 16;
     options.onClearFocus?.();
-    options.centerOnPoint?.([position.lat, position.lng], 16);
+    options.centerOnPoint?.([position.lat, position.lng], LIVE_LOCATION_ZOOM);
   }
 
   async function jumpToMyLocation() {
+    const LIVE_LOCATION_ZOOM = 16;
+
     if (!ownPosition.value) {
       return;
     }
@@ -181,7 +184,7 @@ export function useMapLiveLocation(options: UseMapLiveLocationOptions) {
     }
 
     options.onClearFocus?.();
-    options.centerOnPoint?.([ownPosition.value.lat, ownPosition.value.lng], 16);
+    options.centerOnPoint?.([ownPosition.value.lat, ownPosition.value.lng], LIVE_LOCATION_ZOOM);
   }
 
   function initCompassAuto() {

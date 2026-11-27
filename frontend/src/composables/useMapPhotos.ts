@@ -327,8 +327,9 @@ export function useMapPhotos(options: UseMapPhotosOptions = {}) {
           dateBadge = formatDateShared(item.dateFallback, { includeYear: false });
         }
 
+        const URL_KEY_TAIL_SLICE = -12;
         return {
-          key: `all-photo-${item.id ?? index}-${item.url.slice(-12)}`,
+          key: `all-photo-${item.id ?? index}-${item.url.slice(URL_KEY_TAIL_SLICE)}`,
           origin: 'location',
           lat: meta.latitude!,
           lng: meta.longitude!,

@@ -45,8 +45,11 @@ export function useAttachmentHeight(options: UseAttachmentHeightOptions) {
       }
 
       if (img.naturalWidth > 0 && img.naturalHeight > 0) {
-        const containerWidth = previewContentRef.value?.clientWidth || 600;
-        const maxViewportH = typeof window !== 'undefined' ? window.innerHeight * 0.65 : 500;
+        const FALLBACK_CONTAINER_WIDTH_PX = 600;
+        const MAX_VIEWPORT_HEIGHT_RATIO = 0.65;
+        const containerWidth = previewContentRef.value?.clientWidth || FALLBACK_CONTAINER_WIDTH_PX;
+        const maxViewportH =
+          typeof window !== 'undefined' ? window.innerHeight * MAX_VIEWPORT_HEIGHT_RATIO : 500;
         const aspect = img.naturalHeight / img.naturalWidth;
         return Math.min(containerWidth * aspect, maxViewportH);
       }
@@ -55,8 +58,9 @@ export function useAttachmentHeight(options: UseAttachmentHeightOptions) {
     const unsupported = slideEl.querySelector<HTMLElement>('.unsupported-wrapper');
 
     if (unsupported) {
+      const FALLBACK_UNSUPPORTED_HEIGHT_PX = 220;
       const rect = unsupported.getBoundingClientRect();
-      return rect.height > 0 ? rect.height : 220;
+      return rect.height > 0 ? rect.height : FALLBACK_UNSUPPORTED_HEIGHT_PX;
     }
 
     return 0;

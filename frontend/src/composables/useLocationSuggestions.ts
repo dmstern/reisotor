@@ -49,10 +49,12 @@ export function useLocationSuggestions(options: UseLocationSuggestionsOptions) {
   });
 
   async function fetchSuggestionsForTitle(title: string): Promise<SuggestionCache> {
+    const BIAS_COORD_PRECISION = 4;
+    const SUGGESTION_FETCH_TIMEOUT_MS = 5000;
     const bias = options.modelValue.value ?? options.proximityBias?.value ?? options.center?.value;
     const biasKey =
       bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)
-        ? `${bias.lat.toFixed(4)},${bias.lng.toFixed(4)}`
+        ? `${bias.lat.toFixed(BIAS_COORD_PRECISION)},${bias.lng.toFixed(BIAS_COORD_PRECISION)}`
         : '';
 
     if (
@@ -72,7 +74,7 @@ export function useLocationSuggestions(options: UseLocationSuggestionsOptions) {
         url += `&lat=${bias.lat}&lng=${bias.lng}`;
       }
 
-      const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      const res = await fetch(url, { signal: AbortSignal.timeout(SUGGESTION_FETCH_TIMEOUT_MS) });
 
       if (res.ok) {
         const data = (await res.json()) as PlaceSearchResult[];
@@ -85,7 +87,7 @@ export function useLocationSuggestions(options: UseLocationSuggestionsOptions) {
       // Fallback: Wenn Suche mit Proximity-Bias 0 Treffer liefert, nochmals ohne Bias suchen
       if (places.length === 0 && biasKey) {
         const fbRes = await fetch(`/api/places/search?q=${encodeURIComponent(title)}&limit=10`, {
-          signal: AbortSignal.timeout(5000),
+          signal: AbortSignal.timeout(SUGGESTION_FETCH_TIMEOUT_MS),
         });
 
         if (fbRes.ok) {

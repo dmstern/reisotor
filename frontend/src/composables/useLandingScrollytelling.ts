@@ -37,6 +37,9 @@ export interface UseLandingScrollytellingReturn {
 export function useLandingScrollytelling(
   options: UseLandingScrollytellingOptions = {}
 ): UseLandingScrollytellingReturn {
+  const INTERSECTION_MIN_THRESHOLD = 0.2;
+  const TRIGGER_LINE_VIEWPORT_RATIO = 0.45;
+
   const {
     stepCount = 5,
     stepSelector = '.scrolly-step',
@@ -46,7 +49,7 @@ export function useLandingScrollytelling(
     maxDistRatio = 0.6,
     observerOptions = {
       rootMargin: '-25% 0px -35% 0px',
-      threshold: [0.2, 0.5],
+      threshold: [INTERSECTION_MIN_THRESHOLD, 0.5],
     },
   } = options;
 
@@ -99,7 +102,7 @@ export function useLandingScrollytelling(
       return;
     }
 
-    const triggerLine = window.innerHeight * 0.45;
+    const triggerLine = window.innerHeight * TRIGGER_LINE_VIEWPORT_RATIO;
     let foundStep = -1;
     let foundHighlight = -1;
 

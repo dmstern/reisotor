@@ -38,10 +38,16 @@ export function useAttachmentSlider(options: UseAttachmentSliderOptions) {
     }
   );
 
+  const SLIDE_PREV_PERCENT = 0;
+  const SLIDE_CENTER_PERCENT = -100;
+  const SLIDE_NEXT_PERCENT = -200;
+  const CANCEL_ANIMATION_DURATION_MS = 220;
+  const GESTURE_LOCK_THRESHOLD_PX = 6;
+
   const isDragging = ref(false);
   const isAnimating = ref(false);
   const dragOffset = ref(0);
-  const targetOffsetPercent = ref<-200 | -100 | 0>(-100);
+  const targetOffsetPercent = ref<number>(SLIDE_CENTER_PERCENT);
 
   let touchStartX = 0;
   let touchStartY = 0;
@@ -105,19 +111,19 @@ export function useAttachmentSlider(options: UseAttachmentSliderOptions) {
 
       isAnimating.value = true;
       dragOffset.value = 0;
-      targetOffsetPercent.value = -100;
+      targetOffsetPercent.value = SLIDE_CENTER_PERCENT;
       animationTimer = setTimeout(
         () => {
           isAnimating.value = false;
         },
-        reducedMotion ? 0 : 220
+        reducedMotion ? 0 : CANCEL_ANIMATION_DURATION_MS
       );
       return;
     }
 
     isAnimating.value = true;
     dragOffset.value = 0;
-    targetOffsetPercent.value = direction === 'next' ? -200 : 0;
+    targetOffsetPercent.value = direction === 'next' ? SLIDE_NEXT_PERCENT : SLIDE_PREV_PERCENT;
 
     const duration = reducedMotion ? 0 : ANIMATION_DURATION_MS;
 
@@ -329,7 +335,7 @@ export function useAttachmentSlider(options: UseAttachmentSliderOptions) {
       const absX = Math.abs(deltaX);
       const absY = Math.abs(deltaY);
 
-      if (absX > 6 || absY > 6) {
+      if (absX > GESTURE_LOCK_THRESHOLD_PX || absY > GESTURE_LOCK_THRESHOLD_PX) {
         if (absX > absY) {
           isHorizontalGesture = true;
         } else {

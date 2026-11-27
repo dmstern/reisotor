@@ -119,12 +119,16 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
     return { coveredTopPx: 0, coveredLeftPx: 272 };
   }
 
+  const DEFAULT_PICKER_ZOOM = 15;
+  const OWN_LOCATION_ZOOM = 16;
+
   function centerOnPoint(latlng: leaflet.LatLngExpression, zoom?: number) {
     if (!map) {
       return;
     }
 
-    const targetZoom = zoom ?? (map.getZoom ? map.getZoom() : 15) ?? 15;
+    const targetZoom =
+      zoom ?? (map.getZoom ? map.getZoom() : DEFAULT_PICKER_ZOOM) ?? DEFAULT_PICKER_ZOOM;
     const { coveredTopPx, coveredLeftPx } = getCoveredOffsets();
 
     if (
@@ -256,7 +260,7 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
         const { latitude, longitude } = position.coords;
         options.onManualCoordsSet({ lat: latitude, lng: longitude });
         nextTick(() => {
-          centerOnPoint([latitude, longitude], 16);
+          centerOnPoint([latitude, longitude], OWN_LOCATION_ZOOM);
         });
       },
       () => {
@@ -280,7 +284,9 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
         options.proximityBias?.value ??
         options.center?.value ??
         FALLBACK_CENTER;
-      const initialZoom = options.modelValue.value ? 15 : (options.zoom?.value ?? FALLBACK_ZOOM);
+      const initialZoom = options.modelValue.value
+        ? DEFAULT_PICKER_ZOOM
+        : (options.zoom?.value ?? FALLBACK_ZOOM);
 
       map = leaflet
         .map(options.mapEl.value, {
@@ -354,7 +360,7 @@ export function useLocationPickerMap(options: UseLocationPickerMapOptions) {
 
         if (map && !isInternalCoordChange) {
           nextTick(() => {
-            centerOnPoint([val.lat, val.lng], map?.getZoom() || 15);
+            centerOnPoint([val.lat, val.lng], map?.getZoom() || DEFAULT_PICKER_ZOOM);
           });
         }
 

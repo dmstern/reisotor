@@ -16,19 +16,24 @@ export function useCalendarExportPicker() {
       return;
     }
 
+    const PICKER_VERTICAL_GAP_PX = 6;
+    const PICKER_VIEWPORT_MARGIN_PX = 8;
+    const PICKER_ESTIMATED_WIDTH_PX = 188;
+    const PICKER_MAX_RIGHT_OFFSET_PX = 196;
+
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
     calendarPickerKey.value = key;
     calendarPickerStyle.value = {
-      top: `${rect.bottom + 6}px`,
-      left: `${Math.max(8, Math.min(rect.right - 188, window.innerWidth - 196))}px`,
+      top: `${rect.bottom + PICKER_VERTICAL_GAP_PX}px`,
+      left: `${Math.max(PICKER_VIEWPORT_MARGIN_PX, Math.min(rect.right - PICKER_ESTIMATED_WIDTH_PX, window.innerWidth - PICKER_MAX_RIGHT_OFFSET_PX))}px`,
     };
     await nextTick();
     const menuRect = document.querySelector('.picker-menu')?.getBoundingClientRect();
 
-    if (menuRect && menuRect.bottom > window.innerHeight - 8) {
+    if (menuRect && menuRect.bottom > window.innerHeight - PICKER_VIEWPORT_MARGIN_PX) {
       calendarPickerStyle.value = {
         ...calendarPickerStyle.value,
-        top: `${Math.max(8, window.innerHeight - menuRect.height - 8)}px`,
+        top: `${Math.max(PICKER_VIEWPORT_MARGIN_PX, window.innerHeight - menuRect.height - PICKER_VIEWPORT_MARGIN_PX)}px`,
       };
     }
   }

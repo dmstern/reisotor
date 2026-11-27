@@ -46,14 +46,19 @@ export interface UseAnimatedPlaceholderOptions {
  * Erzeugt einen dezent animierten Schreibmaschinen-Platzhalter ("Ghost Typing"),
  * der zyklisch durch verschiedene Such- und Link-Tipps wechselt.
  */
+const DEFAULT_TYPING_SPEED_MS = 45;
+const DEFAULT_DELETING_SPEED_MS = 22;
+const DEFAULT_PAUSE_DELAY_MS = 2200;
+const DEFAULT_BETWEEN_DELAY_MS = 350;
+
 export function useAnimatedPlaceholder(
   phrasesInput: Ref<string[]> | (() => string[]),
   options: UseAnimatedPlaceholderOptions = {}
 ) {
-  const typingSpeed = options.typingSpeed ?? 45;
-  const deletingSpeed = options.deletingSpeed ?? 22;
-  const pauseDelay = options.pauseDelay ?? 2200;
-  const betweenDelay = options.betweenDelay ?? 350;
+  const typingSpeed = options.typingSpeed ?? DEFAULT_TYPING_SPEED_MS;
+  const deletingSpeed = options.deletingSpeed ?? DEFAULT_DELETING_SPEED_MS;
+  const pauseDelay = options.pauseDelay ?? DEFAULT_PAUSE_DELAY_MS;
+  const betweenDelay = options.betweenDelay ?? DEFAULT_BETWEEN_DELAY_MS;
 
   const getFallback = (): string => {
     if (typeof options.fallback === 'function') {

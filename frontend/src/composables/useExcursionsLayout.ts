@@ -69,12 +69,14 @@ export function useExcursionsLayout(options: UseExcursionsLayoutOptions) {
       return;
     }
 
+    const MIN_MAP_WIDTH_PX = 380;
+    const MAP_MARGIN_PX = 16;
     const delta = event.clientX - colStartX;
     const availableWidth =
       appMainWidth.value || (typeof window !== 'undefined' ? window.innerWidth : 1024);
     const maxAllowed = Math.max(
       MIN_SPOTS_COL_WIDTH,
-      Math.min(MAX_SPOTS_COL_WIDTH, availableWidth - 380 - 16)
+      Math.min(MAX_SPOTS_COL_WIDTH, availableWidth - MIN_MAP_WIDTH_PX - MAP_MARGIN_PX)
     );
     spotsColWidth.value = Math.min(
       maxAllowed,
@@ -94,31 +96,40 @@ export function useExcursionsLayout(options: UseExcursionsLayoutOptions) {
   const sheetDragHeightPx = ref<number | null>(null);
   const sheetEl = ref<HTMLElement | null>(null);
 
+  const SSR_FALLBACK_SHEET_HEIGHT_PX = 340;
+  const FALLBACK_HEADER_HEIGHT_PX = 56;
+  const FALLBACK_DRAWER_GAP_PX = 12;
+  const MIN_SHEET_HEIGHT_PX = 160;
+  const SHEET_TOP_SAFE_GAP_PX = 8;
+  const COLLAPSED_SHEET_HEIGHT_PX = 64;
+  const PARTIAL_SHEET_VIEWPORT_RATIO = 0.46;
+
   function sheetHeightPx(state: SheetState): number {
     if (typeof document === 'undefined') {
-      return 340;
+      return SSR_FALLBACK_SHEET_HEIGHT_PX;
     }
 
     const rootStyle = getComputedStyle(document.documentElement);
-    const headerHeight = parseFloat(rootStyle.getPropertyValue('--app-header-height')) || 56;
+    const headerHeight =
+      parseFloat(rootStyle.getPropertyValue('--app-header-height')) || FALLBACK_HEADER_HEIGHT_PX;
     const navbarOffset = parseFloat(rootStyle.getPropertyValue('--navbar-offset')) || 0;
     const navbarBottomOffset =
       parseFloat(rootStyle.getPropertyValue('--navbar-bottom-offset')) || 0;
 
-    const drawerGap = parseFloat(rootStyle.getPropertyValue('--space-3')) || 12;
+    const drawerGap = parseFloat(rootStyle.getPropertyValue('--space-3')) || FALLBACK_DRAWER_GAP_PX;
     const bottomOffset = state === 'full' ? 0 : drawerGap + navbarBottomOffset;
 
     const maxAvailable = Math.max(
-      160,
-      window.innerHeight - headerHeight - navbarOffset - 8 - bottomOffset
+      MIN_SHEET_HEIGHT_PX,
+      window.innerHeight - headerHeight - navbarOffset - SHEET_TOP_SAFE_GAP_PX - bottomOffset
     );
 
     if (state === 'collapsed') {
-      return Math.min(64, maxAvailable);
+      return Math.min(COLLAPSED_SHEET_HEIGHT_PX, maxAvailable);
     }
 
     if (state === 'partial') {
-      return Math.min(window.innerHeight * 0.46, maxAvailable);
+      return Math.min(window.innerHeight * PARTIAL_SHEET_VIEWPORT_RATIO, maxAvailable);
     }
 
     return maxAvailable;
@@ -379,10 +390,16 @@ export function useExcursionsLayout(options: UseExcursionsLayoutOptions) {
     return sheetHeightPx(targetState);
   });
 
+  const SPOTS_COL_RIGHT_MARGIN_PX = 16;
+  const LAYOUT_SETTLE_FAST_MS = 50;
+  const LAYOUT_SETTLE_SLOW_MS = 300;
+  const SHEET_OVERLAY_BREAKPOINT_PX = 720;
+  const CALENDAR_DRAWER_TRANSITION_MS = 260;
+
   const appMainWidth = ref(typeof window !== 'undefined' ? window.innerWidth : BREAKPOINTS.desktop);
   const spotsColRightPx = ref(
     typeof window !== 'undefined' && window.matchMedia(MEDIA_QUERIES.desktop).matches
-      ? spotsColWidth.value + 16
+      ? spotsColWidth.value + SPOTS_COL_RIGHT_MARGIN_PX
       : 0
   );
   let appMainResizeObserver: ResizeObserver | null = null;
@@ -458,8 +475,8 @@ export function useExcursionsLayout(options: UseExcursionsLayoutOptions) {
       updateSpotsColRight();
       nextTick(() => {
         updateSpotsColRight();
-        setTimeout(updateSpotsColRight, 50);
-        setTimeout(updateSpotsColRight, 300);
+        setTimeout(updateSpotsColRight, LAYOUT_SETTLE_FAST_MS);
+        setTimeout(updateSpotsColRight, LAYOUT_SETTLE_SLOW_MS);
       });
     });
 
@@ -476,7 +493,9 @@ export function useExcursionsLayout(options: UseExcursionsLayoutOptions) {
     });
   }
 
-  const isSheetOverlayMode = computed(() => !isDesktop.value || appMainWidth.value < 720);
+  const isSheetOverlayMode = computed(
+    () => !isDesktop.value || appMainWidth.value < SHEET_OVERLAY_BREAKPOINT_PX
+  );
   const mapCoveredBottomPx = computed(() =>
     isSheetOverlayMode.value ? currentSheetHeightPx.value : 0
   );
@@ -514,7 +533,7 @@ export function useExcursionsLayout(options: UseExcursionsLayoutOptions) {
     () => [drawers.calendarOpen, drawers.calendarWidth],
     () => {
       nextTick(updateSpotsColRight);
-      setTimeout(updateSpotsColRight, 260);
+      setTimeout(updateSpotsColRight, CALENDAR_DRAWER_TRANSITION_MS);
     },
     { immediate: true }
   );

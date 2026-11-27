@@ -47,11 +47,14 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
   const monthAnchor = ref(startOfMonth(new Date()));
   const weekAnchor = ref(startOfWeek(new Date()));
 
+  const DAYS_IN_WEEK = 7;
+  const DAYS_IN_TWO_WEEKS = 14;
+
   function buildWeek(weekStartDate: Date): DayCell[] {
     const result: DayCell[] = [];
     const cursor = new Date(weekStartDate);
 
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < DAYS_IN_WEEK; i++) {
       const iso = toIso(cursor);
       result.push({
         date: iso,
@@ -89,7 +92,7 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
         otherMonth: cursor.getMonth() !== month,
       });
 
-      if (week.length === 7) {
+      if (week.length === DAYS_IN_WEEK) {
         result.push(week);
         week = [];
       }
@@ -115,7 +118,7 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
 
     for (let w = 0; w < count; w++) {
       result.push(buildWeek(cursor));
-      cursor.setDate(cursor.getDate() + 7);
+      cursor.setDate(cursor.getDate() + DAYS_IN_WEEK);
     }
 
     return result;
@@ -136,7 +139,8 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
 
   function determineSlideDirection(targetIso: string): CalendarSlideDirection {
     if (granularity.value === 'month') {
-      const targetYearMonth = targetIso.slice(0, 7);
+      const YEAR_MONTH_PREFIX_LEN = 7;
+      const targetYearMonth = targetIso.slice(0, YEAR_MONTH_PREFIX_LEN);
       const currentYear = monthAnchor.value.getFullYear();
       const currentMonth = String(monthAnchor.value.getMonth() + 1).padStart(2, '0');
       const currentYearMonth = `${currentYear}-${currentMonth}`;
@@ -153,7 +157,7 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
     }
 
     const currentIso = toIso(weekAnchor.value);
-    const count = granularity.value === 'twoWeeks' ? 14 : 7;
+    const count = granularity.value === 'twoWeeks' ? DAYS_IN_TWO_WEEKS : DAYS_IN_WEEK;
     const end = new Date(weekAnchor.value);
     end.setDate(end.getDate() + count - 1);
     const endIso = toIso(end);
@@ -243,11 +247,11 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
       prevMonth();
     } else if (granularity.value === 'twoWeeks') {
       const targetDate = new Date(weekAnchor.value);
-      targetDate.setDate(targetDate.getDate() - 14);
+      targetDate.setDate(targetDate.getDate() - DAYS_IN_TWO_WEEKS);
       weekAnchor.value = startOfWeek(targetDate);
     } else {
       const targetDate = new Date(weekAnchor.value);
-      targetDate.setDate(targetDate.getDate() - 7);
+      targetDate.setDate(targetDate.getDate() - DAYS_IN_WEEK);
       weekAnchor.value = startOfWeek(targetDate);
     }
   }
@@ -260,11 +264,11 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
       nextMonth();
     } else if (granularity.value === 'twoWeeks') {
       const targetDate = new Date(weekAnchor.value);
-      targetDate.setDate(targetDate.getDate() + 14);
+      targetDate.setDate(targetDate.getDate() + DAYS_IN_TWO_WEEKS);
       weekAnchor.value = startOfWeek(targetDate);
     } else {
       const targetDate = new Date(weekAnchor.value);
-      targetDate.setDate(targetDate.getDate() + 7);
+      targetDate.setDate(targetDate.getDate() + DAYS_IN_WEEK);
       weekAnchor.value = startOfWeek(targetDate);
     }
   }
@@ -274,7 +278,7 @@ export function useCalendarNavigation(options: UseCalendarNavigationOptions) {
 
     if (next === 'month' && prev !== 'month') {
       const weekStartIso = toIso(startOfWeek(weekAnchor.value));
-      const count = prev === 'twoWeeks' ? 14 : 7;
+      const count = prev === 'twoWeeks' ? DAYS_IN_TWO_WEEKS : DAYS_IN_WEEK;
       const endDate = new Date(startOfWeek(weekAnchor.value));
       endDate.setDate(endDate.getDate() + count - 1);
       const weekEndIso = toIso(endDate);

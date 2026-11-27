@@ -195,9 +195,11 @@ export function useLocationDetails(options: UseLocationDetailsOptions) {
   }
 
   async function reverseGeocodeCoords(lat: number, lng: number) {
+    const REVERSE_GEOCODE_TIMEOUT_MS = 4000;
+
     try {
       const res = await fetch(`/api/places/reverse?lat=${lat}&lng=${lng}`, {
-        signal: AbortSignal.timeout(4000),
+        signal: AbortSignal.timeout(REVERSE_GEOCODE_TIMEOUT_MS),
       });
 
       if (!res.ok) {

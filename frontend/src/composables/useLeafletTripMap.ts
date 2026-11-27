@@ -68,12 +68,14 @@ export const TRACK_GOAL_ICON: IconDef = {
 export function trackPlaybackIcon(): leaflet.DivIcon {
   const size = 32;
   const dotSize = 24;
+  const PULSE_RING_EXTRA_PX = 12;
+  const pulseSize = dotSize + PULSE_RING_EXTRA_PX;
   const half = size / 2;
   const color = '#9141ac';
   return leaflet.divIcon({
     html: `<div class="track-playback-marker" style="position:relative;width:${size}px;height:${size}px;">
-      <div class="map-pulse-ring" style="position:absolute;left:50%;top:50%;width:${dotSize + 12}px;height:${dotSize + 12}px;
-        margin:${-(dotSize + 12) / 2}px 0 0 ${-(dotSize + 12) / 2}px;border-radius:50%;background:${color};"></div>
+      <div class="map-pulse-ring" style="position:absolute;left:50%;top:50%;width:${pulseSize}px;height:${pulseSize}px;
+        margin:${-pulseSize / 2}px 0 0 ${-pulseSize / 2}px;border-radius:50%;background:${color};"></div>
       <div style="position:absolute;left:50%;top:50%;width:${dotSize}px;height:${dotSize}px;
         margin:${-dotSize / 2}px 0 0 ${-dotSize / 2}px;border-radius:50%;background:${color};
         border:3px solid #ffffff;box-shadow:0 2px 8px rgba(0,0,0,0.45);
@@ -124,6 +126,21 @@ export interface FitBoundsPaddingOptions {
   maxZoom?: number;
 }
 
+const PHOTOS_PADDING_TOP_PX = 190;
+const DEFAULT_PADDING_PX = 32;
+const PHOTOS_PADDING_BOTTOM_EXTRA_PX = 48;
+const PHOTOS_PADDING_BOTTOM_MIN_PX = 120;
+const PHOTOS_PADDING_SIDE_PX = 90;
+const MAX_FIT_PADDING_RATIO = 0.75;
+const MIN_FIT_PADDING_PX = 16;
+const DEFAULT_FIT_MAX_ZOOM = 15;
+const SINGLE_POINT_ZOOM = 14;
+const OVERVIEW_SINGLE_POINT_ZOOM = 13;
+const FOCUS_LOCATION_ZOOM = 16;
+const FOCUS_POINT_ZOOM = 15;
+const MARKER_TOOLTIP_OFFSET_Y = -18;
+const TRACK_ENDPOINT_TOOLTIP_OFFSET_Y = -28;
+
 export function calcFitBoundsPadding(params: {
   isPhotos: boolean;
   hasFocusBanner?: boolean;
@@ -140,10 +157,12 @@ export function calcFitBoundsPadding(params: {
   // Für Fotos ("Alle Fotos mit Standort") lassen wir zu allen Seiten großzügigen Freiraum,
   // damit kein Bild hinter dem Fokus-Banner oder Tages-Strip verdeckt wird und alle zentriert wirken.
   // Für reguläre Orte (Ausflüge, Spots, Urlaubsort) bleibt das bewährte Standard-Padding (32px) erhalten.
-  const defaultTop = params.isPhotos ? 190 : 32;
-  const defaultBottom = params.isPhotos ? Math.max(coveredBottom + 48, 120) : 32 + coveredBottom;
-  const defaultLeft = coveredLeft + (params.isPhotos ? 90 : 32);
-  const defaultRight = params.isPhotos ? 90 : 32;
+  const defaultTop = params.isPhotos ? PHOTOS_PADDING_TOP_PX : DEFAULT_PADDING_PX;
+  const defaultBottom = params.isPhotos
+    ? Math.max(coveredBottom + PHOTOS_PADDING_BOTTOM_EXTRA_PX, PHOTOS_PADDING_BOTTOM_MIN_PX)
+    : DEFAULT_PADDING_PX + coveredBottom;
+  const defaultLeft = coveredLeft + (params.isPhotos ? PHOTOS_PADDING_SIDE_PX : DEFAULT_PADDING_PX);
+  const defaultRight = params.isPhotos ? PHOTOS_PADDING_SIDE_PX : DEFAULT_PADDING_PX;
 
   let paddingTop = params.custom?.paddingTop ?? defaultTop;
   let paddingBottom = params.custom?.paddingBottom ?? defaultBottom;
@@ -153,23 +172,23 @@ export function calcFitBoundsPadding(params: {
   if (params.mapSize) {
     if (params.mapSize.y > 0) {
       const totalV = paddingTop + paddingBottom;
-      const maxV = Math.floor(params.mapSize.y * 0.75);
+      const maxV = Math.floor(params.mapSize.y * MAX_FIT_PADDING_RATIO);
 
       if (totalV > maxV && totalV > 0) {
         const scale = maxV / totalV;
-        paddingTop = Math.max(16, Math.floor(paddingTop * scale));
-        paddingBottom = Math.max(16, Math.floor(paddingBottom * scale));
+        paddingTop = Math.max(MIN_FIT_PADDING_PX, Math.floor(paddingTop * scale));
+        paddingBottom = Math.max(MIN_FIT_PADDING_PX, Math.floor(paddingBottom * scale));
       }
     }
 
     if (params.mapSize.x > 0) {
       const totalH = paddingLeft + paddingRight;
-      const maxH = Math.floor(params.mapSize.x * 0.75);
+      const maxH = Math.floor(params.mapSize.x * MAX_FIT_PADDING_RATIO);
 
       if (totalH > maxH && totalH > 0) {
         const scale = maxH / totalH;
-        paddingLeft = Math.max(16, Math.floor(paddingLeft * scale));
-        paddingRight = Math.max(16, Math.floor(paddingRight * scale));
+        paddingLeft = Math.max(MIN_FIT_PADDING_PX, Math.floor(paddingLeft * scale));
+        paddingRight = Math.max(MIN_FIT_PADDING_PX, Math.floor(paddingRight * scale));
       }
     }
   }
@@ -267,7 +286,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     map.fitBounds(bounds, {
       paddingTopLeft: [paddingLeft, paddingTop],
       paddingBottomRight: [paddingRight, paddingBottom],
-      maxZoom: customPadding?.maxZoom ?? 15,
+      maxZoom: customPadding?.maxZoom ?? DEFAULT_FIT_MAX_ZOOM,
       animate: false,
     });
     setTimeout(() => {
@@ -383,7 +402,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     if (latLngs.length > 1) {
       fitBoundsWithCoveredBottom(leaflet.latLngBounds(latLngs));
     } else if (latLngs.length === 1) {
-      centerOnPoint(latLngs[0], 14);
+      centerOnPoint(latLngs[0], SINGLE_POINT_ZOOM);
     }
   }
 
@@ -401,7 +420,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     if (latLngs.length > 1) {
       fitBoundsWithCoveredBottom(leaflet.latLngBounds(latLngs));
     } else if (latLngs.length === 1) {
-      centerOnPoint(latLngs[0], 13);
+      centerOnPoint(latLngs[0], OVERVIEW_SINGLE_POINT_ZOOM);
     } else {
       const { center, zoom } = getDefaultMapCenterAndZoom(tripStore.currentTrip);
       centerOnPoint(center, zoom);
@@ -422,7 +441,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     if (latLngs.length > 1) {
       fitBoundsWithCoveredBottom(leaflet.latLngBounds(latLngs));
     } else if (latLngs.length === 1) {
-      centerOnPoint(latLngs[0], 13);
+      centerOnPoint(latLngs[0], OVERVIEW_SINGLE_POINT_ZOOM);
     } else {
       const { center, zoom } = getDefaultMapCenterAndZoom(tripStore.currentTrip);
       centerOnPoint(center, zoom);
@@ -443,7 +462,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     if (latLngs.length > 1) {
       fitBoundsWithCoveredBottom(leaflet.latLngBounds(latLngs));
     } else if (latLngs.length === 1) {
-      centerOnPoint(latLngs[0], 13);
+      centerOnPoint(latLngs[0], OVERVIEW_SINGLE_POINT_ZOOM);
     }
   }
 
@@ -461,7 +480,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
     if (latLngs.length > 1) {
       fitBoundsWithCoveredBottom(leaflet.latLngBounds(latLngs));
     } else if (latLngs.length === 1) {
-      centerOnPoint(latLngs[0], 13);
+      centerOnPoint(latLngs[0], OVERVIEW_SINGLE_POINT_ZOOM);
     }
   }
 
@@ -477,13 +496,16 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
 
     if (latLngs.length > 1) {
       fitBoundsWithCoveredBottom(leaflet.latLngBounds(latLngs), {
-        paddingTop: 190,
-        paddingBottom: Math.max((options.coveredBottomPx?.value ?? 0) + 48, 120),
-        paddingLeft: (options.coveredLeftPx?.value ?? 0) + 90,
-        paddingRight: 90,
+        paddingTop: PHOTOS_PADDING_TOP_PX,
+        paddingBottom: Math.max(
+          (options.coveredBottomPx?.value ?? 0) + PHOTOS_PADDING_BOTTOM_EXTRA_PX,
+          PHOTOS_PADDING_BOTTOM_MIN_PX
+        ),
+        paddingLeft: (options.coveredLeftPx?.value ?? 0) + PHOTOS_PADDING_SIDE_PX,
+        paddingRight: PHOTOS_PADDING_SIDE_PX,
       });
     } else if (latLngs.length === 1) {
-      centerOnPoint(latLngs[0], 14);
+      centerOnPoint(latLngs[0], SINGLE_POINT_ZOOM);
     }
   }
 
@@ -505,7 +527,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
         .on('click', () => options.onPointClick(point));
       marker.bindTooltip(point.title, {
         direction: 'top',
-        offset: [0, -18],
+        offset: [0, MARKER_TOOLTIP_OFFSET_Y],
         opacity: 0.95,
         className: 'map-marker-tooltip',
       });
@@ -559,24 +581,27 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       if (photoLatLngs.length > 1) {
         fitBoundsWithCoveredBottom(leaflet.latLngBounds(photoLatLngs));
       } else if (photoLatLngs.length === 1) {
-        centerOnPoint(photoLatLngs[0], 14);
+        centerOnPoint(photoLatLngs[0], SINGLE_POINT_ZOOM);
       }
     } else if (excursion) {
       if (excursionLatLngs.length > 1) {
         fitBoundsWithCoveredBottom(leaflet.latLngBounds(excursionLatLngs));
       } else if (excursionLatLngs.length === 1) {
-        centerOnPoint(excursionLatLngs[0], 14);
+        centerOnPoint(excursionLatLngs[0], SINGLE_POINT_ZOOM);
       }
     } else if (drawers.mapFocusLocation) {
-      centerOnPoint([drawers.mapFocusLocation.lat, drawers.mapFocusLocation.lng], 16);
+      centerOnPoint(
+        [drawers.mapFocusLocation.lat, drawers.mapFocusLocation.lng],
+        FOCUS_LOCATION_ZOOM
+      );
     } else if (drawers.mapFocusDate && dateLatLngs.length) {
       if (dateLatLngs.length > 1) {
         fitBoundsWithCoveredBottom(leaflet.latLngBounds(dateLatLngs));
       } else {
-        centerOnPoint(dateLatLngs[0], 14);
+        centerOnPoint(dateLatLngs[0], SINGLE_POINT_ZOOM);
       }
     } else if (focusPoint) {
-      centerOnPoint([focusPoint.lat, focusPoint.lng], 15);
+      centerOnPoint([focusPoint.lat, focusPoint.lng], FOCUS_POINT_ZOOM);
     }
   }
 
@@ -736,7 +761,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       })
       .bindTooltip('Start', {
         direction: 'top',
-        offset: [0, -28],
+        offset: [0, TRACK_ENDPOINT_TOOLTIP_OFFSET_Y],
         opacity: 0.95,
         className: 'map-marker-tooltip',
       })
@@ -754,7 +779,7 @@ export function useLeafletTripMap(options: UseLeafletTripMapOptions) {
       })
       .bindTooltip('Ziel', {
         direction: 'top',
-        offset: [0, -28],
+        offset: [0, TRACK_ENDPOINT_TOOLTIP_OFFSET_Y],
         opacity: 0.95,
         className: 'map-marker-tooltip',
       })
