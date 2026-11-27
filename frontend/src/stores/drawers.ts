@@ -10,9 +10,10 @@ export const DEFAULT_DRAWER_WIDTH = 360;
 export const MIN_DRAWER_WIDTH = 280;
 export const MAX_DRAWER_WIDTH = 860;
 export const MAX_DRAWER_WIDTH_COMPACT = 320;
+const WIDE_VIEWPORT_MIN_WIDTH = 1280;
 
 export function getMaxDrawerWidth(): number {
-  if (typeof window !== 'undefined' && window.innerWidth < 1280) {
+  if (typeof window !== 'undefined' && window.innerWidth < WIDE_VIEWPORT_MIN_WIDTH) {
     return MAX_DRAWER_WIDTH_COMPACT;
   }
 

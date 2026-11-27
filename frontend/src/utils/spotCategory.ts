@@ -538,11 +538,13 @@ const CUSTOM_CATEGORY_PALETTE = [
   '#e34948',
 ];
 
+const HASH_PRIME = 31;
+
 function hashCategoryColor(category: string): string {
   let hash = 0;
 
   for (let i = 0; i < category.length; i++) {
-    hash = (hash * 31 + category.charCodeAt(i)) | 0;
+    hash = (hash * HASH_PRIME + category.charCodeAt(i)) | 0;
   }
 
   return CUSTOM_CATEGORY_PALETTE[Math.abs(hash) % CUSTOM_CATEGORY_PALETTE.length];

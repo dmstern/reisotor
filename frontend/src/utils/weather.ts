@@ -549,13 +549,18 @@ export async function fetchMergedWeather(
     byDate.set(day.date, day);
   }
 
+  const SNAPSHOT_COORD_TOLERANCE_DEG = 0.05;
+
   // Filtere nach passende Standort-Snapshots, falls Ortskoordinaten in der Historie vorliegen
   const matchingHistory = history.filter((row) => {
     if (row.lat == null || row.lng == null) {
       return true;
     }
 
-    return Math.abs(row.lat - lat) < 0.05 && Math.abs(row.lng - lng) < 0.05;
+    return (
+      Math.abs(row.lat - lat) < SNAPSHOT_COORD_TOLERANCE_DEG &&
+      Math.abs(row.lng - lng) < SNAPSHOT_COORD_TOLERANCE_DEG
+    );
   });
 
   for (const row of matchingHistory) {
@@ -582,9 +587,80 @@ export interface WeatherRangeSummary {
   tempLabel: string;
 }
 
-const WEATHER_CODE_SEVERITY_ORDER = [
-  99, 96, 95, 82, 81, 80, 67, 66, 65, 63, 61, 57, 56, 55, 53, 51, 86, 85, 75, 73, 71, 77, 48, 45, 3,
-  2, 1, 0,
+enum WmoCode {
+  Clear = 0,
+  MostlyClear = 1,
+  PartlyCloudy = 2,
+  Overcast = 3,
+  Fog = 45,
+  DepositingRimeFog = 48,
+  DrizzleLight = 51,
+  DrizzleModerate = 53,
+  DrizzleDense = 55,
+  FreezingDrizzleLight = 56,
+  FreezingDrizzleDense = 57,
+  RainSlight = 61,
+  RainModerate = 63,
+  RainHeavy = 65,
+  FreezingRainLight = 66,
+  FreezingRainHeavy = 67,
+  SnowSlight = 71,
+  SnowModerate = 73,
+  SnowHeavy = 75,
+  SnowGrains = 77,
+  RainShowersSlight = 80,
+  RainShowersModerate = 81,
+  RainShowersViolent = 82,
+  SnowShowersSlight = 85,
+  SnowShowersHeavy = 86,
+  Thunderstorm = 95,
+  ThunderstormHailSlight = 96,
+  ThunderstormHailHeavy = 99,
+}
+
+const UNRANKED_WEATHER_SEVERITY = 999;
+const HEAT_DANGER_TEMP_C = 35;
+const HEAT_WARNING_TEMP_C = 31;
+const COLD_WARNING_TEMP_C = -10;
+
+enum HourlySampleHour {
+  H06 = 6,
+  H09 = 9,
+  H12 = 12,
+  H15 = 15,
+  H18 = 18,
+  H21 = 21,
+}
+
+const WEATHER_CODE_SEVERITY_ORDER: number[] = [
+  WmoCode.ThunderstormHailHeavy,
+  WmoCode.ThunderstormHailSlight,
+  WmoCode.Thunderstorm,
+  WmoCode.RainShowersViolent,
+  WmoCode.RainShowersModerate,
+  WmoCode.RainShowersSlight,
+  WmoCode.FreezingRainHeavy,
+  WmoCode.FreezingRainLight,
+  WmoCode.RainHeavy,
+  WmoCode.RainModerate,
+  WmoCode.RainSlight,
+  WmoCode.FreezingDrizzleDense,
+  WmoCode.FreezingDrizzleLight,
+  WmoCode.DrizzleDense,
+  WmoCode.DrizzleModerate,
+  WmoCode.DrizzleLight,
+  WmoCode.SnowShowersHeavy,
+  WmoCode.SnowShowersSlight,
+  WmoCode.SnowHeavy,
+  WmoCode.SnowModerate,
+  WmoCode.SnowSlight,
+  WmoCode.SnowGrains,
+  WmoCode.DepositingRimeFog,
+  WmoCode.Fog,
+  WmoCode.Overcast,
+  WmoCode.PartlyCloudy,
+  WmoCode.MostlyClear,
+  WmoCode.Clear,
 ];
 
 /** Bildet aus mehreren Tageswetter-Messungen (z. B. für eine Tour mit mehreren Stationen) eine
@@ -613,7 +689,7 @@ export function summarizeWeatherRange(weathers: DailyWeather[]): WeatherRangeSum
   let bestIdx = WEATHER_CODE_SEVERITY_ORDER.indexOf(bestCode);
 
   if (bestIdx === -1) {
-    bestIdx = 999;
+    bestIdx = UNRANKED_WEATHER_SEVERITY;
   }
 
   for (let i = 1; i < validCodes.length; i++) {
@@ -621,7 +697,7 @@ export function summarizeWeatherRange(weathers: DailyWeather[]): WeatherRangeSum
     let idx = WEATHER_CODE_SEVERITY_ORDER.indexOf(code);
 
     if (idx === -1) {
-      idx = 999;
+      idx = UNRANKED_WEATHER_SEVERITY;
     }
 
     if (idx < bestIdx) {
@@ -661,7 +737,7 @@ export function detectWeatherAlerts(forecast: DailyWeather[]): WeatherAlert[] {
     const formattedDate = formatDateShared(day.date, { includeYear: false });
 
     // Hitze
-    if (day.tempMax != null && day.tempMax >= 35) {
+    if (day.tempMax != null && day.tempMax >= HEAT_DANGER_TEMP_C) {
       alerts.push({
         id: `heat-danger-${day.date}`,
         type: 'heat',
@@ -670,7 +746,7 @@ export function detectWeatherAlerts(forecast: DailyWeather[]): WeatherAlert[] {
         description: `Extreme Hitze bis zu ${Math.round(day.tempMax)}°C am ${formattedDate} erwartet.`,
         date: day.date,
       });
-    } else if (day.tempMax != null && day.tempMax >= 31) {
+    } else if (day.tempMax != null && day.tempMax >= HEAT_WARNING_TEMP_C) {
       alerts.push({
         id: `heat-warning-${day.date}`,
         type: 'heat',
@@ -682,7 +758,14 @@ export function detectWeatherAlerts(forecast: DailyWeather[]): WeatherAlert[] {
     }
 
     // Gewitter / Unwetter / Starkregen
-    if (day.weatherCode != null && [95, 96, 99].includes(day.weatherCode)) {
+    if (
+      day.weatherCode != null &&
+      [
+        WmoCode.Thunderstorm,
+        WmoCode.ThunderstormHailSlight,
+        WmoCode.ThunderstormHailHeavy,
+      ].includes(day.weatherCode)
+    ) {
       alerts.push({
         id: `storm-${day.date}`,
         type: 'storm',
@@ -691,7 +774,12 @@ export function detectWeatherAlerts(forecast: DailyWeather[]): WeatherAlert[] {
         description: `Schwere Gewitter oder Sturmböen am ${formattedDate} erwartet.`,
         date: day.date,
       });
-    } else if (day.weatherCode != null && [82, 65, 67].includes(day.weatherCode)) {
+    } else if (
+      day.weatherCode != null &&
+      [WmoCode.RainShowersViolent, WmoCode.RainHeavy, WmoCode.FreezingRainHeavy].includes(
+        day.weatherCode
+      )
+    ) {
       alerts.push({
         id: `rain-${day.date}`,
         type: 'rain',
@@ -700,7 +788,10 @@ export function detectWeatherAlerts(forecast: DailyWeather[]): WeatherAlert[] {
         description: `Heftiger Niederschlag am ${formattedDate} vorhergesagt.`,
         date: day.date,
       });
-    } else if (day.weatherCode != null && [75, 86].includes(day.weatherCode)) {
+    } else if (
+      day.weatherCode != null &&
+      [WmoCode.SnowHeavy, WmoCode.SnowShowersHeavy].includes(day.weatherCode)
+    ) {
       alerts.push({
         id: `snow-${day.date}`,
         type: 'snow',
@@ -712,7 +803,7 @@ export function detectWeatherAlerts(forecast: DailyWeather[]): WeatherAlert[] {
     }
 
     // Kälte
-    if (day.tempMin != null && day.tempMin <= -10) {
+    if (day.tempMin != null && day.tempMin <= COLD_WARNING_TEMP_C) {
       alerts.push({
         id: `cold-${day.date}`,
         type: 'cold',
@@ -752,7 +843,16 @@ function parseHourlyResponse(data: OpenMeteoHourlyResponse): HourlyWeather[] {
       const hourStr = timeStr.split('T')[1] ?? '';
       const hourNum = parseInt(hourStr.split(':')[0], 10);
 
-      if (![6, 9, 12, 15, 18, 21].includes(hourNum)) {
+      if (
+        ![
+          HourlySampleHour.H06,
+          HourlySampleHour.H09,
+          HourlySampleHour.H12,
+          HourlySampleHour.H15,
+          HourlySampleHour.H18,
+          HourlySampleHour.H21,
+        ].includes(hourNum)
+      ) {
         return;
       }
 

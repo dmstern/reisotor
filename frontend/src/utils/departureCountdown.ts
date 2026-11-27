@@ -34,7 +34,9 @@ export function computeDepartureCountdown(startDateStr: string, now: Date): Depa
 
   const msUntilEnd = endOfDeparture.getTime() - now.getTime();
 
-  if (msUntilEnd < 48 * HOUR_MS) {
+  const HOURS_COUNTDOWN_THRESHOLD = 48;
+
+  if (msUntilEnd < HOURS_COUNTDOWN_THRESHOLD * HOUR_MS) {
     return { phase: 'hours', hours: Math.max(1, Math.floor(msUntilEnd / HOUR_MS)) };
   }
 

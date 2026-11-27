@@ -11,7 +11,8 @@ export type ShareDuration = 'off' | 'day' | 'week' | 'forever';
 // Timeouts wird in handhabbaren Schritten neu geplant.
 const MAX_TIMEOUT_MS = 24 * 60 * 60 * 1000;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-const ONE_YEAR_MS = 365 * ONE_DAY_MS;
+const DAYS_PER_YEAR = 365;
+const ONE_YEAR_MS = DAYS_PER_YEAR * ONE_DAY_MS;
 
 function getStoredDuration(tripId: number, until: string): ShareDuration | null {
   try {

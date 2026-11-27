@@ -44,9 +44,22 @@ function markerGlyphHtml(icon: MarkerGlyph, sizePx: number): string {
 // `large`: dezent vergrößerte Variante für den aktuell hervorgehobenen Punkt (siehe
 // TripMap.vue's drawers.mapFocusKey-Kopplung mit der Spots-/Detail-Ansicht) – eigener
 // Cache-Eintrag pro Größe, da L.DivIcon-Instanzen unveränderlich sind.
+const EMOJI_PIN_LARGE_SIZE = 54;
+const EMOJI_PIN_DEFAULT_SIZE = 32;
+const EMOJI_PIN_LARGE_FONT = 25;
+const EMOJI_PIN_DEFAULT_FONT = 15;
+const IMAGE_PIN_LARGE_SIZE = 56;
+const IMAGE_PIN_DEFAULT_SIZE = 42;
+const IMAGE_PIN_LARGE_THUMB = 42;
+const IMAGE_PIN_DEFAULT_THUMB = 30;
+const IMAGE_PIN_LARGE_FALLBACK_FONT = 20;
+const IMAGE_PIN_DEFAULT_FALLBACK_FONT = 14;
+const COMPASS_PIN_ICON_FONT = 16;
+const ARC_CURVE_OFFSET_FACTOR = 0.15;
+
 export function emojiPin(icon: MarkerGlyph, color: string, large = false) {
-  const size = large ? 54 : 32;
-  const fontSize = large ? 25 : 15;
+  const size = large ? EMOJI_PIN_LARGE_SIZE : EMOJI_PIN_DEFAULT_SIZE;
+  const fontSize = large ? EMOJI_PIN_LARGE_FONT : EMOJI_PIN_DEFAULT_FONT;
   return leaflet.divIcon({
     html: `<div style="width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;background:${color};
       transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;
@@ -93,9 +106,9 @@ export function imagePin(
   large = false,
   dateBadge?: string | null
 ) {
-  const size = large ? 56 : 42;
-  const thumbSize = large ? 42 : 30;
-  const fallbackSize = large ? 20 : 14;
+  const size = large ? IMAGE_PIN_LARGE_SIZE : IMAGE_PIN_DEFAULT_SIZE;
+  const thumbSize = large ? IMAGE_PIN_LARGE_THUMB : IMAGE_PIN_DEFAULT_THUMB;
+  const fallbackSize = large ? IMAGE_PIN_LARGE_FALLBACK_FONT : IMAGE_PIN_DEFAULT_FALLBACK_FONT;
   const safeUrl = escapeHtmlAttr(imageUrl);
   const badgeHtml = dateBadge
     ? `<span class="photo-pin-date-badge">${escapeHtmlAttr(dateBadge)}</span>`
@@ -151,7 +164,7 @@ export function pulsingEmojiPin(icon: MarkerGlyph, color: string) {
       <div style="position:relative;width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;background:${color};
         transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;
         box-shadow:0 2px 6px rgba(0,0,0,.35);border:2px solid white;">
-        <span style="transform:rotate(45deg);">${markerGlyphHtml(icon, 15)}</span>
+        <span style="transform:rotate(45deg);">${markerGlyphHtml(icon, EMOJI_PIN_DEFAULT_FONT)}</span>
       </div>
     </div>`,
     className: '',
@@ -197,7 +210,7 @@ export function compassPin(icon: MarkerGlyph, color: string, headingDeg: number 
       <div style="position:absolute;left:50%;top:50%;width:${dotSize}px;height:${dotSize}px;
         margin:${-dotSize / 2}px 0 0 ${-dotSize / 2}px;border-radius:50%;background:${color};
         border:3px solid white;box-shadow:0 1px 5px rgba(0,0,0,.4);
-        display:flex;align-items:center;justify-content:center;">${markerGlyphHtml(icon, 16)}</div>
+        display:flex;align-items:center;justify-content:center;">${markerGlyphHtml(icon, COMPASS_PIN_ICON_FONT)}</div>
     </div>`,
     className: '',
     iconSize: [size, size],
@@ -219,8 +232,8 @@ export function arcPoints(
   const dLng = lng2 - lng1;
   // Versatz proportional zur Streckenlänge (dLat/dLng selbst) – kurze Routen bekommen dadurch
   // automatisch einen dezenteren, lange einen deutlicheren Bogen. 0.15 ist ein reiner Optik-Faktor.
-  const controlLat = (lat1 + lat2) / 2 - dLng * 0.15;
-  const controlLng = (lng1 + lng2) / 2 + dLat * 0.15;
+  const controlLat = (lat1 + lat2) / 2 - dLng * ARC_CURVE_OFFSET_FACTOR;
+  const controlLng = (lng1 + lng2) / 2 + dLat * ARC_CURVE_OFFSET_FACTOR;
   const points: leaflet.LatLngExpression[] = [];
 
   for (let i = 0; i <= segments; i++) {

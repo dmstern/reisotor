@@ -196,10 +196,11 @@ export function readExifMetadata(dataUrl: string): ImageExifMetadata | null {
  * (z. B. "48.1372° N, 11.5755° O").
  */
 export function formatGeoCoordinates(lat: number, lng: number): string {
+  const COORD_PRECISION = 4;
   const latDir = lat >= 0 ? 'N' : 'S';
   const lngDir = lng >= 0 ? 'O' : 'W';
-  const latFormatted = `${Math.abs(lat).toFixed(4)}°\u00A0${latDir}`;
-  const lngFormatted = `${Math.abs(lng).toFixed(4)}°\u00A0${lngDir}`;
+  const latFormatted = `${Math.abs(lat).toFixed(COORD_PRECISION)}°\u00A0${latDir}`;
+  const lngFormatted = `${Math.abs(lng).toFixed(COORD_PRECISION)}°\u00A0${lngDir}`;
   return `${latFormatted}, ${lngFormatted}`;
 }
 
@@ -300,10 +301,25 @@ export async function isHeicBlob(blob: Blob): Promise<boolean> {
   }
 
   try {
-    const slice = blob.slice(0, 16);
+    const HEIC_HEADER_SLICE_BYTES = 16;
+    const HEIC_HEADER_MIN_BYTES = 12;
+    const FTYP_OFFSET_0 = 4;
+    const FTYP_OFFSET_1 = 5;
+    const FTYP_OFFSET_2 = 6;
+    const FTYP_OFFSET_3 = 7;
+    const FTYP_BYTE_F = 0x66;
+    const FTYP_BYTE_T = 0x74;
+    const FTYP_BYTE_Y = 0x79;
+    const FTYP_BYTE_P = 0x70;
+    const BRAND_OFFSET_0 = 8;
+    const BRAND_OFFSET_1 = 9;
+    const BRAND_OFFSET_2 = 10;
+    const BRAND_OFFSET_3 = 11;
+
+    const slice = blob.slice(0, HEIC_HEADER_SLICE_BYTES);
     const buffer = await slice.arrayBuffer();
 
-    if (buffer.byteLength < 12) {
+    if (buffer.byteLength < HEIC_HEADER_MIN_BYTES) {
       return false;
     }
 
@@ -311,16 +327,16 @@ export async function isHeicBlob(blob: Blob): Promise<boolean> {
 
     // Box-Typ 'ftyp' bei Offset 4: 0x66 0x74 0x79 0x70
     if (
-      view.getUint8(4) === 0x66 &&
-      view.getUint8(5) === 0x74 &&
-      view.getUint8(6) === 0x79 &&
-      view.getUint8(7) === 0x70
+      view.getUint8(FTYP_OFFSET_0) === FTYP_BYTE_F &&
+      view.getUint8(FTYP_OFFSET_1) === FTYP_BYTE_T &&
+      view.getUint8(FTYP_OFFSET_2) === FTYP_BYTE_Y &&
+      view.getUint8(FTYP_OFFSET_3) === FTYP_BYTE_P
     ) {
       const brand = String.fromCharCode(
-        view.getUint8(8),
-        view.getUint8(9),
-        view.getUint8(10),
-        view.getUint8(11)
+        view.getUint8(BRAND_OFFSET_0),
+        view.getUint8(BRAND_OFFSET_1),
+        view.getUint8(BRAND_OFFSET_2),
+        view.getUint8(BRAND_OFFSET_3)
       ).toLowerCase();
       return ['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis', 'mif1', 'msf1'].includes(brand);
     }

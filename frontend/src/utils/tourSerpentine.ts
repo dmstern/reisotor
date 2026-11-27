@@ -190,6 +190,20 @@ export interface TourLoopPathResult {
  * Wählt dabei immer den kürzesten, unversperrten Weg zur Ziel-Karte (bspw. unterhalb der Hinweg-Kacheln
  * entlang direkt zum Ausgangs-Spot hoch), statt starr hinter Zwischenkarten zu verschwinden.
  */
+const SAME_AXIS_TOLERANCE_PX = 40;
+const BEZIER_TENSION_VERTICAL = 0.45;
+const DIAGONAL_THRESHOLD_PX = 20;
+const BEZIER_TENSION_HORIZONTAL = 0.55;
+const MIN_LOOP_DROP_Y_OFFSET_PX = 40;
+const SAME_ROW_OBSTACLE_BELOW_PX = 80;
+const SAME_ROW_DROP_MIN_PX = 30;
+const SAME_ROW_DROP_RATIO = 0.15;
+const OUTER_LOOP_MAX_OFFSET_PX = 80;
+const OUTER_LOOP_MIN_OFFSET_PX = 56;
+const OUTER_LOOP_HEIGHT_RATIO = 0.15;
+const OUTER_LOOP_MIN_CTRL_X_PX = 4;
+const OUTER_LOOP_CORNER_RADIUS_PX = 16;
+
 export function computeTourLoopPath(
   a: TourSpotBox,
   b: TourSpotBox,
@@ -198,8 +212,8 @@ export function computeTourLoopPath(
 ): TourLoopPathResult {
   const dots: { x: number; y: number }[] = [];
 
-  const isSameCol = Math.abs(a.cx - b.cx) < 40;
-  const isSameRow = Math.abs(a.cy - b.cy) < 40;
+  const isSameCol = Math.abs(a.cx - b.cx) < SAME_AXIS_TOLERANCE_PX;
+  const isSameRow = Math.abs(a.cy - b.cy) < SAME_AXIS_TOLERANCE_PX;
 
   // Fall 1: Gleiche Spalte und a liegt unter b (vertikal direkt nach oben)
   if (isSameCol && a.top > b.bottom) {
@@ -207,7 +221,7 @@ export function computeTourLoopPath(
       (box) =>
         box !== a &&
         box !== b &&
-        Math.abs(box.cx - a.cx) < 40 &&
+        Math.abs(box.cx - a.cx) < SAME_AXIS_TOLERANCE_PX &&
         box.bottom > b.bottom + 10 &&
         box.top < a.top - 10
     );
@@ -221,9 +235,9 @@ export function computeTourLoopPath(
       dots.push({ x: startX, y: startY });
       const dy = endY - startY;
       const cp1X = startX;
-      const cp1Y = startY + dy * 0.45;
+      const cp1Y = startY + dy * BEZIER_TENSION_VERTICAL;
       const cp2X = endX;
-      const cp2Y = endY - dy * 0.45;
+      const cp2Y = endY - dy * BEZIER_TENSION_VERTICAL;
       const pathData = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
       const _angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
       dots.push({ x: endX, y: endY });
@@ -233,7 +247,7 @@ export function computeTourLoopPath(
 
   // Fall 2: a liegt rechts unterhalb von b (a.cx > b.cx + 20 und a.cy > b.cy + 20)
   // Kürzester Weg: Links aus a heraus, unterhalb der Hinweg-Karten entlang und von unten an b
-  if (a.cx > b.cx + 20 && a.cy > b.cy + 20) {
+  if (a.cx > b.cx + DIAGONAL_THRESHOLD_PX && a.cy > b.cy + DIAGONAL_THRESHOLD_PX) {
     // Liegt ein Hindernis direkt unterhalb von b (in Spalte b) vor a.cy?
     const hasObstacleBelowB = allBoxes.some(
       (box) =>
@@ -266,10 +280,13 @@ export function computeTourLoopPath(
       const dy = startY - endY;
       // Der Pfad läuft horizontal unterhalb der Hinweg-Karten nach links bis zur Spalte von b
       // und biegt erst dort geschmeidig nach oben in b.bottom ein.
-      const cp1X = Math.max(endX + 60, startX - dx * 0.55);
+      const cp1X = Math.max(endX + 60, startX - dx * BEZIER_TENSION_HORIZONTAL);
       const cp1Y = startY;
       const cp2X = endX;
-      const cp2Y = Math.min(startY, endY + Math.max(40, dy * 0.45));
+      const cp2Y = Math.min(
+        startY,
+        endY + Math.max(MIN_LOOP_DROP_Y_OFFSET_PX, dy * BEZIER_TENSION_VERTICAL)
+      );
       const pathData = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
       const _angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
       dots.push({ x: endX, y: endY });
@@ -279,7 +296,7 @@ export function computeTourLoopPath(
 
   // Fall 3: a liegt links unterhalb von b (a.cx < b.cx - 20 und a.cy > b.cy + 20)
   // Rechts aus a heraus, unterhalb der Kacheln entlang und von unten an b
-  if (a.cx < b.cx - 20 && a.cy > b.cy + 20) {
+  if (a.cx < b.cx - DIAGONAL_THRESHOLD_PX && a.cy > b.cy + DIAGONAL_THRESHOLD_PX) {
     const hasObstacleBelowB = allBoxes.some(
       (box) =>
         box !== a &&
@@ -308,10 +325,13 @@ export function computeTourLoopPath(
 
       const dx = endX - startX;
       const dy = startY - endY;
-      const cp1X = Math.min(endX - 60, startX + dx * 0.55);
+      const cp1X = Math.min(endX - 60, startX + dx * BEZIER_TENSION_HORIZONTAL);
       const cp1Y = startY;
       const cp2X = endX;
-      const cp2Y = Math.min(startY, endY + Math.max(40, dy * 0.45));
+      const cp2Y = Math.min(
+        startY,
+        endY + Math.max(MIN_LOOP_DROP_Y_OFFSET_PX, dy * BEZIER_TENSION_VERTICAL)
+      );
       const pathData = ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
       const _angle = Math.atan2(endY - cp2Y, endX - cp2X) * (180 / Math.PI);
       dots.push({ x: endX, y: endY });
@@ -326,7 +346,7 @@ export function computeTourLoopPath(
         box !== a &&
         box !== b &&
         box.top >= Math.min(a.bottom, b.bottom) - 10 &&
-        box.top <= Math.max(a.bottom, b.bottom) + 80 &&
+        box.top <= Math.max(a.bottom, b.bottom) + SAME_ROW_OBSTACLE_BELOW_PX &&
         box.right > Math.min(a.x, b.x) &&
         box.x < Math.max(a.right, b.right)
     );
@@ -338,7 +358,8 @@ export function computeTourLoopPath(
       const endY = b.bottom;
       dots.push({ x: startX, y: startY });
       const dropY =
-        Math.max(a.bottom, b.bottom) + Math.min(60, Math.max(30, Math.abs(a.cx - b.cx) * 0.15));
+        Math.max(a.bottom, b.bottom) +
+        Math.min(60, Math.max(SAME_ROW_DROP_MIN_PX, Math.abs(a.cx - b.cx) * SAME_ROW_DROP_RATIO));
       const pathData = ` M ${startX} ${startY} C ${startX} ${dropY}, ${endX} ${dropY}, ${endX} ${endY}`;
       const _angle = Math.atan2(endY - dropY, endX - endX) * (180 / Math.PI);
       dots.push({ x: endX, y: endY });
@@ -349,7 +370,7 @@ export function computeTourLoopPath(
   // Fall 5: Außenbogen (Fallback, wenn Innenraum blockiert oder einspaltig)
   // Wenn b auf der linken Bildschirmhälfte oder mittig liegt (z.B. Start-Spot bei col 0 oder einspaltiges Layout),
   // stets über die linke Seite führen! Einspaltig = exakt mittig (0.5), daher kleiner-gleich mit leichtem Puffer.
-  const isCloserToLeft = b.cx <= wrapWidth * 0.5 + 20;
+  const isCloserToLeft = b.cx <= wrapWidth * 0.5 + DIAGONAL_THRESHOLD_PX;
 
   if (isCloserToLeft) {
     const startX = a.x;
@@ -360,12 +381,23 @@ export function computeTourLoopPath(
     dots.push({ x: startX, y: startY });
 
     // Abgerundete Knicke statt langgezogener Bezier-Kurve
-    const hOffset = Math.min(80, Math.max(56, Math.abs(endY - startY) * 0.15));
-    const ctrlX = Math.max(4, Math.min(a.x, b.x) - hOffset);
+    const hOffset = Math.min(
+      OUTER_LOOP_MAX_OFFSET_PX,
+      Math.max(OUTER_LOOP_MIN_OFFSET_PX, Math.abs(endY - startY) * OUTER_LOOP_HEIGHT_RATIO)
+    );
+    const ctrlX = Math.max(OUTER_LOOP_MIN_CTRL_X_PX, Math.min(a.x, b.x) - hOffset);
     const dirY = Math.sign(endY - startY) || 1;
 
-    const rStart = Math.min(16, Math.abs(startX - ctrlX), Math.abs(endY - startY) / 2);
-    const rEnd = Math.min(16, Math.abs(endX - ctrlX), Math.abs(endY - startY) / 2);
+    const rStart = Math.min(
+      OUTER_LOOP_CORNER_RADIUS_PX,
+      Math.abs(startX - ctrlX),
+      Math.abs(endY - startY) / 2
+    );
+    const rEnd = Math.min(
+      OUTER_LOOP_CORNER_RADIUS_PX,
+      Math.abs(endX - ctrlX),
+      Math.abs(endY - startY) / 2
+    );
 
     const pathData = ` M ${startX} ${startY} L ${ctrlX + rStart} ${startY} Q ${ctrlX} ${startY}, ${ctrlX} ${startY + dirY * rStart} L ${ctrlX} ${endY - dirY * rEnd} Q ${ctrlX} ${endY}, ${ctrlX + rEnd} ${endY} L ${endX} ${endY}`;
 
@@ -373,7 +405,7 @@ export function computeTourLoopPath(
     return { d: pathData, dots };
   }
 
-  const rightEdge = Math.max(wrapWidth, Math.max(a.right, b.right) + 20);
+  const rightEdge = Math.max(wrapWidth, Math.max(a.right, b.right) + DIAGONAL_THRESHOLD_PX);
   const startX = a.right;
   const startY = a.cy;
   const endX = b.right;
@@ -381,12 +413,23 @@ export function computeTourLoopPath(
 
   dots.push({ x: startX, y: startY });
 
-  const hOffset = Math.min(80, Math.max(56, Math.abs(endY - startY) * 0.15));
+  const hOffset = Math.min(
+    OUTER_LOOP_MAX_OFFSET_PX,
+    Math.max(OUTER_LOOP_MIN_OFFSET_PX, Math.abs(endY - startY) * OUTER_LOOP_HEIGHT_RATIO)
+  );
   const ctrlX = rightEdge + hOffset;
   const dirY = Math.sign(endY - startY) || 1;
 
-  const rStart = Math.min(16, Math.abs(startX - ctrlX), Math.abs(endY - startY) / 2);
-  const rEnd = Math.min(16, Math.abs(endX - ctrlX), Math.abs(endY - startY) / 2);
+  const rStart = Math.min(
+    OUTER_LOOP_CORNER_RADIUS_PX,
+    Math.abs(startX - ctrlX),
+    Math.abs(endY - startY) / 2
+  );
+  const rEnd = Math.min(
+    OUTER_LOOP_CORNER_RADIUS_PX,
+    Math.abs(endX - ctrlX),
+    Math.abs(endY - startY) / 2
+  );
 
   const pathData = ` M ${startX} ${startY} L ${ctrlX - rStart} ${startY} Q ${ctrlX} ${startY}, ${ctrlX} ${startY + dirY * rStart} L ${ctrlX} ${endY - dirY * rEnd} Q ${ctrlX} ${endY}, ${ctrlX - rEnd} ${endY} L ${endX} ${endY}`;
 

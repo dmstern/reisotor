@@ -64,7 +64,8 @@ function endDateTime(date: string, time: string, endTime?: string | null): Date 
     return new Date(`${date}T${endTime}:00`);
   }
 
-  return new Date(start.getTime() + DEFAULT_DURATION_MINUTES * 60000);
+  const MS_PER_MINUTE = 60000;
+  return new Date(start.getTime() + DEFAULT_DURATION_MINUTES * MS_PER_MINUTE);
 }
 
 function icsEscape(text: string): string {
@@ -76,7 +77,8 @@ function icsEscape(text: string): string {
 }
 
 function icsContent(event: CalendarEventInput): string {
-  const uid = `${dateStamp(event.date)}-${Math.random().toString(36).slice(2)}@reisotor`;
+  const UID_RADIX = 36;
+  const uid = `${dateStamp(event.date)}-${Math.random().toString(UID_RADIX).slice(2)}@reisotor`;
   const now = new Date();
   const dtstamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(
     now.getUTCHours()

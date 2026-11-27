@@ -92,7 +92,8 @@ export function interpolateTrackPosition(
 }
 
 export function formatDurationShort(ms: number): string {
-  const totalMinutes = Math.round(ms / 60_000);
+  const MS_PER_MINUTE = 60_000;
+  const totalMinutes = Math.round(ms / MS_PER_MINUTE);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
 
@@ -128,7 +129,8 @@ export function trackAverageSpeedKmh(distanceMeters: number, durationMs: number)
     return null;
   }
 
-  const speed = distanceMeters / 1000 / (durationMs / 3_600_000);
+  const MS_PER_HOUR = 3_600_000;
+  const speed = distanceMeters / 1000 / (durationMs / MS_PER_HOUR);
   return Number.isFinite(speed) && speed > 0 ? speed : null;
 }
 
@@ -183,8 +185,10 @@ export function trackElevation(
   const smoothed: number[] = new Array(count);
   smoothed[0] = validAlts[0];
 
+  const MOVING_AVG_WINDOW = 3;
+
   for (let i = 1; i < count - 1; i++) {
-    smoothed[i] = (validAlts[i - 1] + validAlts[i] + validAlts[i + 1]) / 3;
+    smoothed[i] = (validAlts[i - 1] + validAlts[i] + validAlts[i + 1]) / MOVING_AVG_WINDOW;
   }
 
   smoothed[count - 1] = validAlts[count - 1];

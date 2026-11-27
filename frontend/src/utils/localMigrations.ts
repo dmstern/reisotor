@@ -36,8 +36,10 @@ export function migrateOutboxEntry(entry: OutboxEntry): { changed: boolean; reas
   }
 
   // 2. Pfad-Normalisierung
+  const API_PREFIX = '/api';
+
   if (entry.path.startsWith('/api/')) {
-    entry.path = entry.path.slice(4);
+    entry.path = entry.path.slice(API_PREFIX.length);
     changed = true;
     reasons.push('Überflüssiges /api-Präfix im Pfad entfernt');
   }

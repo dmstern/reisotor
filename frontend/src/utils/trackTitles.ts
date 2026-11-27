@@ -1,5 +1,12 @@
 import type { LocationTrack } from '../api/types';
 
+const MORNING_START_HOUR = 5;
+const MIDDAY_START_HOUR = 11;
+const AFTERNOON_START_HOUR = 14;
+const EVENING_START_HOUR = 18;
+const NIGHT_START_HOUR = 22;
+const SATURDAY_WEEKDAY_INDEX = 6;
+
 const GERMAN_WEEKDAYS = [
   'Sonntag',
   'Montag',
@@ -25,10 +32,10 @@ export function formatFallbackTrackTitle(startedAt: string): string {
   const dayName = GERMAN_WEEKDAYS[dayIndex];
   const hour = startDate.getHours();
 
-  const isMorning = hour >= 5 && hour < 11;
-  const isMidday = hour >= 11 && hour < 14;
-  const isAfternoon = hour >= 14 && hour < 18;
-  const isEvening = hour >= 18 && hour < 22;
+  const isMorning = hour >= MORNING_START_HOUR && hour < MIDDAY_START_HOUR;
+  const isMidday = hour >= MIDDAY_START_HOUR && hour < AFTERNOON_START_HOUR;
+  const isAfternoon = hour >= AFTERNOON_START_HOUR && hour < EVENING_START_HOUR;
+  const isEvening = hour >= EVENING_START_HOUR && hour < NIGHT_START_HOUR;
 
   // Sonntag
   if (dayIndex === 0) {
@@ -52,7 +59,7 @@ export function formatFallbackTrackTitle(startedAt: string): string {
   }
 
   // Samstag
-  if (dayIndex === 6) {
+  if (dayIndex === SATURDAY_WEEKDAY_INDEX) {
     if (isMorning) {
       return 'Morgendliche Samstagsrunde';
     }

@@ -178,13 +178,19 @@ function loadShowHomeWeatherFullTrip(): boolean {
   return safeLocalStorageGet(SHOW_HOME_WEATHER_FULL_TRIP_KEY) === 'true';
 }
 
+const MAX_TOAST_TIMEOUT_SECONDS = 15;
+const MIN_GLASS_OPACITY = 20;
+const DEFAULT_GLASS_OPACITY = 42;
+const MAX_GLASS_BLUR = 30;
+const DEFAULT_GLASS_BLUR = 6;
+
 function loadToastTimeout(): number {
   const stored = safeLocalStorageGet(TOAST_TIMEOUT_KEY);
 
   if (stored !== null) {
     const parsed = parseInt(stored, 10);
 
-    if (!isNaN(parsed) && parsed >= 2 && parsed <= 15) {
+    if (!isNaN(parsed) && parsed >= 2 && parsed <= MAX_TOAST_TIMEOUT_SECONDS) {
       return parsed;
     }
   }
@@ -218,12 +224,12 @@ function loadGlassOpacity(): number {
   if (stored !== null) {
     const parsed = parseInt(stored, 10);
 
-    if (!isNaN(parsed) && parsed >= 20 && parsed <= 100) {
+    if (!isNaN(parsed) && parsed >= MIN_GLASS_OPACITY && parsed <= 100) {
       return parsed;
     }
   }
 
-  return 42;
+  return DEFAULT_GLASS_OPACITY;
 }
 
 function loadGlassBlur(): number {
@@ -242,12 +248,12 @@ function loadGlassBlur(): number {
   if (stored !== null) {
     const parsed = parseInt(stored, 10);
 
-    if (!isNaN(parsed) && parsed >= 0 && parsed <= 30) {
+    if (!isNaN(parsed) && parsed >= 0 && parsed <= MAX_GLASS_BLUR) {
       return parsed;
     }
   }
 
-  return 6;
+  return DEFAULT_GLASS_BLUR;
 }
 
 function loadPrimaryColor(): string {
@@ -481,7 +487,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
       if (
         typeof stored.toastTimeout === 'number' &&
         stored.toastTimeout >= 2 &&
-        stored.toastTimeout <= 15
+        stored.toastTimeout <= MAX_TOAST_TIMEOUT_SECONDS
       ) {
         toastTimeout.value = stored.toastTimeout;
       }
@@ -505,7 +511,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
       } else {
         if (
           typeof stored.glassOpacity === 'number' &&
-          stored.glassOpacity >= 20 &&
+          stored.glassOpacity >= MIN_GLASS_OPACITY &&
           stored.glassOpacity <= 100
         ) {
           glassOpacity.value = stored.glassOpacity;
@@ -514,7 +520,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
         if (
           typeof stored.glassBlur === 'number' &&
           stored.glassBlur >= 0 &&
-          stored.glassBlur <= 30
+          stored.glassBlur <= MAX_GLASS_BLUR
         ) {
           glassBlur.value = stored.glassBlur;
         }
