@@ -320,14 +320,31 @@ nicht nur im eingebetteten Grundzustand.
 
 ### Drei Form-Kategorien in Reisotor
 
-1. **Squircle-Superellipsen (`corner-shape: squircle`)**: Cards, (nicht-runde) Buttons, Inputs, Modals und Drawer/Schubladen nutzen `--radius-*-squircle` kombiniert mit `corner-shape: squircle;`.
-2. **Pillen & Vollrundung (`--radius-pill: 9999px`, Alias `--radius-full`)**: Ovale/langgestreckte Pillen für CategoryChips, Badges, TabBar-Indikatoren & SegmentedToggles sowie vollkommen runde Elemente (`aspect-ratio: 1/1` / echte Kreise wie Circle-Buttons, Avatare & FABs). Einheitlich `9999px` verwenden: `9999px` skaliert bei Rechtecken zur echten Pillen-Form (stadium shape) und bei Quadraten zum perfekten Kreis. `border-radius: 50%` niemals auf Badges oder asymmetrischen Elementen einsetzen, da 50% auf Rechtecken unschöne ovale Eier erzeugt.
+1. **Squircle-Superellipsen (`corner-shape: squircle`, ausschließlich ab ≥ 10px Radius)**: Große und mittlere Container/Flächen nutzen `--radius-*-squircle` kombiniert mit `corner-shape: squircle;` — konkret Cards (`Card.vue`), Modals (`Modal.vue`), Drawers (`Drawer.vue`), Sub-Boxen (`surface-sunken-box`), Popovers/Menüs (`PickerMenu.vue`, `Combobox.vue`, `NotificationInbox.vue`), `CheckboxCard` und `RadioCard`.
+2. **Klassisch runde Ecken (`corner-shape: round` / normaler Kreisbogen)**: Alle interaktiven Controls und kleinen Elemente (< 10px) nutzen klassische Kreisbögen ohne `corner-shape: squircle` — konkret Buttons (`Button.vue`), IconButtons, Inputs (`Input.vue`), Selects (`Select.vue`), Textareas (`Textarea.vue`), DropdownMenu-Trigger (`DropdownMenu.vue`), Menüpunkte (`DropdownMenuItem.vue`), Checkboxes (`Checkbox.vue`), `CopyButton`, `<code>` sowie kleine Mikro-Boxen.
+3. **Pillen & Vollrundung (`--radius-pill: 9999px`, Alias `--radius-full`)**: Ovale/langgestreckte Pillen für CategoryChips, Badges, TabBar-Indikatoren & SegmentedToggles sowie vollkommen runde Elemente (`aspect-ratio: 1/1` / echte Kreise wie Circle-Buttons, Avatare & FABs). Einheitlich `9999px` verwenden: `9999px` skaliert bei Rechtecken zur echten Pillen-Form (stadium shape) und bei Quadraten zum perfekten Kreis. `border-radius: 50%` niemals auf Badges oder asymmetrischen Elementen einsetzen, da 50% auf Rechtecken unschöne ovale Eier erzeugt.
 
 **Hero-/Overlay-Action-Buttons & Schatten-Elevation**: Banner-, Hero- und Card-Overlay-Buttons (z. B. der Bearbeiten-Button auf dem `TripBanner`) haben initial **keinen** Schatten (`box-shadow: none`). Sie liegen flach über dem Bild/Banner. Erst bei Hover-Interaktion (`:hover`) steigen sie visuell an und erhalten `box-shadow: var(--shadow-sm)`.
 
-**Cards, (nicht-runde) Buttons, Inputs, Modals und Drawer/Schubladen** bekommen stattdessen die
-"squircle"-Variante (iOS-artige Superellipsen-Rundung statt Kreisbogen) – dafür IMMER beide Teile
-zusammen auf derselben Regel setzen:
+### Verbindliche Radius-Skalen
+
+| Kategorie                | Token                                  | Basiswert | Squircle (`* 1.75`) | Verwendung                                                                            |
+| :----------------------- | :------------------------------------- | :-------- | :------------------ | :------------------------------------------------------------------------------------ |
+| **Flächen & Container**  | `--radius-2xs`                         | `4px`     | — (round)           | Mikro-Elemente, `<code>`, kleine Inline-Tags                                          |
+|                          | `--radius-xs`                          | `6px`     | — (round)           | Sehr kleine Flächen, Mini-Boxen, Checkboxes                                           |
+|                          | `--radius-sm` / `--radius-sm-squircle` | `10px`    | `17.5px`            | Sub-Boxen (`surface-sunken-box`), Inset-Container, kleine Popovers                    |
+|                          | `--radius-md` / `--radius-md-squircle` | `16px`    | `28px`              | Standard-Cards, Panels, Popover-/Dropdown-Menüs (`PickerMenu`), größere Content-Boxen |
+|                          | `--radius-lg` / `--radius-lg-squircle` | `22px`    | `38.5px`            | Drawers, Bottom-Sheets, große Panels                                                  |
+|                          | `--radius-xl` / `--radius-xl-squircle` | `28px`    | `49px`              | Modals, Page-Overlays, Hero-Container                                                 |
+|                          | `--radius-pill` / `--radius-full`      | `9999px`  | — (round)           | Pillen, Badges, Chips, Avatare, runde IconButtons                                     |
+| **Interaktive Controls** | `--control-radius-xs`                  | `6px`     | — (round)           | `xs`-Buttons (30px Höhe), `CopyButton`                                                |
+|                          | `--control-radius-sm`                  | `8px`     | — (round)           | `sm`-Buttons/-Inputs/-Selects (36px Höhe), Menüpunkte                                 |
+|                          | `--control-radius-md`                  | `10px`    | — (round)           | Standard-Buttons, Inputs, Selects, Textareas, Dropdown-Trigger (46px Höhe)            |
+|                          | `--control-radius-lg`                  | `12px`    | — (round)           | `lg`-Buttons/-Inputs/-Selects (52px Höhe)                                             |
+
+### Squircle-Paarung & Nested-Radius-Regel
+
+Für Squircle-Container **immer** beide Deklarationen zusammen setzen:
 
 ```css
 border-radius: var(--radius-md-squircle); /* nicht --radius-md! */
@@ -342,11 +359,13 @@ Squircle optisch genauso rund wirkt wie ein normaler Kreisbogen mit dem Basis-Ra
 Squircle-Unterstützung im Browser fallen `-squircle`-Variablen automatisch auf die Basiswerte
 zurück (normaler Kreisbogen, kein optischer Bruch).
 
-Häufigster Fehler: nur eine Hälfte des Paars setzen (z. B. `corner-shape: squircle` mit der
-Basis-Variable statt der `-squircle`-Variante, oder umgekehrt) – dann kompensiert nichts und die
-Rundung wirkt inkonsistent zu den übrigen Elementen. Bei einer PR-Selbstprüfung: jede neue
-`border-radius`-Deklaration an einer Card/einem Button/Input/Modal/Drawer sollte eine
-`-squircle`-Variable UND `corner-shape: squircle` auf derselben Regel haben.
+**Nested-Radius-Regel (`R_inner = max(R_outer - Padding, R_min)`):** Verschachtelte Elemente erhalten einen kleineren Innenradius als ihr umschließender Container, damit Ecken konzentrisch und harmonisch mitlaufen:
+
+- **Modal (`--radius-xl-squircle`, 28px) + `--space-xl` (24px) Padding** → innere Sub-Box (`surface-sunken-box`) nutzt `--radius-sm-squircle` (10px).
+- **Card (`--radius-md-squircle`, 16px) + `--space-lg` (16px) Padding** → inneres Control nutzt `--control-radius-xs`/`--control-radius-sm` (6px–8px) oder Sub-Box `--radius-sm-squircle` (10px).
+- **PickerMenu (`--radius-md-squircle`, 16px) + `--space-2` (8px) Padding** → Menüpunkte (`DropdownMenuItem`) nutzen `--control-radius-sm` (8px = 16px − 8px).
+
+Bei einer PR-Selbstprüfung: jede neue `border-radius`-Deklaration an einem Container ab ≥ 10px (Card, Modal, Drawer, Sub-Box, Popover/Menü) sollte eine `-squircle`-Variable UND `corner-shape: squircle` auf derselben Regel haben; interaktive Controls (`Button`, `Input`, `Select`, `Textarea`, `DropdownMenu`-Trigger, `Checkbox`) und kleine Elemente (`< 10px`) setzen dagegen klassisch runde Radien ohne `corner-shape: squircle`.
 
 ## Schatten
 
@@ -578,10 +597,9 @@ griffigen statt komplett flachen/plastikigen Flächen-Eindruck auf dem Track –
 Rausch-Muster ist der einzige bewusst "physische" Rest des Materials und bleibt unverändert, auch wenn
 die Schatten-Tiefe wie oben reduziert wird.
 
-Diese Pillen sind bewusst immer **voll rund** (`border-radius: 999px`, kein Squircle) statt der
-normalen Card/Button-Squircle-Regel – ein Segmented-Control ist konzeptionell näher an den anderen
-"vollständig runden" Elementen (Pillen/Chips, siehe Abschnitt "Eckenrundung") als an einer
-Card/einem Button.
+Diese Pillen sind bewusst immer **voll rund** (`border-radius: var(--radius-pill)`, kein Squircle) statt der
+Container-Squircle-Regel – ein Segmented-Control ist konzeptionell näher an den anderen
+"vollständig runden" Elementen (Pillen/Chips, siehe Abschnitt "Eckenrundung") als an einem Container.
 
 Aktuell nur auf `SegmentedToggle.vue` angewendet. Eine App-weite Ausweitung dieses weicheren
 Materials auf normale Buttons/Cards wäre eine größere Design-Entscheidung (siehe `AGENTS.md`,

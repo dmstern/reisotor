@@ -1044,8 +1044,7 @@ const isFeedbackActive = computed(() =>
   padding: var(--space-2) var(--space-3);
   min-block-size: 44px;
   cursor: pointer;
-  border-radius: var(--radius-sm-squircle) var(--radius-sm-squircle) 0 0;
-  corner-shape: squircle;
+  border-radius: var(--control-radius-sm) var(--control-radius-sm) 0 0;
   position: relative;
   white-space: nowrap;
   flex-shrink: 0;
@@ -1292,8 +1291,7 @@ const isFeedbackActive = computed(() =>
   background: color-mix(in srgb, var(--color-text) 8%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-text) 14%, transparent);
   padding: 0.1em 0.42em;
-  border-radius: var(--radius-xs-squircle);
-  corner-shape: squircle;
+  border-radius: var(--radius-2xs);
   color: var(--color-text);
   overflow-wrap: anywhere;
   word-break: break-word;

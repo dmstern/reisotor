@@ -335,15 +335,16 @@
   --color-calendar-appointment-tint: rgba(138, 138, 134, 0.1);
   --color-calendar-appointment-border: rgba(138, 138, 134, 0.35);
 
-  /* Etwas großzügiger als vorher (8/14/22) – Basiswerte, gelten unverändert für alles, was normal
-     rund bleibt (Pillen, echte Kreise wie EditButton/DeleteButton mit border-radius:50%, kleine
-     Chips/Badges, …). */
+  /* Einheitliche Container- & Flächen-Skala (Issue #823):
+     --radius-2xs / --radius-xs bleiben klassisch rund (Mikro-Elemente, <code>, kleine Boxen);
+     ab --radius-sm (10px) erhalten Container & Flächen die passende *-squircle-Variante.
+     Nested-Radius-Regel: R_inner = max(R_outer - Padding, R_min). */
+  --radius-2xs: 4px;
   --radius-xs: 6px;
   --radius-sm: 10px;
-  --radius-btn: 12px;
   --radius-md: 16px;
-  --radius-lg: 26px;
-  --radius-xl: 32px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
 
   /* Spezielle Radien-Tokens für Pillen (Chips/Badges/Toggles) und vollkommen runde Formen (Kreise/Avatare/FABs).
      Einheitlich 9999px (stadium shape) statt 50% nutzen: 9999px skaliert bei Rechtecken zur echten Pillen-Form
@@ -352,15 +353,11 @@
   --radius-pill: 9999px;
   --radius-full: var(--radius-pill);
 
-  /* Eigene "squircle"-Variante je Radius-Stufe: Default = identisch zum normalen Radius (Fallback
-     für Browser ohne corner-shape-Unterstützung, sieht dort wie ein gewöhnlicher Kreisbogen aus).
-     Nur Cards/Buttons/Inputs/Modal/Schubladen setzen zusätzlich corner-shape:squircle UND binden
-     ihren border-radius an diese -squircle-Variablen statt der Basiswerte – Elemente, die bewusst
-     komplett rund bleiben sollen (Kreis-Buttons, Pillen), verwenden weiterhin die Basiswerte direkt
-     und bleiben dadurch unangetastet. */
-  --radius-xs-squircle: var(--radius-xs);
+  /* Squircle-Varianten ausschließlich für Container & Flächen ab >= 10px Radius (Cards, Modals,
+     Drawers, Sub-Boxen, Popovers/Menüs, CheckboxCard/RadioCard). Default = identisch zum Basiswert
+     (Fallback für Browser ohne corner-shape-Unterstützung). Interaktive Controls und kleine Elemente
+     nutzen klassisch runde Ecken (--control-radius-* bzw. --radius-2xs/--radius-xs). */
   --radius-sm-squircle: var(--radius-sm);
-  --radius-btn-squircle: var(--radius-btn);
   --radius-md-squircle: var(--radius-md);
   --radius-lg-squircle: var(--radius-lg);
   --radius-xl-squircle: var(--radius-xl);
@@ -595,14 +592,10 @@
   --control-gap-xs: var(--space-xs);
   --control-gap-sm: var(--space-1-5);
   --control-gap-md: var(--space-sm);
-  --control-radius-xs: 6.5px;
+  --control-radius-xs: 6px;
   --control-radius-sm: 8px;
   --control-radius-md: 10px;
-  --control-radius-lg: 11.5px;
-  --control-radius-xs-squircle: var(--control-radius-xs);
-  --control-radius-sm-squircle: var(--control-radius-sm);
-  --control-radius-md-squircle: var(--control-radius-md);
-  --control-radius-lg-squircle: var(--control-radius-lg);
+  --control-radius-lg: 12px;
 
   /* Formularfeld-Abstände (Abstand zwischen Label-Kopfzeile und Eingabefeld) */
   --form-field-gap: 5px;
@@ -638,16 +631,10 @@
    Basiswerte (normaler Kreisbogen) bekommen statt einer zu starken Rundung ohne squircle-Effekt. */
 @supports (corner-shape: squircle) {
   :root {
-    --radius-xs-squircle: calc(var(--radius-xs) * 1.75);
     --radius-sm-squircle: calc(var(--radius-sm) * 1.75);
-    --radius-btn-squircle: calc(var(--radius-btn) * 1.75);
     --radius-md-squircle: calc(var(--radius-md) * 1.75);
     --radius-lg-squircle: calc(var(--radius-lg) * 1.75);
     --radius-xl-squircle: calc(var(--radius-xl) * 1.75);
-    --control-radius-xs-squircle: calc(var(--control-radius-xs) * 1.75);
-    --control-radius-sm-squircle: calc(var(--control-radius-sm) * 1.75);
-    --control-radius-md-squircle: calc(var(--control-radius-md) * 1.75);
-    --control-radius-lg-squircle: calc(var(--control-radius-lg) * 1.75);
   }
 }
 

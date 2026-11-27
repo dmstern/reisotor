@@ -148,6 +148,7 @@ defineExpose({
   padding: var(--space-1-5) 10px;
   min-height: var(--input-height-sm, 36px);
   font-size: var(--font-size-sm);
+  border-radius: var(--control-radius-sm);
 
   /* iOS/WebKit Auto-Zoom-Prävention: Auf Mobilgeräten & Touchscreens mindestens 16px (1rem) */
   @include media-down('desktop-sm') {
@@ -163,6 +164,7 @@ defineExpose({
   padding: var(--space-md) var(--space-lg);
   min-height: var(--input-height-lg, 52px);
   font-size: var(--font-size-md);
+  border-radius: var(--control-radius-lg);
 }
 
 /* Spezifische Handhabung für Datums-/Zeiteingaben (Chromium-Picker-Höhenausgleich & WebKit/iOS) */

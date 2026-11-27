@@ -15,27 +15,55 @@ export const ShadowsAndRadiiSystem: Story = {
         {
           var: '--radius-sm-squircle',
           px: '10px / 17.5px (Squircle)',
-          usage: 'Kompakte Controls, Chips, Badges & Inputs',
-        },
-        {
-          var: '--radius-btn-squircle',
-          px: '12px / 21px (Squircle)',
-          usage: 'Standard-Buttons (Button.vue)',
+          usage: 'Sub-Boxen (surface-sunken-box), Inset-Container & kleine Popovers',
         },
         {
           var: '--radius-md-squircle',
           px: '16px / 28px (Squircle)',
-          usage: 'Standard Cards, Panels & Modals',
+          usage: 'Standard-Cards, Panels, Popover- & Dropdown-Menüs (PickerMenu)',
         },
         {
           var: '--radius-lg-squircle',
-          px: '26px / 45.5px (Squircle)',
-          usage: 'Große Hero-Container & Fokus-Kacheln',
+          px: '22px / 38.5px (Squircle)',
+          usage: 'Drawers, Bottom-Sheets & große Panels',
         },
         {
           var: '--radius-xl-squircle',
-          px: '32px / 56px (Squircle)',
-          usage: 'Modal-Dialoge, Bottom-Sheets & Schubladen',
+          px: '28px / 49px (Squircle)',
+          usage: 'Modals, Page-Overlays & Hero-Container',
+        },
+      ];
+
+      const roundRadii = [
+        {
+          var: '--radius-2xs',
+          px: '4px',
+          usage: 'Mikro-Elemente, <code> & kleine Inline-Tags',
+        },
+        {
+          var: '--radius-xs',
+          px: '6px',
+          usage: 'Sehr kleine Flächen, Mini-Boxen & Checkboxes',
+        },
+        {
+          var: '--control-radius-xs',
+          px: '6px',
+          usage: 'Buttons (xs, 30px) & CopyButton',
+        },
+        {
+          var: '--control-radius-sm',
+          px: '8px',
+          usage: 'Controls (sm, 36px) & Menüpunkte (DropdownMenuItem)',
+        },
+        {
+          var: '--control-radius-md',
+          px: '10px',
+          usage: 'Standard-Controls (md, 46px): Buttons, Inputs, Selects, Dropdown-Trigger',
+        },
+        {
+          var: '--control-radius-lg',
+          px: '12px',
+          usage: 'Große Controls (lg, 52px): Buttons, Inputs & Selects',
         },
       ];
 
@@ -89,36 +117,76 @@ export const ShadowsAndRadiiSystem: Story = {
         },
       ];
 
-      return { squircleRadii, specialRadii, shadows };
+      return { squircleRadii, roundRadii, specialRadii, shadows };
     },
     template: `
       <div style="padding: 16px; font-family: var(--font-sans); max-width: 800px;">
         <h2 style="margin: 0 0 8px;">Eckenrundung & Weiches Material</h2>
         <p style="color: var(--color-text-muted); margin-bottom: 28px;">
-          Squircle-Superellipsen (<code>corner-shape: squircle</code>), Pillen-Formen, Kreise und Schattierungs-Tokens.
+          Differenzierte Radien-Hierarchie: Squircle-Superellipsen (<code>corner-shape: squircle</code>) für Container ab 10px, klassisch runde Ecken für Controls und kleine Elemente, Pillen/Kreise sowie Schattierungs-Tokens.
         </p>
 
         <!-- 1. Squircle Superellipsen -->
-        <h3 style="margin-bottom: 12px; border-bottom: 1px solid var(--color-border); padding-bottom: 4px;">1. Squircle-Superellipsen (corner-shape: squircle)</h3>
+        <h3 style="margin-bottom: 12px; border-bottom: 1px solid var(--color-border); padding-bottom: 4px;">1. Squircle-Superellipsen (Container ab ≥ 10px)</h3>
         <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 16px;">
-          Karten, Buttons, Inputs und Modals setzen <code>corner-shape: squircle</code> für sanft geschwungene Superellipsen-Ecken statt geometrischer Kreisbögen.
+          Cards, Modals, Drawers, Sub-Boxen und Menüs setzen <code>corner-shape: squircle</code> kombiniert mit <code>--radius-*-squircle</code> für sanft geschwungene Superellipsen-Ecken.
         </p>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 16px; margin-bottom: 36px;">
           <div
             v-for="r in squircleRadii"
             :key="r.var"
-            style="padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-surface); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; align-items: center; text-align: center;"
+            style="padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); corner-shape: squircle; background: var(--color-surface); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; align-items: center; text-align: center;"
           >
             <div
               :style="{ width: '64px', height: '64px', background: 'var(--color-primary-tint)', border: '2px solid var(--color-primary)', borderRadius: 'var(' + r.var + ')', cornerShape: 'squircle', marginBottom: '10px' }"
             ></div>
             <code style="font-size: 0.78rem; font-weight: bold; color: var(--color-primary-dark);">{{ r.var }}</code>
+            <span style="font-size: 0.72rem; color: var(--color-text-muted); margin-top: 2px;">{{ r.px }}</span>
             <span style="font-size: 0.72rem; color: var(--color-text-muted); margin-top: 4px;">{{ r.usage }}</span>
           </div>
         </div>
 
-        <!-- 2. Pillen & Kreise -->
-        <h3 style="margin-bottom: 12px; border-bottom: 1px solid var(--color-border); padding-bottom: 4px;">2. Pillen & Kreisrunde Elemente</h3>
+        <!-- 2. Klassisch runde Ecken (Controls & kleine Elemente) -->
+        <h3 style="margin-bottom: 12px; border-bottom: 1px solid var(--color-border); padding-bottom: 4px;">2. Klassisch runde Ecken (Controls & Mikro-Elemente)</h3>
+        <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 16px;">
+          Interaktive Controls (Buttons, Inputs, Selects, Menüpunkte) und kleine Elemente (&lt; 10px) nutzen klassische Kreisbögen ohne <code>corner-shape: squircle</code>.
+        </p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 16px; margin-bottom: 36px;">
+          <div
+            v-for="rr in roundRadii"
+            :key="rr.var"
+            style="padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); corner-shape: squircle; background: var(--color-surface); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; align-items: center; text-align: center;"
+          >
+            <div
+              :style="{ width: '64px', height: '40px', background: 'var(--color-hover)', border: '2px solid var(--color-border-strong)', borderRadius: 'var(' + rr.var + ')', marginBottom: '10px' }"
+            ></div>
+            <code style="font-size: 0.78rem; font-weight: bold; color: var(--color-primary-dark);">{{ rr.var }}</code>
+            <span style="font-size: 0.72rem; color: var(--color-text-muted); margin-top: 2px;">{{ rr.px }}</span>
+            <span style="font-size: 0.72rem; color: var(--color-text-muted); margin-top: 4px;">{{ rr.usage }}</span>
+          </div>
+        </div>
+
+        <!-- 3. Nested-Radius-Regel -->
+        <h3 style="margin-bottom: 12px; border-bottom: 1px solid var(--color-border); padding-bottom: 4px;">3. Nested-Radius-Regel (R_inner = max(R_outer − Padding, R_min))</h3>
+        <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 16px;">
+          Verschachtelte Boxen reduzieren den Radius entsprechend dem Innenabstand, damit Ecken konzentrisch mitlaufen (Beispiel: Modal 28px → Sub-Box 10px → Control 8px).
+        </p>
+        <div style="padding: var(--space-xl); border: 1.5px solid var(--color-border); border-radius: var(--radius-xl-squircle); corner-shape: squircle; background: var(--color-surface); box-shadow: var(--shadow-md); margin-bottom: 36px;">
+          <div style="font-size: 0.75rem; color: var(--color-text-muted); margin-bottom: 10px;">
+            Außen: <code>--radius-xl-squircle</code> (28px) + <code>--space-xl</code> (24px) Padding
+          </div>
+          <div style="padding: var(--space-md); border: 1px solid var(--color-border-divider); border-radius: var(--radius-sm-squircle); corner-shape: squircle; background: var(--color-surface-sunken);">
+            <div style="font-size: 0.75rem; color: var(--color-text-muted); margin-bottom: 10px;">
+              Sub-Box: <code>--radius-sm-squircle</code> (10px) + <code>--space-md</code> (12px) Padding
+            </div>
+            <div style="display: inline-flex; align-items: center; padding: 8px 14px; border: 1.5px solid var(--color-border-strong); border-radius: var(--control-radius-sm); background: var(--color-surface); font-size: 0.82rem; font-weight: 600;">
+              Control: <code>--control-radius-sm</code> (8px, round)
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Pillen & Kreise -->
+        <h3 style="margin-bottom: 12px; border-bottom: 1px solid var(--color-border); padding-bottom: 4px;">4. Pillen & Kreisrunde Elemente</h3>
         <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 16px;">
           Pillen und Kreise nutzen einheitlich 9999px Rundung (--radius-pill). Bei Quadraten (1:1) entsteht ein exakter Kreis, bei Rechtecken eine saubere Pille – ohne ovales Verziehen.
         </p>
@@ -126,7 +194,7 @@ export const ShadowsAndRadiiSystem: Story = {
           <div
             v-for="sr in specialRadii"
             :key="sr.var"
-            style="padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-surface); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; align-items: center; text-align: center;"
+            style="padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); corner-shape: squircle; background: var(--color-surface); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; align-items: center; text-align: center;"
           >
             <div
               v-if="sr.shape === 'pill'"
@@ -141,8 +209,8 @@ export const ShadowsAndRadiiSystem: Story = {
           </div>
         </div>
 
-        <!-- 3. Schatten & Soft Material -->
-        <h3 style="margin-bottom: 12px; border-bottom: 1px solid var(--color-border); padding-bottom: 4px;">3. Schatten & Weiches Material (Soft Rounded Material)</h3>
+        <!-- 5. Schatten & Soft Material -->
+        <h3 style="margin-bottom: 12px; border-bottom: 1px solid var(--color-border); padding-bottom: 4px;">5. Schatten & Weiches Material (Soft Rounded Material)</h3>
         <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 16px;">
           Vorschau-Kacheln mit weicher Material-Eckenrundung (Squircle oder Pillen-Radius).
         </p>

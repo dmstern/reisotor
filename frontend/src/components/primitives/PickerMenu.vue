@@ -208,8 +208,7 @@ onUnmounted(() => {
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-1-5) var(--space-sm);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--control-radius-sm);
   color: var(--color-text);
   font-family: inherit;
   font-size: var(--font-size-sm);

@@ -276,8 +276,7 @@ function formatCommentDate(dateStr?: string): string {
   min-height: 36px;
   aspect-ratio: 1 / 1;
   padding: 0;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--control-radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;

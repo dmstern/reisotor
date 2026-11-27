@@ -467,7 +467,7 @@ label:not(.checkbox-card) {
   font-weight: 400;
   color: var(--color-primary);
   cursor: pointer;
-  border-radius: var(--radius-xs-squircle);
+  border-radius: var(--radius-xs);
 }
 
 .upload-label:has(.hidden-input:focus-visible) {

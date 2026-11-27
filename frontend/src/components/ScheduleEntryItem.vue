@@ -172,8 +172,7 @@ const hasObjectJump = computed(() => jumpLabel.value !== undefined);
   justify-content: center;
   width: 26px;
   height: 26px;
-  border-radius: var(--radius-xs-squircle);
-  corner-shape: squircle;
+  border-radius: var(--radius-xs);
   background: color-mix(in srgb, var(--entry-cat-color) 12%, var(--color-surface));
   color: var(--entry-cat-color);
   flex-shrink: 0;
@@ -206,8 +205,7 @@ const hasObjectJump = computed(() => jumpLabel.value !== undefined);
   color: var(--color-primary-dark);
   background: var(--color-primary-tint);
   padding: var(--space-2xs) var(--space-1-5);
-  border-radius: var(--radius-xs-squircle);
-  corner-shape: squircle;
+  border-radius: var(--radius-xs);
   line-height: var(--line-height-tight);
   white-space: nowrap;
 }
@@ -266,8 +264,7 @@ const hasObjectJump = computed(() => jumpLabel.value !== undefined);
   justify-content: center;
   color: var(--color-text-muted);
   padding: var(--space-2xs);
-  border-radius: var(--radius-xs-squircle);
-  corner-shape: squircle;
+  border-radius: var(--radius-xs);
   transition:
     color var(--transition-fast),
     transform var(--transition-fast);

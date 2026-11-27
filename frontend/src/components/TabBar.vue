@@ -342,8 +342,7 @@ function onTabClick(key: string) {
   /* Bleibt als reiner Platzhalter (Farbe kommt von .tab-underline) - ohne das würde der Tab beim
      Wechsel 2px in der Höhe springen. */
   border-bottom: 2px solid transparent;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--control-radius-sm);
   /* Explizit zurückgesetzt statt sich auf style.css's globale button-Regel zu verlassen (#95 gab
      jedem <button> per Default einen Schatten) - ein flaches Tab-Item einer
      Tab-Unterstreichungs-Leiste braucht keinen, sonst wirkt jedes Item wie eine eigene erhobene

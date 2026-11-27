@@ -246,8 +246,7 @@ provide(
   font-family: inherit;
   font-weight: 600;
   line-height: var(--line-height-tight);
-  border-radius: var(--control-radius-md-squircle, 10px);
-  corner-shape: squircle;
+  border-radius: var(--control-radius-md, 10px);
   /* Verlauf bis unter den (transparenten) Rand ziehen, sonst kachelt er dort und zeigt unten einen hellen Streifen */
   background-origin: border-box;
   cursor: pointer;
@@ -676,7 +675,7 @@ a.btn.is-loading {
   padding: var(--space-xs) 10px;
   font-size: var(--font-size-xs);
   min-height: var(--control-height-xs, 30px);
-  border-radius: var(--control-radius-xs-squircle, 6.5px);
+  border-radius: var(--control-radius-xs, 6px);
   box-sizing: border-box;
 }
 
@@ -686,7 +685,7 @@ a.btn.is-loading {
   padding: var(--space-1-5) var(--space-md);
   font-size: var(--font-size-sm);
   min-height: var(--control-height-sm, 36px);
-  border-radius: var(--control-radius-sm-squircle, 8px);
+  border-radius: var(--control-radius-sm, 8px);
   box-sizing: border-box;
 }
 
@@ -695,7 +694,7 @@ a.btn.is-loading {
   padding: var(--space-md) 22px;
   font-size: var(--font-size-md);
   min-height: var(--control-height-lg, 52px);
-  border-radius: var(--control-radius-lg-squircle, 11.5px);
+  border-radius: var(--control-radius-lg, 12px);
   box-sizing: border-box;
 }
 

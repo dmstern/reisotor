@@ -178,7 +178,7 @@ const title = computed(() => {
   right: 6px;
   width: 16px;
   height: 16px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   background: #fef08a;
   box-shadow: 0 0 10px #fef08a;
   opacity: 0.85;

@@ -116,7 +116,7 @@ const displayDate = computed(() => {
   width: 66px;
   height: 64px;
   background: #ffffff;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   box-shadow:
     0 6px 14px rgba(0, 0, 0, 0.16),
     0 1px 3px rgba(0, 0, 0, 0.08);
@@ -222,7 +222,7 @@ const displayDate = computed(() => {
 .event-dot {
   width: 4px;
   height: 4px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   background: #3b82f6;
   flex-shrink: 0;
 }

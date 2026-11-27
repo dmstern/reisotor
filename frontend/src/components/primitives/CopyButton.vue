@@ -147,8 +147,7 @@ async function handleCopy(event: MouseEvent) {
   color: var(--color-text-muted);
   cursor: pointer;
   padding: 0;
-  border-radius: var(--radius-sm-squircle, 6px);
-  corner-shape: squircle;
+  border-radius: var(--control-radius-xs);
   box-sizing: border-box;
   flex-shrink: 0;
   vertical-align: middle;

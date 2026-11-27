@@ -179,7 +179,7 @@ onUnmounted(() => {
   background-image: var(--gradient-surface-3d);
   background-origin: border-box;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg-squircle);
+  border-radius: var(--radius-xl-squircle);
   corner-shape: squircle;
   box-shadow: var(--shadow-lg);
   max-width: 860px;

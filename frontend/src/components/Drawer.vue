@@ -450,13 +450,13 @@ onBeforeUnmount(() => {
 .drawer.left .drawer-panel {
   left: 0;
   transform: translateX(-100%);
-  border-radius: var(--radius-md-squircle);
+  border-radius: var(--radius-lg-squircle);
 }
 
 .drawer.right .drawer-panel {
   right: 0;
   transform: translateX(100%);
-  border-radius: var(--radius-md-squircle);
+  border-radius: var(--radius-lg-squircle);
 }
 
 .drawer.open .drawer-panel {
@@ -632,7 +632,7 @@ onBeforeUnmount(() => {
     box-shadow:
       inset 0 1px 0 var(--shadow-control-highlight),
       var(--shadow-md);
-    border-radius: var(--radius-md-squircle);
+    border-radius: var(--radius-lg-squircle);
     corner-shape: squircle;
     border: var(--border-width) solid var(--color-border);
     width: var(--drawer-width);
@@ -692,7 +692,7 @@ onBeforeUnmount(() => {
     height: auto;
     max-height: none;
     transform: none;
-    border-radius: var(--radius-md-squircle);
+    border-radius: var(--radius-lg-squircle);
     corner-shape: squircle;
     border: var(--border-width) solid var(--color-border);
     z-index: 16;

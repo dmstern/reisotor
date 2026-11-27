@@ -97,8 +97,7 @@ function onChange(event: Event) {
   margin: 0;
   padding: 0;
   border: 2px solid var(--color-border-strong);
-  border-radius: var(--radius-xs-squircle);
-  corner-shape: squircle;
+  border-radius: var(--radius-xs);
   background: var(--color-surface);
   box-shadow: var(--shadow-control-choice);
   cursor: pointer;

@@ -113,7 +113,7 @@ const previewDate = computed(() => {
   width: 108px;
   height: 70px;
   background: linear-gradient(135deg, #1e3a8a 0%, #1e293b 100%);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   padding: 3px;
   box-sizing: border-box;
   box-shadow:
@@ -147,7 +147,7 @@ const previewDate = computed(() => {
   height: 100%;
   display: flex;
   background: #fefce8;
-  border-radius: 4px;
+  border-radius: var(--radius-2xs);
   overflow: visible;
   box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.12);
 }
@@ -243,7 +243,7 @@ const previewDate = computed(() => {
   width: 32px;
   height: 32px;
   border: 1px dashed rgba(225, 29, 72, 0.6);
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -104,8 +104,7 @@ onMounted(async () => {
   right: max(var(--space-4), env(safe-area-inset-right, var(--space-4)));
   background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--control-radius-sm);
   box-shadow: var(--shadow-sm);
   z-index: 10;
 }

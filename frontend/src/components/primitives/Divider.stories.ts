@@ -59,7 +59,7 @@ export const SpacingVariants: Story = {
       <Card style="max-width: 460px;">
         <div v-for="s in spacings" :key="s" style="margin-bottom: var(--space-md);">
           <code style="font-size: var(--font-size-xs); color: var(--color-primary-dark);">spacing="{{ s }}"</code>
-          <div style="background: var(--color-hover); padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-xs-squircle); margin-top: var(--space-2xs);">
+          <div style="background: var(--color-hover); padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-xs); margin-top: var(--space-2xs);">
             <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Inhalt davor</span>
             <Divider :spacing="s" />
             <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Inhalt danach</span>

@@ -256,7 +256,7 @@ const percent = computed(() => {
   width: 62px;
   height: 48px;
   background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-  border-radius: 4px;
+  border-radius: var(--radius-2xs);
   box-shadow:
     0 4px 10px rgba(0, 0, 0, 0.18),
     0 1px 3px rgba(0, 0, 0, 0.1);
@@ -296,7 +296,7 @@ const percent = computed(() => {
 .bag-badge {
   width: 22px;
   height: 22px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   background: rgba(255, 255, 255, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.3);
   display: flex;
