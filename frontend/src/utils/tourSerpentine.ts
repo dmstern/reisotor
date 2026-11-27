@@ -203,6 +203,8 @@ const OUTER_LOOP_MIN_OFFSET_PX = 56;
 const OUTER_LOOP_HEIGHT_RATIO = 0.15;
 const OUTER_LOOP_MIN_CTRL_X_PX = 4;
 const OUTER_LOOP_CORNER_RADIUS_PX = 16;
+const LEFT_LOOP_CENTER_BUFFER_PX = 20;
+const OUTER_LOOP_RIGHT_EDGE_GAP_PX = 20;
 
 export function computeTourLoopPath(
   a: TourSpotBox,
@@ -370,7 +372,7 @@ export function computeTourLoopPath(
   // Fall 5: Außenbogen (Fallback, wenn Innenraum blockiert oder einspaltig)
   // Wenn b auf der linken Bildschirmhälfte oder mittig liegt (z.B. Start-Spot bei col 0 oder einspaltiges Layout),
   // stets über die linke Seite führen! Einspaltig = exakt mittig (0.5), daher kleiner-gleich mit leichtem Puffer.
-  const isCloserToLeft = b.cx <= wrapWidth * 0.5 + DIAGONAL_THRESHOLD_PX;
+  const isCloserToLeft = b.cx <= wrapWidth * 0.5 + LEFT_LOOP_CENTER_BUFFER_PX;
 
   if (isCloserToLeft) {
     const startX = a.x;
@@ -405,7 +407,7 @@ export function computeTourLoopPath(
     return { d: pathData, dots };
   }
 
-  const rightEdge = Math.max(wrapWidth, Math.max(a.right, b.right) + DIAGONAL_THRESHOLD_PX);
+  const rightEdge = Math.max(wrapWidth, Math.max(a.right, b.right) + OUTER_LOOP_RIGHT_EDGE_GAP_PX);
   const startX = a.right;
   const startY = a.cy;
   const endX = b.right;

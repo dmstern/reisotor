@@ -855,7 +855,7 @@ async function queryCommonsImages(query: string, options: QueryCommonsOptions): 
 
     const res = await fetch(url.toString(), {
       headers: WIKI_FETCH_HEADERS,
-      signal: AbortSignal.timeout(DUCKDUCKGO_API_TIMEOUT_MS),
+      signal: AbortSignal.timeout(WIKI_API_TIMEOUT_MS),
     });
 
     if (!res.ok) {
