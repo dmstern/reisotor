@@ -176,11 +176,17 @@ export function getAllAdminSettings(): AdminSettingsDto {
   const nominatimEnabled =
     getEffectiveSetting('nominatim_enabled', 'NOMINATIM_ENABLED', 'true') !== 'false';
 
-  const smtpPortRaw = Number(getEffectiveSetting('smtp_port', 'SMTP_PORT', '587'));
-  const smtpPort = Number.isFinite(smtpPortRaw) && smtpPortRaw > 0 ? smtpPortRaw : 587;
+  const DEFAULT_SMTP_PORT = 587;
+  const SMTPS_PORT = 465;
+  const smtpPortRaw = Number(
+    getEffectiveSetting('smtp_port', 'SMTP_PORT', String(DEFAULT_SMTP_PORT))
+  );
+  const smtpPort =
+    Number.isFinite(smtpPortRaw) && smtpPortRaw > 0 ? smtpPortRaw : DEFAULT_SMTP_PORT;
 
   const smtpSecure =
-    getEffectiveSetting('smtp_secure', 'SMTP_SECURE', 'false') === 'true' || smtpPort === 465;
+    getEffectiveSetting('smtp_secure', 'SMTP_SECURE', 'false') === 'true' ||
+    smtpPort === SMTPS_PORT;
 
   const feedbackRelayForwarding =
     getEffectiveSetting('feedback_relay_forwarding', 'FEEDBACK_RELAY_FORWARDING', 'true') !==

@@ -2,6 +2,11 @@ import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
 import { getEffectiveSetting } from '../instanceSettings.js';
 
+const SMTP_PORT_SUBMISSION = 587;
+const SMTP_PORT_SMTPS = 465;
+const SMTP_PORT_PLAIN = 25;
+const SMTP_PORT_ALT = 2525;
+
 let transporterInstance: Transporter | null = null;
 
 export function isEmailConfigured(): boolean {
@@ -42,15 +47,18 @@ function getTransporter(): Transporter | null {
 
   if (!transporterInstance) {
     const host = getEffectiveSetting('smtp_host', 'SMTP_HOST').trim();
-    const port = Number(getEffectiveSetting('smtp_port', 'SMTP_PORT', '587')) || 587;
+    const port =
+      Number(getEffectiveSetting('smtp_port', 'SMTP_PORT', String(SMTP_PORT_SUBMISSION))) ||
+      SMTP_PORT_SUBMISSION;
     const forceSecureSetting =
       getEffectiveSetting('smtp_secure', 'SMTP_SECURE', 'false') === 'true';
     // Port 465 nutzt direktes TLS/SSL (SMTPS / Implicit TLS).
     // Port 587, 25 und 2525 nutzen STARTTLS (Explicit TLS).
     // Wenn "TLS/SSL erzwingen" auf Port 587/25/2525 aktiviert ist, verlangen wir requireTLS: true,
     // erzwingen aber keinen direkten SSL-Handshake vor dem SMTP-Banner (verhindert Hänger).
-    const isExplicitTlsPort = port === 587 || port === 25 || port === 2525;
-    const secure = port === 465 || (forceSecureSetting && !isExplicitTlsPort);
+    const isExplicitTlsPort =
+      port === SMTP_PORT_SUBMISSION || port === SMTP_PORT_PLAIN || port === SMTP_PORT_ALT;
+    const secure = port === SMTP_PORT_SMTPS || (forceSecureSetting && !isExplicitTlsPort);
     const requireTLS = forceSecureSetting && !secure;
     const user = getEffectiveSetting('smtp_user', 'SMTP_USER').trim();
     const pass = getEffectiveSetting('smtp_pass', 'SMTP_PASS').trim();

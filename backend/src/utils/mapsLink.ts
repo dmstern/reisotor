@@ -58,6 +58,31 @@ const FETCH_HEADERS = {
 };
 const MAX_REDIRECT_HOPS = 5;
 
+const IPV4_LOOPBACK_FIRST = 127;
+const IPV4_LINK_LOCAL_FIRST = 169;
+const IPV4_LINK_LOCAL_SECOND = 254;
+const IPV4_PRIVATE_172_FIRST = 172;
+const IPV4_PRIVATE_172_MIN = 16;
+const IPV4_PRIVATE_172_MAX = 31;
+const IPV4_PRIVATE_192_FIRST = 192;
+const IPV4_PRIVATE_192_SECOND = 168;
+const IPV4_CGNAT_MIN = 64;
+const IPV4_CGNAT_MAX = 127;
+const IPV4_BENCHMARK_FIRST = 198;
+const IPV4_BENCHMARK_SECOND_A = 18;
+const IPV4_BENCHMARK_SECOND_B = 19;
+const IPV4_MULTICAST_MIN = 224;
+const IPV6_MAPPED_PREFIX_LEN = 7;
+const IPV4_OCTET_COUNT = 4;
+const IPV4_OCTET_MAX = 255;
+const HEX_RADIX = 16;
+const BYTE_SHIFT_BITS = 8;
+const BYTE_MASK = 0xff;
+const IP_VERSION_4 = 4;
+const IP_VERSION_6 = 6;
+const RESOLVE_TIMEOUT_MS = 5000;
+const HTTP_REDIRECT_MIN = 300;
+
 function isPrivateIpv4(a: number, b: number): boolean {
   if (a === 0) {
     return true;
@@ -67,31 +92,34 @@ function isPrivateIpv4(a: number, b: number): boolean {
     return true;
   } // 10.0.0.0/8 (privat)
 
-  if (a === 127) {
+  if (a === IPV4_LOOPBACK_FIRST) {
     return true;
   } // 127.0.0.0/8 (Loopback)
 
-  if (a === 169 && b === 254) {
+  if (a === IPV4_LINK_LOCAL_FIRST && b === IPV4_LINK_LOCAL_SECOND) {
     return true;
   } // 169.254.0.0/16 (Link-Local, Cloud-Metadaten)
 
-  if (a === 172 && b >= 16 && b <= 31) {
+  if (a === IPV4_PRIVATE_172_FIRST && b >= IPV4_PRIVATE_172_MIN && b <= IPV4_PRIVATE_172_MAX) {
     return true;
   } // 172.16.0.0/12 (privat)
 
-  if (a === 192 && b === 168) {
+  if (a === IPV4_PRIVATE_192_FIRST && b === IPV4_PRIVATE_192_SECOND) {
     return true;
   } // 192.168.0.0/16 (privat)
 
-  if (a === 100 && b >= 64 && b <= 127) {
+  if (a === 100 && b >= IPV4_CGNAT_MIN && b <= IPV4_CGNAT_MAX) {
     return true;
   } // 100.64.0.0/10 (Carrier-Grade NAT / Shared Space)
 
-  if (a === 198 && (b === 18 || b === 19)) {
+  if (
+    a === IPV4_BENCHMARK_FIRST &&
+    (b === IPV4_BENCHMARK_SECOND_A || b === IPV4_BENCHMARK_SECOND_B)
+  ) {
     return true;
   } // 198.18.0.0/15 (Benchmarking)
 
-  if (a >= 224) {
+  if (a >= IPV4_MULTICAST_MIN) {
     return true;
   } // 224.0.0.0/4 (Multicast), 240.0.0.0/4 (reserviert), 255.255.255.255 (Broadcast)
 
@@ -117,14 +145,14 @@ function isPrivateIpv6(hostname: string): boolean {
 
   // IPv4-mapped IPv6 (::ffff:x.x.x.x oder Hex-Format ::ffff:xxxx:xxxx)
   if (hostname.startsWith('::ffff:')) {
-    const rest = hostname.slice(7);
+    const rest = hostname.slice(IPV6_MAPPED_PREFIX_LEN);
 
     if (rest.includes('.')) {
       const parts = rest.split('.').map(Number);
 
       if (
-        parts.length === 4 &&
-        parts.every((part) => Number.isInteger(part) && part >= 0 && part <= 255)
+        parts.length === IPV4_OCTET_COUNT &&
+        parts.every((part) => Number.isInteger(part) && part >= 0 && part <= IPV4_OCTET_MAX)
       ) {
         return isPrivateIpv4(parts[0], parts[1]);
       }
@@ -135,11 +163,11 @@ function isPrivateIpv6(hostname: string): boolean {
     const hexParts = rest.split(':');
 
     if (hexParts.length === 2) {
-      const h1 = parseInt(hexParts[0], 16);
-      const h2 = parseInt(hexParts[1], 16);
+      const h1 = parseInt(hexParts[0], HEX_RADIX);
+      const h2 = parseInt(hexParts[1], HEX_RADIX);
 
       if (!Number.isNaN(h1) && !Number.isNaN(h2)) {
-        return isPrivateIpv4((h1 >> 8) & 0xff, h1 & 0xff);
+        return isPrivateIpv4((h1 >> BYTE_SHIFT_BITS) & BYTE_MASK, h1 & BYTE_MASK);
       }
     }
 
@@ -180,12 +208,12 @@ const BLOCKED_HOSTNAMES = new Set([
 export function isPrivateIp(ip: string): boolean {
   const type = isIP(ip);
 
-  if (type === 4) {
+  if (type === IP_VERSION_4) {
     const parts = ip.split('.').map(Number);
     return isPrivateIpv4(parts[0], parts[1]);
   }
 
-  if (type === 6) {
+  if (type === IP_VERSION_6) {
     return isPrivateIpv6(ip.toLowerCase());
   }
 
@@ -226,12 +254,12 @@ export function isSafeUrl(urlString: string): boolean {
 
   const ipType = isIP(hostname);
 
-  if (ipType === 4) {
+  if (ipType === IP_VERSION_4) {
     const parts = hostname.split('.').map(Number);
     return !isPrivateIpv4(parts[0], parts[1]);
   }
 
-  if (ipType === 6) {
+  if (ipType === IP_VERSION_6) {
     return !isPrivateIpv6(hostname);
   }
 
@@ -264,7 +292,7 @@ async function resolveViaRedirectHeaders(url: string): Promise<LatLng | null> {
     try {
       res = await fetch(current, {
         redirect: 'manual',
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(RESOLVE_TIMEOUT_MS),
         headers: FETCH_HEADERS,
       });
     } catch {
@@ -349,7 +377,7 @@ export async function resolveLatLng(url: string | null | undefined): Promise<Lat
   try {
     const res = await fetch(strippedUrl, {
       redirect: 'follow',
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(RESOLVE_TIMEOUT_MS),
       headers: FETCH_HEADERS,
     });
 
@@ -473,7 +501,7 @@ export async function fetchPlacePreview(url: string | null | undefined): Promise
     try {
       res = await fetch(current, {
         redirect: 'manual',
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(RESOLVE_TIMEOUT_MS),
         headers: FETCH_HEADERS,
       });
     } catch {
@@ -482,7 +510,7 @@ export async function fetchPlacePreview(url: string | null | undefined): Promise
 
     const location = res.headers?.get?.('location');
 
-    if (location && (res.status == null || (res.status >= 300 && res.status < 400))) {
+    if (location && (res.status == null || (res.status >= HTTP_REDIRECT_MIN && res.status < 400))) {
       try {
         current = new URL(location, current).toString();
       } catch {

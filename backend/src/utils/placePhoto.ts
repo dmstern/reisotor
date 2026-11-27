@@ -59,8 +59,9 @@ export function buildPhotoCacheKey(
     [city, category, isBanner = false] = rest;
   }
 
-  const latStr = lat != null && Number.isFinite(lat) ? lat.toFixed(3) : '';
-  const lngStr = lng != null && Number.isFinite(lng) ? lng.toFixed(3) : '';
+  const COORD_KEY_PRECISION = 3;
+  const latStr = lat != null && Number.isFinite(lat) ? lat.toFixed(COORD_KEY_PRECISION) : '';
+  const lngStr = lng != null && Number.isFinite(lng) ? lng.toFixed(COORD_KEY_PRECISION) : '';
   const cityStr = city?.trim().toLowerCase() || '';
   const categoryStr = category?.trim().toLowerCase() || '';
   return `${name.trim().toLowerCase()}|${latStr}|${lngStr}|${cityStr}|${categoryStr}|${isBanner ? 'banner' : 'spot'}`;
@@ -266,7 +267,13 @@ export function isTitleMatch(
     const parenText = parenMatch[1].trim();
     const cityLower = targetCity.trim().toLowerCase();
 
-    if (parenText.length > 3 && !parenText.includes(cityLower) && !cityLower.includes(parenText)) {
+    const MIN_CITY_PAREN_LENGTH = 3;
+
+    if (
+      parenText.length > MIN_CITY_PAREN_LENGTH &&
+      !parenText.includes(cityLower) &&
+      !cityLower.includes(parenText)
+    ) {
       return false;
     }
   }
@@ -351,6 +358,12 @@ interface WikiQueryResponse {
   };
 }
 
+const WIKI_API_TIMEOUT_MS = 4000;
+const BING_API_TIMEOUT_MS = 5000;
+const DUCKDUCKGO_API_TIMEOUT_MS = 4000;
+const BING_MIN_RESULT_COUNT = 20;
+const MIN_SEARCH_WORD_LENGTH = 3;
+
 const WIKI_FETCH_HEADERS = {
   'User-Agent': 'Reisotor/1.0 (https://github.com/dmstern/reisotor; travel planning app)',
   Accept: 'application/json',
@@ -368,7 +381,7 @@ async function queryWiki(lang: string, params: Record<string, string>): Promise<
   try {
     const res = await fetch(url.toString(), {
       headers: WIKI_FETCH_HEADERS,
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(WIKI_API_TIMEOUT_MS),
     });
 
     if (!res.ok) {
@@ -524,14 +537,14 @@ function buildNameWords(
     .toLowerCase()
     .replace(/[^a-z0-9äöüß]/gi, ' ')
     .split(/\s+/)
-    .filter((w) => w.length >= 3 && !stopWords.has(w));
+    .filter((w) => w.length >= MIN_SEARCH_WORD_LENGTH && !stopWords.has(w));
 
   if (nameWords.length === 0) {
     nameWords = rawName
       .toLowerCase()
       .replace(/[^a-z0-9äöüß]/gi, ' ')
       .split(/\s+/)
-      .filter((w) => w.length >= 3);
+      .filter((w) => w.length >= MIN_SEARCH_WORD_LENGTH);
   }
 
   return { nameWords, stopWords };
@@ -672,7 +685,7 @@ async function queryBingImages(
   // Primär den async AJAX-Endpunkt nutzen (saubere Bildkacheln ohne Decoy-Trends oder Werbe-Seiten)
   // Sekundär als Fallback die reguläre Suchseite (stellt auch Unit-Test-Mocks sicher)
   const candidateUrls = [
-    `https://www.bing.com/images/async?q=${encodeURIComponent(query)}&first=1&count=${Math.max(20, limit)}&scenario=ImageBasicHover&datsrc=N_I&layout=RowBased&mmasync=1&setmkt=de-DE&setlang=de`,
+    `https://www.bing.com/images/async?q=${encodeURIComponent(query)}&first=1&count=${Math.max(BING_MIN_RESULT_COUNT, limit)}&scenario=ImageBasicHover&datsrc=N_I&layout=RowBased&mmasync=1&setmkt=de-DE&setlang=de`,
     `https://www.bing.com/images/search?q=${encodeURIComponent(query)}&form=HDRSC2&setmkt=de-DE&setlang=de`,
   ];
 
@@ -680,7 +693,7 @@ async function queryBingImages(
     try {
       const res = await fetch(url, {
         headers: BING_FETCH_HEADERS,
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(BING_API_TIMEOUT_MS),
       });
 
       if (!res.ok || typeof res.text !== 'function') {
@@ -723,7 +736,7 @@ async function queryDuckDuckGoImages(
         Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'de-DE,de;q=0.9,en;q=0.8',
       },
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(DUCKDUCKGO_API_TIMEOUT_MS),
     });
 
     if (!pageRes.ok) {
@@ -747,7 +760,7 @@ async function queryDuckDuckGoImages(
         Referer: 'https://duckduckgo.com/',
         Accept: 'application/json',
       },
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(DUCKDUCKGO_API_TIMEOUT_MS),
     });
 
     if (!apiRes.ok) {
@@ -842,7 +855,7 @@ async function queryCommonsImages(query: string, options: QueryCommonsOptions): 
 
     const res = await fetch(url.toString(), {
       headers: WIKI_FETCH_HEADERS,
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(DUCKDUCKGO_API_TIMEOUT_MS),
     });
 
     if (!res.ok) {

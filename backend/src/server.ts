@@ -5,7 +5,8 @@ import { startWeatherSnapshotScheduler } from './weatherSnapshots.js';
 import { checkVersionNotification } from './push.js';
 import { getLegalConfig } from './routes/legal.js';
 
-const port = Number(process.env.PORT ?? 3000);
+const DEFAULT_PORT = 3000;
+const port = Number(process.env.PORT ?? DEFAULT_PORT);
 const app = await buildApp();
 
 const legalConfig = getLegalConfig();

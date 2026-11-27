@@ -67,7 +67,9 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(400).send({ error: 'Ungültige E-Mail-Adresse' });
       }
 
-      if (password.length < 6) {
+      const MIN_PASSWORD_LENGTH = 6;
+
+      if (password.length < MIN_PASSWORD_LENGTH) {
         return reply.code(400).send({ error: 'Passwort muss mindestens 6 Zeichen haben' });
       }
 
@@ -108,7 +110,8 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       const userId = result.lastInsertRowid as number;
 
       if (requireVerification) {
-        const rawToken = crypto.randomBytes(32).toString('hex');
+        const TOKEN_BYTES = 32;
+        const rawToken = crypto.randomBytes(TOKEN_BYTES).toString('hex');
         const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
@@ -132,7 +135,8 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
             ? 'Die Registrierung kann derzeit nicht abgeschlossen werden, da kein E-Mail-Server konfiguriert ist. Bitte wende dich an die Administration.'
             : 'Die Bestätigungs-E-Mail konnte nicht zugestellt werden. Bitte überprüfe deine E-Mail-Adresse oder wende dich an die Administration.';
 
-          return reply.code(503).send({
+          const HTTP_SERVICE_UNAVAILABLE = 503;
+          return reply.code(HTTP_SERVICE_UNAVAILABLE).send({
             error: errorMessage,
             noMailServer: !isEmailConfigured(),
           });
@@ -240,7 +244,8 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     if (user && !user.is_locked) {
       db.prepare('DELETE FROM password_reset_tokens WHERE user_id = ?').run(user.id);
 
-      const rawToken = crypto.randomBytes(32).toString('hex');
+      const TOKEN_BYTES = 32;
+      const rawToken = crypto.randomBytes(TOKEN_BYTES).toString('hex');
       const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
@@ -272,7 +277,9 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(400).send({ error: 'Token erforderlich' });
       }
 
-      if (!newPassword || newPassword.length < 6) {
+      const MIN_PASSWORD_LENGTH = 6;
+
+      if (!newPassword || newPassword.length < MIN_PASSWORD_LENGTH) {
         return reply.code(400).send({ error: 'Das neue Passwort muss mindestens 6 Zeichen haben' });
       }
 
@@ -431,13 +438,16 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
     const { name, email, username, message, type = 'registration_help' } = req.body ?? {};
 
-    if (!message || message.trim().length < 5) {
+    const MIN_CONTACT_MESSAGE_LENGTH = 5;
+    const MAX_CONTACT_MESSAGE_LENGTH = 2000;
+
+    if (!message || message.trim().length < MIN_CONTACT_MESSAGE_LENGTH) {
       return reply
         .code(400)
         .send({ error: 'Bitte gib eine aussagekräftige Nachricht ein (mind. 5 Zeichen).' });
     }
 
-    if (message.length > 2000) {
+    if (message.length > MAX_CONTACT_MESSAGE_LENGTH) {
       return reply.code(400).send({ error: 'Die Nachricht darf maximal 2000 Zeichen lang sein.' });
     }
 
@@ -465,28 +475,41 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       sameSite: 'lax',
     });
 
+    const MAX_CONTACT_REQUESTS_PER_HOUR = 3;
+    const HTTP_TOO_MANY_REQUESTS = 429;
+    const IP_HASH_LENGTH = 16;
+    const MAX_CONTACT_TYPE_LENGTH = 50;
+
     const cookieCheck = checkFeedbackRateLimit(
       `contact_admin:cookie:${contactToken}`,
-      3,
+      MAX_CONTACT_REQUESTS_PER_HOUR,
       60 * 60 * 1000
     );
-    const ipCheck = checkFeedbackRateLimit(`contact_admin:ip:${clientIp}`, 3, 60 * 60 * 1000);
+    const ipCheck = checkFeedbackRateLimit(
+      `contact_admin:ip:${clientIp}`,
+      MAX_CONTACT_REQUESTS_PER_HOUR,
+      60 * 60 * 1000
+    );
 
     if (!cookieCheck.allowed || !ipCheck.allowed) {
-      return reply.code(429).send({
+      return reply.code(HTTP_TOO_MANY_REQUESTS).send({
         error:
           'Zu viele Anfragen. Du kannst maximal 3 Nachrichten innerhalb einer Stunde senden. Bitte versuche es später erneut.',
       });
     }
 
-    const ipHash = crypto.createHash('sha256').update(clientIp).digest('hex').substring(0, 16);
+    const ipHash = crypto
+      .createHash('sha256')
+      .update(clientIp)
+      .digest('hex')
+      .substring(0, IP_HASH_LENGTH);
     const now = new Date().toISOString();
 
     db.prepare(
       `INSERT INTO admin_messages (type, name, email, username, message, status, ip_hash, created_at)
        VALUES (?, ?, ?, ?, ?, 'unread', ?, ?)`
     ).run(
-      type.substring(0, 50),
+      type.substring(0, MAX_CONTACT_TYPE_LENGTH),
       name?.trim().substring(0, 100) || null,
       email?.trim().substring(0, 200) || null,
       username?.trim().substring(0, 100) || null,

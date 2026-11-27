@@ -7,9 +7,18 @@ import { db } from '../db/index.js';
 import { uploadsDir } from '../uploads.js';
 import { isPrivateIp, isSafeUrl } from './mapsLink.js';
 
-export const MAX_REMOTE_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_REMOTE_IMAGE_MB = 5;
+export const MAX_REMOTE_IMAGE_BYTES = MAX_REMOTE_IMAGE_MB * 1024 * 1024;
 const MAX_REDIRECT_HOPS = 5;
 const FETCH_TIMEOUT_MS = 8000;
+const HTTP_REDIRECT_MIN = 300;
+const JPEG_SOI_MIN_BYTES = 3;
+const JPEG_MARKER_PREFIX = 0xff;
+const JPEG_SOI_SECOND_BYTE = 0xd8;
+const PNG_SIGNATURE = Buffer.from('89504e470d0a1a0a', 'hex');
+const WEBP_HEADER_MIN_BYTES = 12;
+const WEBP_RIFF_LENGTH = 4;
+const WEBP_TAG_OFFSET = 8;
 const UPLOAD_URL_PREFIX = '/api/uploads/';
 // Standard-Kartenvorschau (siehe tilePreviewUrl): bleibt bewusst extern, Thema von #540.
 const OSM_TILE_HOST = 'tile.openstreetmap.org';
@@ -27,21 +36,26 @@ export interface RemoteImage {
 
 /** Erkennt den Bildtyp an den Magic Bytes (Content-Type des Fremdservers wird nicht vertraut). */
 export function sniffImageType(buf: Buffer): { mimeType: string; extension: string } | null {
-  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) {
+  if (
+    buf.length >= JPEG_SOI_MIN_BYTES &&
+    buf[0] === JPEG_MARKER_PREFIX &&
+    buf[1] === JPEG_SOI_SECOND_BYTE &&
+    buf[2] === JPEG_MARKER_PREFIX
+  ) {
     return { mimeType: 'image/jpeg', extension: 'jpg' };
   }
 
   if (
-    buf.length >= 8 &&
-    buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+    buf.length >= PNG_SIGNATURE.length &&
+    buf.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)
   ) {
     return { mimeType: 'image/png', extension: 'png' };
   }
 
   if (
-    buf.length >= 12 &&
-    buf.subarray(0, 4).toString('ascii') === 'RIFF' &&
-    buf.subarray(8, 12).toString('ascii') === 'WEBP'
+    buf.length >= WEBP_HEADER_MIN_BYTES &&
+    buf.subarray(0, WEBP_RIFF_LENGTH).toString('ascii') === 'RIFF' &&
+    buf.subarray(WEBP_TAG_OFFSET, WEBP_HEADER_MIN_BYTES).toString('ascii') === 'WEBP'
   ) {
     return { mimeType: 'image/webp', extension: 'webp' };
   }
@@ -111,7 +125,7 @@ export async function downloadRemoteImage(url: string): Promise<RemoteImage | nu
       return null;
     }
 
-    if (res.status >= 300 && res.status < 400) {
+    if (res.status >= HTTP_REDIRECT_MIN && res.status < 400) {
       const location = res.headers.get('location');
 
       if (!location) {

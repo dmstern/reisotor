@@ -167,7 +167,9 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ error: 'Benutzername und Passwort erforderlich' });
     }
 
-    if (password.length < 6) {
+    const MIN_PASSWORD_LENGTH = 6;
+
+    if (password.length < MIN_PASSWORD_LENGTH) {
       return reply.code(400).send({ error: 'Passwort muss mindestens 6 Zeichen haben' });
     }
 
@@ -656,10 +658,15 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(404).send({ error: 'Nutzer nicht gefunden' });
       }
 
+      const TEMP_PASSWORD_BYTES = 4;
+      const MIN_PASSWORD_LENGTH = 6;
+      const TOKEN_BYTES = 32;
+      const SMTP_RACE_TIMEOUT_MS = 2500;
       const rawTempPassword =
-        req.body?.temporaryPassword?.trim() || `Reiso-${crypto.randomBytes(4).toString('hex')}`;
+        req.body?.temporaryPassword?.trim() ||
+        `Reiso-${crypto.randomBytes(TEMP_PASSWORD_BYTES).toString('hex')}`;
 
-      if (rawTempPassword.length < 6) {
+      if (rawTempPassword.length < MIN_PASSWORD_LENGTH) {
         return reply
           .code(400)
           .send({ error: 'Das temporäre Passwort muss mindestens 6 Zeichen haben' });
@@ -678,7 +685,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
 
       // Einmal-Reset-Link generieren (24h gültig)
       db.prepare('DELETE FROM password_reset_tokens WHERE user_id = ?').run(targetUserId);
-      const rawToken = crypto.randomBytes(32).toString('hex');
+      const rawToken = crypto.randomBytes(TOKEN_BYTES).toString('hex');
       const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
@@ -707,7 +714,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
             }>((resolve) =>
               setTimeout(
                 () => resolve({ success: false, actionUrl: resetUrl, error: 'SMTP Timeout' }),
-                2500
+                SMTP_RACE_TIMEOUT_MS
               )
             ),
           ]);
@@ -831,7 +838,9 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     }
 
     if (isEmailVerificationRequired()) {
-      const rawToken = crypto.randomBytes(32).toString('hex');
+      const TOKEN_BYTES = 32;
+      const HTTP_SERVICE_UNAVAILABLE = 503;
+      const rawToken = crypto.randomBytes(TOKEN_BYTES).toString('hex');
       const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
@@ -867,7 +876,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
         }
 
         db.prepare('DELETE FROM email_verification_tokens WHERE user_id = ?').run(currentUser.id);
-        return reply.code(503).send({
+        return reply.code(HTTP_SERVICE_UNAVAILABLE).send({
           error: `Die Bestätigungs-E-Mail konnte nicht gesendet werden${errorDetail}. Bitte überprüfe die SMTP-Einstellungen oder wende dich an die Administration.`,
         });
       }
@@ -925,7 +934,9 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ error: 'Keine E-Mail-Adresse zum Bestätigen hinterlegt' });
     }
 
-    const rawToken = crypto.randomBytes(32).toString('hex');
+    const TOKEN_BYTES = 32;
+    const HTTP_SERVICE_UNAVAILABLE = 503;
+    const rawToken = crypto.randomBytes(TOKEN_BYTES).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
@@ -943,7 +954,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
 
     if (!mailResult.success) {
       const errorDetail = mailResult.error ? ` (${mailResult.error})` : '';
-      return reply.code(503).send({
+      return reply.code(HTTP_SERVICE_UNAVAILABLE).send({
         error: `Die Bestätigungs-E-Mail konnte nicht erneut gesendet werden${errorDetail}. Bitte versuche es später erneut.`,
       });
     }
@@ -961,7 +972,9 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ error: 'Aktuelles und neues Passwort erforderlich' });
     }
 
-    if (newPassword.length < 6) {
+    const MIN_PASSWORD_LENGTH = 6;
+
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
       return reply.code(400).send({ error: 'Neues Passwort muss mindestens 6 Zeichen haben' });
     }
 

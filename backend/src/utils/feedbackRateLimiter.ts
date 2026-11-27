@@ -6,7 +6,8 @@ interface RateLimitEntry {
 const rateLimitMap = new Map<string, RateLimitEntry>();
 
 // Alle 6 Stunden veraltete Einträge bereinigen, um Memory Leaks zu vermeiden
-const CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const CLEANUP_INTERVAL_HOURS = 6;
+const CLEANUP_INTERVAL_MS = CLEANUP_INTERVAL_HOURS * 60 * 60 * 1000;
 let lastCleanup = Date.now();
 
 function cleanupExpired(now: number) {

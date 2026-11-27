@@ -53,8 +53,10 @@ function dateRange(startStr: string, endStr: string): string[] {
   return dates;
 }
 
-const FORECAST_CACHE_TTL_MS = 30 * 60 * 1000;
-const ARCHIVE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const FORECAST_CACHE_TTL_MINUTES = 30;
+const FORECAST_CACHE_TTL_MS = FORECAST_CACHE_TTL_MINUTES * 60 * 1000;
+const ARCHIVE_CACHE_TTL_HOURS = 6;
+const ARCHIVE_CACHE_TTL_MS = ARCHIVE_CACHE_TTL_HOURS * 60 * 60 * 1000;
 // Kürzer als das Frontend-Request-Timeout (6s / 8s), damit das Backend bei hängendem Open-Meteo
 // sauber abbricht statt dass der Browser-Fetch in einen AbortError läuft.
 const WEATHER_UPSTREAM_TIMEOUT_MS = 5000;
@@ -210,7 +212,8 @@ async function snapshotTripWeather(trip: TripRow, today: string) {
       return;
     }
 
-    const key = `${lat.toFixed(3)},${lng.toFixed(3)}`;
+    const COORD_KEY_PRECISION = 3;
+    const key = `${lat.toFixed(COORD_KEY_PRECISION)},${lng.toFixed(COORD_KEY_PRECISION)}`;
     let target = locationTargets.get(key);
 
     if (!target) {
@@ -411,7 +414,8 @@ export async function recordWeatherSnapshots() {
 }
 
 // Gleiche Kadenz wie departureReminders.ts - Tages-granulare Daten brauchen kein häufigeres Prüfen.
-const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const CHECK_INTERVAL_HOURS = 6;
+const CHECK_INTERVAL_MS = CHECK_INTERVAL_HOURS * 60 * 60 * 1000;
 
 export function startWeatherSnapshotScheduler() {
   recordWeatherSnapshots().catch((err) =>

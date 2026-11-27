@@ -128,7 +128,8 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
           ' (Tipp: Viele Cloud-Hoster wie Netcup oder Hetzner blockieren Port 587/465. Versuche Port 2525 oder prüfe die externe Firewall deines Hosters)';
       }
 
-      return reply.code(502).send({
+      const HTTP_BAD_GATEWAY = 502;
+      return reply.code(HTTP_BAD_GATEWAY).send({
         error: `Fehler beim Versenden der Test-E-Mail: ${errorDetail}`,
       });
     }

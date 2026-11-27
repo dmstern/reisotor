@@ -856,9 +856,13 @@ const BROWSER_UA =
 const PREVIEW_UA = 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)';
 
 const MAX_REDIRECT_HOPS = 5;
+const MAX_BOT_CHALLENGE_HTML_LENGTH = 80000;
+const FETCH_TIMEOUT_MS = 6000;
+const HTTP_REDIRECT_MIN = 300;
+const MIN_PRICE_CENTS_DIGITS = 3;
 
 function isBotChallenge(html: string): boolean {
-  if (!html || html.length > 80000) {
+  if (!html || html.length > MAX_BOT_CHALLENGE_HTML_LENGTH) {
     return false;
   }
 
@@ -895,7 +899,7 @@ async function fetchWithFollowRedirects(
     try {
       res = await fetch(current, {
         redirect: 'manual',
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
         headers,
       });
     } catch {
@@ -904,7 +908,7 @@ async function fetchWithFollowRedirects(
 
     const location = res.headers?.get?.('location');
 
-    if (location && (res.status == null || (res.status >= 300 && res.status < 400))) {
+    if (location && (res.status == null || (res.status >= HTTP_REDIRECT_MIN && res.status < 400))) {
       try {
         current = new URL(location, current).toString();
       } catch {
@@ -1021,7 +1025,7 @@ export async function fetchAccommodationPreview(
       const priParam = getParam('sr_pri_blocks');
       const priMatch = priParam ? /__(\d+)(?:$|&)/.exec(priParam) : null;
 
-      if (priMatch && priMatch[1].length >= 3) {
+      if (priMatch && priMatch[1].length >= MIN_PRICE_CENTS_DIGITS) {
         const cents = parseInt(priMatch[1], 10);
 
         if (!Number.isNaN(cents) && cents > 0) {

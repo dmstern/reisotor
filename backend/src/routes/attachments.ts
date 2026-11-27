@@ -87,7 +87,9 @@ const ALLOWED_MIME_TYPES: Record<string, string> = {
   'image/webp': 'webp',
   'application/pdf': 'pdf',
 };
-const MAX_ATTACHMENT_BYTES = 15 * 1024 * 1024;
+const MAX_ATTACHMENT_MB = 15;
+const MAX_ATTACHMENT_BYTES = MAX_ATTACHMENT_MB * 1024 * 1024;
+const HTTP_PAYLOAD_TOO_LARGE = 413;
 
 export const attachmentsRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { domain?: string; entity_id?: string; trip_id?: string } }>(
@@ -172,7 +174,7 @@ export const attachmentsRoutes: FastifyPluginAsync = async (app) => {
     const buffer = Buffer.from(base64, 'base64');
 
     if (buffer.byteLength > MAX_ATTACHMENT_BYTES) {
-      return reply.code(413).send({ error: 'Datei ist zu groß (max. 15 MB)' });
+      return reply.code(HTTP_PAYLOAD_TOO_LARGE).send({ error: 'Datei ist zu groß (max. 15 MB)' });
     }
 
     const storedFilename = `${randomUUID()}.${extension}`;

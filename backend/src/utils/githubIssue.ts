@@ -44,6 +44,8 @@ export const FEEDBACK_LABELS = {
 const DEFAULT_GITHUB_LABEL_COLOR = 'ededed';
 const HTTP_STATUS_NOT_FOUND = 404;
 const LABEL_SYNC_TIMEOUT_MS = 5_000;
+const GITHUB_API_TIMEOUT_MS = 10_000;
+const SCREENSHOT_UPLOAD_TIMEOUT_MS = 15_000;
 const syncedLabels = new Set<string>();
 
 import { getEffectiveSetting } from '../instanceSettings.js';
@@ -72,20 +74,20 @@ async function ensureScreenshotBranch(): Promise<{ ok: true } | { ok: false; err
   const repo = getGithubRepo();
   const refRes = await fetch(
     `https://api.github.com/repos/${repo}/git/ref/heads/${SCREENSHOT_BRANCH}`,
-    { headers: githubApiHeaders(), signal: AbortSignal.timeout(10_000) }
+    { headers: githubApiHeaders(), signal: AbortSignal.timeout(GITHUB_API_TIMEOUT_MS) }
   );
 
   if (refRes.ok) {
     return { ok: true };
   }
 
-  if (refRes.status !== 404) {
+  if (refRes.status !== HTTP_STATUS_NOT_FOUND) {
     return { ok: false, error: `GitHub-Branch-Abfrage fehlgeschlagen (Status ${refRes.status}).` };
   }
 
   const repoRes = await fetch(`https://api.github.com/repos/${repo}`, {
     headers: githubApiHeaders(),
-    signal: AbortSignal.timeout(10_000),
+    signal: AbortSignal.timeout(GITHUB_API_TIMEOUT_MS),
   });
 
   if (!repoRes.ok) {
@@ -96,7 +98,7 @@ async function ensureScreenshotBranch(): Promise<{ ok: true } | { ok: false; err
 
   const defaultRefRes = await fetch(
     `https://api.github.com/repos/${repo}/git/ref/heads/${defaultBranch}`,
-    { headers: githubApiHeaders(), signal: AbortSignal.timeout(10_000) }
+    { headers: githubApiHeaders(), signal: AbortSignal.timeout(GITHUB_API_TIMEOUT_MS) }
   );
 
   if (!defaultRefRes.ok) {
@@ -112,7 +114,7 @@ async function ensureScreenshotBranch(): Promise<{ ok: true } | { ok: false; err
     method: 'POST',
     headers: { ...githubApiHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ ref: `refs/heads/${SCREENSHOT_BRANCH}`, sha: object.sha }),
-    signal: AbortSignal.timeout(10_000),
+    signal: AbortSignal.timeout(GITHUB_API_TIMEOUT_MS),
   });
 
   // 422 = Branch wurde zwischenzeitlich von einer parallelen Anfrage angelegt - kein echter Fehler.
@@ -167,7 +169,7 @@ export async function uploadFeedbackScreenshot(
         content: buffer.toString('base64'),
         branch: SCREENSHOT_BRANCH,
       }),
-      signal: AbortSignal.timeout(15_000),
+      signal: AbortSignal.timeout(SCREENSHOT_UPLOAD_TIMEOUT_MS),
     });
   } catch {
     return { ok: false, error: 'Screenshot konnte nicht zu GitHub hochgeladen werden.' };
@@ -294,7 +296,7 @@ export async function createGithubIssue(input: CreateIssueInput): Promise<Create
         'User-Agent': 'reisotor-feedback',
       },
       body: JSON.stringify({ title: input.title, body: input.body, labels: uniqueLabels }),
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(GITHUB_API_TIMEOUT_MS),
     });
   } catch {
     return {

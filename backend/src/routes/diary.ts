@@ -220,7 +220,9 @@ const ALLOWED_IMAGE_TYPES: Record<string, string> = {
   'image/png': 'png',
   'image/webp': 'webp',
 };
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_MB = 5;
+const MAX_IMAGE_BYTES = MAX_IMAGE_MB * 1024 * 1024;
+const HTTP_PAYLOAD_TOO_LARGE = 413;
 
 function serializeEntry(
   row: EntryRow,
@@ -345,7 +347,9 @@ export const diaryRoutes: FastifyPluginAsync = async (app) => {
     const buffer = Buffer.from(base64, 'base64');
 
     if (buffer.byteLength > MAX_IMAGE_BYTES) {
-      return reply.code(413).send({ error: 'Bild ist zu groß (max. 5 MB nach Komprimierung)' });
+      return reply
+        .code(HTTP_PAYLOAD_TOO_LARGE)
+        .send({ error: 'Bild ist zu groß (max. 5 MB nach Komprimierung)' });
     }
 
     const filename = `${randomUUID()}.${extension}`;

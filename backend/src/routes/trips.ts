@@ -275,8 +275,9 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
     // Rundung statt exaktem Vergleich, damit ein unveränderter Ort (z.B. maps_link bleibt gleich,
     // resolveLatLng liefert aber minimal abweichende Nachkommastellen) nicht fälschlich als
     // Orts-Änderung gilt und unnötig einen Weather-Refresh auslöst.
+    const COORD_PRECISION_SCALE = 10000;
     const roundCoord = (v: number | null | undefined) =>
-      v == null ? null : Math.round(v * 10000) / 10000;
+      v == null ? null : Math.round(v * COORD_PRECISION_SCALE) / COORD_PRECISION_SCALE;
     const locationChanged =
       roundCoord(lat) !== roundCoord(existing.lat) || roundCoord(lng) !== roundCoord(existing.lng);
 
@@ -468,12 +469,16 @@ export const tripsRoutes: FastifyPluginAsync = async (app) => {
     const lat = rawLat != null && rawLat !== '' ? Number(rawLat) : NaN;
     const lng = rawLng != null && rawLng !== '' ? Number(rawLng) : NaN;
 
+    const MIN_LAT = -90;
+    const MAX_LAT = 90;
+    const MIN_LNG = -180;
+
     if (
       !Number.isFinite(lat) ||
       !Number.isFinite(lng) ||
-      lat < -90 ||
-      lat > 90 ||
-      lng < -180 ||
+      lat < MIN_LAT ||
+      lat > MAX_LAT ||
+      lng < MIN_LNG ||
       lng > 180
     ) {
       return reply.code(400).send({ error: 'Gültige Koordinaten (lat, lng) erforderlich' });

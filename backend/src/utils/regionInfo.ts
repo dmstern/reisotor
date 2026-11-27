@@ -1,3 +1,10 @@
+const REGION_API_TIMEOUT_MS = 5000;
+const BASE_CACHE_TTL_HOURS = 12;
+const AA_CACHE_TTL_HOURS = 6;
+const ADVISORY_SCORE_WARNING = 5.0;
+const ADVISORY_SCORE_PARTIAL_WARNING = 3.0;
+const ADVISORY_SCORE_SITUATION = 2.5;
+
 export interface CountryLocation {
   code: string;
   name: string;
@@ -26,7 +33,7 @@ export async function resolveCountry(lat: number, lng: number): Promise<CountryL
 
   try {
     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?${params}`, {
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(REGION_API_TIMEOUT_MS),
       headers: { 'User-Agent': 'Reisotor/1.0 (Reiseplanungs-App, privater Nutzer)' },
     });
 
@@ -88,13 +95,13 @@ interface CountryBaseInfo {
 // Server-seitiger In-Memory-Cache pro Ländercode & Heimatwährung – die externen Stammdaten ändern sich selten
 // (Sprache/Währung praktisch nie, Wechselkurs höchstens täglich), spart wiederholte Aufrufe bei
 // jedem Dashboard-Besuch.
-const BASE_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
+const BASE_CACHE_TTL_MS = BASE_CACHE_TTL_HOURS * 60 * 60 * 1000;
 const baseCache = new Map<string, { expiresAt: number; data: CountryBaseInfo }>();
 
 // 6-Stunden-Cache für die weltweite Reise- und Sicherheitshinweise-Liste des Auswärtigen Amts.
 // Wird unabhängig von den Länder-Stammdaten gecacht, damit Sicherheits-Updates nach 6h direkt
 // wirksam werden, ohne auf das 12h-Ablaufen der Länderdaten warten zu müssen.
-const AA_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const AA_CACHE_TTL_MS = AA_CACHE_TTL_HOURS * 60 * 60 * 1000;
 let aaCache: {
   expiresAt: number;
   data: Map<string, { score: number; message: string }>;
@@ -126,7 +133,7 @@ async function getAuswaertigesAmtAdvisories(): Promise<Map<
   aaFetchPromise = (async () => {
     try {
       const res = await fetch('https://www.auswaertiges-amt.de/opendata/travelwarning', {
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(REGION_API_TIMEOUT_MS),
         headers: {
           Accept: 'application/json',
           'User-Agent': 'Reisotor/1.0 (Reiseplanungs-App, privater Nutzer)',
@@ -151,13 +158,13 @@ async function getAuswaertigesAmtAdvisories(): Promise<Map<
           let message = 'Keine Reisewarnung';
 
           if (val.warning) {
-            score = 5.0;
+            score = ADVISORY_SCORE_WARNING;
             message = 'Reisewarnung';
           } else if (val.partialWarning) {
-            score = 3.0;
+            score = ADVISORY_SCORE_PARTIAL_WARNING;
             message = 'Teilreisewarnung';
           } else if (val.situationWarning || val.situationPartWarning) {
-            score = 2.5;
+            score = ADVISORY_SCORE_SITUATION;
             message = 'Lagebedingter Sicherheitshinweis';
           }
 
@@ -193,7 +200,7 @@ async function getCountryBaseInfo(
 
   try {
     const res = await fetch(`https://restcountries.com/v3.1/alpha/${normalizedCountryCode}`, {
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(REGION_API_TIMEOUT_MS),
     });
 
     if (res.ok) {
@@ -214,7 +221,7 @@ async function getCountryBaseInfo(
   if (currency && homeCurrency && currency.code !== homeCurrency) {
     try {
       const res = await fetch(`https://open.er-api.com/v6/latest/${currency.code}`, {
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(REGION_API_TIMEOUT_MS),
       });
 
       if (res.ok) {

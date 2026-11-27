@@ -346,7 +346,9 @@ export function parseArgs(rawArgs) {
   }
 
   if (cooldownDays === null) {
-    cooldownDays = mode === 'update' ? 7 : 3;
+    const UPDATE_COOLDOWN_DAYS = 7;
+    const DEFAULT_COOLDOWN_DAYS = 3;
+    cooldownDays = mode === 'update' ? UPDATE_COOLDOWN_DAYS : DEFAULT_COOLDOWN_DAYS;
   }
 
   return { mode, cooldownDays, summaryFile, strictAll };
