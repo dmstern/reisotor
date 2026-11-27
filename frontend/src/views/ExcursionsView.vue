@@ -1532,7 +1532,7 @@ onUnmounted(() => {
               >
                 <Button
                   variant="ghost"
-                  size="xs"
+                  size="sm"
                   shape="squircle"
                   :icon="ACTION_ICONS.arrowLeft"
                   class="tour-detail-back-btn"
@@ -1622,7 +1622,7 @@ onUnmounted(() => {
             <IconButton
               v-if="sheetState !== 'collapsed' && sheetState !== 'full' && canShowSearch"
               variant="ghost"
-              size="sm"
+              size="md"
               :active="activeSearchAndFilterCount > 0"
               :icon="ACTION_ICONS.search"
               :badge="activeSearchAndFilterCount > 0 ? activeSearchAndFilterCount : undefined"
@@ -1659,7 +1659,7 @@ onUnmounted(() => {
             <div class="sheet-stepper">
               <IconButton
                 variant="ghost"
-                size="sm"
+                size="md"
                 class="sheet-step-btn"
                 :disabled="!canCollapseSheet"
                 :icon="ACTION_ICONS.foldDown"
@@ -1669,7 +1669,7 @@ onUnmounted(() => {
               />
               <IconButton
                 variant="ghost"
-                size="sm"
+                size="md"
                 class="sheet-step-btn"
                 :disabled="!canExpandSheet"
                 :icon="ACTION_ICONS.foldUp"
@@ -1953,7 +1953,7 @@ onUnmounted(() => {
                 <div v-if="!isSheetOverlayMode" class="tour-detail-back-bar">
                   <Button
                     variant="ghost"
-                    size="xs"
+                    size="sm"
                     shape="squircle"
                     :icon="ACTION_ICONS.arrowLeft"
                     class="tour-detail-back-btn"

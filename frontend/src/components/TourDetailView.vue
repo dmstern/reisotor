@@ -134,7 +134,7 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
           </div>
 
           <EditButton
-            size="sm"
+            size="md"
             shape="squircle"
             variant="ghost"
             class="tour-edit-btn"
@@ -183,12 +183,12 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
           <Button
             v-if="weatherSummary"
             variant="ghost"
-            size="sm"
+            size="xs"
             :title="`${weatherLabel} (${weatherSummary.tempLabel}) – Tagesverlauf anzeigen`"
             :aria-label="`Wetter: ${weatherLabel}, ${weatherSummary.tempLabel} – Tagesverlauf anzeigen`"
             @click="openWeatherDialog"
           >
-            <WeatherIcon :code="weatherSummary.weatherCode" :size="22" aria-hidden="true" />
+            <WeatherIcon :code="weatherSummary.weatherCode" :size="16" aria-hidden="true" />
             <span>{{ weatherSummary.tempLabel }}</span>
           </Button>
         </div>
@@ -219,7 +219,7 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
 
       <div class="tour-detail-header-controls">
         <div class="tour-detail-status">
-          <ExcursionDoneStatus :excursion="excursion" :expanded="true" />
+          <ExcursionDoneStatus :excursion="excursion" :expanded="true" size="xs" />
         </div>
 
         <SocialRow

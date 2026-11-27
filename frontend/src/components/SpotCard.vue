@@ -200,7 +200,7 @@ const isMapFocused = computed(() => drawers.mapFocusKey === `spot-${props.spot.i
 
         <div class="card-header-actions">
           <EditButton
-            size="sm"
+            size="md"
             shape="squircle"
             :variant="expanded ? 'overlay' : 'ghost'"
             class="spot-edit-btn"
