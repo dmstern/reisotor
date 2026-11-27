@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, useId } from 'vue';
 import type { Excursion, Spot, TravelItem } from '../api/types';
 import { useDiaryStore } from '../stores/diary';
+import { useExcursionsStore } from '../stores/excursions';
+import { useDrawersStore } from '../stores/drawers';
 import { useExcursionStations } from '../composables/useExcursionStations';
 import { useExcursionWeather } from '../composables/useExcursionWeather';
 import EditButton from './EditButton.vue';
@@ -12,7 +14,7 @@ import SocialRow from './SocialRow.vue';
 import Accordion from './primitives/Accordion.vue';
 import FileAttachments from './FileAttachments.vue';
 import TourRoleBadge from './TourRoleBadge.vue';
-import ExcursionDoneStatus from './ExcursionDoneStatus.vue';
+import ToggleSwitch from './primitives/ToggleSwitch.vue';
 import ExcursionMapLinks from './ExcursionMapLinks.vue';
 import LinkedDiaryPills from './LinkedDiaryPills.vue';
 import Button from './primitives/Button.vue';
@@ -23,6 +25,7 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { summarizeTourLegsByTransport } from '../utils/travelDuration';
 import { travelTypeIconDef } from '../utils/travelTypeIcon';
 import { weatherCodeMeta } from '../utils/weather';
+import { formatDate as formatDateShared } from '../utils/dateFormat';
 
 const props = withDefaults(
   defineProps<{
@@ -52,7 +55,32 @@ const emit = defineEmits<{
 }>();
 
 const diaryStore = useDiaryStore();
+const excursionsStore = useExcursionsStore();
+const drawers = useDrawersStore();
+const doneToggleId = useId();
 const showComments = ref(false);
+
+const pendingDone = ref<boolean | null>(null);
+const isDone = computed(() => pendingDone.value ?? Boolean(props.excursion.done));
+let doneQueueTail = Promise.resolve();
+
+/** Serialisiert schnelle Toggle-Klicks, damit ältere API-Antworten keinen neueren Status überschreiben. */
+function onToggleDone(nextDone: boolean) {
+  const excursionId = props.excursion.id;
+  pendingDone.value = nextDone;
+  doneQueueTail = doneQueueTail
+    .then(async () => {
+      await excursionsStore.setDone(excursionId, nextDone);
+    })
+    .catch(() => {
+      // Fehlerbehandlung erfolgt im Store/API-Layer; State fällt im finally auf props.excursion.done zurück.
+    })
+    .finally(() => {
+      if (pendingDone.value === nextDone) {
+        pendingDone.value = null;
+      }
+    });
+}
 
 const linkedDiaryEntries = computed(() =>
   diaryStore.entries.filter(
@@ -101,10 +129,24 @@ const timeLabel = computed(() => {
   return null;
 });
 
+const plannedDateLabel = computed(() =>
+  props.excursion.date ? formatDateShared(props.excursion.date, { includeYear: false }) : ''
+);
+
+function openPlannedDateInCalendar() {
+  if (!props.excursion.date) {
+    return;
+  }
+
+  drawers.openCalendar(props.excursion.date);
+}
+
 const hasTimeOrDuration = computed(() => Boolean(timeLabel.value || travelDuration.value));
 
 const hasMeta = computed(() =>
-  Boolean(props.creatorLabel || hasTimeOrDuration.value || weatherSummary.value)
+  Boolean(
+    props.creatorLabel || hasTimeOrDuration.value || props.excursion.date || weatherSummary.value
+  )
 );
 
 const weatherLabel = computed(() =>
@@ -180,17 +222,46 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
             </span>
           </div>
 
-          <Button
-            v-if="weatherSummary"
-            variant="ghost"
-            size="xs"
-            :title="`${weatherLabel} (${weatherSummary.tempLabel}) – Tagesverlauf anzeigen`"
-            :aria-label="`Wetter: ${weatherLabel}, ${weatherSummary.tempLabel} – Tagesverlauf anzeigen`"
-            @click="openWeatherDialog"
-          >
-            <WeatherIcon :code="weatherSummary.weatherCode" :size="16" aria-hidden="true" />
-            <span>{{ weatherSummary.tempLabel }}</span>
-          </Button>
+          <div v-if="plannedDateLabel || weatherSummary" class="tour-detail-date-weather">
+            <Button
+              v-if="plannedDateLabel"
+              variant="ghost"
+              size="xs"
+              class="tour-detail-date-btn"
+              title="Diesen Tag im Kalender öffnen"
+              :aria-label="`${formatDateShared(excursion.date!)} im Kalender öffnen`"
+              @click="openPlannedDateInCalendar"
+            >
+              <AppIcon
+                :icon="FORM_FIELD_ICONS.date"
+                :size="13"
+                group="formFields"
+                aria-hidden="true"
+              />
+              <span>{{ plannedDateLabel }}</span>
+            </Button>
+
+            <span
+              v-if="plannedDateLabel && weatherSummary"
+              class="tour-detail-meta-sep"
+              aria-hidden="true"
+            >
+              ·
+            </span>
+
+            <Button
+              v-if="weatherSummary"
+              variant="ghost"
+              size="xs"
+              class="tour-detail-weather-btn"
+              :title="`${weatherLabel} (${weatherSummary.tempLabel}) – Tagesverlauf anzeigen`"
+              :aria-label="`Wetter: ${weatherLabel}, ${weatherSummary.tempLabel} – Tagesverlauf anzeigen`"
+              @click="openWeatherDialog"
+            >
+              <WeatherIcon :code="weatherSummary.weatherCode" :size="16" aria-hidden="true" />
+              <span>{{ weatherSummary.tempLabel }}</span>
+            </Button>
+          </div>
         </div>
 
         <div
@@ -219,7 +290,16 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
 
       <div class="tour-detail-header-controls">
         <div class="tour-detail-status">
-          <ExcursionDoneStatus :excursion="excursion" :expanded="true" size="xs" />
+          <ToggleSwitch
+            :id="doneToggleId"
+            size="sm"
+            :model-value="isDone"
+            :aria-label="isDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
+            :title="isDone ? 'Als nicht gemacht markieren' : 'Als gemacht markieren'"
+            @update:model-value="onToggleDone"
+          />
+          <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+          <label :for="doneToggleId" class="tour-detail-done-label">Gemacht</label>
         </div>
 
         <SocialRow
@@ -403,6 +483,27 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
   flex-shrink: 0;
 }
 
+.tour-detail-date-weather {
+  display: inline-flex;
+  align-items: safe center;
+  gap: var(--space-2xs);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.tour-detail-date-weather :deep(.tour-detail-date-btn),
+.tour-detail-date-weather :deep(.tour-detail-weather-btn) {
+  padding-inline: var(--space-1-5);
+}
+
+.tour-detail-date-weather :deep(.tour-detail-date-btn) {
+  color: var(--color-text-muted);
+}
+
+.tour-detail-date-weather :deep(.tour-detail-date-btn:hover) {
+  color: var(--color-text);
+}
+
 .tour-detail-time,
 .tour-detail-duration {
   display: inline-flex;
@@ -456,8 +557,16 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-sm);
   min-width: 0;
+}
+
+.tour-detail-done-label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text);
+  cursor: pointer;
+  user-select: none;
 }
 
 .tour-detail-comments-accordion {
