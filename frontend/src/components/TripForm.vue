@@ -99,7 +99,10 @@ function areCoordsEqual(
     return false;
   }
 
-  return Math.abs(a.lat - b.lat) < 1e-6 && Math.abs(a.lng - b.lng) < 1e-6;
+  const COORD_EQUAL_EPSILON = 1e-6;
+  return (
+    Math.abs(a.lat - b.lat) < COORD_EQUAL_EPSILON && Math.abs(a.lng - b.lng) < COORD_EQUAL_EPSILON
+  );
 }
 
 const isLocationModified = computed(() => {

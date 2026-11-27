@@ -55,10 +55,12 @@ watch(
   { immediate: true }
 );
 
+const SECONDS_PER_HOUR = 3600;
+
 const elapsedLabel = computed(() => {
   const totalSeconds = Math.floor(elapsedMs.value / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const hours = Math.floor(totalSeconds / SECONDS_PER_HOUR);
+  const minutes = Math.floor((totalSeconds % SECONDS_PER_HOUR) / 60);
   const seconds = totalSeconds % 60;
   const pad = (num: number) => String(num).padStart(2, '0');
   return hours > 0 ? `${hours}:${pad(minutes)}:${pad(seconds)}` : `${pad(minutes)}:${pad(seconds)}`;

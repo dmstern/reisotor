@@ -37,16 +37,21 @@ const { showToast } = useToast();
 const copied = ref(false);
 let resetTimeout: ReturnType<typeof setTimeout> | null = null;
 
+const ICON_SIZE_LG = 18;
+const ICON_SIZE_MD = 16;
+const ICON_SIZE_SM = 14;
+const COPY_RESET_DELAY_MS = 2000;
+
 const iconSize = computed(() => {
   if (props.size === 'lg') {
-    return 18;
+    return ICON_SIZE_LG;
   }
 
   if (props.size === 'md') {
-    return 16;
+    return ICON_SIZE_MD;
   }
 
-  return 14;
+  return ICON_SIZE_SM;
 });
 
 async function handleCopy(event: MouseEvent) {
@@ -103,7 +108,7 @@ async function handleCopy(event: MouseEvent) {
 
   resetTimeout = setTimeout(() => {
     copied.value = false;
-  }, 2000);
+  }, COPY_RESET_DELAY_MS);
 }
 </script>
 

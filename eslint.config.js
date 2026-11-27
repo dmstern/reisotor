@@ -282,6 +282,17 @@ export default tseslint.config(
       'no-nested-ternary': 'off',
     },
   },
+  // Demo- und Seed-Fixture-Dateien enthalten Beispieldaten (Koordinaten, Preise, IDs)
+  {
+    files: [
+      'backend/src/db/seedDemo.ts',
+      'frontend/src/demo/demoData.ts',
+      'frontend/src/demo/screenshotData.ts',
+    ],
+    rules: {
+      '@typescript-eslint/no-magic-numbers': 'off',
+    },
+  },
   eslintConfigPrettier,
   {
     rules: {

@@ -32,11 +32,13 @@ export function useTripCountdown(
   const now = ref(new Date());
   let nowTimer: ReturnType<typeof setInterval> | null = null;
 
+  const COUNTDOWN_TICK_MS = 60_000;
+
   if (getCurrentInstance()) {
     onMounted(() => {
       nowTimer = setInterval(() => {
         now.value = new Date();
-      }, 60_000);
+      }, COUNTDOWN_TICK_MS);
     });
 
     onUnmounted(() => {

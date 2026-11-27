@@ -3,7 +3,10 @@ import { api } from '../api/client';
 // Web-Push braucht den VAPID-Public-Key als Uint8Array (applicationServerKey), das Backend liefert
 // ihn aber als base64url-String (siehe routes/push.ts) – Standard-Konvertierung laut MDN/web.dev.
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const BASE64_PAD_MOD = 4;
+  const padding = '='.repeat(
+    (BASE64_PAD_MOD - (base64String.length % BASE64_PAD_MOD)) % BASE64_PAD_MOD
+  );
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const rawData = window.atob(base64);
   const output = new Uint8Array(rawData.length);

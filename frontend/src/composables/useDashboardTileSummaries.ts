@@ -66,6 +66,8 @@ export function useDashboardTileSummaries(
 
   const todayStr = () => toLocalDateString(new Date());
 
+  const UPCOMING_SCHEDULE_LIMIT = 3;
+
   const upcomingEntries = computed(() =>
     buildAllEntries(
       options.schedule.value,
@@ -77,7 +79,7 @@ export function useDashboardTileSummaries(
     )
       .filter((e) => e.endDate >= todayStr())
       .sort((a, b) => (a.date + (a.time ?? '')).localeCompare(b.date + (b.time ?? '')))
-      .slice(0, 3)
+      .slice(0, UPCOMING_SCHEDULE_LIMIT)
   );
 
   const packingTotal = computed(() => progressOfPacking(options.packing.value));

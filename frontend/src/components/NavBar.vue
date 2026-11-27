@@ -46,8 +46,10 @@ function updateOffset() {
   // Die schwebende Pille hat zusätzlich zu ihrer eigenen Höhe noch einen Rand-Abstand zum
   // Viewport-Rand (var(--space-4)) - der muss mit in den reservierten Content-Abstand einfließen,
   // sonst würde scrollbarer Inhalt optisch bis unter die Pille statt sauber darüber enden.
+  const FALLBACK_FLOATING_GAP_PX = 16;
   const floatingGap =
-    parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--space-4')) || 16;
+    parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--space-4')) ||
+    FALLBACK_FLOATING_GAP_PX;
   document.documentElement.style.setProperty('--navbar-offset', '0px');
   document.documentElement.style.setProperty(
     '--navbar-bottom-offset',

@@ -87,12 +87,14 @@ function decrementMulti() {
 
 // Strichliste in 5er-Gruppen (4 Striche + ein diagonaler 5.), wie von Hand auf einem Zettel
 // abgehakt – zeigt den Rausgelegt-Fortschritt an, solange noch nicht alles eingepackt ist.
+const TALLY_GROUP_SIZE = 5;
+
 const tallyGroups = computed<number[]>(() => {
   const groups: number[] = [];
   let remaining = props.item.laid_out_count;
 
   while (remaining > 0) {
-    const size = Math.min(5, remaining);
+    const size = Math.min(TALLY_GROUP_SIZE, remaining);
     groups.push(size);
     remaining -= size;
   }

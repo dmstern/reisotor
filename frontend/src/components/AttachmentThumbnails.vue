@@ -83,7 +83,12 @@ watch(
   }
 );
 
-const ROTATIONS = [-2.5, 2, -1.5, 2.5, -2, 1.8];
+const ROTATION_0 = -2.5;
+const ROTATION_2 = -1.5;
+const ROTATION_3 = 2.5;
+const ROTATION_4 = -2;
+const ROTATION_5 = 1.8;
+const ROTATIONS = [ROTATION_0, 2, ROTATION_2, ROTATION_3, ROTATION_4, ROTATION_5];
 
 function itemRotation(index: number): number {
   return ROTATIONS[index % ROTATIONS.length];

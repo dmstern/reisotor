@@ -348,7 +348,9 @@ export function useDashboardWeather(
         (endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24)
       );
 
-      if (diffDays >= 0 && diffDays <= 45) {
+      const MAX_WEATHER_RANGE_DAYS = 45;
+
+      if (diffDays >= 0 && diffDays <= MAX_WEATHER_RANGE_DAYS) {
         const cur = new Date(startDateObj);
 
         while (cur <= endDateObj) {

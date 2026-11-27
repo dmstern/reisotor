@@ -17,6 +17,11 @@ import { clearLastApiError, getLastApiError, recordLastApiError } from '../utils
 
 export { clearLastApiError, getLastApiError };
 
+const HTTP_BAD_GATEWAY = 502;
+const HTTP_SERVICE_UNAVAILABLE = 503;
+const HTTP_GATEWAY_TIMEOUT = 504;
+const PROXY_FAILURE_STATUSES = [HTTP_BAD_GATEWAY, HTTP_SERVICE_UNAVAILABLE, HTTP_GATEWAY_TIMEOUT];
+
 export interface RequestOptions extends RequestInit {
   timeoutMs?: number;
   noQueue?: boolean;
@@ -157,11 +162,11 @@ export async function rawRequest<T>(path: string, options: RequestOptions = {}):
     }
 
     if (!message || !message.trim()) {
-      if (res.status === 502) {
+      if (res.status === HTTP_BAD_GATEWAY) {
         message = 'Bad Gateway (Server nicht erreichbar)';
-      } else if (res.status === 503) {
+      } else if (res.status === HTTP_SERVICE_UNAVAILABLE) {
         message = 'Service Unavailable (Server vorübergehend nicht erreichbar)';
-      } else if (res.status === 504) {
+      } else if (res.status === HTTP_GATEWAY_TIMEOUT) {
         message = 'Gateway Timeout (Server antwortet nicht)';
       }
     }
@@ -198,7 +203,7 @@ function isNetworkFailure(err: unknown): boolean {
     return true;
   }
 
-  if (err instanceof ApiError && [502, 503, 504].includes(err.status)) {
+  if (err instanceof ApiError && PROXY_FAILURE_STATUSES.includes(err.status)) {
     return true;
   }
 

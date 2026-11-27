@@ -39,7 +39,8 @@ const menuStyle = ref<{ top: string; left: string }>({ top: '0px', left: '0px' }
 const genericMapsUrl = computed(() => buildGenericMapsLink(props.lat, props.lng, props.title));
 const googleMapsUrl = computed(() => buildGoogleMapsLink(props.lat, props.lng));
 const appleMapsUrl = computed(() => buildAppleMapsLink(props.lat, props.lng, props.title));
-const osmUrl = computed(() => buildOsmLink(props.lat, props.lng, 16));
+const OSM_DEFAULT_ZOOM = 16;
+const osmUrl = computed(() => buildOsmLink(props.lat, props.lng, OSM_DEFAULT_ZOOM));
 
 async function toggle(event?: MouseEvent) {
   if (open.value) {

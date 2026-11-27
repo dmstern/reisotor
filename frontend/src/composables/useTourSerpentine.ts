@@ -43,18 +43,26 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
   const tourWrapWidths = reactive(new Map<number, number>());
   let tourLineResizeObserver: ResizeObserver | null = null;
 
+  const TOUR_BREAKPOINT_4_COLS_PX = 1200;
+  const TOUR_BREAKPOINT_3_COLS_PX = 880;
+  const TOUR_BREAKPOINT_2_COLS_PX = 560;
+  const TOUR_COLS_4 = 4;
+  const TOUR_COLS_3 = 3;
+  const SAME_ROW_HEIGHT_THRESHOLD_RATIO = 0.75;
+  const SERPENTINE_BEZIER_TENSION = 0.45;
+
   function getTourCols(excursionId: number): number {
     const w = tourWrapWidths.get(excursionId) ?? 0;
 
-    if (w >= 1200) {
-      return 4;
+    if (w >= TOUR_BREAKPOINT_4_COLS_PX) {
+      return TOUR_COLS_4;
     }
 
-    if (w >= 880) {
-      return 3;
+    if (w >= TOUR_BREAKPOINT_3_COLS_PX) {
+      return TOUR_COLS_3;
     }
 
-    if (w >= 560) {
+    if (w >= TOUR_BREAKPOINT_2_COLS_PX) {
       return 2;
     }
 
@@ -137,7 +145,8 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
     for (let i = 0; i < spotBoxes.length - 1; i++) {
       const a = spotBoxes[i];
       const b = spotBoxes[i + 1];
-      const isSameRow = Math.abs(a.cy - b.cy) < Math.min(a.height, b.height) * 0.75;
+      const isSameRow =
+        Math.abs(a.cy - b.cy) < Math.min(a.height, b.height) * SAME_ROW_HEIGHT_THRESHOLD_RATIO;
 
       if (isSameRow) {
         const vOffset = 54;
@@ -148,9 +157,9 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
         const endY = b.cy + vOffset;
         dots.push({ x: startX, y: startY, isEnd: false });
         const dx = endX - startX;
-        const cp1X = startX + dx * 0.45;
+        const cp1X = startX + dx * SERPENTINE_BEZIER_TENSION;
         const cp1Y = startY;
-        const cp2X = endX - dx * 0.45;
+        const cp2X = endX - dx * SERPENTINE_BEZIER_TENSION;
         const cp2Y = endY;
         segments.push({
           d: ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`,
@@ -168,9 +177,9 @@ export function useTourSerpentine(options: UseTourSerpentineOptions = {}) {
         dots.push({ x: startX, y: startY, isEnd: false });
         const dy = endY - startY;
         const cp1X = startX;
-        const cp1Y = startY + dy * 0.45;
+        const cp1Y = startY + dy * SERPENTINE_BEZIER_TENSION;
         const cp2X = endX;
-        const cp2Y = endY - dy * 0.45;
+        const cp2Y = endY - dy * SERPENTINE_BEZIER_TENSION;
         segments.push({
           d: ` M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`,
           y1: startY,

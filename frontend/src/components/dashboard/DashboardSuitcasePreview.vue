@@ -20,24 +20,29 @@ const percent = computed(() => {
 // 2: 31-65% (mittlere Schicht: Packwürfel & T-Shirts)
 // 3: 66-99% (fast voll: Hemden, Kulturbeutel)
 // 4: 100% (komplett gepackt, grüner Gepäckanhänger "Ready!")
+const SUITCASE_TIER_1_MAX_PCT = 30;
+const SUITCASE_TIER_2_MAX_PCT = 65;
+const SUITCASE_TIER_ALMOST_FULL = 3;
+const SUITCASE_TIER_FULL = 4;
+
 const fillTier = computed(() => {
   if (percent.value === 0) {
     return 0;
   }
 
-  if (percent.value <= 30) {
+  if (percent.value <= SUITCASE_TIER_1_MAX_PCT) {
     return 1;
   }
 
-  if (percent.value <= 65) {
+  if (percent.value <= SUITCASE_TIER_2_MAX_PCT) {
     return 2;
   }
 
   if (percent.value < 100) {
-    return 3;
+    return SUITCASE_TIER_ALMOST_FULL;
   }
 
-  return 4;
+  return SUITCASE_TIER_FULL;
 });
 </script>
 

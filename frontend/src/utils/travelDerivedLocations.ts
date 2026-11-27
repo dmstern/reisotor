@@ -18,8 +18,10 @@ export interface TravelDerivedLocation extends DerivedLocation {
   homeSide: boolean;
 }
 
+const COORD_IDENTITY_PRECISION = 5;
+
 function latLngIdentity(lat: number, lng: number): string {
-  return `latlng-${lat.toFixed(5)}-${lng.toFixed(5)}`;
+  return `latlng-${lat.toFixed(COORD_IDENTITY_PRECISION)}-${lng.toFixed(COORD_IDENTITY_PRECISION)}`;
 }
 
 // Etappen-Enden mit verknüpftem Ort (TravelItem.from_place_id/to_place_id) sind seit der

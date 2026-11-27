@@ -208,10 +208,15 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     const bodyStyle = getComputedStyle(body);
     const bodyPaddingTop = parseFloat(bodyStyle.paddingTop) || 0;
 
+    const MIN_VISIBLE_NAV_HEIGHT_PX = 5;
+
     if (navWrap && navWrap.offsetParent !== null) {
       const wrapStyle = getComputedStyle(navWrap);
 
-      if (wrapStyle.opacity === '0' || navWrap.getBoundingClientRect().height < 5) {
+      if (
+        wrapStyle.opacity === '0' ||
+        navWrap.getBoundingClientRect().height < MIN_VISIBLE_NAV_HEIGHT_PX
+      ) {
         return bodyPaddingTop;
       }
 
@@ -268,11 +273,17 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     const img = el.querySelector<HTMLElement>('.image.is-expanded');
 
     if (img) {
+      const EXPANDED_IMG_HEIGHT_PX = 145;
+      const NARROW_SPOTS_COL_MAX_WIDTH_PX = 480;
       const imgHeight = img.getBoundingClientRect().height;
       const spotsColEl = el.closest('.spots-col');
 
-      if (imgHeight < 145 && spotsColEl && spotsColEl.clientWidth <= 480) {
-        height += 145 - imgHeight;
+      if (
+        imgHeight < EXPANDED_IMG_HEIGHT_PX &&
+        spotsColEl &&
+        spotsColEl.clientWidth <= NARROW_SPOTS_COL_MAX_WIDTH_PX
+      ) {
+        height += EXPANDED_IMG_HEIGHT_PX - imgHeight;
       }
     }
 
@@ -362,8 +373,9 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
               }
             };
 
+            const SHEET_TRANSITION_FALLBACK_MS = 350;
             sheet.addEventListener('transitionend', onEnd);
-            const timer = setTimeout(finish, 350);
+            const timer = setTimeout(finish, SHEET_TRANSITION_FALLBACK_MS);
           });
         }
       }
@@ -575,7 +587,8 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
     underlineWidth.value = activeEl.offsetWidth;
   }
 
-  const categoryNavHeight = ref(44);
+  const DEFAULT_CATEGORY_NAV_HEIGHT_PX = 44;
+  const categoryNavHeight = ref(DEFAULT_CATEGORY_NAV_HEIGHT_PX);
   let categoryNavResizeObserver: ResizeObserver | null = null;
   const categoryNavEl = ref<HTMLElement | null>(null);
   const canScrollNavLeft = ref(false);
@@ -615,13 +628,17 @@ export function useCategoryNavSpy(options: UseCategoryNavSpyOptions) {
   }
 
   function scrollNavBy(direction: 1 | -1) {
+    const NAV_SCROLL_STEP_RATIO = 0.7;
     const el = categoryNavEl.value;
 
     if (!el) {
       return;
     }
 
-    el.scrollBy({ left: direction * Math.round(el.clientWidth * 0.7), behavior: 'smooth' });
+    el.scrollBy({
+      left: direction * Math.round(el.clientWidth * NAV_SCROLL_STEP_RATIO),
+      behavior: 'smooth',
+    });
   }
 
   function setProgrammaticActiveCategory(category: string, timeoutMs = 1500) {

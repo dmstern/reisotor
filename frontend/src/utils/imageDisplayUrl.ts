@@ -29,9 +29,10 @@ export function imageDisplayUrl(url: string | null | undefined): string | undefi
   }
 
   // encodeURIComponent lässt ' ( ) ! * unkodiert - würde in unquotiertem CSS-url() brechen.
+  const HEX_RADIX = 16;
   const encoded = encodeURIComponent(url).replace(
     /[!'()*]/g,
-    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+    (char) => `%${char.charCodeAt(0).toString(HEX_RADIX).toUpperCase()}`
   );
   return `/api/images/proxy?url=${encoded}`;
 }

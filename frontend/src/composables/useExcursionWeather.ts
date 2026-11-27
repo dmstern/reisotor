@@ -83,7 +83,8 @@ export function useExcursionWeather(
             continue;
           }
 
-          const locKey = `${st.lat.toFixed(3)},${st.lng.toFixed(3)}`;
+          const COORD_KEY_PRECISION = 3;
+          const locKey = `${st.lat.toFixed(COORD_KEY_PRECISION)},${st.lng.toFixed(COORD_KEY_PRECISION)}`;
 
           if (fetchedKeys.has(locKey)) {
             continue;

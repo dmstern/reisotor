@@ -1,7 +1,9 @@
 import { db } from './db/index.js';
 import { sendEmailToTripMembers, sendPushToTripMembers } from './push.js';
 
-const REMINDER_THRESHOLDS_DAYS = [14, 7, 2, 1];
+const REMINDER_TWO_WEEKS_DAYS = 14;
+const REMINDER_ONE_WEEK_DAYS = 7;
+const REMINDER_THRESHOLDS_DAYS = [REMINDER_TWO_WEEKS_DAYS, REMINDER_ONE_WEEK_DAYS, 2, 1];
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 interface TripRow {
@@ -83,7 +85,8 @@ export async function checkDepartureReminders() {
 // Alle 6h reicht: die Schwellwerte sind tage-granular, häufigeres Prüfen brächte keine zusätzliche
 // Genauigkeit. Läuft zusätzlich einmal sofort beim Start (fängt einen Schwellwert ab, der genau
 // während einer Downtime begonnen hat, statt bis zum nächsten 6h-Intervall zu warten).
-const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const CHECK_INTERVAL_HOURS = 6;
+const CHECK_INTERVAL_MS = CHECK_INTERVAL_HOURS * 60 * 60 * 1000;
 
 export function startDepartureReminderScheduler() {
   checkDepartureReminders().catch((err) =>

@@ -105,7 +105,8 @@ export function calculateTrackMetrics(
   let speedKmh: number | null = null;
 
   if (totalDistanceMeters > 0 && durationMs > 0) {
-    speedKmh = totalDistanceMeters / 1000 / (durationMs / 3_600_000);
+    const MS_PER_HOUR = 3_600_000;
+    speedKmh = totalDistanceMeters / 1000 / (durationMs / MS_PER_HOUR);
   }
 
   return {
@@ -120,22 +121,45 @@ export function calculateTrackMetrics(
 /**
  * Schätzt die Fortbewegungsart anhand von Durchschnittsgeschwindigkeit, Distanz und Höhenmetern.
  */
+const STATIONARY_MIN_DISTANCE_M = 40;
+const STATIONARY_MIN_DURATION_MS = 30_000;
+const WALK_MAX_SPEED_KMH = 7.5;
+const HIKE_MIN_DISTANCE_M = 4500;
+const HIKE_MIN_ELEVATION_GAIN_M = 120;
+const HIKE_MIN_DURATION_MINUTES = 45;
+const HIKE_DURATION_MIN_DISTANCE_M = 3000;
+const BIKE_MAX_SPEED_KMH = 28;
+const MORNING_START_HOUR = 5;
+const MIDDAY_START_HOUR = 11;
+const AFTERNOON_START_HOUR = 14;
+const EVENING_START_HOUR = 18;
+const NIGHT_START_HOUR = 22;
+const SATURDAY_WEEKDAY_INDEX = 6;
+const LOOP_MAX_STRAIGHT_LINE_M = 350;
+const LOOP_MIN_TOTAL_DISTANCE_M = 500;
+const LOOP_STRAIGHT_LINE_RATIO = 0.28;
+
 export function inferMovementType(
   speedKmh: number | null,
   distanceMeters: number,
   durationMs: number,
   elevationGain = 0
 ): MovementType {
-  if (speedKmh == null || distanceMeters < 40 || durationMs < 30_000) {
+  if (
+    speedKmh == null ||
+    distanceMeters < STATIONARY_MIN_DISTANCE_M ||
+    durationMs < STATIONARY_MIN_DURATION_MS
+  ) {
     return 'stationary';
   }
 
-  if (speedKmh < 7.5) {
+  if (speedKmh < WALK_MAX_SPEED_KMH) {
     // Wandern: Bei spürbarer Strecke (> 4.5 km) oder signifikanten Höhenmetern (> 120m)
     if (
-      distanceMeters >= 4500 ||
-      elevationGain >= 120 ||
-      (durationMs >= 45 * 60 * 1000 && distanceMeters >= 3000)
+      distanceMeters >= HIKE_MIN_DISTANCE_M ||
+      elevationGain >= HIKE_MIN_ELEVATION_GAIN_M ||
+      (durationMs >= HIKE_MIN_DURATION_MINUTES * 60 * 1000 &&
+        distanceMeters >= HIKE_DURATION_MIN_DISTANCE_M)
     ) {
       return 'hike';
     }
@@ -143,7 +167,7 @@ export function inferMovementType(
     return 'walk';
   }
 
-  if (speedKmh < 28) {
+  if (speedKmh < BIKE_MAX_SPEED_KMH) {
     return 'bike';
   }
 
@@ -295,11 +319,11 @@ export function formatTimeBasedTrackTitle(
   const hour = date.getHours();
 
   // Tageszeiten
-  const isMorning = hour >= 5 && hour < 11;
-  const isMidday = hour >= 11 && hour < 14;
-  const isAfternoon = hour >= 14 && hour < 18;
-  const isEvening = hour >= 18 && hour < 22;
-  const isNight = hour >= 22 || hour < 5;
+  const isMorning = hour >= MORNING_START_HOUR && hour < MIDDAY_START_HOUR;
+  const isMidday = hour >= MIDDAY_START_HOUR && hour < AFTERNOON_START_HOUR;
+  const isAfternoon = hour >= AFTERNOON_START_HOUR && hour < EVENING_START_HOUR;
+  const isEvening = hour >= EVENING_START_HOUR && hour < NIGHT_START_HOUR;
+  const isNight = hour >= NIGHT_START_HOUR || hour < MORNING_START_HOUR;
 
   // Sonntag
   if (dayIndex === 0) {
@@ -360,7 +384,7 @@ export function formatTimeBasedTrackTitle(
   }
 
   // Samstag
-  if (dayIndex === 6) {
+  if (dayIndex === SATURDAY_WEEKDAY_INDEX) {
     if (movement === 'hike') {
       return 'Samstagswanderung';
     }
@@ -537,9 +561,9 @@ export async function generateSmartTrackTitle(options: GenerateTrackTitleOptions
 
   // Ist es eine Rundtour (Start und Ende nah beieinander im Verhältnis zur Gesamtstrecke)?
   const isLoop =
-    metrics.straightLineMeters < 350 ||
-    (metrics.totalDistanceMeters >= 500 &&
-      metrics.straightLineMeters / metrics.totalDistanceMeters < 0.28);
+    metrics.straightLineMeters < LOOP_MAX_STRAIGHT_LINE_M ||
+    (metrics.totalDistanceMeters >= LOOP_MIN_TOTAL_DISTANCE_M &&
+      metrics.straightLineMeters / metrics.totalDistanceMeters < LOOP_STRAIGHT_LINE_RATIO);
 
   // 3. Geokodierung für Startpunkt durchführen
   const startGeo = await reverseFn({ lat: startPt.lat, lng: startPt.lng }).catch(() => null);
@@ -548,7 +572,7 @@ export async function generateSmartTrackTitle(options: GenerateTrackTitleOptions
   // Falls es keine Rundtour ist und nennenswerte Luftlinie vorliegt, auch Endpunkt geokodieren
   let endPlace: ExtractedPlace | null = null;
 
-  if (!isLoop && metrics.straightLineMeters >= 350) {
+  if (!isLoop && metrics.straightLineMeters >= LOOP_MAX_STRAIGHT_LINE_M) {
     const endGeo = await reverseFn({ lat: endPt.lat, lng: endPt.lng }).catch(() => null);
     endPlace = extractPlaceLabel(endGeo);
   }

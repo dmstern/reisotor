@@ -98,6 +98,7 @@ watch(query, (searchVal) => {
     return;
   }
 
+  const USER_SEARCH_DEBOUNCE_MS = 300;
   searching.value = true;
   hasSearched.value = false;
   searchTimeout = setTimeout(async () => {
@@ -116,7 +117,7 @@ watch(query, (searchVal) => {
     } finally {
       searching.value = false;
     }
-  }, 300);
+  }, USER_SEARCH_DEBOUNCE_MS);
 });
 
 async function invite(user: User) {

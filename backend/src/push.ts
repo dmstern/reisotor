@@ -294,7 +294,9 @@ export async function sendPushToTripMembers(
       } catch (err) {
         const statusCode = (err as { statusCode?: number }).statusCode;
 
-        if (statusCode === 404 || statusCode === 410) {
+        const HTTP_GONE = 410;
+
+        if (statusCode === 404 || statusCode === HTTP_GONE) {
           db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').run(sub.endpoint);
         }
       }
@@ -340,7 +342,9 @@ export async function sendPushToAllSubscribers(
       } catch (err) {
         const statusCode = (err as { statusCode?: number }).statusCode;
 
-        if (statusCode === 404 || statusCode === 410) {
+        const HTTP_GONE = 410;
+
+        if (statusCode === 404 || statusCode === HTTP_GONE) {
           db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').run(sub.endpoint);
         }
       }
@@ -396,7 +400,9 @@ export async function sendPushToAdmins(payload: Record<string, unknown>) {
       } catch (err) {
         const statusCode = (err as { statusCode?: number }).statusCode;
 
-        if (statusCode === 404 || statusCode === 410) {
+        const HTTP_GONE = 410;
+
+        if (statusCode === 404 || statusCode === HTTP_GONE) {
           db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').run(sub.endpoint);
         }
       }

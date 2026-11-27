@@ -15,6 +15,10 @@ import { useIconStyleStore } from '../stores/iconStyle';
 import { useHomeCurrencyStore } from '../stores/homeCurrency';
 import { useToast } from './useToast';
 
+const DEFAULT_GLASS_OPACITY = 42;
+const DEFAULT_GLASS_BLUR = 6;
+const DEFAULT_TOAST_TIMEOUT_S = 5;
+
 export function useAppSettingsReset() {
   const theme = useThemeStore();
   const navConfig = useNavConfigStore();
@@ -113,8 +117,8 @@ export function useAppSettingsReset() {
       isThemeDefault.value &&
       uiSettings.primaryColor.toLowerCase() === DEFAULT_PRIMARY_COLOR.toLowerCase() &&
       uiSettings.glassStyle === 'glass' &&
-      uiSettings.glassOpacity === 42 &&
-      uiSettings.glassBlur === 6 &&
+      uiSettings.glassOpacity === DEFAULT_GLASS_OPACITY &&
+      uiSettings.glassBlur === DEFAULT_GLASS_BLUR &&
       isIconDefault &&
       uiSettings.diaryFont === DEFAULT_DIARY_FONT &&
       isNavDefault.value &&
@@ -177,13 +181,13 @@ export function useAppSettingsReset() {
   const isToastsDefault = computed(
     () =>
       uiSettings.showActivityToasts === true &&
-      uiSettings.toastTimeout === 5 &&
+      uiSettings.toastTimeout === DEFAULT_TOAST_TIMEOUT_S &&
       uiSettings.showUpdateDialogs === true
   );
 
   function resetToasts() {
     uiSettings.showActivityToasts = true;
-    uiSettings.toastTimeout = 5;
+    uiSettings.toastTimeout = DEFAULT_TOAST_TIMEOUT_S;
     uiSettings.showUpdateDialogs = true;
   }
 

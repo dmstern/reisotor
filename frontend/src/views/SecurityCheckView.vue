@@ -92,7 +92,10 @@ function startCheck() {
   // Deutlich langsamer als ein technischer Ladebalken: die "Behörden" im Hintergrund brauchen
   // spürbar Zeit, jede Meldung soll in Ruhe lesbar sein, bevor die nächste erscheint.
   const MESSAGE_INTERVAL_MS = 1500;
-  const messages = pickRandom(SCAN_MESSAGES, 5);
+  const SCAN_MESSAGE_COUNT = 5;
+  const RESULT_CATEGORY_COUNT = 5;
+  const COMPLETION_EXTRA_DELAY_MS = 1600;
+  const messages = pickRandom(SCAN_MESSAGES, SCAN_MESSAGE_COUNT);
   messages.forEach((msg, i) => {
     timers.push(
       window.setTimeout(
@@ -107,14 +110,14 @@ function startCheck() {
   timers.push(
     window.setTimeout(
       () => {
-        results.value = pickRandom(CATEGORIES, 5).map((category) => ({
+        results.value = pickRandom(CATEGORIES, RESULT_CATEGORY_COUNT).map((category) => ({
           ...category,
           verdict: VERDICTS[Math.floor(Math.random() * VERDICTS.length)],
         }));
         quote.value = QUOTES[Math.floor(Math.random() * QUOTES.length)];
         phase.value = 'done';
       },
-      MESSAGE_INTERVAL_MS * messages.length + 1600
+      MESSAGE_INTERVAL_MS * messages.length + COMPLETION_EXTRA_DELAY_MS
     )
   );
 }

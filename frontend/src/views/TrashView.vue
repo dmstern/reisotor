@@ -108,9 +108,11 @@ function formatDeletedAt(iso: string) {
   return dateFormatter.format(new Date(iso));
 }
 
+const TRASH_RETENTION_DAYS = 30;
+
 function daysRemaining(iso: string): number {
   const deletedAt = new Date(iso).getTime();
-  const expiresAt = deletedAt + 30 * 24 * 60 * 60 * 1000;
+  const expiresAt = deletedAt + TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
   const remainingMs = expiresAt - Date.now();
   return Math.max(0, Math.ceil(remainingMs / (24 * 60 * 60 * 1000)));
 }

@@ -8,13 +8,16 @@ const props = defineProps<{
   latestEntry: DiaryEntry | null;
 }>();
 
+const MAX_DIARY_PREVIEW_CHARS = 30;
+const ISO_DATE_PARTS_COUNT = 3;
+
 const previewText = computed(() => {
   if (!props.latestEntry) {
     return 'Reisebericht schreiben… ✍️';
   }
 
   const text = props.latestEntry.title?.trim() || stripHtml(props.latestEntry.content);
-  return text ? text.slice(0, 30) : 'Reisetag';
+  return text ? text.slice(0, MAX_DIARY_PREVIEW_CHARS) : 'Reisetag';
 });
 
 const previewDate = computed(() => {
@@ -25,7 +28,7 @@ const previewDate = computed(() => {
   // Kurzes Format wie "14. Jul"
   const parts = props.latestEntry.date.split('-');
 
-  if (parts.length === 3) {
+  if (parts.length === ISO_DATE_PARTS_COUNT) {
     const months = [
       'Jan',
       'Feb',

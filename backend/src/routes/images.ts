@@ -24,7 +24,10 @@ const ALLOWED_IMAGE_TYPES: Record<string, string> = {
   'image/png': 'png',
   'image/webp': 'webp',
 };
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_MB = 5;
+const MAX_IMAGE_BYTES = MAX_IMAGE_MB * 1024 * 1024;
+const HTTP_PAYLOAD_TOO_LARGE = 413;
+const HTTP_BAD_GATEWAY = 502;
 
 export const imagesRoutes: FastifyPluginAsync = async (app) => {
   // Nimmt ein bereits client-seitig (Canvas-API, siehe utils/imageCompression.ts) verkleinertes/
@@ -57,7 +60,9 @@ export const imagesRoutes: FastifyPluginAsync = async (app) => {
     const buffer = Buffer.from(base64, 'base64');
 
     if (buffer.byteLength > MAX_IMAGE_BYTES) {
-      return reply.code(413).send({ error: 'Bild ist zu groß (max. 5 MB nach Komprimierung)' });
+      return reply
+        .code(HTTP_PAYLOAD_TOO_LARGE)
+        .send({ error: 'Bild ist zu groß (max. 5 MB nach Komprimierung)' });
     }
 
     const filename = `${randomUUID()}.${extension}`;
@@ -81,7 +86,7 @@ export const imagesRoutes: FastifyPluginAsync = async (app) => {
     const image = await downloadRemoteImage(url);
 
     if (!image) {
-      return reply.code(502).send({ error: 'Bild nicht abrufbar' });
+      return reply.code(HTTP_BAD_GATEWAY).send({ error: 'Bild nicht abrufbar' });
     }
 
     return reply

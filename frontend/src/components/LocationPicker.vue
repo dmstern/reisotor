@@ -127,6 +127,8 @@ function onManualCoordsSet(coords: { lat: number; lng: number }) {
   details.reverseGeocodeCoords(coords.lat, coords.lng);
 }
 
+const SELECTED_PLACE_ZOOM = 16;
+
 function onSelectPlace(place: PlaceSearchResult) {
   details.cardClosed.value = false;
   search.selectedPlace.value = place;
@@ -140,7 +142,7 @@ function onSelectPlace(place: PlaceSearchResult) {
   const coords = { lat: place.lat, lng: place.lng };
   map.placeMarker(coords.lat, coords.lng);
   nextTick(() => {
-    map.centerOnPoint([coords.lat, coords.lng], 16);
+    map.centerOnPoint([coords.lat, coords.lng], SELECTED_PLACE_ZOOM);
   });
 
   if (props.title !== undefined) {
@@ -162,7 +164,7 @@ function onMapsLinkResolved(coords: { lat: number; lng: number }) {
   details.manualDetailsOpen.value = true;
   emit('update:modelValue', coords);
   nextTick(() => {
-    map.centerOnPoint([coords.lat, coords.lng], 16);
+    map.centerOnPoint([coords.lat, coords.lng], SELECTED_PLACE_ZOOM);
   });
 }
 
@@ -182,7 +184,7 @@ function onSelectTitlePlace(place: PlaceSearchResult) {
   const coords = { lat: place.lat, lng: place.lng };
   map.placeMarker(coords.lat, coords.lng);
   nextTick(() => {
-    map.centerOnPoint([coords.lat, coords.lng], 16);
+    map.centerOnPoint([coords.lat, coords.lng], SELECTED_PLACE_ZOOM);
   });
 
   emit('update:modelValue', coords);
@@ -198,7 +200,7 @@ function onSelectAddressPlace(place: PlaceSearchResult) {
   const coords = { lat: place.lat, lng: place.lng };
   map.placeMarker(coords.lat, coords.lng);
   nextTick(() => {
-    map.centerOnPoint([coords.lat, coords.lng], 16);
+    map.centerOnPoint([coords.lat, coords.lng], SELECTED_PLACE_ZOOM);
   });
 
   emit('update:modelValue', coords);
@@ -235,7 +237,7 @@ const titleSearch = usePlaceSearch({
     map.placeMarker(coords.lat, coords.lng);
     emit('update:modelValue', coords);
     nextTick(() => {
-      map.centerOnPoint([coords.lat, coords.lng], 16);
+      map.centerOnPoint([coords.lat, coords.lng], SELECTED_PLACE_ZOOM);
     });
   },
   onMapsLinkInput: (url) => emit('update:mapsLink', url),
@@ -249,7 +251,7 @@ const addressSearch = usePlaceSearch({
     map.placeMarker(coords.lat, coords.lng);
     emit('update:modelValue', coords);
     nextTick(() => {
-      map.centerOnPoint([coords.lat, coords.lng], 16);
+      map.centerOnPoint([coords.lat, coords.lng], SELECTED_PLACE_ZOOM);
     });
   },
   onMapsLinkInput: (url) => emit('update:mapsLink', url),

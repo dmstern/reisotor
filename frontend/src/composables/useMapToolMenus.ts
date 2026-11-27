@@ -19,19 +19,21 @@ export function computeTeleportMenuPosition(
     return { top: '0px', left: '0px' };
   }
 
+  const MENU_VERTICAL_GAP_PX = 6;
+  const MENU_VIEWPORT_MARGIN_PX = 8;
   const rect = el.getBoundingClientRect();
   const innerWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
 
   if (align === 'right') {
     return {
-      top: `${rect.bottom + 6}px`,
-      right: `${Math.max(8, innerWidth - rect.right)}px`,
+      top: `${rect.bottom + MENU_VERTICAL_GAP_PX}px`,
+      right: `${Math.max(MENU_VIEWPORT_MARGIN_PX, innerWidth - rect.right)}px`,
     };
   }
 
   return {
-    top: `${rect.bottom + 6}px`,
-    left: `${Math.max(8, Math.min(rect.left, innerWidth - menuWidth))}px`,
+    top: `${rect.bottom + MENU_VERTICAL_GAP_PX}px`,
+    left: `${Math.max(MENU_VIEWPORT_MARGIN_PX, Math.min(rect.left, innerWidth - menuWidth))}px`,
   };
 }
 

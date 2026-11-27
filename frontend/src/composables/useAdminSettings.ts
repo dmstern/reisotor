@@ -2,6 +2,8 @@ import { ref } from 'vue';
 import { api } from '../api/client';
 import type { AdminSettings, UpdateAdminSettingsPayload } from '../api/types';
 
+const SAVE_SUCCESS_DISPLAY_MS = 3000;
+
 export function useAdminSettings() {
   const settings = ref<AdminSettings | null>(null);
   const loading = ref(false);
@@ -35,10 +37,11 @@ export function useAdminSettings() {
     try {
       const res = await api.put<{ settings: AdminSettings }>('/admin/settings', payload);
       settings.value = res.settings;
+
       saveSuccess.value[sectionKey] = true;
       setTimeout(() => {
         saveSuccess.value[sectionKey] = false;
-      }, 3000);
+      }, SAVE_SUCCESS_DISPLAY_MS);
       return true;
     } catch (err: unknown) {
       errorMessage.value =
@@ -71,7 +74,7 @@ export function useAdminSettings() {
       saveSuccess.value['push'] = true;
       setTimeout(() => {
         saveSuccess.value['push'] = false;
-      }, 3000);
+      }, SAVE_SUCCESS_DISPLAY_MS);
       return true;
     } catch (err: unknown) {
       errorMessage.value =

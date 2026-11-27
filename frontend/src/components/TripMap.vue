@@ -516,12 +516,13 @@ watch(
         leafletTripMap.renderTracks();
 
         if (!pts.length) {
+          const TRACK_POINTS_RETRY_DELAY_MS = 600;
           setTimeout(async () => {
             if (focusedTrack.value?.id === track.id) {
               await tracksStore.loadPoints(track.id).catch(() => []);
               leafletTripMap.renderTracks();
             }
-          }, 600);
+          }, TRACK_POINTS_RETRY_DELAY_MS);
         }
       } catch {}
     }

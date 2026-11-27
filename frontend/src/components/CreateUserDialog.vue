@@ -113,7 +113,9 @@ async function submit() {
     return;
   }
 
-  if (password.value.length < 6) {
+  const MIN_PASSWORD_LENGTH = 6;
+
+  if (password.value.length < MIN_PASSWORD_LENGTH) {
     error.value = 'Das Passwort muss mindestens 6 Zeichen lang sein.';
     return;
   }

@@ -9,9 +9,30 @@ import {
 } from 'vue';
 import { isImage, type AttachmentPreviewItem } from '../utils/attachment';
 
-const STACK_ANGLES = [-2, 6, -7, 8];
-const STACK_X_OFFSETS = [0, 4, -5, 6];
+const ANGLE_0 = -2;
+const ANGLE_1 = 6;
+const ANGLE_2 = -7;
+const ANGLE_3 = 8;
+const X_OFFSET_1 = 4;
+const X_OFFSET_2 = -5;
+const X_OFFSET_3 = 6;
+const STACK_ANGLES = [ANGLE_0, ANGLE_1, ANGLE_2, ANGLE_3];
+const STACK_X_OFFSETS = [0, X_OFFSET_1, X_OFFSET_2, X_OFFSET_3];
 const STACK_Y_OFFSETS = [0, -1, 2, 1];
+const EXPAND_STAGGER_STEP_MS = 32;
+const REMOVE_THUMB_BASE_DELAY_MS = 140;
+const EXPAND_MAX_DURATION_MS = 650;
+const EXPAND_BASE_DURATION_MS = 480;
+const FALLBACK_TILE_CENTER_X = 33;
+const FALLBACK_TILE_CENTER_Y = 37;
+const FALLBACK_STACKED_HEIGHT_PX = 78;
+const MAX_VISIBLE_STACK_COUNT = 4;
+const COLLAPSE_DOC_WIDTH_PX = 44;
+const COLLAPSE_IMG_WIDTH_PX = 52;
+const COLLAPSE_STAGGER_STEP_MS = 20;
+const COLLAPSE_MAX_FLIGHT_MS = 420;
+const COLLAPSE_BASE_FLIGHT_MS = 320;
+const COLLAPSE_HEIGHT_SETTLE_MS = 280;
 
 export interface UseThumbnailStackAnimationOptions {
   rootRef: Ref<HTMLElement | null>;
@@ -161,20 +182,23 @@ export function useThumbnailStackAnimation(options: UseThumbnailStackAnimationOp
         }
 
         fannedWraps.forEach((wrap, i) => {
-          const delay = i * 32;
+          const delay = i * EXPAND_STAGGER_STEP_MS;
           wrap.style.transition = `transform 0.46s cubic-bezier(0.34, 1.25, 0.64, 1) ${delay}ms, opacity 0.32s ease ${delay}ms`;
           wrap.style.transform = `translate3d(0, 0, 0) rotate(var(--item-rot, 0deg)) scale(1)`;
           wrap.style.opacity = '1';
         });
 
         removeThumbs.forEach((thumb, i) => {
-          const delay = 140 + i * 32;
+          const delay = REMOVE_THUMB_BASE_DELAY_MS + i * EXPAND_STAGGER_STEP_MS;
           thumb.style.transition = `transform 0.28s cubic-bezier(0.34, 1.5, 0.64, 1) ${delay}ms, opacity 0.22s ease ${delay}ms`;
           thumb.style.transform = 'scale(1)';
           thumb.style.opacity = '1';
         });
 
-        const totalDuration = Math.min(650, (fannedWraps.length - 1) * 32 + 480);
+        const totalDuration = Math.min(
+          EXPAND_MAX_DURATION_MS,
+          (fannedWraps.length - 1) * EXPAND_STAGGER_STEP_MS + EXPAND_BASE_DURATION_MS
+        );
         activeAnimTimeout = window.setTimeout(() => {
           if (rootRef.value) {
             rootRef.value.style.height = '';
@@ -238,9 +262,10 @@ export function useThumbnailStackAnimation(options: UseThumbnailStackAnimationOp
     rootRef.value.style.overflow = 'visible';
     rootRef.value.style.transition = 'none';
 
-    const baseTileCenterX = cachedTileOffsets[0]?.centerX ?? 33;
-    const baseTileCenterY = cachedTileOffsets[0]?.centerY ?? 37;
-    const stackedHeight = cachedStackedHeight > 0 ? cachedStackedHeight : 78;
+    const baseTileCenterX = cachedTileOffsets[0]?.centerX ?? FALLBACK_TILE_CENTER_X;
+    const baseTileCenterY = cachedTileOffsets[0]?.centerY ?? FALLBACK_TILE_CENTER_Y;
+    const stackedHeight =
+      cachedStackedHeight > 0 ? cachedStackedHeight : FALLBACK_STACKED_HEIGHT_PX;
 
     if (headerBar) {
       headerBar.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
@@ -259,32 +284,37 @@ export function useThumbnailStackAnimation(options: UseThumbnailStackAnimationOp
       const cardCenterX = cardRect.left + cardRect.width / 2 - currentRootRect.left;
       const cardCenterY = cardRect.top + cardRect.height / 2 - currentRootRect.top;
 
+      const stackIndex = i % MAX_VISIBLE_STACK_COUNT;
       const targetCenterX =
-        cachedTileOffsets[i]?.centerX ?? baseTileCenterX + (STACK_X_OFFSETS[i % 4] || 0);
+        cachedTileOffsets[i]?.centerX ?? baseTileCenterX + (STACK_X_OFFSETS[stackIndex] || 0);
       const targetCenterY =
-        cachedTileOffsets[i]?.centerY ?? baseTileCenterY + (STACK_Y_OFFSETS[i % 4] || 0);
-      const targetRot = STACK_ANGLES[i % 4] || 0;
+        cachedTileOffsets[i]?.centerY ?? baseTileCenterY + (STACK_Y_OFFSETS[stackIndex] || 0);
+      const targetRot = STACK_ANGLES[stackIndex] || 0;
       const isDoc = !isImage(items.value[i]);
-      const targetWidth = cachedTileOffsets[i]?.width ?? (isDoc ? 44 : 52);
+      const targetWidth =
+        cachedTileOffsets[i]?.width ?? (isDoc ? COLLAPSE_DOC_WIDTH_PX : COLLAPSE_IMG_WIDTH_PX);
       const targetScale = targetWidth / (cardRect.width || 1);
 
       const dx = targetCenterX - cardCenterX;
       const dy = targetCenterY - cardCenterY;
 
       const reverseIndex = fannedWraps.length - 1 - i;
-      const delay = reverseIndex * 20;
+      const delay = reverseIndex * COLLAPSE_STAGGER_STEP_MS;
 
       wrap.style.transformOrigin = 'center center';
       wrap.style.zIndex = String(fannedWraps.length - i);
       wrap.style.transition = `transform 0.32s cubic-bezier(0.25, 1, 0.5, 1) ${delay}ms, opacity 0.26s ease ${delay}ms`;
       wrap.style.transform = `translate3d(${dx}px, ${dy}px, 0) rotate(${targetRot}deg) scale(${targetScale})`;
 
-      if (i >= 4) {
+      if (i >= MAX_VISIBLE_STACK_COUNT) {
         wrap.style.opacity = '0';
       }
     });
 
-    const flightDuration = Math.min(420, (fannedWraps.length - 1) * 20 + 320);
+    const flightDuration = Math.min(
+      COLLAPSE_MAX_FLIGHT_MS,
+      (fannedWraps.length - 1) * COLLAPSE_STAGGER_STEP_MS + COLLAPSE_BASE_FLIGHT_MS
+    );
 
     activeAnimTimeout = window.setTimeout(() => {
       if (!rootRef.value) {
@@ -330,7 +360,7 @@ export function useThumbnailStackAnimation(options: UseThumbnailStackAnimationOp
             thumb.style.opacity = '';
           });
           activeAnimTimeout = null;
-        }, 280);
+        }, COLLAPSE_HEIGHT_SETTLE_MS);
       });
     }, flightDuration);
   }

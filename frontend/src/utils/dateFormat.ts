@@ -55,13 +55,23 @@ export function formatWeekdayDate(dateStr: string): string {
   return `${weekdayShortFormatter.format(new Date(dateStr))}, ${formatDate(dateStr, { includeYear: false })}`;
 }
 
+const WEEKDAY_OFFSET_MONDAY = 6;
+const DAYS_IN_WEEK = 7;
+const WEEK_END_OFFSET_DAYS = 6;
+const ISO_YEAR_LENGTH = 4;
+const MS_PER_MINUTE = 60000;
+const DAYS_PER_MONTH_APPROX = 30;
+const DAYS_PER_YEAR = 365;
+
 /** Montag/Sonntag-Start der Woche, in der `date` liegt – respektiert calendarSettings.weekStart.
  *  Montag-Fall: dieselbe (getDay()+6)%7-Formel wie zuvor hart codiert in ScheduleView.vue. */
 export function startOfWeek(date: Date): Date {
   const calendarSettings = useCalendarSettingsStore();
   const result = new Date(date);
   const offset =
-    calendarSettings.weekStart === 'sunday' ? result.getDay() : (result.getDay() + 6) % 7;
+    calendarSettings.weekStart === 'sunday'
+      ? result.getDay()
+      : (result.getDay() + WEEKDAY_OFFSET_MONDAY) % DAYS_IN_WEEK;
   result.setDate(result.getDate() - offset);
   return result;
 }
@@ -71,7 +81,7 @@ export function startOfWeek(date: Date): Date {
  *  auffüllt, unabhängig vom eingestellten Wochenanfang. */
 export function endOfWeek(date: Date): Date {
   const result = startOfWeek(date);
-  result.setDate(result.getDate() + 6);
+  result.setDate(result.getDate() + WEEK_END_OFFSET_DAYS);
   return result;
 }
 
@@ -102,8 +112,8 @@ export function formatTripDateRange(
 
   const today = toLocalDateString(now);
   const currentYear = now.getFullYear();
-  const startYear = parseInt(startDateStr!.slice(0, 4), 10);
-  const endYear = parseInt(endDateStr!.slice(0, 4), 10);
+  const startYear = parseInt(startDateStr!.slice(0, ISO_YEAR_LENGTH), 10);
+  const endYear = parseInt(endDateStr!.slice(0, ISO_YEAR_LENGTH), 10);
 
   const isPastTrip = today > endDateStr!;
   const isFutureYearTrip = currentYear < startYear;
@@ -167,7 +177,7 @@ export function formatLastLogin(dateStr?: string | null, now: Date = new Date())
     return 'Gerade eben';
   }
 
-  const diffMinutes = Math.floor(diffMs / 60000);
+  const diffMinutes = Math.floor(diffMs / MS_PER_MINUTE);
 
   if (diffMinutes < 1) {
     return 'Gerade eben';
@@ -189,20 +199,20 @@ export function formatLastLogin(dateStr?: string | null, now: Date = new Date())
     return 'Gestern';
   }
 
-  if (diffDays < 7) {
+  if (diffDays < DAYS_IN_WEEK) {
     return `vor ${diffDays} Tagen`;
   }
 
-  if (diffDays < 30) {
-    const weeks = Math.floor(diffDays / 7);
+  if (diffDays < DAYS_PER_MONTH_APPROX) {
+    const weeks = Math.floor(diffDays / DAYS_IN_WEEK);
     return weeks === 1 ? 'vor 1 Woche' : `vor ${weeks} Wochen`;
   }
 
-  if (diffDays < 365) {
-    const months = Math.floor(diffDays / 30);
+  if (diffDays < DAYS_PER_YEAR) {
+    const months = Math.floor(diffDays / DAYS_PER_MONTH_APPROX);
     return months === 1 ? 'vor 1 Monat' : `vor ${months} Monaten`;
   }
 
-  const years = Math.floor(diffDays / 365);
+  const years = Math.floor(diffDays / DAYS_PER_YEAR);
   return years === 1 ? 'vor 1 Jahr' : `vor ${years} Jahren`;
 }

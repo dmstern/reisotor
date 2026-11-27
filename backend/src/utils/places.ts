@@ -339,10 +339,18 @@ export interface BuildCacheKeyOptions {
   lang?: string;
 }
 
+const PHOTON_TIMEOUT_MS = 5000;
+const NOMINATIM_TIMEOUT_MS = 4000;
+const DEFAULT_SEARCH_LIMIT = 5;
+const MAX_FETCH_LIMIT = 30;
+const DUPLICATE_COORD_EPSILON_DEG = 0.0005;
+const REVERSE_CACHE_KEY_PRECISION = 4;
+
 export function buildCacheKey(query: string, options?: BuildCacheKeyOptions): string {
+  const COORD_KEY_PRECISION = 3;
   const { lat, lng, limit = 5, lang = 'de' } = options ?? {};
-  const latStr = lat != null && Number.isFinite(lat) ? lat.toFixed(3) : '';
-  const lngStr = lng != null && Number.isFinite(lng) ? lng.toFixed(3) : '';
+  const latStr = lat != null && Number.isFinite(lat) ? lat.toFixed(COORD_KEY_PRECISION) : '';
+  const lngStr = lng != null && Number.isFinite(lng) ? lng.toFixed(COORD_KEY_PRECISION) : '';
   return `${query.trim().toLowerCase()}|${latStr}|${lngStr}|${limit}|${lang}`;
 }
 
@@ -854,6 +862,20 @@ export function scorePlace(
   targetLat?: number,
   targetLng?: number
 ): number {
+  const SCORE_CATEGORY_EXACT = 40;
+  const SCORE_NAME_MATCH = 25;
+  const SCORE_ALL_TERMS_BONUS = 30;
+  const SCORE_STREET_MATCH = 30;
+  const SCORE_STREET_PENALTY = 20;
+  const SCORE_POI_BASE_BONUS = 15;
+  const DIST_TIER_VERY_CLOSE_KM = 5;
+  const DIST_TIER_CLOSE_KM = 20;
+  const DIST_TIER_MEDIUM_KM = 50;
+  const SCORE_DIST_VERY_CLOSE = 30;
+  const SCORE_DIST_CLOSE = 20;
+  const SCORE_DIST_MEDIUM = 10;
+  const SCORE_DIST_FAR = 5;
+
   let score = 0;
   const nameLower = place.name.toLowerCase();
   const addressLower = (place.formatted_address || place.address || '').toLowerCase();
@@ -870,7 +892,7 @@ export function scorePlace(
       place.category &&
       place.category.toLowerCase() === parsed.category.label.toLowerCase()
     ) {
-      score += 40;
+      score += SCORE_CATEGORY_EXACT;
     }
   }
 
@@ -881,7 +903,7 @@ export function scorePlace(
   for (const term of terms) {
     if (nameLower.includes(term)) {
       matchedTermsCount++;
-      score += 25;
+      score += SCORE_NAME_MATCH;
     } else if (addressLower.includes(term)) {
       matchedTermsCount++;
       score += 10;
@@ -889,7 +911,7 @@ export function scorePlace(
   }
 
   if (terms.length > 0 && matchedTermsCount === terms.length) {
-    score += 30; // Volltreffer: alle Kernsuchbegriffe gefunden
+    score += SCORE_ALL_TERMS_BONUS; // Volltreffer: alle Kernsuchbegriffe gefunden
   }
 
   // 3. POI vs. Straße: POIs (Kneipen, Clubs, Agenturen, Cafés) vor reinen Wohnstraßen bevorzugen
@@ -901,12 +923,12 @@ export function scorePlace(
 
   if (isStreetOrHighway) {
     if (parsed.wantsStreet) {
-      score += 30;
+      score += SCORE_STREET_MATCH;
     } else {
-      score -= 20; // Straßen abwerten, wenn nicht explizit nach Straße gesucht wurde
+      score -= SCORE_STREET_PENALTY; // Straßen abwerten, wenn nicht explizit nach Straße gesucht wurde
     }
   } else {
-    score += 15; // POI-Grundbonus
+    score += SCORE_POI_BASE_BONUS; // POI-Grundbonus
   }
 
   // 4. Näherungsbonus (falls Koordinaten übergeben)
@@ -918,14 +940,14 @@ export function scorePlace(
   ) {
     const distKm = haversineDistance(targetLat, targetLng, place.lat, place.lng);
 
-    if (distKm < 5) {
-      score += 30;
-    } else if (distKm < 20) {
-      score += 20;
-    } else if (distKm < 50) {
-      score += 10;
+    if (distKm < DIST_TIER_VERY_CLOSE_KM) {
+      score += SCORE_DIST_VERY_CLOSE;
+    } else if (distKm < DIST_TIER_CLOSE_KM) {
+      score += SCORE_DIST_CLOSE;
+    } else if (distKm < DIST_TIER_MEDIUM_KM) {
+      score += SCORE_DIST_MEDIUM;
     } else if (distKm < 100) {
-      score += 5;
+      score += SCORE_DIST_FAR;
     }
   }
 
@@ -1031,7 +1053,7 @@ async function fetchPhotonPlaces(
 
   try {
     const res = await fetch(url.toString(), {
-      signal: options.signal || AbortSignal.timeout(5000),
+      signal: options.signal || AbortSignal.timeout(PHOTON_TIMEOUT_MS),
       headers: {
         'User-Agent': 'Reisotor/1.0',
         Accept: 'application/json',
@@ -1145,7 +1167,7 @@ async function fetchNominatimPlaces(
 
   try {
     const res = await fetch(url.toString(), {
-      signal: options.signal || AbortSignal.timeout(4000),
+      signal: options.signal || AbortSignal.timeout(NOMINATIM_TIMEOUT_MS),
       headers: {
         'User-Agent': 'Reisotor/1.3 (https://github.com/dmstern/reisotor)',
         Accept: 'application/json',
@@ -1216,7 +1238,7 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
   const limit =
     options.limit != null && Number.isFinite(options.limit)
       ? Math.min(Math.max(Math.floor(options.limit), 1), 10)
-      : 5;
+      : DEFAULT_SEARCH_LIMIT;
   const lang = options.lang?.trim() || 'de';
   const lat = options.lat != null && Number.isFinite(options.lat) ? options.lat : undefined;
   const lng = options.lng != null && Number.isFinite(options.lng) ? options.lng : undefined;
@@ -1237,7 +1259,7 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
   const baseUrl =
     getEffectiveSetting('photon_api_url', 'PHOTON_API_URL', 'https://photon.komoot.io/api/') ||
     'https://photon.komoot.io/api/';
-  const fetchLimit = Math.min(Math.max(limit + offset, 10), 30);
+  const fetchLimit = Math.min(Math.max(limit + offset, 10), MAX_FETCH_LIMIT);
 
   // 1. Primäre Photon-Abfrage (mit bereinigter Suchanfrage)
   let primaryUrl: URL;
@@ -1265,7 +1287,7 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
 
   try {
     primaryResponse = await fetch(primaryUrl.toString(), {
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(PHOTON_TIMEOUT_MS),
       headers: {
         'User-Agent': 'Reisotor/1.0',
         Accept: 'application/json',
@@ -1381,8 +1403,8 @@ export async function searchPlaces(options: SearchPlacesOptions): Promise<PlaceS
 
     const isDuplicate = deduplicated.some((existing) => {
       if (
-        Math.abs(existing.lat - place.lat) < 0.0005 &&
-        Math.abs(existing.lng - place.lng) < 0.0005
+        Math.abs(existing.lat - place.lat) < DUPLICATE_COORD_EPSILON_DEG &&
+        Math.abs(existing.lng - place.lng) < DUPLICATE_COORD_EPSILON_DEG
       ) {
         const n1 = existing.name.toLowerCase().trim();
         const n2 = place.name.toLowerCase().trim();
@@ -1475,7 +1497,7 @@ export async function reverseGeocode(
   }
 
   const lang = options.lang?.trim() || 'de';
-  const cacheKey = `rev|${lat.toFixed(4)}|${lng.toFixed(4)}|${lang}`;
+  const cacheKey = `rev|${lat.toFixed(REVERSE_CACHE_KEY_PRECISION)}|${lng.toFixed(REVERSE_CACHE_KEY_PRECISION)}|${lang}`;
   const cached = reverseCache.get(cacheKey);
 
   if (cached && Date.now() < cached.expiresAt) {
@@ -1512,7 +1534,7 @@ export async function reverseGeocode(
 
   try {
     const res = await fetch(url.toString(), {
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(PHOTON_TIMEOUT_MS),
       headers: {
         'User-Agent': 'Reisotor/1.0',
         Accept: 'application/json',

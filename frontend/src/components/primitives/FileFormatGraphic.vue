@@ -101,6 +101,12 @@ const category = computed<FileCategory>(() => {
   return 'generic';
 });
 
+const MAX_EXT_BADGE_LENGTH = 4;
+const SIZE_SM_PX = 20;
+const SIZE_MD_PX = 26;
+const SIZE_LG_PX = 36;
+const SIZE_XL_PX = 48;
+
 const displayLabel = computed<string>(() => {
   const ext = normalizedExt.value.toUpperCase();
 
@@ -109,15 +115,15 @@ const displayLabel = computed<string>(() => {
   }
 
   if (['DOC', 'DOCX', 'ODT', 'RTF'].includes(ext)) {
-    return ext.slice(0, 4);
+    return ext.slice(0, MAX_EXT_BADGE_LENGTH);
   }
 
   if (['XLS', 'XLSX', 'CSV'].includes(ext)) {
-    return ext.slice(0, 4);
+    return ext.slice(0, MAX_EXT_BADGE_LENGTH);
   }
 
   if (['PPT', 'PPTX'].includes(ext)) {
-    return ext.slice(0, 4);
+    return ext.slice(0, MAX_EXT_BADGE_LENGTH);
   }
 
   if (['TXT', 'MD'].includes(ext)) {
@@ -132,7 +138,7 @@ const displayLabel = computed<string>(() => {
     return 'AUDIO';
   }
 
-  if (ext.length > 0 && ext.length <= 4 && ext !== 'FILE') {
+  if (ext.length > 0 && ext.length <= MAX_EXT_BADGE_LENGTH && ext !== 'FILE') {
     return ext;
   }
 
@@ -146,15 +152,15 @@ const pixelSize = computed<number>(() => {
 
   switch (props.size) {
     case 'sm':
-      return 20;
+      return SIZE_SM_PX;
     case 'md':
-      return 26;
+      return SIZE_MD_PX;
     case 'lg':
-      return 36;
+      return SIZE_LG_PX;
     case 'xl':
-      return 48;
+      return SIZE_XL_PX;
     default:
-      return 26;
+      return SIZE_MD_PX;
   }
 });
 

@@ -1092,7 +1092,8 @@ async function openSpotWithScroll(spotId: number, targetEl?: HTMLElement | null)
     return;
   }
 
-  await new Promise<void>((resolve) => setTimeout(resolve, 260));
+  const DRAWER_TRANSITION_MS = 260;
+  await new Promise<void>((resolve) => setTimeout(resolve, DRAWER_TRANSITION_MS));
 
   if (token !== spotOpenSequenceToken) {
     return;

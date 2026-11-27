@@ -108,7 +108,10 @@ watch(
 );
 
 // Fensterbreite zur Deckelung auf Zwischengrößen (<1280px max 320px, ab 1280px max 860px)
-const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1280);
+const WIDE_VIEWPORT_MIN_WIDTH = 1280;
+const windowWidth = ref(
+  typeof window !== 'undefined' ? window.innerWidth : WIDE_VIEWPORT_MIN_WIDTH
+);
 
 function onWindowResize() {
   windowWidth.value = window.innerWidth;
@@ -119,7 +122,7 @@ onMounted(() => {
 });
 
 function getMaxWidth(): number {
-  return windowWidth.value < 1280 ? MAX_DRAWER_WIDTH_COMPACT : MAX_DRAWER_WIDTH;
+  return windowWidth.value < WIDE_VIEWPORT_MIN_WIDTH ? MAX_DRAWER_WIDTH_COMPACT : MAX_DRAWER_WIDTH;
 }
 
 const effectiveWidth = computed(() => Math.min(getMaxWidth(), props.width));

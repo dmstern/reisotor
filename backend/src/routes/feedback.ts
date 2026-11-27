@@ -42,12 +42,18 @@ function resolveOptedInContactEmail(email?: string, includeEmail?: boolean): str
 const MAX_TITLE_LENGTH = 200;
 const MAX_DESCRIPTION_LENGTH = 5000;
 const MAX_EMAIL_LENGTH = 200;
+const MAX_VERSION_LENGTH = 50;
+const MAX_SCREENSHOT_MB = 8;
+const MAX_SCREENSHOT_BYTES = MAX_SCREENSHOT_MB * 1024 * 1024;
+const RELAY_TIMEOUT_MS = 20_000;
+const HTTP_TOO_MANY_REQUESTS = 429;
+const HTTP_BAD_GATEWAY = 502;
+const HTTP_SERVICE_UNAVAILABLE = 503;
 const ALLOWED_SCREENSHOT_TYPES: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
   'image/webp': 'webp',
 };
-const MAX_SCREENSHOT_BYTES = 8 * 1024 * 1024;
 const DEFAULT_RELAY_URL = 'https://reise.ruebenherz.de/api/feedback/relay';
 
 function getRelayUrl(): string | null {
@@ -139,7 +145,7 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
         reply.header('Retry-After', String(rateLimit.retryAfterSeconds));
       }
 
-      return reply.code(429).send({
+      return reply.code(HTTP_TOO_MANY_REQUESTS).send({
         error:
           'Zu viele Feedback-Meldungen von dieser IP-Adresse. Bitte versuche es später erneut.',
       });
@@ -167,7 +173,7 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ error: 'Ungültige E-Mail-Adresse' });
     }
 
-    if (version && (typeof version !== 'string' || version.length > 50)) {
+    if (version && (typeof version !== 'string' || version.length > MAX_VERSION_LENGTH)) {
       return reply.code(400).send({ error: 'Ungültige Versionsangabe' });
     }
 
@@ -218,7 +224,7 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
 
     if (!result.ok) {
       req.log.error({ err: result.error }, 'Relay feedback issue creation failed');
-      return reply.code(result.status ?? 502).send({ error: result.error });
+      return reply.code(result.status ?? HTTP_BAD_GATEWAY).send({ error: result.error });
     }
 
     reply.code(201);
@@ -265,7 +271,7 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
         const relayUrl = getRelayUrl();
 
         if (!relayUrl) {
-          return reply.code(503).send({
+          return reply.code(HTTP_SERVICE_UNAVAILABLE).send({
             error: `Auf diesem Server ist kein GitHub-Zugang (GITHUB_TOKEN) und kein Feedback-Relay eingerichtet. Bei selbstgehosteten Instanzen können Fehler und Feedback direkt auf GitHub gemeldet werden: https://github.com/${getGithubRepo()}/issues`,
           });
         }
@@ -285,7 +291,7 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
               email: contactEmail,
               version: appVersion,
             }),
-            signal: AbortSignal.timeout(20_000),
+            signal: AbortSignal.timeout(RELAY_TIMEOUT_MS),
           });
 
           const data = (await relayRes.json()) as {
@@ -297,7 +303,9 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
           if (!relayRes.ok) {
             const errorMsg = data?.error || `Relay antwortete mit Status ${relayRes.status}`;
             return reply
-              .code(relayRes.status >= 400 && relayRes.status < 500 ? relayRes.status : 502)
+              .code(
+                relayRes.status >= 400 && relayRes.status < 500 ? relayRes.status : HTTP_BAD_GATEWAY
+              )
               .send({
                 error: errorMsg,
               });
@@ -307,7 +315,7 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
           return { issue_number: data.issue_number, issue_url: data.issue_url };
         } catch (err) {
           req.log.error({ err }, 'Forwarding to feedback relay failed');
-          return reply.code(502).send({
+          return reply.code(HTTP_BAD_GATEWAY).send({
             error:
               'Meldung konnte nicht an den Feedback-Relay übermittelt werden (Verbindungsfehler). Bitte später erneut versuchen.',
           });
@@ -352,7 +360,7 @@ export const feedbackRoutes: FastifyPluginAsync = async (app) => {
 
       if (!result.ok) {
         req.log.error({ err: result.error }, 'Feedback issue creation failed');
-        return reply.code(result.status ?? 502).send({ error: result.error });
+        return reply.code(result.status ?? HTTP_BAD_GATEWAY).send({ error: result.error });
       }
 
       reply.code(201);

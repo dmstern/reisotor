@@ -129,8 +129,20 @@ function idFromPath(path: string): number | undefined {
 
 let nextId = 1000;
 
+const DEMO_DELAY_MS = 120;
+const EARTH_RADIUS_KM = 6371;
+const ROUTE_DETOUR_FACTOR = 1.2;
+const BIKE_SPEED_KMH = 18;
+const WALK_SPEED_KMH = 4.5;
+const SECONDS_PER_HOUR = 3600;
+const DEMO_ROUTE_CURVE_OFFSET_DEG = 0.002;
+const DEMO_PASSWORD_RADIX = 36;
+const DEMO_PASSWORD_SLICE = -6;
+const BASE64_NUMERATOR = 3;
+const BASE64_DENOMINATOR = 4;
+
 function delay(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 120));
+  return new Promise((resolve) => setTimeout(resolve, DEMO_DELAY_MS));
 }
 
 export async function demoRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -545,17 +557,17 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
           Math.sin(dLng / 2) *
           Math.sin(dLng / 2);
       const centralAngle = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      const distKm = 6371 * centralAngle;
-      const distance_meters = Math.round(distKm * 1000 * 1.2);
+      const distKm = EARTH_RADIUS_KM * centralAngle;
+      const distance_meters = Math.round(distKm * 1000 * ROUTE_DETOUR_FACTOR);
       let speedKmh = 60;
 
       if (transport_type === 'Fahrrad') {
-        speedKmh = 18;
+        speedKmh = BIKE_SPEED_KMH;
       } else if (transport_type === 'zu Fuß') {
-        speedKmh = 4.5;
+        speedKmh = WALK_SPEED_KMH;
       }
 
-      const duration_seconds = Math.round((distance_meters / (speedKmh * 1000)) * 3600);
+      const duration_seconds = Math.round((distance_meters / (speedKmh * 1000)) * SECONDS_PER_HOUR);
       let profile = 'driving-car';
 
       if (transport_type === 'Fahrrad') {
@@ -571,8 +583,8 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
             coordinates: [
               [from_lat, from_lng],
               [
-                from_lat + (to_lat - from_lat) * 0.5 + 0.002,
-                from_lng + (to_lng - from_lng) * 0.5 - 0.002,
+                from_lat + (to_lat - from_lat) * 0.5 + DEMO_ROUTE_CURVE_OFFSET_DEG,
+                from_lng + (to_lng - from_lng) * 0.5 - DEMO_ROUTE_CURVE_OFFSET_DEG,
               ],
               [to_lat, to_lng],
             ],
@@ -705,7 +717,8 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
     const targetId = Number(resetPasswordMatch[1]);
     const user = currentDemoUsers.find((candidateUser) => candidateUser.id === targetId);
     const tempPw =
-      (body?.temporaryPassword as string)?.trim() || `Demo-${Math.random().toString(36).slice(-6)}`;
+      (body?.temporaryPassword as string)?.trim() ||
+      `Demo-${Math.random().toString(DEMO_PASSWORD_RADIX).slice(DEMO_PASSWORD_SLICE)}`;
     return {
       temporaryPassword: tempPw,
       resetUrl: `${window.location.origin}/reset-password?token=demo-token-${targetId}`,
@@ -1297,7 +1310,7 @@ export async function demoRequest<T>(path: string, options: RequestInit = {}): P
       const dataUrl = String(body?.data ?? '');
       const mimeMatch = /^data:([^;]+);base64,/i.exec(dataUrl);
       const mimeType = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
-      const sizeBytes = Math.round((dataUrl.length * 3) / 4);
+      const sizeBytes = Math.round((dataUrl.length * BASE64_NUMERATOR) / BASE64_DENOMINATOR);
       (created as Record<string, unknown>).url = dataUrl;
       (created as Record<string, unknown>).original_name = String(body?.filename ?? 'attachment');
       (created as Record<string, unknown>).mime_type = mimeType;

@@ -107,10 +107,14 @@ export const realtimeRoutes: FastifyPluginAsync = async (app) => {
   // Worker/nach Schließen der App, insbesondere iOS Safari/PWA) - diese Freigabe sorgt stattdessen
   // dafür, dass das Teilen unabhängig von der aktuell offenen Ansicht läuft und Neustarts der App
   // übersteht, solange sie irgendwo geöffnet ist (siehe stores/locationSharing.ts).
+  const DAYS_PER_WEEK = 7;
+  const FOREVER_YEARS = 50;
+  const DAYS_PER_YEAR = 365;
+  const DAY_MS = 24 * 60 * 60 * 1000;
   const SHARE_DURATION_MS: Record<'day' | 'week' | 'forever', number> = {
-    day: 24 * 60 * 60 * 1000,
-    week: 7 * 24 * 60 * 60 * 1000,
-    forever: 50 * 365 * 24 * 60 * 60 * 1000,
+    day: DAY_MS,
+    week: DAYS_PER_WEEK * DAY_MS,
+    forever: FOREVER_YEARS * DAYS_PER_YEAR * DAY_MS,
   };
 
   app.put<{ Body: { trip_id?: number; duration?: string } }>(

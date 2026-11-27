@@ -2,8 +2,9 @@
 import { computed } from 'vue';
 
 const props = defineProps<{ images: string[] }>();
-const shown = computed(() => props.images.slice(0, 4));
-const extraCount = computed(() => Math.max(0, props.images.length - 4));
+const MAX_COLLAGE_IMAGES = 4;
+const shown = computed(() => props.images.slice(0, MAX_COLLAGE_IMAGES));
+const extraCount = computed(() => Math.max(0, props.images.length - MAX_COLLAGE_IMAGES));
 </script>
 
 <template>

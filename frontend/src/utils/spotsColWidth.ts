@@ -66,12 +66,14 @@ export function calcValidSpotsColWidth(options: CalcSpotsColWidthOptions): numbe
     return base;
   }
 
+  const MIN_MAP_WIDTH_PX = 380;
+  const MAP_MARGIN_PX = 16;
   const available =
     options.availableWidth ?? (typeof window !== 'undefined' ? window.innerWidth : 1024);
   // Hält mindestens 380px für die Karte + 16px Rand frei
   const maxAllowed = Math.max(
     MIN_SPOTS_COL_WIDTH,
-    Math.min(MAX_SPOTS_COL_WIDTH, available - 380 - 16)
+    Math.min(MAX_SPOTS_COL_WIDTH, available - MIN_MAP_WIDTH_PX - MAP_MARGIN_PX)
   );
   return Math.min(Math.max(base, MIN_SPOTS_COL_WIDTH), maxAllowed);
 }

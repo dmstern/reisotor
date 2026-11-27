@@ -43,6 +43,8 @@ import { uploadsRoutes } from './routes/uploads.js';
 import { isVersionBelowMin } from './utils/clientVersion.js';
 
 const HTTP_UPGRADE_REQUIRED = 426;
+const MAX_BODY_LIMIT_MB = 20;
+const SESSION_MAX_AGE_DAYS = 30;
 const CLIENT_VERSION_EXEMPT_PATHS = new Set(['/api/build-info', '/api/legal']);
 
 // Von server.ts getrennt (das nur noch buildApp() aufruft und .listen()), damit Tests eine fertig
@@ -62,7 +64,7 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
   // Base64-Kodierung hat ~33% Overhead.
   const app = Fastify({
     logger: opts.logger ?? true,
-    bodyLimit: 20 * 1024 * 1024,
+    bodyLimit: MAX_BODY_LIMIT_MB * 1024 * 1024,
     trustProxy: true,
   });
 
@@ -95,7 +97,7 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
       secure: isProd,
       httpOnly: true,
       sameSite: 'lax',
-      maxAge: 1000 * 60 * 60 * 24 * 30, // 30 Tage, "eingeloggt bleiben"
+      maxAge: 1000 * 60 * 60 * 24 * SESSION_MAX_AGE_DAYS, // 30 Tage, "eingeloggt bleiben"
     },
   });
 

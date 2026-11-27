@@ -34,14 +34,18 @@ let nextId = 1;
 
 export function useToast() {
   function showToast(options: ToastOptions | string) {
+    const DEFAULT_TOAST_TIMEOUT_S = 5;
+    const MIN_ERROR_TOAST_DURATION_MS = 8000;
     const uiSettingsStore = useUiSettingsStore();
-    const defaultDuration = (uiSettingsStore.toastTimeout ?? 5) * 1000;
+    const defaultDuration = (uiSettingsStore.toastTimeout ?? DEFAULT_TOAST_TIMEOUT_S) * 1000;
 
     const opts: ToastOptions = typeof options === 'string' ? { message: options } : options;
     const type = opts.type ?? 'info';
     const rawDuration = opts.duration ?? defaultDuration;
     const duration =
-      type === 'error' && rawDuration > 0 ? Math.max(rawDuration, 8000) : rawDuration;
+      type === 'error' && rawDuration > 0
+        ? Math.max(rawDuration, MIN_ERROR_TOAST_DURATION_MS)
+        : rawDuration;
     const action =
       opts.action ??
       (opts.onRestore
