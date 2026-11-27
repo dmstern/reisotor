@@ -228,8 +228,7 @@ button.upload-label {
   color: var(--color-primary);
   cursor: pointer;
   padding: var(--space-xs) var(--space-sm);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--radius-xs);
   transition: background-color 0.15s;
 }
 

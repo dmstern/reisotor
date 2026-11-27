@@ -566,8 +566,7 @@ function onTotalSectionClick(e: MouseEvent) {
   font-weight: 600;
   padding: var(--space-xs) var(--space-sm);
   gap: var(--space-xs);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--control-radius-xs);
 }
 
 @include can-hover {

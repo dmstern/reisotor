@@ -256,8 +256,7 @@ function onArrivalChange(event: Event) {
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--control-radius-sm);
   border: 1px solid var(--color-border-strong);
   background: var(--color-surface);
   color: var(--color-text-muted);

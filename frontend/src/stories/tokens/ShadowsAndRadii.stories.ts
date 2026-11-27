@@ -194,7 +194,7 @@ export const ShadowsAndRadiiSystem: Story = {
           <div
             v-for="sr in specialRadii"
             :key="sr.var"
-            style="padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); background: var(--color-surface); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; align-items: center; text-align: center;"
+            style="padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-sm-squircle); corner-shape: squircle; background: var(--color-surface); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; align-items: center; text-align: center;"
           >
             <div
               v-if="sr.shape === 'pill'"

@@ -344,8 +344,7 @@ async function onSubmit() {
   background-color: var(--color-surface);
   background-image: var(--gradient-control-3d);
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--control-radius-sm);
   box-shadow: var(--shadow-control);
   z-index: var(--z-sticky, 10);
 }

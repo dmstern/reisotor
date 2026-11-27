@@ -65,7 +65,7 @@ defineProps<{
   bottom: 4px;
   width: 66px;
   height: 32px;
-  border-radius: var(--radius-full);
+  border-radius: 50%;
   transform: rotateX(60deg);
   display: flex;
   align-items: center;
@@ -117,7 +117,7 @@ defineProps<{
   bottom: 4px;
   width: 66px;
   height: 32px;
-  border-radius: var(--radius-full);
+  border-radius: 50%;
   transform: rotateX(60deg);
   background: conic-gradient(
     from 0deg,

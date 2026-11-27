@@ -308,8 +308,7 @@ function selectAndClose(id: number) {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--control-radius-sm);
 }
 
 .trip-select {
@@ -332,8 +331,7 @@ function selectAndClose(id: number) {
   margin-top: var(--space-1);
   text-align: left;
   border: 1px dashed var(--color-border-divider);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--control-radius-sm);
   padding: var(--space-1-5) var(--space-sm);
   font-size: var(--font-size-sm);
   color: var(--color-primary-dark);
@@ -357,8 +355,7 @@ function selectAndClose(id: number) {
   text-align: left;
   background: none;
   border: none;
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--control-radius-sm);
   padding: var(--space-1-5) var(--space-sm);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);

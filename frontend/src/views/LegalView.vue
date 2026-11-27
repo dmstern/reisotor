@@ -141,8 +141,7 @@ function goBack() {
 .theme-toggle.icon {
   background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--control-radius-sm);
   box-shadow: var(--shadow-sm);
   flex-shrink: 0;
 }

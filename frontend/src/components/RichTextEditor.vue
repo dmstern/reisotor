@@ -978,8 +978,7 @@ defineExpose({
   min-height: var(--input-height, 46px);
   width: 100%;
   border: 1.5px solid var(--input-border-color);
-  border-radius: var(--radius-sm-squircle);
-  corner-shape: squircle;
+  border-radius: var(--control-radius-md);
   background: var(--color-input-bg);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
