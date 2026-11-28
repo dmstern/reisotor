@@ -120,7 +120,7 @@ describe('ExcursionFormModal', () => {
     cleanUp();
   });
 
-  it('places the date field below the role field and renders an editable Gemacht status toggle', async () => {
+  it('places the date field below the role field and renders an editable Geplant/Gemacht status toggle with top label', async () => {
     const { cleanUp } = mountModal({
       show: true,
       excursion: { ...dummyExcursion, done: 1 },
@@ -137,15 +137,35 @@ describe('ExcursionFormModal', () => {
       roleSelect.compareDocumentPosition(dateInput) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
 
+    const fieldLabel = document.querySelector('.tour-done-field .form-field-label');
+    expect(fieldLabel?.textContent).toContain('Status');
+
     const doneSwitch = document.querySelector(
       '.tour-done-field button[role="switch"]'
     ) as HTMLButtonElement;
-    const doneLabel = document.querySelector('.tour-done-toggle-label');
+    const stateButtons = Array.from(
+      document.querySelectorAll('.tour-done-state-option')
+    ) as HTMLButtonElement[];
+    const [plannedBtn, doneBtn] = stateButtons;
     expect(doneSwitch).not.toBeNull();
-    expect(doneLabel?.textContent).toContain('Gemacht');
+    expect(stateButtons).toHaveLength(2);
+    expect(plannedBtn?.textContent?.trim()).toBe('Geplant');
+    expect(doneBtn?.textContent?.trim()).toBe('Gemacht');
     expect(doneSwitch.getAttribute('aria-checked')).toBe('true');
+    expect(doneBtn?.classList.contains('is-active')).toBe(true);
+    expect(plannedBtn?.classList.contains('is-active')).toBe(false);
 
     doneSwitch.click();
+    await nextTick();
+    expect(doneSwitch.getAttribute('aria-checked')).toBe('false');
+    expect(plannedBtn?.classList.contains('is-active')).toBe(true);
+    expect(doneBtn?.classList.contains('is-active')).toBe(false);
+
+    doneBtn?.click();
+    await nextTick();
+    expect(doneSwitch.getAttribute('aria-checked')).toBe('true');
+
+    plannedBtn?.click();
     await nextTick();
     expect(doneSwitch.getAttribute('aria-checked')).toBe('false');
     cleanUp();
