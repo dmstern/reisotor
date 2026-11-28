@@ -119,6 +119,7 @@ describe('TourDetailView', () => {
 
     expect(html).toContain('tour-detail-view');
     expect(html).toContain('Wanderung zum Wasserfall');
+    expect(html).toContain('tour-detail-author-row');
     expect(html).toContain('tour-detail-meta-row');
     expect(html).toContain('tour-detail-meta');
     expect(html).toContain('tour-detail-author');
@@ -127,7 +128,7 @@ describe('TourDetailView', () => {
     expect(html).toContain('1\u00A0Std. 30\u00A0Min.');
     expect(html).toContain('tour-detail-date-weather');
     expect(html).toContain('tour-detail-date-btn');
-    expect(html).toContain('15.07');
+    expect(html).toContain('Mi, 15.07.');
     expect(html).toContain('22 °C');
     expect(html).toContain('aria-label="Wetter: Überwiegend klar, 22 °C – Tagesverlauf anzeigen"');
     expect(html).not.toContain('2 Stationen');
@@ -229,7 +230,7 @@ describe('TourDetailView', () => {
       travelItems: [],
     });
 
-    expect(html).toContain('class="btn btn--ghost btn--xs tour-detail-weather-btn"');
+    expect(html).toContain('class="btn btn--ghost btn--sm tour-detail-weather-btn"');
     expect(html).toContain('title="Überwiegend klar (22 °C) – Tagesverlauf anzeigen"');
   });
 
@@ -248,7 +249,7 @@ describe('TourDetailView', () => {
 
     expect(withDateHtml).toContain('tour-detail-meta-row');
     expect(withDateHtml).toContain('tour-detail-date-btn');
-    expect(withDateHtml).toContain('15.07');
+    expect(withDateHtml).toContain('Mi, 15.07.');
     expect(withDateHtml).not.toContain('tour-detail-weather-btn');
 
     const withoutDateHtml = await mountComponent({
