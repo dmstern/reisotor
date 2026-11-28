@@ -65,10 +65,12 @@ const showComments = ref(false);
 const pendingDone = ref<boolean | null>(null);
 const isDone = computed(() => pendingDone.value ?? Boolean(props.excursion.done));
 let doneQueueTail = Promise.resolve();
+let doneRequestSeq = 0;
 
 /** Serialisiert schnelle Toggle-Klicks, damit ältere API-Antworten keinen neueren Status überschreiben. */
 function onToggleDone(nextDone: boolean) {
   const excursionId = props.excursion.id;
+  const requestSeq = ++doneRequestSeq;
   pendingDone.value = nextDone;
   doneQueueTail = doneQueueTail
     .then(async () => {
@@ -78,7 +80,7 @@ function onToggleDone(nextDone: boolean) {
       // Fehlerbehandlung erfolgt im Store/API-Layer; State fällt im finally auf props.excursion.done zurück.
     })
     .finally(() => {
-      if (pendingDone.value === nextDone) {
+      if (requestSeq === doneRequestSeq) {
         pendingDone.value = null;
       }
     });
@@ -298,7 +300,7 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
             :id="doneToggleId"
             size="sm"
             :model-value="isDone"
-            :aria-label="isDone ? 'Nicht mehr als gemacht markiert' : 'Als gemacht markieren'"
+            :aria-label="isDone ? 'Als nicht gemacht markieren' : 'Als gemacht markieren'"
             :title="isDone ? 'Als nicht gemacht markieren' : 'Als gemacht markieren'"
             @update:model-value="onToggleDone"
           />

@@ -14,7 +14,6 @@ import { formatDate as formatDateShared } from '../utils/dateFormat';
 const props = defineProps<{
   excursion: Excursion;
   expanded: boolean;
-  size?: 'xs' | 'sm' | 'field';
 }>();
 
 const drawers = useDrawersStore();
@@ -80,7 +79,6 @@ function openCalendarAtDate(date: string) {
   <DoneToggle
     v-if="expanded"
     key="btn-done"
-    :size="size"
     :done="!!excursion.done"
     :planned="!!excursion.date"
     :dropdown="hasDropdown"

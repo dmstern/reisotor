@@ -17,7 +17,7 @@ const props = withDefaults(
     showIcon?: boolean;
     dropdown?: boolean;
     dropdownOpen?: boolean;
-    size?: 'xs' | 'sm' | 'field';
+    size?: 'sm' | 'field';
     disabled?: boolean;
   }>(),
   {
@@ -37,23 +37,14 @@ const emit = defineEmits<{
   (e: 'click', event: MouseEvent): void;
 }>();
 
-const XS_ICON_SIZE_PX = 12;
 const COMPACT_ICON_SIZE_PX = 14;
 const FIELD_ICON_SIZE_PX = 16;
 
 const isDoneOrPartial = computed(() => props.done || props.partiallyDone);
 const icon = computed(() => (isDoneOrPartial.value ? ACTION_ICONS.done : ACTION_ICONS.notDone));
-const iconSize = computed(() => {
-  if (props.size === 'xs') {
-    return XS_ICON_SIZE_PX;
-  }
-
-  if (props.size === 'field') {
-    return FIELD_ICON_SIZE_PX;
-  }
-
-  return COMPACT_ICON_SIZE_PX;
-});
+const iconSize = computed(() =>
+  props.size === 'field' ? FIELD_ICON_SIZE_PX : COMPACT_ICON_SIZE_PX
+);
 
 function onClick(event: MouseEvent) {
   if (props.disabled) {
@@ -76,7 +67,6 @@ function onClick(event: MouseEvent) {
       active: done,
       'has-dropdown': dropdown,
       'is-dropdown-open': dropdownOpen,
-      'done-toggle--xs': size === 'xs',
       'done-toggle--field': size === 'field',
       'is-disabled': disabled,
     }"
@@ -126,13 +116,6 @@ function onClick(event: MouseEvent) {
   max-width: 100%;
   flex-shrink: 0;
   box-sizing: border-box;
-}
-
-.done-toggle--xs {
-  min-height: var(--control-height-xs, 30px);
-  padding: var(--space-2xs) var(--space-sm);
-  gap: var(--control-gap-xs);
-  font-size: var(--font-size-xs);
 }
 
 .done-toggle--field {
