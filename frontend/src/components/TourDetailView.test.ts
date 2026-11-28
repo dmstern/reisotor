@@ -1,18 +1,27 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createApp, h } from 'vue';
+import { createApp, h, nextTick } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { renderToString } from 'vue/server-renderer';
 import TourDetailView from './TourDetailView.vue';
+import { useExcursionsStore } from '../stores/excursions';
+import { useDrawersStore } from '../stores/drawers';
 import type { Excursion, Spot, TravelItem } from '../api/types';
 import type { CommentItem } from './Comments.vue';
 
 const { mockWeatherSummary } = vi.hoisted(() => ({
   mockWeatherSummary: {
-    weatherCode: 1,
-    tempLabel: '22 °C',
-    tempMin: 16,
-    tempMax: 22,
+    value: {
+      weatherCode: 1,
+      tempLabel: '22 °C',
+      tempMin: 16,
+      tempMax: 22,
+    } as {
+      weatherCode: number;
+      tempLabel: string;
+      tempMin: number;
+      tempMax: number;
+    } | null,
   },
 }));
 
@@ -21,7 +30,7 @@ vi.mock('../composables/useExcursionWeather', async () => {
   return {
     useExcursionWeather: () => ({
       mappedStations: ref([]),
-      weatherSummary: ref(mockWeatherSummary),
+      weatherSummary: ref(mockWeatherSummary.value),
       statusDateLabel: ref('15.07.'),
       primaryWeatherDay: ref(null),
       primaryWeatherDays: ref([]),
@@ -33,6 +42,12 @@ vi.mock('../composables/useExcursionWeather', async () => {
 describe('TourDetailView', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
+    mockWeatherSummary.value = {
+      weatherCode: 1,
+      tempLabel: '22 °C',
+      tempMin: 16,
+      tempMax: 22,
+    };
   });
 
   const mockExcursion: Excursion = {
@@ -88,7 +103,7 @@ describe('TourDetailView', () => {
     return renderToString(app);
   }
 
-  it('rendert Header mit dezenter Meta-Zeile, offener Wetter-Grafik, DoneStatus und ohne Info-Badges oder Track-Counter', async () => {
+  it('rendert Header mit dezenter Meta-Zeile, Datum neben Wetter, ToggleSwitch (sm) und ohne Info-Badges oder Track-Counter', async () => {
     const html = await mountComponent({
       excursion: {
         ...mockExcursion,
@@ -104,18 +119,25 @@ describe('TourDetailView', () => {
 
     expect(html).toContain('tour-detail-view');
     expect(html).toContain('Wanderung zum Wasserfall');
+    expect(html).toContain('tour-detail-author-row');
     expect(html).toContain('tour-detail-meta-row');
     expect(html).toContain('tour-detail-meta');
     expect(html).toContain('tour-detail-author');
     expect(html).toContain('tour-detail-duration');
     expect(html).toContain('Von Daniel');
     expect(html).toContain('1\u00A0Std. 30\u00A0Min.');
+    expect(html).toContain('tour-detail-date-weather');
+    expect(html).toContain('tour-detail-date-btn');
+    expect(html).toContain('Mi, 15.07.');
     expect(html).toContain('22 °C');
     expect(html).toContain('aria-label="Wetter: Überwiegend klar, 22 °C – Tagesverlauf anzeigen"');
     expect(html).not.toContain('2 Stationen');
     expect(html).not.toContain('Parkplatz → Wasserfall');
     expect(html).toContain('tour-detail-header-controls');
-    expect(html).toContain('done-toggle');
+    expect(html).toContain('toggle-switch--sm');
+    expect(html).toContain('role="switch"');
+    expect(html).toContain('Gemacht');
+    expect(html).not.toContain('done-toggle');
     expect(html).toContain('like-btn');
     expect(html).toContain('tour-detail-links-row');
     expect(html).toContain('Auf Karte anzeigen');
@@ -128,9 +150,13 @@ describe('TourDetailView', () => {
     const titleGroupIdx = html.indexOf('tour-detail-title-group');
     const badgeIdx = html.indexOf('tour-type-badge');
     const editBtnIdx = html.indexOf('tour-edit-btn');
+    const dateBtnIdx = html.indexOf('tour-detail-date-btn');
+    const weatherBtnIdx = html.indexOf('tour-detail-weather-btn');
     expect(titleGroupIdx).toBeGreaterThan(-1);
     expect(badgeIdx).toBeGreaterThan(titleGroupIdx);
     expect(editBtnIdx).toBeGreaterThan(badgeIdx);
+    expect(dateBtnIdx).toBeGreaterThan(-1);
+    expect(weatherBtnIdx).toBeGreaterThan(dateBtnIdx);
   });
 
   it('rendert Uhrzeit-Spanne (Abfahrt/Ankunft) zusammen mit der Dauer in der Meta-Zeile', async () => {
@@ -204,7 +230,82 @@ describe('TourDetailView', () => {
       travelItems: [],
     });
 
-    expect(html).toContain('class="btn btn--ghost btn--sm"');
+    expect(html).toContain('class="btn btn--ghost btn--sm tour-detail-weather-btn"');
     expect(html).toContain('title="Überwiegend klar (22 °C) – Tagesverlauf anzeigen"');
+  });
+
+  it('rendert das Datum auch ohne Wetter und Meta-Text und blendet es ohne Datum aus', async () => {
+    mockWeatherSummary.value = null;
+
+    const withDateHtml = await mountComponent({
+      excursion: { ...mockExcursion, legs: [] } as unknown as Excursion,
+      creatorLabel: null,
+      likeCount: 0,
+      liked: false,
+      comments: [],
+      stations: [],
+      travelItems: [],
+    });
+
+    expect(withDateHtml).toContain('tour-detail-meta-row');
+    expect(withDateHtml).toContain('tour-detail-date-btn');
+    expect(withDateHtml).toContain('Mi, 15.07.');
+    expect(withDateHtml).not.toContain('tour-detail-weather-btn');
+
+    const withoutDateHtml = await mountComponent({
+      excursion: { ...mockExcursion, date: null, legs: [] } as unknown as Excursion,
+      creatorLabel: null,
+      likeCount: 0,
+      liked: false,
+      comments: [],
+      stations: [],
+      travelItems: [],
+    });
+
+    expect(withoutDateHtml).not.toContain('tour-detail-meta-row');
+    expect(withoutDateHtml).not.toContain('tour-detail-date-btn');
+  });
+
+  it('schaltet done direkt über den ToggleSwitch um und öffnet das Datum im Kalender', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const excursionsStore = useExcursionsStore(pinia);
+    const drawersStore = useDrawersStore(pinia);
+    const setDoneSpy = vi.spyOn(excursionsStore, 'setDone').mockResolvedValue();
+    const openCalendarSpy = vi.spyOn(drawersStore, 'openCalendar').mockImplementation(() => {});
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const app = createApp({
+      render: () =>
+        h(TourDetailView, {
+          excursion: mockExcursion,
+          creatorLabel: 'Daniel',
+          likeCount: 0,
+          liked: false,
+          comments: [],
+          stations: mockStations,
+          travelItems: [],
+        }),
+    });
+    app.use(pinia);
+    app.mount(container);
+
+    const switchBtn = container.querySelector<HTMLButtonElement>('[role="switch"]');
+    const dateBtn = container.querySelector<HTMLButtonElement>('.tour-detail-date-btn');
+    expect(switchBtn).not.toBeNull();
+    expect(switchBtn?.getAttribute('aria-checked')).toBe('false');
+    expect(dateBtn).not.toBeNull();
+
+    switchBtn?.click();
+    await nextTick();
+    expect(setDoneSpy).toHaveBeenCalledWith(1, true);
+    expect(switchBtn?.getAttribute('aria-checked')).toBe('true');
+
+    dateBtn?.click();
+    expect(openCalendarSpy).toHaveBeenCalledWith('2026-07-15');
+
+    app.unmount();
+    container.remove();
   });
 });

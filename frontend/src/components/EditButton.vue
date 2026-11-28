@@ -7,7 +7,7 @@ withDefaults(
   defineProps<{
     small?: boolean;
     floating?: boolean;
-    size?: 'xs' | 'sm';
+    size?: 'xs' | 'sm' | 'md';
     title?: string;
     ariaLabel?: string;
     icon?: IconDef;

@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, useId } from 'vue';
 import type { Excursion, Spot, TravelItem } from '../api/types';
 import { useDiaryStore } from '../stores/diary';
+import { useExcursionsStore } from '../stores/excursions';
+import { useDrawersStore } from '../stores/drawers';
+import { useCalendarSettingsStore } from '../stores/calendarSettings';
 import { useExcursionStations } from '../composables/useExcursionStations';
 import { useExcursionWeather } from '../composables/useExcursionWeather';
 import EditButton from './EditButton.vue';
@@ -12,7 +15,7 @@ import SocialRow from './SocialRow.vue';
 import Accordion from './primitives/Accordion.vue';
 import FileAttachments from './FileAttachments.vue';
 import TourRoleBadge from './TourRoleBadge.vue';
-import ExcursionDoneStatus from './ExcursionDoneStatus.vue';
+import ToggleSwitch from './primitives/ToggleSwitch.vue';
 import ExcursionMapLinks from './ExcursionMapLinks.vue';
 import LinkedDiaryPills from './LinkedDiaryPills.vue';
 import Button from './primitives/Button.vue';
@@ -23,6 +26,7 @@ import { FORM_FIELD_ICONS } from '../utils/formFieldIcons';
 import { summarizeTourLegsByTransport } from '../utils/travelDuration';
 import { travelTypeIconDef } from '../utils/travelTypeIcon';
 import { weatherCodeMeta } from '../utils/weather';
+import { formatDate as formatDateShared, formatWeekdayDate } from '../utils/dateFormat';
 
 const props = withDefaults(
   defineProps<{
@@ -52,7 +56,35 @@ const emit = defineEmits<{
 }>();
 
 const diaryStore = useDiaryStore();
+const excursionsStore = useExcursionsStore();
+const drawers = useDrawersStore();
+const calendarSettings = useCalendarSettingsStore();
+const doneToggleId = useId();
 const showComments = ref(false);
+
+const pendingDone = ref<boolean | null>(null);
+const isDone = computed(() => pendingDone.value ?? Boolean(props.excursion.done));
+let doneQueueTail = Promise.resolve();
+let doneRequestSeq = 0;
+
+/** Serialisiert schnelle Toggle-Klicks, damit ältere API-Antworten keinen neueren Status überschreiben. */
+function onToggleDone(nextDone: boolean) {
+  const excursionId = props.excursion.id;
+  const requestSeq = ++doneRequestSeq;
+  pendingDone.value = nextDone;
+  doneQueueTail = doneQueueTail
+    .then(async () => {
+      await excursionsStore.setDone(excursionId, nextDone);
+    })
+    .catch(() => {
+      // Fehlerbehandlung erfolgt im Store/API-Layer; State fällt im finally auf props.excursion.done zurück.
+    })
+    .finally(() => {
+      if (requestSeq === doneRequestSeq) {
+        pendingDone.value = null;
+      }
+    });
+}
 
 const linkedDiaryEntries = computed(() =>
   diaryStore.entries.filter(
@@ -101,10 +133,30 @@ const timeLabel = computed(() => {
   return null;
 });
 
+const plannedDateLabel = computed(() => {
+  if (!props.excursion.date) {
+    return '';
+  }
+
+  const formatted = formatWeekdayDate(props.excursion.date);
+
+  return calendarSettings.dateFormat === 'de' && !formatted.endsWith('.')
+    ? `${formatted}.`
+    : formatted;
+});
+
+function openPlannedDateInCalendar() {
+  if (!props.excursion.date) {
+    return;
+  }
+
+  drawers.openCalendar(props.excursion.date);
+}
+
 const hasTimeOrDuration = computed(() => Boolean(timeLabel.value || travelDuration.value));
 
-const hasMeta = computed(() =>
-  Boolean(props.creatorLabel || hasTimeOrDuration.value || weatherSummary.value)
+const hasScheduleRow = computed(() =>
+  Boolean(props.excursion.date || weatherSummary.value || hasTimeOrDuration.value)
 );
 
 const weatherLabel = computed(() =>
@@ -134,7 +186,7 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
           </div>
 
           <EditButton
-            size="sm"
+            size="md"
             shape="squircle"
             variant="ghost"
             class="tour-edit-btn"
@@ -142,20 +194,57 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
           />
         </div>
 
-        <div v-if="hasMeta" class="tour-detail-meta-row">
-          <div v-if="creatorLabel || hasTimeOrDuration" class="tour-detail-meta">
-            <span v-if="creatorLabel" class="tour-detail-author">Von {{ creatorLabel }}</span>
+        <div v-if="creatorLabel" class="tour-detail-author-row">
+          <span class="tour-detail-author">Von {{ creatorLabel }}</span>
+        </div>
+
+        <div v-if="hasScheduleRow" class="tour-detail-meta-row">
+          <div v-if="plannedDateLabel || weatherSummary" class="tour-detail-date-weather">
+            <Button
+              v-if="plannedDateLabel"
+              variant="ghost"
+              size="sm"
+              class="tour-detail-date-btn"
+              title="Diesen Tag im Kalender öffnen"
+              :aria-label="`${formatDateShared(excursion.date!)} im Kalender öffnen`"
+              @click="openPlannedDateInCalendar"
+            >
+              <AppIcon
+                :icon="FORM_FIELD_ICONS.date"
+                :size="15"
+                group="formFields"
+                aria-hidden="true"
+              />
+              <span>{{ plannedDateLabel }}</span>
+            </Button>
+
             <span
-              v-if="creatorLabel && hasTimeOrDuration"
+              v-if="plannedDateLabel && weatherSummary"
               class="tour-detail-meta-sep"
               aria-hidden="true"
             >
               ·
             </span>
+
+            <Button
+              v-if="weatherSummary"
+              variant="ghost"
+              size="sm"
+              class="tour-detail-weather-btn"
+              :title="`${weatherLabel} (${weatherSummary.tempLabel}) – Tagesverlauf anzeigen`"
+              :aria-label="`Wetter: ${weatherLabel}, ${weatherSummary.tempLabel} – Tagesverlauf anzeigen`"
+              @click="openWeatherDialog"
+            >
+              <WeatherIcon :code="weatherSummary.weatherCode" :size="18" aria-hidden="true" />
+              <span>{{ weatherSummary.tempLabel }}</span>
+            </Button>
+          </div>
+
+          <div v-if="hasTimeOrDuration" class="tour-detail-meta">
             <span v-if="timeLabel" class="tour-detail-time">
               <AppIcon
                 :icon="FORM_FIELD_ICONS.time"
-                :size="13"
+                :size="15"
                 group="formFields"
                 aria-hidden="true"
               />
@@ -172,25 +261,13 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
               <AppIcon
                 v-if="!timeLabel"
                 :icon="FORM_FIELD_ICONS.time"
-                :size="13"
+                :size="15"
                 group="formFields"
                 aria-hidden="true"
               />
               <span class="tour-detail-meta-text">{{ travelDuration }}</span>
             </span>
           </div>
-
-          <Button
-            v-if="weatherSummary"
-            variant="ghost"
-            size="sm"
-            :title="`${weatherLabel} (${weatherSummary.tempLabel}) – Tagesverlauf anzeigen`"
-            :aria-label="`Wetter: ${weatherLabel}, ${weatherSummary.tempLabel} – Tagesverlauf anzeigen`"
-            @click="openWeatherDialog"
-          >
-            <WeatherIcon :code="weatherSummary.weatherCode" :size="22" aria-hidden="true" />
-            <span>{{ weatherSummary.tempLabel }}</span>
-          </Button>
         </div>
 
         <div
@@ -207,7 +284,7 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
           >
             <AppIcon
               :icon="travelTypeIconDef(item.type)"
-              :size="15"
+              :size="16"
               group="actions"
               force-style="icons"
               aria-hidden="true"
@@ -219,7 +296,16 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
 
       <div class="tour-detail-header-controls">
         <div class="tour-detail-status">
-          <ExcursionDoneStatus :excursion="excursion" :expanded="true" />
+          <ToggleSwitch
+            :id="doneToggleId"
+            size="sm"
+            :model-value="isDone"
+            :aria-label="isDone ? 'Als nicht gemacht markieren' : 'Als gemacht markieren'"
+            :title="isDone ? 'Als nicht gemacht markieren' : 'Als gemacht markieren'"
+            @update:model-value="onToggleDone"
+          />
+          <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
+          <label :for="doneToggleId" class="tour-detail-done-label">Gemacht</label>
         </div>
 
         <SocialRow
@@ -326,9 +412,11 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
 }
 
 .tour-detail-heading-group {
+  --tour-meta-row-height: 1.25rem;
+
   display: flex;
   flex-direction: column;
-  gap: var(--space-1-5);
+  gap: var(--space-sm);
   min-width: 0;
 }
 
@@ -369,12 +457,21 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
   flex-shrink: 0;
 }
 
+.tour-detail-author-row {
+  display: flex;
+  align-items: safe center;
+  min-width: 0;
+  min-height: var(--tour-meta-row-height);
+  font-size: var(--font-size-sm);
+  line-height: var(--tour-meta-row-height);
+  color: var(--color-text-muted);
+}
+
 .tour-detail-meta-row {
   display: flex;
   align-items: safe center;
-  justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--space-xs) var(--space-md);
+  gap: var(--space-sm) var(--space-md);
   min-width: 0;
 }
 
@@ -382,10 +479,11 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
   display: flex;
   align-items: safe center;
   flex-wrap: wrap;
-  gap: var(--space-xs) var(--space-1-5);
+  gap: var(--space-sm) var(--space-1-5);
   min-width: 0;
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-snug);
+  min-height: var(--tour-meta-row-height);
+  font-size: var(--font-size-sm);
+  line-height: var(--tour-meta-row-height);
   color: var(--color-text-muted);
 }
 
@@ -395,12 +493,40 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .tour-detail-meta-sep {
+  color: var(--color-text-muted);
   opacity: 0.6;
   flex-shrink: 0;
+}
+
+.tour-detail-date-weather {
+  display: inline-flex;
+  align-items: safe center;
+  gap: var(--space-2xs);
+  flex-shrink: 0;
+  min-height: var(--tour-meta-row-height);
+  margin-inline-start: calc(-1 * var(--space-1-5));
+}
+
+.tour-detail-date-weather :deep(.tour-detail-date-btn),
+.tour-detail-date-weather :deep(.tour-detail-weather-btn) {
+  min-height: 0;
+  border: 0;
+  line-height: var(--tour-meta-row-height);
+  padding: var(--space-xs) var(--space-1-5);
+  margin-block: calc(-1 * var(--space-xs));
+}
+
+.tour-detail-date-weather :deep(.tour-detail-date-btn) {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.tour-detail-date-weather :deep(.tour-detail-date-btn:hover) {
+  color: var(--color-text);
 }
 
 .tour-detail-time,
@@ -420,10 +546,11 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
   display: flex;
   align-items: safe center;
   flex-wrap: wrap;
-  gap: var(--space-xs) var(--space-md);
+  gap: var(--space-sm) var(--space-md);
   min-width: 0;
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-snug);
+  min-height: var(--tour-meta-row-height);
+  font-size: var(--font-size-sm);
+  line-height: var(--tour-meta-row-height);
   color: var(--color-text-muted);
 }
 
@@ -456,8 +583,16 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-xs);
+  gap: var(--space-sm);
   min-width: 0;
+}
+
+.tour-detail-done-label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text);
+  cursor: pointer;
+  user-select: none;
 }
 
 .tour-detail-comments-accordion {

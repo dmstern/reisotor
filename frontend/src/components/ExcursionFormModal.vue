@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, toRef, useId, watch } from 'vue';
+import { ref, toRef, watch } from 'vue';
 import type { Excursion, IdeaRole, LocationTrack, User } from '../api/types';
 import Modal from './Modal.vue';
 import FormField from './FormField.vue';
@@ -111,8 +111,6 @@ watch(
   },
   { immediate: true }
 );
-
-const tourDoneToggleId = useId();
 
 function handleClose() {
   if (editingExcursion.value !== null) {
@@ -267,39 +265,45 @@ defineExpose({
         >
           <Input :id="id" v-model="activeExcursionForm.date" type="date" :modified="modified" />
         </FormField>
-        <!-- eslint-disable-next-line vuejs-accessibility/label-has-for -->
-        <label
-          :for="tourDoneToggleId"
+        <FormField
+          :icon="ACTION_ICONS.done"
+          label="Status"
           class="tour-done-field"
-          :class="{ 'is-modified': isEditTourDoneModified }"
+          :modified="isEditTourDoneModified"
+          v-slot="{ id, modified }"
         >
-          <span class="tour-done-label">
-            <AppIcon :icon="ACTION_ICONS.done" :size="15" group="actions" />
-            <span>Status</span>
-            <span
-              v-if="isEditTourDoneModified"
-              class="modified-dot"
-              title="Geändert"
-              aria-label="Geändert"
-            />
-          </span>
-          <span class="tour-done-control">
+          <div class="tour-done-control-row" :class="{ 'is-modified': modified }">
+            <button
+              type="button"
+              class="tour-done-state-option"
+              :class="{ 'is-active': !activeExcursionForm.done }"
+              :aria-pressed="!activeExcursionForm.done"
+              @click="activeExcursionForm.done = false"
+            >
+              Geplant
+            </button>
             <ToggleSwitch
-              :id="tourDoneToggleId"
+              :id="id"
               :model-value="activeExcursionForm.done"
               :aria-label="
                 activeExcursionForm.done
-                  ? 'Tour nicht mehr als gemacht markieren'
-                  : 'Tour als gemacht markieren'
+                  ? 'Status Gemacht, auf Geplant umschalten'
+                  : 'Status Geplant, auf Gemacht umschalten'
               "
-              :title="
-                activeExcursionForm.done ? 'Als nicht gemacht markieren' : 'Als gemacht markieren'
-              "
+              :title="activeExcursionForm.done ? 'Auf „Geplant“ setzen' : 'Als „Gemacht“ markieren'"
               @update:model-value="activeExcursionForm.done = $event"
             />
-            <span class="tour-done-toggle-label">Gemacht</span>
-          </span>
-        </label>
+            <button
+              type="button"
+              class="tour-done-state-option"
+              :class="{ 'is-active': activeExcursionForm.done }"
+              :aria-pressed="activeExcursionForm.done"
+              @click="activeExcursionForm.done = true"
+            >
+              Gemacht
+            </button>
+          </div>
+        </FormField>
       </div>
       <CollapsibleFieldset
         :model-value="
@@ -465,60 +469,54 @@ defineExpose({
   min-width: 0;
 }
 
-.tour-done-field {
+.tour-done-control-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+  justify-content: center;
+  gap: var(--space-sm);
   min-height: var(--input-height, 46px);
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-hover);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-md-squircle);
-  corner-shape: squircle;
+  padding: var(--space-xs) var(--space-md);
+  background: var(--color-input-bg);
+  border: 1.5px solid var(--input-border-color);
+  border-radius: var(--control-radius-md);
   box-sizing: border-box;
-  cursor: pointer;
-  user-select: none;
+  transition: var(--transition-control);
 }
 
-.tour-done-label {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-text);
-  min-width: 0;
-}
-
-.tour-done-field.is-modified {
+.tour-done-control-row.is-modified {
   @include control-modified-outline;
 }
 
-.tour-done-field.is-modified .tour-done-label {
-  color: var(--color-success-dark, var(--color-success));
-}
-
-.modified-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: var(--radius-pill);
-  background-color: var(--color-success);
-  flex-shrink: 0;
-}
-
-.tour-done-control {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-shrink: 0;
-}
-
-.tour-done-toggle-label {
+.tour-done-state-option {
+  appearance: none;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: var(--space-2xs) var(--space-xs);
+  margin: 0;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
   font-size: var(--font-size-sm);
   font-weight: 500;
+  line-height: var(--line-height-snug);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+
+.tour-done-state-option:hover {
   color: var(--color-text);
+}
+
+.tour-done-state-option.is-active {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.tour-done-state-option:focus-visible {
+  outline: var(--focus-ring-width, 3px) solid var(--focus-ring-color, var(--color-focus-ring));
+  outline-offset: 2px;
 }
 
 .hint.info {
