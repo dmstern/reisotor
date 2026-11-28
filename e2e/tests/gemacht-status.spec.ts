@@ -338,7 +338,9 @@ test.describe('"Gemacht"-Status: Spots/Touren', () => {
     const tourCard = page.locator('.excursion-card', { hasText: tourTitle });
     // Titel anklicken öffnet die Tour-Detailansicht, in der der volle Status sichtbar ist
     await tourCard.locator('.card-title').click();
-    await expect(page.locator('.tour-detail-view .status.status-done')).toBeVisible();
+    await expect(
+      page.locator('.tour-detail-view .tour-detail-status [role="switch"]')
+    ).toHaveAttribute('aria-checked', 'true');
 
     await page.goto('/excursions');
     await page.locator('.segmented-option', { hasText: 'Spots' }).click();
