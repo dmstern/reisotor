@@ -410,9 +410,11 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
 }
 
 .tour-detail-heading-group {
+  --tour-meta-row-height: 1.25rem;
+
   display: flex;
   flex-direction: column;
-  gap: var(--space-1-5);
+  gap: var(--space-sm);
   min-width: 0;
 }
 
@@ -457,8 +459,9 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
   display: flex;
   align-items: safe center;
   min-width: 0;
+  min-height: var(--tour-meta-row-height);
   font-size: var(--font-size-sm);
-  line-height: var(--line-height-snug);
+  line-height: var(--tour-meta-row-height);
   color: var(--color-text-muted);
 }
 
@@ -466,7 +469,7 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
   display: flex;
   align-items: safe center;
   flex-wrap: wrap;
-  gap: var(--space-xs) var(--space-md);
+  gap: var(--space-sm) var(--space-md);
   min-width: 0;
 }
 
@@ -474,10 +477,11 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
   display: flex;
   align-items: safe center;
   flex-wrap: wrap;
-  gap: var(--space-xs) var(--space-1-5);
+  gap: var(--space-sm) var(--space-1-5);
   min-width: 0;
+  min-height: var(--tour-meta-row-height);
   font-size: var(--font-size-sm);
-  line-height: var(--line-height-snug);
+  line-height: var(--tour-meta-row-height);
   color: var(--color-text-muted);
 }
 
@@ -501,12 +505,17 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
   align-items: safe center;
   gap: var(--space-2xs);
   flex-shrink: 0;
+  min-height: var(--tour-meta-row-height);
   margin-inline-start: calc(-1 * var(--space-1-5));
 }
 
 .tour-detail-date-weather :deep(.tour-detail-date-btn),
 .tour-detail-date-weather :deep(.tour-detail-weather-btn) {
-  padding-inline: var(--space-1-5);
+  min-height: 0;
+  border: 0;
+  line-height: var(--tour-meta-row-height);
+  padding: var(--space-xs) var(--space-1-5);
+  margin-block: calc(-1 * var(--space-xs));
 }
 
 .tour-detail-date-weather :deep(.tour-detail-date-btn) {
@@ -535,10 +544,11 @@ const transportSummary = computed(() => summarizeTourLegsByTransport(props.excur
   display: flex;
   align-items: safe center;
   flex-wrap: wrap;
-  gap: var(--space-xs) var(--space-md);
+  gap: var(--space-sm) var(--space-md);
   min-width: 0;
+  min-height: var(--tour-meta-row-height);
   font-size: var(--font-size-sm);
-  line-height: var(--line-height-snug);
+  line-height: var(--tour-meta-row-height);
   color: var(--color-text-muted);
 }
 
