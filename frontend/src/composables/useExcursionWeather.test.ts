@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
-import { ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { useExcursionWeather } from './useExcursionWeather';
 import * as weatherUtils from '../utils/weather';
 import type { Excursion } from '../api/types';
@@ -112,5 +112,39 @@ describe('useExcursionWeather', () => {
       lng: 16.373,
       label: 'Station 1',
     });
+  });
+
+  it('lädt das Wetter nicht neu, wenn sich nur done oder die Array-Referenz der Stationen ändert', async () => {
+    const fetchSpy = vi.spyOn(weatherUtils, 'fetchMergedWeather').mockResolvedValue([
+      {
+        date: '2026-07-20',
+        weatherCode: 0,
+        tempMax: 24,
+        tempMin: 16,
+        precipitationProbability: 0,
+      },
+    ]);
+
+    const excursion = ref(createMockExcursion({ date: '2026-07-20', done: 0 }));
+    // Simuliert useExcursionStations: erzeugt bei neuem excursion-Objekt ein frisches Array
+    const resolvedStations = computed(() =>
+      excursion.value.spot_ids.map((id) => createMockStation({ id }))
+    );
+
+    const { weatherSummary } = useExcursionWeather({
+      excursion,
+      resolvedStations,
+    });
+
+    await vi.waitFor(() => {
+      expect(weatherSummary.value).not.toBeNull();
+    });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    excursion.value = { ...excursion.value, done: 1 } as unknown as Excursion;
+    await nextTick();
+
+    expect(weatherSummary.value?.tempLabel).toBe('24°');
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 });

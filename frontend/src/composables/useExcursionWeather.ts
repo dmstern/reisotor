@@ -42,29 +42,42 @@ export function useExcursionWeather(
   options: UseExcursionWeatherOptions
 ): UseExcursionWeatherReturn {
   const weatherProvider = useWeatherProviderStore();
+  const COORD_KEY_PRECISION = 3;
 
   const mappedStations = computed(() => {
     const stations = toValue(options.resolvedStations);
     return stations.filter((station) => station.lat != null && station.lng != null);
   });
 
+  // Primitiver Koordinaten-/Titel-Schlüssel verhindert unnötige Wetter-Reloads (und UI-Flackern),
+  // wenn sich nur die Array-Referenz durch z. B. done/note-Updates am Excursion-Objekt ändert.
+  const mappedStationsKey = computed(() =>
+    mappedStations.value
+      .map(
+        (station) =>
+          `${station.lat!.toFixed(COORD_KEY_PRECISION)},${station.lng!.toFixed(COORD_KEY_PRECISION)}:${station.title || ''}`
+      )
+      .join('|')
+  );
+
   const weatherSummary = ref<WeatherRangeSummary | null>(null);
   const primaryWeatherDay = ref<DailyWeather | null>(null);
   const primaryWeatherDays = ref<DailyWeather[]>([]);
   const primaryWeatherLocation = ref<ExcursionWeatherLocation | null>(null);
+  let activeRequestSeq = 0;
 
   watch(
-    () => {
-      const excursion = toValue(options.excursion);
-      return [
-        excursion.date,
-        excursion.trip_id,
-        excursion.title,
-        mappedStations.value,
-        weatherProvider.model,
-      ] as const;
-    },
-    async ([date, tripId, tourTitle, stations, model]) => {
+    [
+      () => toValue(options.excursion).date,
+      () => toValue(options.excursion).trip_id,
+      () => toValue(options.excursion).title,
+      mappedStationsKey,
+      () => weatherProvider.model,
+    ],
+    async ([date, tripId, tourTitle, _stationsKey, model]) => {
+      const requestSeq = ++activeRequestSeq;
+      const stations = mappedStations.value;
+
       weatherSummary.value = null;
       primaryWeatherDay.value = null;
       primaryWeatherDays.value = [];
@@ -77,13 +90,15 @@ export function useExcursionWeather(
       try {
         const stationWeathers: DailyWeather[] = [];
         const fetchedKeys = new Set<string>();
+        let nextPrimaryDay: DailyWeather | null = null;
+        let nextPrimaryDays: DailyWeather[] = [];
+        let nextPrimaryLocation: ExcursionWeatherLocation | null = null;
 
         for (const st of stations) {
           if (st.lat == null || st.lng == null) {
             continue;
           }
 
-          const COORD_KEY_PRECISION = 3;
           const locKey = `${st.lat.toFixed(COORD_KEY_PRECISION)},${st.lng.toFixed(COORD_KEY_PRECISION)}`;
 
           if (fetchedKeys.has(locKey)) {
@@ -93,15 +108,20 @@ export function useExcursionWeather(
           fetchedKeys.add(locKey);
 
           const days = await fetchMergedWeather(tripId, st.lat, st.lng, model);
+
+          if (requestSeq !== activeRequestSeq) {
+            return;
+          }
+
           const match = days.find((day) => day.date === date);
 
           if (match) {
             stationWeathers.push(match);
 
-            if (!primaryWeatherDay.value) {
-              primaryWeatherDay.value = match;
-              primaryWeatherDays.value = days;
-              primaryWeatherLocation.value = {
+            if (!nextPrimaryDay) {
+              nextPrimaryDay = match;
+              nextPrimaryDays = days;
+              nextPrimaryLocation = {
                 lat: st.lat,
                 lng: st.lng,
                 label: st.title || tourTitle || 'Reiseziel',
@@ -110,6 +130,13 @@ export function useExcursionWeather(
           }
         }
 
+        if (requestSeq !== activeRequestSeq) {
+          return;
+        }
+
+        primaryWeatherDay.value = nextPrimaryDay;
+        primaryWeatherDays.value = nextPrimaryDays;
+        primaryWeatherLocation.value = nextPrimaryLocation;
         weatherSummary.value = summarizeWeatherRange(stationWeathers);
       } catch {
         // best effort wie überall bei Wetter
